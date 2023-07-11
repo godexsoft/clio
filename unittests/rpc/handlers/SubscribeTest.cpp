@@ -583,7 +583,6 @@ TEST_F(RPCSubscribeHandlerTest, StreamsLedger)
             "ledger_index":30,
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_time":0,
-            "fee_ref":4,
             "fee_base":1,
             "reserve_base":3,
             "reserve_inc":2
