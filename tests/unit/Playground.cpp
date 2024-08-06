@@ -257,7 +257,8 @@ public:
             workers.push_back(spawn(backwardSeq_ - i, -BACKWARD_WORKERS));
         workers.push_back(spawn(forwardSeq_, 1));
 
-        auto loader = ctx_.execute([this](auto stopRequested) {
+        util::async::PoolExecutionContext localCtx(1);
+        auto loader = localCtx.execute([this](auto stopRequested) {
             while (not stopRequested) {
                 if (auto b = queue_.pop(); b.has_value()) {
                     std::cout << fmt::format("dispatching transactions for seq {}\n", b->seq);
@@ -306,7 +307,7 @@ private:
 
 TEST(PlaygroundTest, Test)
 {
-    constexpr static auto MAX_BATCHES = 1024z;
+    constexpr static auto MAX_BATCHES = 10240z;
 
     // somewhere in main
     auto context = util::async::CoroExecutionContext(8);
