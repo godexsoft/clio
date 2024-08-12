@@ -27,26 +27,154 @@
 #include "util/async/AnyStrand.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 
+#include <__ranges/range_adaptor.h>
 #include <fmt/core.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <chrono>
+#include <concepts>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
+#include <ranges>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 using namespace testing;
+
+template <std::ranges::view R, std::integral S>
+class stride_view : public std::ranges::view_interface<stride_view<R, S>> {
+private:
+    R base_;
+    S stride_;
+    struct iterator {
+        using reference = std::ranges::range_reference_t<R>;
+        using difference_type = std::ranges::range_difference_t<R>;
+        using value_type = std::ranges::range_value_t<R>;
+        using iterator_category = std::forward_iterator_tag;
+
+        stride_view<R, S>* parent = nullptr;
+        std::ranges::iterator_t<R> it;
+
+        iterator() = default;
+        iterator(iterator&&) = default;
+        iterator(iterator const&) = default;
+        iterator&
+        operator=(iterator const&) = default;
+        iterator&
+        operator=(iterator&&) = default;
+        iterator(stride_view<R, S>* p) : parent(p), it(std::ranges::begin(p->base_))
+        {
+        }
+
+        auto
+        operator*() const -> reference
+        {
+            return *it;
+        }
+
+        auto
+        operator++() -> iterator&
+        {
+            std::advance(it, parent->stride_);
+            return *this;
+        }
+
+        void
+        operator++(int)
+        {
+            ++*this;
+        }
+
+        bool
+        operator==(iterator const& other) const = default;
+
+        bool
+        operator==(std::default_sentinel_t) const
+        {
+            return it == std::end(parent->base_);
+        }
+    };
+
+public:
+    stride_view() = default;
+
+    template <typename R2>
+        requires std::is_same_v<std::remove_reference_t<R2>, R>
+    constexpr stride_view(R2&& base, S s) : base_(std::forward<R2>(base)), stride_(s)
+    {
+    }
+
+    stride_view(stride_view const&) = default;
+    stride_view(stride_view&&) = default;
+    stride_view&
+    operator=(stride_view const&) = default;
+    stride_view&
+    operator=(stride_view&&) = default;
+
+    constexpr R
+    base() const&
+    {
+        return base_;
+    }
+    constexpr R
+    base() &&
+    {
+        return std::move(base_);
+    }
+
+    constexpr auto
+    begin() -> iterator
+    {
+        return {this};
+    }
+    constexpr auto
+    end()
+    {
+        return std::default_sentinel;
+    }
+};
+
+template <typename R, typename S>
+stride_view(R, S) -> stride_view<std::ranges::views::all_t<std::remove_reference_t<R>>, S>;
+
+namespace my_views {
+namespace _stride {
+struct _fn {
+    template <class Range, class S>
+    [[nodiscard]] constexpr auto
+    operator()(Range&& _range, S _s) const
+        noexcept(noexcept(stride_view(std::forward<Range>(_range), std::forward<S>(_s)))) -> decltype(auto)
+    {
+        return stride_view(std::forward<Range>(_range), std::forward<S>(_s));
+    }
+
+    template <class S>
+        requires std::constructible_from<std::decay_t<S>, S>
+    [[nodiscard]] constexpr auto
+    operator()(S s) const noexcept(std::is_nothrow_constructible_v<std::decay_t<S>, S>)
+    {
+        return std::__range_adaptor_closure_t(std::__bind_back(*this, std::forward<S>(s)));
+    }
+};
+}  // namespace _stride
+
+inline namespace _cpo {
+inline constexpr auto stride = _stride::_fn{};
+}  // namespace _cpo
+}  // namespace my_views
 
 enum class TransactionType { type1, type2, type3, type4 };
 
@@ -220,6 +348,12 @@ public:
     {
         operation.wait();
     }
+
+    struct Settings {
+        std::size_t seq;
+        std::size_t stride;
+        bool isBackwards;
+    };
 };
 
 class Scheduler {
@@ -228,7 +362,7 @@ class Scheduler {
     std::shared_ptr<RegistryInterface> registry_;
 
     std::size_t forwardSeq_ = 12345;
-    std::size_t backwardSeq_ = 12344;
+    std::size_t backwardSeq_ = forwardSeq_ - 1;
 
 public:
     Scheduler(Scheduler const&) = delete;
@@ -247,21 +381,24 @@ public:
     void
     run()
     {
-        constexpr auto BACKWARD_WORKERS = 4;
+        constexpr static auto BACKWARD_WORKERS = 4;
         std::vector<std::unique_ptr<Worker>> workers;
 
         std::cout << "starting scheduler...\n";
 
         workers.reserve(BACKWARD_WORKERS + 1);
-        for (int i = 0; i < BACKWARD_WORKERS; ++i)
-            workers.push_back(spawn(backwardSeq_ - i, -BACKWARD_WORKERS));
-        workers.push_back(spawn(forwardSeq_, 1));
+        for (auto i : std::views::iota(0, BACKWARD_WORKERS))
+            workers.push_back(spawn({.seq = backwardSeq_ - i, .stride = BACKWARD_WORKERS, .isBackwards = true}));
+        workers.push_back(spawn({.seq = forwardSeq_, .stride = 1, .isBackwards = false}));
 
-        util::async::PoolExecutionContext localCtx(1);
+        util::async::CoroExecutionContext localCtx(1);
         auto loader = localCtx.execute([this](auto stopRequested) {
             while (not stopRequested) {
                 if (auto b = queue_.pop(); b.has_value()) {
                     std::cout << fmt::format("dispatching transactions for seq {}\n", b->seq);
+
+                    // note: rn this is all inside one coro.. we may want to parallelize this?
+                    // also, how about each plugin runs on its own thread or coro as well as strand?
                     registry_->dispatch(b->txs);  // thru coro async context for executing DB stuff seamlessly
                 } else {
                     break;
@@ -279,18 +416,30 @@ public:
 
 private:
     std::unique_ptr<Worker>
-    spawn(std::size_t initialSeq, int stride)
+    spawn(Worker::Settings settings)
     {
-        return std::make_unique<Worker>(ctx_, [this, initialSeq, stride](auto stopRequested) {
-            auto seq = initialSeq;
+        namespace rg = std::ranges;
+        namespace vs = std::views;
+        namespace mvs = my_views;
 
-            while (not stopRequested) {
-                extract(seq);
-                seq += stride;
+        return std::make_unique<Worker>(
+            ctx_,
+            [this, initialSeq = settings.seq, stride = settings.stride, dir = settings.isBackwards ? -1 : 1](
+                auto stopRequested
+            ) {
+                rg::for_each(
+                    vs::iota(0)                                                                    //
+                        | mvs::stride(stride)                                                      //
+                        | vs::transform([&](auto offset) { return initialSeq + (dir * offset); })  //
+                        | vs::take_while([&](auto) { return not stopRequested; }),
+                    [this](auto seq) { extract(seq); }
+                );
+
+                std::cout << fmt::format(
+                    "finishing extraction (started from {} with {})\n", initialSeq, static_cast<int>(stride) * dir
+                );
             }
-
-            std::cout << fmt::format("finishing extraction (started from {} with {})\n", initialSeq, stride);
-        });
+        );
     }
 
     void
