@@ -24,8 +24,10 @@
 
 #include <boost/asio/spawn.hpp>
 
+#include <chrono>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 namespace util::async {
 
@@ -100,6 +102,12 @@ public:
         return pimpl_->yieldContext();
     }
 
+    void
+    wait(std::chrono::steady_clock::duration duration) const
+    {
+        pimpl_->wait(duration);
+    }
+
 private:
     struct Concept {
         virtual ~Concept() = default;
@@ -112,6 +120,9 @@ private:
 
         [[nodiscard]] virtual boost::asio::yield_context
         yieldContext() const = 0;
+
+        virtual void
+        wait(std::chrono::steady_clock::duration duration) const = 0;
     };
 
     template <SomeStopToken TokenType>
@@ -142,7 +153,13 @@ private:
             }
 
             ASSERT(false, "Token type does not support conversion to boost::asio::yield_context");
-            __builtin_unreachable();  // TODO: replace with std::unreachable when C++23 is available
+            std::unreachable();
+        }
+
+        void
+        wait(std::chrono::steady_clock::duration duration) const override
+        {
+            token.wait(duration);
         }
     };
 

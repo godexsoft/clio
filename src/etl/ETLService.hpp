@@ -25,6 +25,7 @@
 #include "etl/ETLHelpers.hpp"
 #include "etl/ETLState.hpp"
 #include "etl/LoadBalancer.hpp"
+#include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlock.hpp"
 #include "etl/impl/ExtractionDataPipe.hpp"
