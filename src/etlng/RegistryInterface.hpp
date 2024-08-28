@@ -19,34 +19,22 @@
 
 #pragma once
 
-#include "etl/ETLState.hpp"
+#include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 
-#include <boost/json/object.hpp>
-
-#include <cstdint>
 #include <optional>
+
 namespace etlng {
 
-struct ETLServiceInterface {
-    virtual ~ETLServiceInterface() = default;
+struct RegistryInterface {
+    using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
+    using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
+    using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
+
+    virtual ~RegistryInterface() = default;
 
     virtual void
-    run() = 0;
-
-    virtual boost::json::object
-    getInfo() const = 0;
-
-    virtual bool
-    isAmendmentBlocked() const = 0;
-
-    virtual bool
-    isCorruptionDetected() const = 0;
-
-    virtual std::optional<etl::ETLState>
-    getETLState() const = 0;
-
-    virtual std::uint32_t
-    lastCloseAgeSeconds() const = 0;
+    dispatch(GetLedgerResponseType const& response) = 0;
 };
 
 }  // namespace etlng

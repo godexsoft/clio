@@ -21,6 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
@@ -49,7 +50,6 @@
 #include <string>
 
 namespace etl {
-class ETLService;
 class LoadBalancer;
 }  // namespace etl
 namespace rpc {
@@ -349,6 +349,6 @@ private:
  *
  * For more details see: https://xrpl.org/server_info-clio.html
  */
-using ServerInfoHandler = BaseServerInfoHandler<etl::LoadBalancer, etl::ETLService, Counters>;
+using ServerInfoHandler = BaseServerInfoHandler<etl::LoadBalancer, etlng::ETLServiceInterface, Counters>;
 
 }  // namespace rpc

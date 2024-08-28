@@ -19,34 +19,29 @@
 
 #pragma once
 
-#include "etl/ETLState.hpp"
-
-#include <boost/json/object.hpp>
-
 #include <cstdint>
 #include <optional>
+
 namespace etlng {
 
-struct ETLServiceInterface {
-    virtual ~ETLServiceInterface() = default;
+struct Task {
+    uint8_t priority;
+    uint32_t seq;
 
-    virtual void
-    run() = 0;
+    bool
+    operator<(Task const& o) const
+    {
+        if (priority < o.priority)
+            return true;
+        return seq < o.seq;
+    }
+};
 
-    virtual boost::json::object
-    getInfo() const = 0;
+struct SchedulerInterface {
+    virtual ~SchedulerInterface() = default;
 
-    virtual bool
-    isAmendmentBlocked() const = 0;
-
-    virtual bool
-    isCorruptionDetected() const = 0;
-
-    virtual std::optional<etl::ETLState>
-    getETLState() const = 0;
-
-    virtual std::uint32_t
-    lastCloseAgeSeconds() const = 0;
+    [[nodiscard]] virtual std::optional<Task>
+    next() = 0;
 };
 
 }  // namespace etlng

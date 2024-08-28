@@ -21,7 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/Types.hpp"
-#include "etl/ETLService.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
@@ -346,5 +346,5 @@ private:
  *
  * For more details see: https://xrpl.org/tx.html
  */
-using TxHandler = BaseTxHandler<etl::ETLService>;
+using TxHandler = BaseTxHandler<etlng::ETLServiceInterface>;
 }  // namespace rpc

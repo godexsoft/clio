@@ -20,11 +20,16 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "etlng/ETLService.hpp"
+#include "etl/ETLState.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "util/config/Config.hpp"
 #include "util/log/Logger.hpp"
 
+#include <boost/json/object.hpp>
+
+#include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace etlng {
 
@@ -34,16 +39,58 @@ class ETLService : public ETLServiceInterface {
     std::shared_ptr<BackendInterface> backend_;
 
 public:
-    ETLService(util::Config const& config)
+    ETLService([[maybe_unused]] util::Config const& config)
     {
         // start monitor mode
         // extractors, loaders, plugins all that jazz
         // if we are a writer node, attempt to become a writer
+        LOG(log_.info()) << "Starting ETLng...";
     }
 
     ~ETLService() override
     {
         LOG(log_.debug()) << "Stopping ETL";
+    }
+
+    void
+    run() override
+    {
+        LOG(log_.info()) << "run() in ETLng...";
+    }
+
+    boost::json::object
+    getInfo() const override
+    {
+        return {{"ok", true}};
+    }
+
+    bool
+    isAmendmentBlocked() const override
+    {
+        return false;
+    }
+
+    bool
+    isCorruptionDetected() const override
+    {
+        return false;
+    }
+
+    std::optional<etl::ETLState>
+    getETLState() const override
+    {
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Get time passed since last ledger close, in seconds.
+     *
+     * @return Time passed since last ledger close
+     */
+    std::uint32_t
+    lastCloseAgeSeconds() const override
+    {
+        return 0;
     }
 
 private:

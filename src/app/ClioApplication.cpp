@@ -24,6 +24,7 @@
 #include "etl/ETLService.hpp"
 #include "etl/LoadBalancer.hpp"
 #include "etl/NetworkValidatedLedgers.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "feed/SubscriptionManager.hpp"
 #include "rpc/Counters.hpp"
 #include "rpc/RPCEngine.hpp"
@@ -127,8 +128,9 @@ ClioApplication::run()
         rpc::RPCEngine::make_RPCEngine(backend, balancer, dosGuard, workQueue, counters, handlerProvider);
 
     // Init the web server
-    auto handler =
-        std::make_shared<web::RPCServerHandler<rpc::RPCEngine, etl::ETLService>>(config_, backend, rpcEngine, etl);
+    auto handler = std::make_shared<web::RPCServerHandler<rpc::RPCEngine, etlng::ETLServiceInterface>>(
+        config_, backend, rpcEngine, etl
+    );
     auto const httpServer = web::make_HttpServer(config_, ioc, dosGuard, handler);
 
     // Blocks until stopped.

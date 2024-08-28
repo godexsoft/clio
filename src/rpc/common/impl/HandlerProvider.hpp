@@ -21,6 +21,7 @@
 
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/common/HandlerProvider.hpp"
@@ -56,7 +57,7 @@ public:
         std::shared_ptr<BackendInterface> const& backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> const& subscriptionManager,
         std::shared_ptr<etl::LoadBalancer> const& balancer,
-        std::shared_ptr<etl::ETLService const> const& etl,
+        std::shared_ptr<etlng::ETLServiceInterface const> const& etl,
         std::shared_ptr<data::AmendmentCenterInterface const> const& amendmentCenter,
         Counters const& counters
     );

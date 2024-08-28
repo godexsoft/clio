@@ -33,6 +33,8 @@
 #include "etl/impl/LedgerLoader.hpp"
 #include "etl/impl/LedgerPublisher.hpp"
 #include "etl/impl/Transformer.hpp"
+#include "etlng/ETLService.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/log/Logger.hpp"
 
@@ -140,17 +142,18 @@ public:
      * @param ledgers The network validated ledgers datastructure
      * @return A shared pointer to a new instance of ETLService
      */
-    static std::shared_ptr<ETLService>
+    static std::shared_ptr<etlng::ETLServiceInterface>
     make_ETLService(
         util::Config const& config,
-        boost::asio::io_context& ioc,
-        std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<LoadBalancerType> balancer,
-        std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
+        [[maybe_unused]] boost::asio::io_context& ioc,
+        [[maybe_unused]] std::shared_ptr<BackendInterface> backend,
+        [[maybe_unused]] std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
+        [[maybe_unused]] std::shared_ptr<LoadBalancerType> balancer,
+        [[maybe_unused]] std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
     )
     {
-        auto etl = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
+        // auto etl = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
+        auto etl = std::make_shared<etlng::ETLService>(config);
         etl->run();
 
         return etl;

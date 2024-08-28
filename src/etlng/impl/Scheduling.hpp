@@ -19,34 +19,15 @@
 
 #pragma once
 
+#include "etlng/SchedulerInterface.hpp"
+
 #include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <optional>
 #include <tuple>
 
-namespace etlng {
-
-struct Task {
-    uint8_t priority;
-    uint32_t seq;
-
-    bool
-    operator<(Task const& o) const
-    {
-        if (priority < o.priority)
-            return true;
-        return seq < o.seq;
-    }
-};
-
-struct SchedulerInterface {
-    virtual ~SchedulerInterface() = default;
-    [[nodiscard]] virtual std::optional<Task>
-    next() = 0;
-};
-
-namespace impl {
+namespace etlng::impl {
 
 struct ForwardScheduler : SchedulerInterface {
     uint32_t startSeq_;
@@ -125,5 +106,4 @@ public:
     }
 };
 
-}  // namespace impl
-}  // namespace etlng
+}  // namespace etlng::impl
