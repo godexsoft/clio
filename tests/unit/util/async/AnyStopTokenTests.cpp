@@ -35,11 +35,6 @@ struct FakeStopToken {
     {
         return isStopRequested_;
     }
-
-    void
-    wait(std::chrono::steady_clock::duration) const
-    {
-    }
 };
 }  // namespace
 

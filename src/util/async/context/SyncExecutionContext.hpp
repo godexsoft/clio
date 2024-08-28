@@ -40,6 +40,11 @@ struct SameThreadContext {
         stop() const noexcept
         {
         }
+
+        void
+        join() const noexcept
+        {
+        }
     };
 
     // Note: these types are not actually used but needed for compilation
@@ -55,6 +60,12 @@ struct SameThreadContext {
     stop() const noexcept
     {
         executor.stop();
+    }
+
+    void
+    join() const noexcept
+    {
+        executor.join();
     }
 
     Executor&

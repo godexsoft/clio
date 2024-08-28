@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "util/Assert.hpp"
 #include "util/async/Concepts.hpp"
 #include "util/async/Error.hpp"
 #include "util/async/Operation.hpp"
@@ -60,8 +61,8 @@ struct AsioPoolStrandContext {
     using Executor = boost::asio::strand<boost::asio::thread_pool::executor_type>;
     using Timer = SteadyTimer<Executor>;
 
-    Executor&
-    getExecutor()
+    Executor const&
+    getExecutor() const
     {
         return executor;
     }
@@ -84,6 +85,7 @@ struct AsioPoolContext {
     Strand
     makeStrand() const
     {
+        ASSERT(executor, "Called after executor was moved from.");
         return {boost::asio::make_strand(*executor)};
     }
 
@@ -94,9 +96,17 @@ struct AsioPoolContext {
             executor->stop();
     }
 
+    void
+    join() const
+    {
+        if (executor)  // don't call if executor was moved from
+            executor->join();
+    }
+
     Executor&
     getExecutor() const
     {
+        ASSERT(executor, "Called after executor was moved from.");
         return *executor;
     }
 
@@ -350,9 +360,18 @@ public:
      * @brief Stop the execution context as soon as possible
      */
     void
-    stop() noexcept
+    stop() const noexcept
     {
         context_.stop();
+    }
+
+    /**
+     * @brief Block until all operations are completed
+     */
+    void
+    join() const noexcept
+    {
+        context_.join();
     }
 };
 

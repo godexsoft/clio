@@ -25,9 +25,7 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <atomic>
-#include <chrono>
 #include <memory>
-#include <thread>
 #include <utility>
 
 namespace util::async::impl {
@@ -86,16 +84,6 @@ public:
         {
             return yield_;
         }
-
-        void
-        wait(std::chrono::steady_clock::duration duration) const
-        {
-            boost::asio::steady_timer timer(boost::asio::get_associated_executor(yield_));
-            timer.expires_after(duration);
-
-            boost::system::error_code ec;
-            timer.async_wait(yield_[ec]);  // suspends the coro and switches context
-        }
     };
 
     [[nodiscard]] Token
@@ -136,12 +124,6 @@ public:
         [[nodiscard]] operator bool() const noexcept
         {
             return isStopRequested();
-        }
-
-        void
-        wait(std::chrono::steady_clock::duration duration) const
-        {
-            std::this_thread::sleep_for(duration);
         }
     };
 

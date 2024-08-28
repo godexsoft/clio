@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2023, the clio developers.
+    Copyright (c) 2022, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -17,41 +17,36 @@
 */
 //==============================================================================
 
-#include "rpc/FakesAndMocks.hpp"
-#include "util/AsioContextTestFixture.hpp"
+#pragma once
+
+#include "util/Repeat.hpp"
 #include "util/config/Config.hpp"
-#include "web/IntervalSweepHandler.hpp"
 
-#include <boost/json/parse.hpp>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <boost/asio/io_context.hpp>
 
-#include <chrono>
+namespace web::dosguard {
 
-using namespace util;
-using namespace web;
-using namespace testing;
+class BaseDOSGuard;
 
-constexpr static auto JSONData = R"JSON(
-    {
-        "dos_guard": {
-            "max_fetches": 100,
-            "sweep_interval": 0.1,
-            "max_connections": 2,
-            "whitelist": ["127.0.0.1"]
-        }
-    }
-)JSON";
+/**
+ * @brief Sweep handler clearing context every sweep interval from config.
+ */
+class IntervalSweepHandler {
+    util::Repeat repeat_;
 
-class DOSGuardIntervalSweepHandlerTest : public SyncAsioContextTest {
-protected:
-    Config cfg{boost::json::parse(JSONData)};
-    IntervalSweepHandler sweepHandler{cfg, ctx};
-    tests::common::BasicDOSGuardMock<IntervalSweepHandler> guard{sweepHandler};
+public:
+    /**
+     * @brief Construct a new interval-based sweep handler.
+     *
+     * @param config Clio config to use
+     * @param ctx The boost::asio::io_context to use
+     * @param dosGuard The DOS guard to use
+     */
+    IntervalSweepHandler(
+        util::Config const& config,
+        boost::asio::io_context& ctx,
+        web::dosguard::BaseDOSGuard& dosGuard
+    );
 };
 
-TEST_F(DOSGuardIntervalSweepHandlerTest, SweepAfterInterval)
-{
-    EXPECT_CALL(guard, clear()).Times(AtLeast(2));
-    ctx.run_for(std::chrono::milliseconds(400));
-}
+}  // namespace web::dosguard

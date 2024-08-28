@@ -43,7 +43,7 @@ public:
      * @param token The stop token to wrap
      */
     template <SomeStopToken TokenType>
-        requires(not std::is_same_v<std::decay_t<TokenType>, AnyStopToken>)
+        requires NotSameAs<TokenType, AnyStopToken>
     /* implicit */ AnyStopToken(TokenType&& token)
         : pimpl_{std::make_unique<Model<TokenType>>(std::forward<TokenType>(token))}
     {
@@ -102,12 +102,6 @@ public:
         return pimpl_->yieldContext();
     }
 
-    void
-    wait(std::chrono::steady_clock::duration duration) const
-    {
-        pimpl_->wait(duration);
-    }
-
 private:
     struct Concept {
         virtual ~Concept() = default;
@@ -120,9 +114,6 @@ private:
 
         [[nodiscard]] virtual boost::asio::yield_context
         yieldContext() const = 0;
-
-        virtual void
-        wait(std::chrono::steady_clock::duration duration) const = 0;
     };
 
     template <SomeStopToken TokenType>
@@ -154,12 +145,6 @@ private:
 
             ASSERT(false, "Token type does not support conversion to boost::asio::yield_context");
             std::unreachable();
-        }
-
-        void
-        wait(std::chrono::steady_clock::duration duration) const override
-        {
-            token.wait(duration);
         }
     };
 
