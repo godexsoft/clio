@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "etl/LedgerFetcherInterface.hpp"
 #include "util/log/Logger.hpp"
 
 #include <grpcpp/grpcpp.h>
@@ -35,14 +36,10 @@ namespace etl::impl {
  * @brief GRPC Ledger data fetcher
  */
 template <typename LoadBalancerType>
-class LedgerFetcher {
-public:
-    using OptionalGetLedgerResponseType = typename LoadBalancerType::OptionalGetLedgerResponseType;
-
-private:
+class LedgerFetcher : public LedgerFetcherInterface {
     util::Logger log_{"ETL"};
 
-    std::shared_ptr<BackendInterface> backend_;
+    std::shared_ptr<BackendInterface> backend_;  // TODO: replace with Cache ptr instead, backend not needed
     std::shared_ptr<LoadBalancerType> loadBalancer_;
 
 public:
@@ -64,7 +61,7 @@ public:
      * @return Ledger header and transaction+metadata blobs; Empty optional if the server is shutting down
      */
     OptionalGetLedgerResponseType
-    fetchData(uint32_t sequence)
+    fetchData(uint32_t sequence) override
     {
         LOG(log_.debug()) << "Attempting to fetch ledger with sequence = " << sequence;
 
@@ -84,7 +81,7 @@ public:
      * @return Ledger data diff between sequance and parent; Empty optional if the server is shutting down
      */
     OptionalGetLedgerResponseType
-    fetchDataAndDiff(uint32_t sequence)
+    fetchDataAndDiff(uint32_t sequence) override
     {
         LOG(log_.debug()) << "Attempting to fetch ledger with sequence = " << sequence;
 

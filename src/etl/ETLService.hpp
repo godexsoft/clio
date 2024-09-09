@@ -153,7 +153,7 @@ public:
     )
     {
         // auto etl = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
-        auto etl = std::make_shared<etlng::ETLService>(config);
+        auto etl = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
         etl->run();
 
         return etl;

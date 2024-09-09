@@ -41,7 +41,7 @@ class NetworkValidatedLedgers : public NetworkValidatedLedgersInterface {
     // max sequence validated by network
     std::optional<uint32_t> max_;
 
-    mutable std::mutex m_;
+    std::mutex m_;
     std::condition_variable cv_;
 
 public:

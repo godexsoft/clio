@@ -17,26 +17,50 @@
 */
 //==============================================================================
 
+/** @file */
 #pragma once
 
-#include "etlng/Models.hpp"
-
-#include <org/xrpl/rpc/v1/ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/ledger.pb.h>
 
+#include <cstdint>
 #include <optional>
 
-namespace etlng {
+namespace etl {
 
-struct RegistryInterface {
-    using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
+/**
+ * @brief An interface for LedgerFetcher
+ */
+class LedgerFetcherInterface {
+public:
     using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
     using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
 
-    virtual ~RegistryInterface() = default;
+    virtual ~LedgerFetcherInterface() = default;
 
-    virtual void
-    dispatch(model::Batch const& data) = 0;
+    /**
+     * @brief Extract data for a particular ledger from an ETL source
+     *
+     * This function continously tries to extract the specified ledger (using all available ETL sources) until the
+     * extraction succeeds, or the server shuts down.
+     *
+     * @param seq sequence of the ledger to extract
+     * @return Ledger header and transaction+metadata blobs; Empty optional if the server is shutting down
+     */
+    virtual OptionalGetLedgerResponseType
+    fetchData(uint32_t seq) = 0;
+
+    /**
+     * @brief Extract diff data for a particular ledger from an ETL source.
+     *
+     * This function continously tries to extract the specified ledger (using all available ETL sources) until the
+     * extraction succeeds, or the server shuts down.
+     *
+     * @param seq sequence of the ledger to extract
+     * @return Ledger data diff between sequance and parent; Empty optional if the server is shutting down
+     */
+    virtual OptionalGetLedgerResponseType
+    fetchDataAndDiff(uint32_t seq) = 0;
 };
 
-}  // namespace etlng
+}  // namespace etl

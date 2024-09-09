@@ -19,17 +19,25 @@
 
 #pragma once
 
+#include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "util/log/Logger.hpp"
+
+#include <sys/types.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <tuple>
+#include <utility>
 
 namespace etlng::impl {
 
 struct ForwardScheduler : SchedulerInterface {
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
+
     uint32_t startSeq_;
     std::optional<uint32_t> maxSeq_;
     std::atomic_uint32_t seq_;
@@ -37,12 +45,19 @@ struct ForwardScheduler : SchedulerInterface {
     std::chrono::steady_clock::time_point last;
     std::chrono::steady_clock::duration delta = std::chrono::milliseconds{100};
 
+    util::Logger log_{"ETL"};
+
     ForwardScheduler(ForwardScheduler const& other)
-        : startSeq_(other.startSeq_), maxSeq_(other.maxSeq_), seq_(other.seq_.load())
+        : ledgers_(other.ledgers_), startSeq_(other.startSeq_), maxSeq_(other.maxSeq_), seq_(other.seq_.load())
     {
     }
 
-    ForwardScheduler(uint32_t ss, std::optional<uint32_t> ms = std::nullopt) : startSeq_(ss), maxSeq_(ms), seq_(ss)
+    ForwardScheduler(
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+        uint32_t ss,
+        std::optional<uint32_t> ms = std::nullopt
+    )
+        : ledgers_(std::move(ledgers)), startSeq_(ss), maxSeq_(ms), seq_(ss)
     {
     }
 
@@ -51,7 +66,14 @@ struct ForwardScheduler : SchedulerInterface {
     {
         if (maxSeq_.has_value() && maxSeq_.value() <= seq_)
             return std::nullopt;
-        return {{.priority = 1, .seq = seq_++}};
+
+        if (ledgers_->getMostRecent() == seq_ + 1) {
+            LOG(log_.info()) << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! "
+                             << seq_ + 1;
+            return {{.priority = 1, .seq = seq_++}};
+        }
+
+        return std::nullopt;
     }
 };
 
@@ -66,7 +88,7 @@ struct BackfillScheduler : SchedulerInterface {
     {
     }
 
-    BackfillScheduler(uint32_t ss) : startSeq_(ss), seq_(ss)
+    BackfillScheduler(uint32_t ss, std::optional<uint32_t> ms) : startSeq_(ss), minSeq_(ms.value_or(0)), seq_(ss)
     {
     }
 
@@ -75,6 +97,7 @@ struct BackfillScheduler : SchedulerInterface {
     {
         if (seq_ == minSeq_)
             return std::nullopt;
+
         return {{.priority = 0, .seq = seq_--}};
     }
 };

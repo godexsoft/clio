@@ -118,7 +118,7 @@ struct P1 {
     using spec = Spec<TransactionType::type1, TransactionType::type3>;
 
     void
-    onTx(Transaction const& tx)
+    onTx(Transaction const& tx) const
     {
         std::cout << fmt::format("got tx sent to plug1 {}\n", static_cast<int>(tx.type));
     }
@@ -126,7 +126,7 @@ struct P1 {
 
 struct P2 {
     void
-    onTxs(std::vector<Transaction> const& txs)
+    onTxs(std::vector<Transaction> const& txs) const
     {
         std::cout << fmt::format("got txs sent to plug2 cnt={}\n", txs.size());
     }
@@ -136,7 +136,7 @@ struct P3 {
     using spec = Spec<TransactionType::type4>;
 
     void
-    onTx(Transaction const& tx)
+    onTx(Transaction const& tx) const
     {
         std::cout << fmt::format("got tx sent to plug3 {}\n", static_cast<int>(tx.type));
     }

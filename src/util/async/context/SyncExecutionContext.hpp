@@ -68,14 +68,14 @@ struct SameThreadContext {
         executor.join();
     }
 
-    Executor&
-    getExecutor()
+    Executor const&
+    getExecutor() const
     {
         return executor;
     }
 
     [[nodiscard]] Strand
-    makeStrand() noexcept  // NOLINT(readability-convert-member-functions-to-static)
+    makeStrand() const noexcept  // NOLINT(readability-convert-member-functions-to-static)
     {
         return {};
     }
@@ -96,13 +96,18 @@ struct SystemContextProvider {
  * @brief A synchronous execution context. Runs on the caller thread.
  *
  * This execution context runs the operations on the same thread that requested the operation to run.
- * Each operation must finish before the corresponding `execute` returns an operation object that can immediately be
- * queried for value or error as it's guaranteed to have completed. Timer-based operations are scheduled via
- * SystemExecutionContext, including those that are scheduled from within a strand.
+ *
+ * In order to provide the ability to convert the `stopToken` into a `boost::asio::yield_context`, the
+ * SyncDispatchStrategy creates a local io_context for each call to `execute`, `spawns` a coroutine on that context and
+ * then runs the context until finished.
+ *
+ * Each operation must finish before the corresponding `execute` returns an
+ * operation object that can immediately be queried for value or error as it's guaranteed to have completed. Timer-based
+ * operations are scheduled via SystemExecutionContext, including those that are scheduled from within a strand.
  */
 using SyncExecutionContext = BasicExecutionContext<
     impl::SameThreadContext,
-    impl::BasicStopSource,
+    impl::YieldContextStopSource,
     impl::SyncDispatchStrategy,
     impl::SystemContextProvider>;
 

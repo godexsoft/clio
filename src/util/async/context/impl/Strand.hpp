@@ -40,7 +40,7 @@ template <
     typename TimerContextProvider = impl::SelfContextProvider,
     typename ErrorHandlerType = impl::DefaultErrorHandler>
 class BasicStrand {
-    std::reference_wrapper<ParentContextType> parentContext_;
+    std::reference_wrapper<ParentContextType const> parentContext_;
     typename ParentContextType::ContextHolderType::Strand context_;
     friend AssociatedExecutorExtractor;
 
@@ -53,8 +53,8 @@ public:
     using Timer =
         typename ParentContextType::ContextHolderType::Timer;  // timers are associated with the parent context
 
-    BasicStrand(ParentContextType& parent, auto&& strand)
-        : parentContext_{std::ref(parent)}, context_{std::forward<decltype(strand)>(strand)}
+    BasicStrand(ParentContextType const& parent, auto&& strand)
+        : parentContext_{std::cref(parent)}, context_{std::forward<decltype(strand)>(strand)}
     {
     }
 

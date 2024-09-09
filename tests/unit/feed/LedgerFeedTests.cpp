@@ -21,7 +21,6 @@
 #include "feed/impl/LedgerFeed.hpp"
 #include "util/TestObject.hpp"
 
-#include <boost/asio/spawn.hpp>
 #include <boost/json/parse.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -57,8 +56,8 @@ TEST_F(FeedLedgerTest, SubPub)
             "reserve_base":3,
             "reserve_inc":2
         })";
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+    [[maybe_unused]] auto op = ctx.execute([this](auto stopToken) {
+        auto res = testFeedPtr->sub(stopToken, backend, sessionPtr);
         // check the response
         EXPECT_EQ(res, json::parse(LedgerResponse));
     });
@@ -109,8 +108,8 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
             "reserve_base":3,
             "reserve_inc":2
         })";
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+    [[maybe_unused]] auto op = ctx.execute([this](auto stopToken) {
+        auto res = testFeedPtr->sub(stopToken, backend, sessionPtr);
         // check the response
         EXPECT_EQ(res, json::parse(LedgerResponse));
     });

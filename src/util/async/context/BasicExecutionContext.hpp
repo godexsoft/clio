@@ -204,7 +204,7 @@ public:
         SomeStdDuration auto delay,
         SomeHandlerWith<StopToken> auto&& fn,
         std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    ) const noexcept(isNoexcept)
     {
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
             return TimerContextProvider::getContext(*this).scheduleAfter(
@@ -244,7 +244,7 @@ public:
         SomeStdDuration auto delay,
         SomeHandlerWith<StopToken, bool> auto&& fn,
         std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    ) const noexcept(isNoexcept)
     {
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
             return TimerContextProvider::getContext(*this).scheduleAfter(
@@ -280,10 +280,8 @@ public:
      * @return A stoppable operation that can be used to wait for the result
      */
     [[nodiscard]] auto
-    execute(
-        SomeHandlerWith<StopToken> auto&& fn,
-        std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    execute(SomeHandlerWith<StopToken> auto&& fn, std::optional<std::chrono::milliseconds> timeout = std::nullopt) const
+        noexcept(isNoexcept)
     {
         return DispatcherType::dispatch(
             context_,
@@ -313,7 +311,7 @@ public:
      * @return A stoppable operation that can be used to wait for the result
      */
     [[nodiscard]] auto
-    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) noexcept(isNoexcept)
+    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) const noexcept(isNoexcept)
     {
         return execute(
             std::forward<decltype(fn)>(fn),
@@ -328,7 +326,7 @@ public:
      * @return A unstoppable operation that can be used to wait for the result
      */
     [[nodiscard]] auto
-    execute(SomeHandlerWithoutStopToken auto&& fn) noexcept(isNoexcept)
+    execute(SomeHandlerWithoutStopToken auto&& fn) const noexcept(isNoexcept)
     {
         return DispatcherType::dispatch(
             context_,
@@ -351,7 +349,7 @@ public:
      * @return A strand for this execution context
      */
     [[nodiscard]] Strand
-    makeStrand()
+    makeStrand() const
     {
         return Strand(*this, context_.makeStrand());
     }

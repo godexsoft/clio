@@ -19,24 +19,50 @@
 
 #pragma once
 
-#include "etlng/Models.hpp"
+#include "util/async/AnyStrand.hpp"
 
-#include <org/xrpl/rpc/v1/ledger.pb.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <boost/asio/io_context.hpp>
 
 #include <optional>
+#include <queue>
 
-namespace etlng {
+namespace util {
 
-struct RegistryInterface {
-    using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
-    using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
-    using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
+/**
+ * @brief A wrapper for std::priority_queue that serialises operations using a strand
+ */
+template <typename T>
+class StrandedPriorityQueue {
+    util::async::AnyStrand& strand_;
+    std::priority_queue<T> queue_;
 
-    virtual ~RegistryInterface() = default;
+public:
+    StrandedPriorityQueue(util::async::AnyStrand& strand) : strand_(strand)
+    {
+    }
 
-    virtual void
-    dispatch(model::Batch const& data) = 0;
+    void
+    add(T&& element)
+    {
+        strand_.execute([element = std::forward<T>(element), this] { queue_.push(std::move(element)); }).wait();
+    }
+
+    std::optional<T>
+    next()
+    {
+        return strand_
+            .execute([this] -> std::optional<T> {
+                if (queue_.empty())
+                    return std::nullopt;
+
+                auto top = queue_.top();
+                queue_.pop();
+
+                return top;
+            })
+            .get()
+            .value_or(std::nullopt);
+    }
 };
 
-}  // namespace etlng
+}  // namespace util

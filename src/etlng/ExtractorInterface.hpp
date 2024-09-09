@@ -19,15 +19,21 @@
 
 #pragma once
 
+#include "etlng/Models.hpp"
+
 #include <cstdint>
+#include <optional>
 
 namespace etlng {
 
 struct ExtractorInterface {
     virtual ~ExtractorInterface() = default;
 
-    virtual void
-    extract(uint32_t seq);
+    virtual std::optional<model::Batch>
+    extractDiff(uint32_t seq) = 0;
+
+    virtual std::optional<model::Batch>
+    extractFull(uint32_t seq) = 0;
 };
 
 }  // namespace etlng

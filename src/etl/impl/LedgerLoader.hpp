@@ -49,7 +49,7 @@
 #include <vector>
 
 /**
- * @brief Account transactions, NFT transactions and NFT data bundled togeher.
+ * @brief Account transactions, NFT transactions and NFT data bundled together.
  */
 struct FormattedTransactionsData {
     std::vector<AccountTransactionsData> accountTxData;

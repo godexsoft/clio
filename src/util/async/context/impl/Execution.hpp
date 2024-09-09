@@ -22,6 +22,7 @@
 #include "util/async/Concepts.hpp"
 #include "util/async/context/impl/Timer.hpp"
 
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -82,13 +83,17 @@ struct SyncDispatchStrategy {
     {
         auto op = outcome.getOperation();
 
-        if constexpr (SomeStoppableOutcome<OutcomeType>) {
-            auto& stopSource = outcome.getStopSource();
-            fn(outcome, stopSource, stopSource.getToken());
-        } else {
-            fn(outcome);
-        }
+        boost::asio::io_context local;
+        boost::asio::spawn(local, [fn = std::forward<decltype(fn)>(fn), &outcome](auto yield) mutable {
+            if constexpr (SomeStoppableOutcome<OutcomeType>) {
+                auto& stopSource = outcome.getStopSource();
+                fn(outcome, stopSource, stopSource[yield]);
+            } else {
+                fn(outcome);
+            }
+        });
 
+        local.run();
         return op;
     }
 };

@@ -21,22 +21,22 @@
 
 #include "etlng/Models.hpp"
 
-#include <org/xrpl/rpc/v1/ledger.pb.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <xrpl/protocol/LedgerHeader.h>
 
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace etlng {
 
-struct RegistryInterface {
-    using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
-    using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
-    using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
-
-    virtual ~RegistryInterface() = default;
+struct LoaderInterface {
+    virtual ~LoaderInterface() = default;
 
     virtual void
-    dispatch(model::Batch const& data) = 0;
+    load(model::Batch const& data) = 0;
+
+    virtual std::optional<ripple::LedgerHeader>
+    loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) = 0;
 };
 
 }  // namespace etlng
