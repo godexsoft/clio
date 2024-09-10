@@ -26,6 +26,7 @@
 #include "etl/Source.hpp"
 #include "etl/impl/ForwardingCache.hpp"
 #include "etlng/LoaderInterface.hpp"
+#include "etlng/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
@@ -53,7 +54,7 @@
 #include <utility>
 #include <vector>
 
-namespace etl {
+namespace etlng {
 
 /**
  * @brief This class is used to manage connections to transaction processing processes.
@@ -62,16 +63,16 @@ namespace etl {
  * which ledgers have been validated by the network, and the range of ledgers each etl source has). This class also
  * allows requests for ledger data to be load balanced across all possible ETL sources.
  */
-class LoadBalancer : public LoadBalancerInterface {
+class LoadBalancer : public etl::LoadBalancerInterface {
     static constexpr std::uint32_t DEFAULT_DOWNLOAD_RANGES = 16;
 
     util::Logger log_{"ETL"};
     // Forwarding cache must be destroyed after sources because sources have a callback to invalidate cache
-    std::optional<impl::ForwardingCache> forwardingCache_;
+    std::optional<etl::impl::ForwardingCache> forwardingCache_;
     std::optional<std::string> forwardingXUserValue_;
 
-    std::vector<SourcePtr> sources_;
-    std::optional<ETLState> etlState_;
+    std::vector<etlng::SourcePtr> sources_;
+    std::optional<etl::ETLState> etlState_;
     std::uint32_t downloadRanges_ =
         DEFAULT_DOWNLOAD_RANGES; /*< The number of markers to use when downloading initial ledger */
     std::atomic_bool hasForwardingSource_{false};
@@ -102,7 +103,7 @@ public:
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = make_Source
     );
 
@@ -123,7 +124,7 @@ public:
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = make_Source
     );
 
@@ -138,19 +139,18 @@ public:
      * @return A std::vector<std::string> The ledger data
      */
     std::vector<std::string>
-    loadInitialLedger(uint32_t sequence, std::chrono::steady_clock::duration retryAfter = std::chrono::seconds{2})
-        override;
-
-    std::vector<std::string>
     loadInitialLedger(
         [[maybe_unused]] uint32_t sequence,
-        [[maybe_unused]] etlng::LoaderInterface& loader,
-        [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
+        [[maybe_unused]] std::chrono::steady_clock::duration retryAftera
     ) override
     {
-        ASSERT(false, "Not available for old ETL");
+        ASSERT(false, "Not available for new ETL");
         std::unreachable();
     };
+
+    std::vector<std::string>
+    loadInitialLedger(uint32_t sequence, etlng::LoaderInterface& loader, std::chrono::steady_clock::duration retryAfter)
+        override;
 
     /**
      * @brief Fetch data for a specific ledger.
@@ -202,7 +202,7 @@ public:
      * @brief Return state of ETL nodes.
      * @return ETL state, nullopt if etl nodes not available
      */
-    std::optional<ETLState>
+    std::optional<etl::ETLState>
     getETLState() noexcept override;
 
 private:
@@ -229,4 +229,4 @@ private:
     chooseForwardingSource();
 };
 
-}  // namespace etl
+}  // namespace etlng

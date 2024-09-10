@@ -23,6 +23,7 @@
 
 #include <xrpl/protocol/LedgerHeader.h>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -34,6 +35,9 @@ struct LoaderInterface {
 
     virtual void
     load(model::Batch const& data) = 0;
+
+    virtual void
+    loadInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
 
     virtual std::optional<ripple::LedgerHeader>
     loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) = 0;

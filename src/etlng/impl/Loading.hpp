@@ -23,7 +23,7 @@
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
-#include "etl/LoadBalancer.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NFTHelpers.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/LoaderInterface.hpp"
@@ -57,7 +57,7 @@ namespace etlng::impl {
 
 class Loader : public LoaderInterface {
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::LoadBalancer> balancer_;
+    std::shared_ptr<etl::LoadBalancerInterface> balancer_;
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
     std::shared_ptr<RegistryInterface> registry_;
 
@@ -70,7 +70,7 @@ public:
 
     Loader(
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::LoadBalancer> balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
         std::shared_ptr<RegistryInterface> registry
     )
@@ -87,6 +87,22 @@ public:
         LOG(log_.debug()) << "Loading a batch for " << data.seq;
         registry_->dispatch(data);
     };
+
+    void
+    loadInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
+    {
+        std::string lastKey;
+
+        for (auto const& obj : data) {
+            if (!lastKey.empty())
+                backend_->writeSuccessor(std::move(lastKey), seq, auto{obj.keyRaw});
+            backend_->writeLedgerObject(auto{obj.keyRaw}, seq, auto{obj.dataRaw});
+
+            lastKey = obj.keyRaw;
+        }
+
+        // TODO: dispatch to extensions as well
+    }
 
     std::optional<ripple::LedgerHeader>
     loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) override
@@ -117,7 +133,7 @@ public:
             backend_->cache().setFull();
 
             auto seconds = ::util::timed<std::chrono::seconds>([this, &edgeKeys, sequence, &numWrites]() mutable {
-                writeEdgeKeys(edgeKeys);
+                writeEdgeKeys(sequence, edgeKeys);
 
                 ripple::uint256 prev = data::firstKey;
                 while (auto cur = backend_->cache().getSuccessor(prev, sequence)) {
@@ -177,7 +193,7 @@ public:
             LOG(log_.debug()) << "Writing edge key = " << ripple::strHex(key);
             auto succ = backend_->cache().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
             if (succ)
-                backend_->writeSuccessor(std::move(key), seq, uint256ToString(succ->key));
+                backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
         }
     }
 

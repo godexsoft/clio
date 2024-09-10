@@ -52,6 +52,92 @@
 
 namespace etlng::impl {
 
+// TODO: move all this to .cpp if possible
+//
+
+static model::Object::ModType
+extractModType(auto&& type)
+{
+    switch (type) {
+        case org::xrpl::rpc::v1::RawLedgerObject::UNSPECIFIED:
+            return model::Object::ModType::UNSPECIFIED;
+        case org::xrpl::rpc::v1::RawLedgerObject::CREATED:
+            return model::Object::ModType::CREATED;
+        case org::xrpl::rpc::v1::RawLedgerObject::MODIFIED:
+            return model::Object::ModType::MODIFIED;
+        case org::xrpl::rpc::v1::RawLedgerObject::DELETED:
+            return model::Object::ModType::DELETED;
+        default:  // some gRPC system values that we don't care about
+            ASSERT(false, "Oops");
+    }
+    std::unreachable();
+}
+
+static model::Transaction
+extractTx(auto&& tx, uint32_t seq)
+{
+    auto raw = std::move(*tx.mutable_transaction_blob());
+    ripple::SerialIter it{raw.data(), raw.size()};
+    ripple::STTx const sttx{it};
+    ripple::TxMeta meta{sttx.getTransactionID(), seq, tx.metadata_blob()};
+
+    static constexpr std::size_t KEY_SIZE = 32;
+    std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KEY_SIZE};
+
+    return {
+        .raw = std::move(raw),
+        .metaRaw = std::move(*tx.mutable_metadata_blob()),
+        .sttx = sttx,  // trivially copyable
+        .meta = std::move(meta),
+        .id = sttx.getTransactionID(),
+        .key = std::move(keyStr),
+        .type = sttx.getTxnType()
+    };
+}
+
+static std::vector<model::Transaction>
+extractTxs(auto&& transactions, uint32_t seq)
+{
+    namespace rg = std::ranges;
+    namespace vs = std::views;
+
+    // TODO: should be simplified with ranges::to<> when available
+    std::vector<model::Transaction> output;
+    output.reserve(transactions.size());
+
+    rg::move(transactions | vs::transform([seq](auto&& tx) { return extractTx(tx, seq); }), std::back_inserter(output));
+    return output;
+}
+
+static model::Object
+extractObj(org::xrpl::rpc::v1::RawLedgerObject& obj)
+{
+    auto key = ripple::uint256::fromVoidChecked(obj.key());
+    ASSERT(key.has_value(), "Failed to deserialize key from void");
+
+    return {
+        .key = *key,  // trivially copyable
+        .keyRaw = std::move(*obj.mutable_key()),
+        .data = {obj.mutable_data()->begin(), obj.mutable_data()->end()},
+        .dataRaw = std::move(*obj.mutable_data()),
+        .type = extractModType(obj.mod_type()),
+    };
+}
+
+static std::vector<model::Object>
+extractObjs(auto&& objects)
+{
+    namespace rg = std::ranges;
+    namespace vs = std::views;
+
+    // TODO: should be simplified with ranges::to<> when available
+    std::vector<model::Object> output;
+    output.reserve(objects.size());
+
+    rg::move(objects | vs::transform([](auto&& obj) { return extractObj(obj); }), std::back_inserter(output));
+    return output;
+}
+
 // fetches the data in gRPC and transforms to local representation
 class Extractor : public ExtractorInterface {
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
@@ -61,10 +147,10 @@ class Extractor : public ExtractorInterface {
 private:
     // TODO: move all this to .cpp if possible
     //
-    auto
+    static auto
     makeExtractor(uint32_t seq)
     {
-        return [this, seq](auto&& data) {
+        return [seq](auto&& data) {
             auto header = ::util::deserializeHeader(ripple::makeSlice(data.ledger_header()));
             return std::make_optional<model::Batch>({
                 .transactions =
@@ -111,95 +197,6 @@ public:
 
         // can be nullopt. this means that either the server is stopping or another node took over ETL writing.
         return batch;
-    }
-
-private:
-    // TODO: move all this to .cpp if possible
-    //
-    std::vector<model::Transaction>
-    extractTxs(auto&& transactions, uint32_t seq)
-    {
-        namespace rg = std::ranges;
-        namespace vs = std::views;
-
-        // TODO: should be simplified with ranges::to<> when available
-        std::vector<model::Transaction> output;
-        output.reserve(transactions.size());
-
-        rg::move(
-            transactions | vs::transform([this, seq](auto&& tx) { return this->extractTx(tx, seq); }),
-            std::back_inserter(output)
-        );
-        return output;
-    }
-
-    model::Transaction
-    extractTx(auto&& tx, uint32_t seq)
-    {
-        auto raw = std::move(*tx.mutable_transaction_blob());
-        ripple::SerialIter it{raw.data(), raw.size()};
-        ripple::STTx const sttx{it};
-        ripple::TxMeta meta{sttx.getTransactionID(), seq, tx.metadata_blob()};
-
-        static constexpr std::size_t KEY_SIZE = 32;
-        std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KEY_SIZE};
-
-        return {
-            .raw = std::move(raw),
-            .metaRaw = std::move(*tx.mutable_metadata_blob()),
-            .sttx = sttx,  // trivially copyable
-            .meta = std::move(meta),
-            .id = sttx.getTransactionID(),
-            .key = std::move(keyStr),
-            .type = sttx.getTxnType()
-        };
-    }
-
-    std::vector<model::Object>
-    extractObjs([[maybe_unused]] auto&& objects)
-    {
-        namespace rg = std::ranges;
-        namespace vs = std::views;
-
-        // TODO: should be simplified with ranges::to<> when available
-        std::vector<model::Object> output;
-        output.reserve(objects.size());
-
-        rg::move(
-            objects | vs::transform([this](auto&& obj) { return this->extractObj(obj); }), std::back_inserter(output)
-        );
-        return output;
-    }
-
-    model::Object
-    extractObj(auto&& obj)
-    {
-        auto key = ripple::uint256::fromVoidChecked(obj.key());
-        ASSERT(key.has_value(), "Failed to deserialize key from void");
-
-        return {
-            .key = std::move(*key),
-            .data = {obj.mutable_data()->begin(), obj.mutable_data()->end()},
-            .type = extractModType(obj.mod_type()),
-        };
-    }
-
-    model::Object::ModType
-    extractModType(auto&& type)
-    {
-        switch (type) {
-            case org::xrpl::rpc::v1::RawLedgerObject::UNSPECIFIED:
-                return model::Object::ModType::UNSPECIFIED;
-            case org::xrpl::rpc::v1::RawLedgerObject::CREATED:
-                return model::Object::ModType::CREATED;
-            case org::xrpl::rpc::v1::RawLedgerObject::MODIFIED:
-                return model::Object::ModType::MODIFIED;
-            case org::xrpl::rpc::v1::RawLedgerObject::DELETED:
-                return model::Object::ModType::DELETED;
-            default:  // some gRPC system values that we don't care about
-                ASSERT(false, "Oops");
-        }
-        std::unreachable();
     }
 };
 

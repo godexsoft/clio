@@ -23,7 +23,7 @@
 #include "data/LedgerCache.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
-#include "etl/LoadBalancer.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlockHandler.hpp"
@@ -73,9 +73,9 @@ namespace etl {
  * the others will fall back to monitoring/publishing. In this sense, this class dynamically transitions from monitoring
  * to writing and from writing to monitoring, based on the activity of other processes running on different machines.
  */
-class ETLService {
+class ETLService : public etlng::ETLServiceInterface {
     // TODO: make these template parameters in ETLService
-    using LoadBalancerType = LoadBalancer;
+    using LoadBalancerType = LoadBalancerInterface;
     using DataPipeType = etl::impl::ExtractionDataPipe<org::xrpl::rpc::v1::GetLedgerResponse>;
     using CacheType = data::LedgerCache;
     using CacheLoaderType = etl::CacheLoader<CacheType>;
@@ -90,7 +90,7 @@ class ETLService {
     util::Logger log_{"ETL"};
 
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<LoadBalancerType> loadBalancer_;
+    std::shared_ptr<LoadBalancerInterface> loadBalancer_;
     std::shared_ptr<NetworkValidatedLedgersInterface> networkValidatedLedgers_;
 
     std::uint32_t extractorThreads_ = 1;
@@ -152,17 +152,22 @@ public:
         [[maybe_unused]] std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
     )
     {
-        // auto etl = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
-        auto etl = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
-        etl->run();
+        std::optional<std::shared_ptr<etlng::ETLServiceInterface>> ret;
 
-        return etl;
+        if (config.valueOr("etlng", false)) {
+            ret.emplace(std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers));
+        } else {
+            ret.emplace(std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers));
+        }
+
+        ret.value()->run();
+        return ret.value();
     }
 
     /**
      * @brief Stops components and joins worker thread.
      */
-    ~ETLService()
+    ~ETLService() override
     {
         LOG(log_.info()) << "onStop called";
         LOG(log_.debug()) << "Stopping Reporting ETL";
@@ -182,7 +187,7 @@ public:
      * @return Time passed since last ledger close
      */
     std::uint32_t
-    lastCloseAgeSeconds() const
+    lastCloseAgeSeconds() const override
     {
         return ledgerPublisher_.lastCloseAgeSeconds();
     }
@@ -193,7 +198,7 @@ public:
      * @return true if currently amendment blocked; false otherwise
      */
     bool
-    isAmendmentBlocked() const
+    isAmendmentBlocked() const override
     {
         return state_.isAmendmentBlocked;
     }
@@ -204,7 +209,7 @@ public:
      * @return true if corruption of DB was detected and cache was stopped.
      */
     bool
-    isCorruptionDetected() const
+    isCorruptionDetected() const override
     {
         return state_.isCorruptionDetected;
     }
@@ -215,7 +220,7 @@ public:
      * @return The state of ETL as a JSON object
      */
     boost::json::object
-    getInfo() const
+    getInfo() const override
     {
         boost::json::object result;
 
@@ -233,7 +238,7 @@ public:
      * @return The etl nodes' state, nullopt if etl nodes are not connected
      */
     std::optional<etl::ETLState>
-    getETLState() const noexcept
+    getETLState() const noexcept override
     {
         return loadBalancer_->getETLState();
     }
@@ -308,7 +313,7 @@ private:
      * @brief Start all components to run ETL service.
      */
     void
-    run();
+    run() override;
 
     /**
      * @brief Spawn the worker thread and start monitoring.

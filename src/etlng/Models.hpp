@@ -59,7 +59,9 @@ struct Object {
     };
 
     ripple::uint256 key;
+    std::string keyRaw;
     ripple::Blob data;
+    std::string dataRaw;
 
     ModType type;
 };

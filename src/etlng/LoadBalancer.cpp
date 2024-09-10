@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include "etl/LoadBalancer.hpp"
+#include "etlng/LoadBalancer.hpp"
 
 #include "data/BackendInterface.hpp"
 #include "etl/ETLState.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
-#include "etl/Source.hpp"
+#include "etlng/LoaderInterface.hpp"
+#include "etlng/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
@@ -51,7 +52,7 @@
 
 using namespace util;
 
-namespace etl {
+namespace etlng {
 
 std::shared_ptr<LoadBalancer>
 LoadBalancer::make_LoadBalancer(
@@ -59,8 +60,8 @@ LoadBalancer::make_LoadBalancer(
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
-    SourceFactory sourceFactory
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+    etlng::SourceFactory sourceFactory
 )
 {
     return std::make_shared<LoadBalancer>(
@@ -73,13 +74,13 @@ LoadBalancer::LoadBalancer(
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
-    SourceFactory sourceFactory
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+    etlng::SourceFactory sourceFactory
 )
 {
     auto const forwardingCacheTimeout = config.valueOr<float>("forwarding.cache_timeout", 0.f);
     if (forwardingCacheTimeout > 0.f) {
-        forwardingCache_ = impl::ForwardingCache{Config::toMilliseconds(forwardingCacheTimeout)};
+        forwardingCache_ = etl::impl::ForwardingCache{Config::toMilliseconds(forwardingCacheTimeout)};
     }
 
     static constexpr std::uint32_t MAX_DOWNLOAD = 256;
@@ -106,7 +107,6 @@ LoadBalancer::LoadBalancer(
         auto source = sourceFactory(
             entry,
             ioc,
-            backend,
             subscriptions,
             validatedLedgers,
             forwardingTimeout,
@@ -122,7 +122,7 @@ LoadBalancer::LoadBalancer(
         );
 
         // checking etl node validity
-        auto const stateOpt = ETLState::fetchETLStateFromSource(*source);
+        auto const stateOpt = etl::ETLState::fetchETLStateFromSource(*source);
 
         if (!stateOpt) {
             LOG(log_.warn()) << "Failed to fetch ETL state from source = " << source->toString()
@@ -161,12 +161,16 @@ LoadBalancer::~LoadBalancer()
 }
 
 std::vector<std::string>
-LoadBalancer::loadInitialLedger(uint32_t sequence, std::chrono::steady_clock::duration retryAfter)
+LoadBalancer::loadInitialLedger(
+    uint32_t sequence,
+    etlng::LoaderInterface& loader,
+    std::chrono::steady_clock::duration retryAfter
+)
 {
     std::vector<std::string> response;
     execute(
-        [this, &response, &sequence](auto& source) {
-            auto [data, res] = source->loadInitialLedger(sequence, downloadRanges_);
+        [this, &response, &sequence, &loader](auto& source) {
+            auto [data, res] = source->loadInitialLedger(sequence, downloadRanges_, loader);
 
             if (!res) {
                 LOG(log_.error()) << "Failed to download initial ledger."
@@ -309,12 +313,12 @@ LoadBalancer::execute(Func f, uint32_t ledgerSequence, std::chrono::steady_clock
     }
 }
 
-std::optional<ETLState>
+std::optional<etl::ETLState>
 LoadBalancer::getETLState() noexcept
 {
     if (!etlState_) {
         // retry ETLState fetch
-        etlState_ = ETLState::fetchETLStateFromSource(*this);
+        etlState_ = etl::ETLState::fetchETLStateFromSource(*this);
     }
     return etlState_;
 }
@@ -333,4 +337,4 @@ LoadBalancer::chooseForwardingSource()
     }
 }
 
-}  // namespace etl
+}  // namespace etlng

@@ -21,6 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
@@ -61,17 +62,16 @@ namespace rpc {
 /**
  * @brief Contains common functionality for handling the `server_info` command
  *
- * @tparam LoadBalancerType The type of the load balancer
  * @tparam ETLServiceType The type of the ETL service
  * @tparam CountersType The type of the counters
  */
-template <typename LoadBalancerType, typename ETLServiceType, typename CountersType>
+template <typename ETLServiceType, typename CountersType>
 class BaseServerInfoHandler {
     static constexpr auto BACKEND_COUNTERS_KEY = "backend_counters";
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
-    std::shared_ptr<LoadBalancerType> balancer_;
+    std::shared_ptr<etl::LoadBalancerInterface> balancer_;
     std::shared_ptr<ETLServiceType const> etl_;
     std::reference_wrapper<CountersType const> counters_;
 
@@ -157,7 +157,7 @@ public:
     BaseServerInfoHandler(
         std::shared_ptr<BackendInterface> const& backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> const& subscriptions,
-        std::shared_ptr<LoadBalancerType> const& balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> const& balancer,
         std::shared_ptr<ETLServiceType const> const& etl,
         CountersType const& counters
     )
@@ -349,6 +349,6 @@ private:
  *
  * For more details see: https://xrpl.org/server_info-clio.html
  */
-using ServerInfoHandler = BaseServerInfoHandler<etl::LoadBalancer, etlng::ETLServiceInterface, Counters>;
+using ServerInfoHandler = BaseServerInfoHandler<etlng::ETLServiceInterface, Counters>;
 
 }  // namespace rpc

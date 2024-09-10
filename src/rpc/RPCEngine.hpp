@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "rpc/Counters.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/WorkQueue.hpp"
@@ -68,7 +69,7 @@ class RPCEngine {
 
     std::shared_ptr<HandlerProvider const> handlerProvider_;
 
-    impl::ForwardingProxy<etl::LoadBalancer, Counters, HandlerProvider> forwardingProxy_;
+    impl::ForwardingProxy<etl::LoadBalancerInterface, Counters, HandlerProvider> forwardingProxy_;
 
 public:
     /**
@@ -83,7 +84,7 @@ public:
      */
     RPCEngine(
         std::shared_ptr<BackendInterface> const& backend,
-        std::shared_ptr<etl::LoadBalancer> const& balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> const& balancer,
         web::dosguard::DOSGuardInterface const& dosGuard,
         WorkQueue& workQueue,
         Counters& counters,
@@ -112,7 +113,7 @@ public:
     static std::shared_ptr<RPCEngine>
     make_RPCEngine(
         std::shared_ptr<BackendInterface> const& backend,
-        std::shared_ptr<etl::LoadBalancer> const& balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> const& balancer,
         web::dosguard::DOSGuardInterface const& dosGuard,
         WorkQueue& workQueue,
         Counters& counters,

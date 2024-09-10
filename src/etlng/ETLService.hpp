@@ -26,6 +26,7 @@
 #include "etl/ETLState.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/LoadBalancer.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
 #include "etlng/ETLServiceInterface.hpp"
@@ -226,7 +227,7 @@ class ETLService : public ETLServiceInterface {
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
-    std::shared_ptr<etl::LoadBalancer> balancer_;
+    std::shared_ptr<etl::LoadBalancerInterface> balancer_;
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
     std::shared_ptr<etl::CacheLoader<data::LedgerCache>> cacheLoader_;
 
@@ -242,7 +243,7 @@ public:
         util::Config const& config,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<etl::LoadBalancer> balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers
     )
         : backend_(std::move(backend))
@@ -250,7 +251,7 @@ public:
         , balancer_(std::move(balancer))
         , ledgers_(std::move(ledgers))
         , cacheLoader_(std::make_shared<etl::CacheLoader<data::LedgerCache>>(config, backend_, backend_->cache()))
-        , fetcher_(std::make_shared<etl::impl::LedgerFetcher<etl::LoadBalancer>>(backend_, balancer_))
+        , fetcher_(std::make_shared<etl::impl::LedgerFetcher<etl::LoadBalancerInterface>>(backend_, balancer_))
         , extractor_(std::make_shared<impl::Extractor>(fetcher_))
         , loader_(std::make_shared<impl::Loader>(
               backend_,
@@ -354,11 +355,9 @@ public:
 
             try {
                 LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
-                std::optional<uint32_t> mostRecentValidated = ledgers_->getMostRecent();
-
-                if (mostRecentValidated) {
-                    LOG(log_.info()) << "Ledger " << *mostRecentValidated << " has been validated. Downloading... ";
-                    auto seq = *mostRecentValidated;
+                if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
+                    auto const seq = *mostRecentValidated;
+                    LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
                     ledger = extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
                         // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
                         return loader_->loadInitialLedger(data, balancer_->loadInitialLedger(seq));
