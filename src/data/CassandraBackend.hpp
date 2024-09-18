@@ -843,6 +843,28 @@ public:
     }
 
     void
+    writeAccountTransaction(AccountTransactionsData record) override
+    {
+        std::vector<Statement> statements;
+        statements.reserve(record.accounts.size());
+
+        std::transform(
+            std::begin(record.accounts),
+            std::end(record.accounts),
+            std::back_inserter(statements),
+            [this, &record](auto&& account) {
+                return schema_->insertAccountTx.bind(
+                    std::forward<decltype(account)>(account),
+                    std::make_tuple(record.ledgerSequence, record.transactionIndex),
+                    record.txHash
+                );
+            }
+        );
+    
+        executor_.write(std::move(statements));
+    }
+
+    void
     writeNFTTransactions(std::vector<NFTTransactionsData> const& data) override
     {
         std::vector<Statement> statements;

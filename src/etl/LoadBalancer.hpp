@@ -144,7 +144,7 @@ public:
     std::vector<std::string>
     loadInitialLedger(
         [[maybe_unused]] uint32_t sequence,
-        [[maybe_unused]] etlng::LoaderInterface& loader,
+        [[maybe_unused]] etlng::InitialLoadObserverInterface& loader,
         [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
     ) override
     {

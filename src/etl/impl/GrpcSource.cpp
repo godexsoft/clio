@@ -130,8 +130,6 @@ GrpcSource::loadInitialLedger(uint32_t const sequence, uint32_t const numMarkers
 
         LOG(log_.trace()) << "Marker prefix = " << ptr->getMarkerPrefix();
 
-        // TODO: could pass loader here or inside ptr member
-        // then we can call loader_->loadInitialblabla() from inside for every object etc.
         auto result = ptr->process(stub_, cq, *backend_, abort, cacheOnly);
         if (result != etl::impl::AsyncCallData::CallStatus::MORE) {
             ++numFinished;

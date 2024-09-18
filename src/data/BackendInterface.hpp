@@ -609,6 +609,9 @@ public:
     virtual void
     writeAccountTransactions(std::vector<AccountTransactionsData> data) = 0;
 
+    virtual void
+    writeAccountTransaction(AccountTransactionsData record) = 0;
+
     /**
      * @brief Write NFTs transactions.
      *

@@ -20,6 +20,7 @@
 #include "data/LedgerCache.hpp"
 
 #include "data/Types.hpp"
+#include "etlng/Models.hpp"
 #include "util/Assert.hpp"
 
 #include <xrpl/basics/base_uint.h>
@@ -76,6 +77,42 @@ LedgerCache::update(std::vector<LedgerObject> const& objs, uint32_t seq, bool is
                 auto& e = map_[obj.key];
                 if (seq > e.seq) {
                     e = {seq, obj.blob};
+                }
+            } else {
+                map_.erase(obj.key);
+                if (!full_ && !isBackground)
+                    deletes_.insert(obj.key);
+            }
+        }
+        cv_.notify_all();
+    }
+}
+
+void
+LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq, bool isBackground)
+{
+    if (disabled_)
+        return;
+
+    {
+        std::scoped_lock const lck{mtx_};
+        if (seq > latestSeq_) {
+            ASSERT(
+                seq == latestSeq_ + 1 || latestSeq_ == 0,
+                "New sequense must be either next or first. seq = {}, latestSeq_ = {}",
+                seq,
+                latestSeq_
+            );
+            latestSeq_ = seq;
+        }
+        for (auto const& obj : objs) {
+            if (!obj.data.empty()) {
+                if (isBackground && deletes_.contains(obj.key))
+                    continue;
+
+                auto& e = map_[obj.key];
+                if (seq > e.seq) {
+                    e = {seq, obj.data};
                 }
             } else {
                 map_.erase(obj.key);

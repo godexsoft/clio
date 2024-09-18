@@ -24,7 +24,9 @@
 #include <org/xrpl/rpc/v1/ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 
+#include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace etlng {
 
@@ -34,6 +36,12 @@ struct RegistryInterface {
     using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
 
     virtual ~RegistryInterface() = default;
+
+    virtual void
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
+   
+    virtual void
+    dispatchInitialTransactions(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
 
     virtual void
     dispatch(model::Batch const& data) = 0;

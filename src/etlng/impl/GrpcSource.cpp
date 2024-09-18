@@ -98,7 +98,11 @@ GrpcSource::fetchLedger(uint32_t sequence, bool getObjects, bool getObjectNeighb
 }
 
 std::pair<std::vector<std::string>, bool>
-GrpcSource::loadInitialLedger(uint32_t const sequence, uint32_t const numMarkers, etlng::LoaderInterface& loader)
+GrpcSource::loadInitialLedger(
+    uint32_t const sequence,
+    uint32_t const numMarkers,
+    etlng::InitialLoadObserverInterface& loader
+)
 {
     if (!stub_)
         return {{}, false};
@@ -115,8 +119,6 @@ GrpcSource::loadInitialLedger(uint32_t const sequence, uint32_t const numMarkers
     bool ok = false;
     size_t numFinished = 0;
     bool abort = false;
-    // size_t const incr = 500000;
-    // size_t progress = incr;
     std::vector<std::string> edgeKeys;
 
     while (numFinished < calls.size() && cq.Next(&tag, &ok)) {
@@ -141,16 +143,8 @@ GrpcSource::loadInitialLedger(uint32_t const sequence, uint32_t const numMarkers
 
         if (result == etlng::impl::AsyncCallData::CallStatus::ERRORED)
             abort = true;
-
-        // TODO: where we put this?
-        // if (backend_->cache().size() > progress) {
-        //     LOG(log_.info()) << "Downloaded " << backend_->cache().size() << " records from rippled";
-        //     progress += incr;
-        // }
     }
 
-    auto cacheSize = 133769;
-    LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << cacheSize << ", abort = " << abort << ".";
     return {std::move(edgeKeys), !abort};
 }
 

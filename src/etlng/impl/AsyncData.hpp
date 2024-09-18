@@ -97,7 +97,7 @@ public:
     process(
         std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub>& stub,
         grpc::CompletionQueue& cq,
-        etlng::LoaderInterface& loader,
+        etlng::InitialLoadObserverInterface& loader,
         bool abort
     )
     {
@@ -137,53 +137,25 @@ public:
         }
 
         auto const numObjects = cur_->ledger_objects().objects_size();
-        LOG(log_.debug()) << "Writing " << numObjects << " objects";
+        LOG(log_.trace()) << "Writing " << numObjects << " objects";
 
-        // std::vector<data::LedgerObject> cacheUpdates;
-        // cacheUpdates.reserve(numObjects);
-
-        // TODO: this could be a range somehow?
-        // worst case with iota(0, numObjects)
-        // transform to our new models
-        //
         std::vector<etlng::model::Object> data;
         data.reserve(numObjects);
 
         for (int i = 0; i < numObjects; ++i) {
             auto& obj = *(cur_->mutable_ledger_objects()->mutable_objects(i));
-            // could filter() by !more and nextPrefix
             if (!more && nextPrefix_ != 0x00) {
                 if (static_cast<unsigned char>(obj.key()[0]) >= nextPrefix_)
                     continue;
             }
 
             data.push_back(etlng::impl::extractObj(obj));
-
-            // this goes away to cache plugin?
-            /*
-            cacheUpdates.push_back(
-                {*ripple::uint256::fromVoidChecked(obj.key()), {obj.data().begin(), obj.data().end()}}
-            );
-            */
-            // if (!cacheOnly) {
-            //  this is core plugin or even inside loader itself
-            //  if (!lastKey_.empty())
-            //      backend.writeSuccessor(std::move(lastKey_), request_.ledger().sequence(),
-            //      std::string{obj.key()});
             lastKey_ = obj.key();
-            //
-            // backend.writeNFTs(getNFTDataFromObj(request_.ledger().sequence(), obj.key(), obj.data()));
-            // backend.writeLedgerObject(
-            //     std::move(*obj.mutable_key()), request_.ledger().sequence(), std::move(*obj.mutable_data())
-            // );
-            //}
         }
-        // cache plugin should take care of this
-        // backend.cache().update(cacheUpdates, request_.ledger().sequence(), falsea;
 
-        loader.loadInitialObjects(request_.ledger().sequence(), data);
+        loader.onInitialLoadGotMoreObjects(request_.ledger().sequence(), data);
 
-        LOG(log_.debug()) << "Wrote " << data.size() << " objects. Got more: " << (more ? "YES" : "NO");
+        LOG(log_.trace()) << "Wrote " << data.size() << " objects. Got more: " << (more ? "YES" : "NO");
         return more ? CallStatus::MORE : CallStatus::DONE;
     }
 
@@ -218,12 +190,12 @@ makeAsyncCallData(uint32_t const sequence, uint32_t const numMarkers)
     std::vector<AsyncCallData> result;
     result.reserve(markers.size());
 
-    for (size_t i = 0; i + 1 < markers.size(); ++i) {
+    for (size_t i = 0; i + 1 < markers.size(); ++i)
         result.emplace_back(sequence, markers[i], markers[i + 1]);
-    }
-    if (not markers.empty()) {
+
+    if (not markers.empty())
         result.emplace_back(sequence, markers.back(), std::nullopt);
-    }
+
     return result;
 }
 

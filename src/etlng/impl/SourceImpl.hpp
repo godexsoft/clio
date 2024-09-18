@@ -193,11 +193,11 @@ public:
      *
      * @param sequence Sequence of the ledger to download
      * @param numMarkers Number of markers to generate for async calls
-     * @param loader LoaderInterface implementation
+     * @param loader InitialLoadObserverInterface implementation
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
     std::pair<std::vector<std::string>, bool>
-    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etlng::LoaderInterface& loader) final
+    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etlng::InitialLoadObserverInterface& loader) final
     {
         return grpcSource_.loadInitialLedger(sequence, numMarkers, loader);
     }

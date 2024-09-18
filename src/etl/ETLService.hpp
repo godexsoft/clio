@@ -152,16 +152,16 @@ public:
         [[maybe_unused]] std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
     )
     {
-        std::optional<std::shared_ptr<etlng::ETLServiceInterface>> ret;
+        std::shared_ptr<etlng::ETLServiceInterface> ret;
 
         if (config.valueOr("etlng", false)) {
-            ret.emplace(std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers));
+            ret = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
         } else {
-            ret.emplace(std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers));
+            ret = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
         }
 
-        ret.value()->run();
-        return ret.value();
+        ret->run();
+        return ret;
     }
 
     /**

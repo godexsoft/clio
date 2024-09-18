@@ -163,7 +163,7 @@ LoadBalancer::~LoadBalancer()
 std::vector<std::string>
 LoadBalancer::loadInitialLedger(
     uint32_t sequence,
-    etlng::LoaderInterface& loader,
+    etlng::InitialLoadObserverInterface& loader,
     std::chrono::steady_clock::duration retryAfter
 )
 {

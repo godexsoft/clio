@@ -55,14 +55,14 @@ public:
      * @note This function will retry indefinitely until the ledger is downloaded.
      *
      * @param sequence Sequence of ledger to download
-     * @param loader LoaderInterface implementation
+     * @param loader InitialLoadObserverInterface implementation
      * @param retryAfter Time to wait between retries (2 seconds by default)
      * @return A std::vector<std::string> The ledger data
      */
     virtual std::vector<std::string>
     loadInitialLedger(
         uint32_t sequence,
-        etlng::LoaderInterface& loader,
+        etlng::InitialLoadObserverInterface& loader,
         std::chrono::steady_clock::duration retryAfter = std::chrono::seconds{2}
     ) = 0;
 

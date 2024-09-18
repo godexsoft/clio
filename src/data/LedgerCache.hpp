@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/Types.hpp"
+#include "etlng/Models.hpp"
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -92,7 +93,10 @@ public:
      */
     void
     update(std::vector<LedgerObject> const& objs, uint32_t seq, bool isBackground = false);
-
+    
+    void
+    update(std::vector<etlng::model::Object> const& objs, uint32_t seq, bool isBackground = false);
+    
     /**
      * @brief Fetch a cached object by its key and sequence number.
      *

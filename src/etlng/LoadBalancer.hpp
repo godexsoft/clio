@@ -141,7 +141,7 @@ public:
     std::vector<std::string>
     loadInitialLedger(
         [[maybe_unused]] uint32_t sequence,
-        [[maybe_unused]] std::chrono::steady_clock::duration retryAftera
+        [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
     ) override
     {
         ASSERT(false, "Not available for new ETL");
@@ -149,8 +149,11 @@ public:
     };
 
     std::vector<std::string>
-    loadInitialLedger(uint32_t sequence, etlng::LoaderInterface& loader, std::chrono::steady_clock::duration retryAfter)
-        override;
+    loadInitialLedger(
+        uint32_t sequence,
+        etlng::InitialLoadObserverInterface& loader,
+        std::chrono::steady_clock::duration retryAfter
+    ) override;
 
     /**
      * @brief Fetch data for a specific ledger.

@@ -36,11 +36,16 @@ struct LoaderInterface {
     virtual void
     load(model::Batch const& data) = 0;
 
-    virtual void
-    loadInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
-
     virtual std::optional<ripple::LedgerHeader>
     loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) = 0;
+};
+
+struct InitialLoadObserverInterface {
+    virtual ~InitialLoadObserverInterface() = default;
+
+    // called from AsyncCallData for each batch of objects from the async downloaders
+    virtual void
+    onInitialLoadGotMoreObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
 };
 
 }  // namespace etlng

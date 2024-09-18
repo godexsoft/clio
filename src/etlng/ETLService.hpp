@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "data/DBHelpers.hpp"
 #include "data/LedgerCache.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoader.hpp"
@@ -27,6 +28,7 @@
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/LoadBalancer.hpp"
 #include "etl/LoadBalancerInterface.hpp"
+#include "etl/NFTHelpers.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
 #include "etlng/ETLServiceInterface.hpp"
@@ -40,6 +42,7 @@
 #include "etlng/impl/Scheduling.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
+#include "util/Profiler.hpp"
 #include "util/StrandedPriorityQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
@@ -59,6 +62,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -88,6 +92,10 @@ class Registry : public RegistryInterface {
     std::tuple<Ps...> store_;
 
 public:
+    Registry(Ps&&... exts) : store_(std::forward<Ps>(exts)...)
+    {
+    }
+
     void
     dispatch(model::Batch const& data) override
     {
@@ -113,6 +121,62 @@ public:
 
             for (auto const& t : data.transactions) {
                 std::apply([&expand, &t](auto&&... xs) { (expand(xs, t), ...); }, store_);
+            }
+        }
+    }
+
+    void
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
+    {
+        // send entire vector path
+        {
+            auto const expand = [&](auto&& p) {
+                if constexpr (requires { p.onInitialObjects(seq, data); }) {
+                    p.onInitialObjects(seq, data);
+                }
+            };
+
+            std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
+        }
+
+        // send per object path
+        {
+            auto const expand = [&]<typename P>(P&& p, model::Object const& o) {
+                if constexpr (requires { p.onInitialObject(seq, o); }) {
+                    p.onInitialObject(seq, o);
+                }
+            };
+
+            for (auto const& obj : data) {
+                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
+            }
+        }
+    }
+
+    void
+    dispatchInitialTransactions(uint32_t seq, std::vector<model::Transaction> const& data) override
+    {
+        // send entire vector path
+        {
+            auto const expand = [&](auto&& p) {
+                if constexpr (requires { p.onInitialTransactions(seq, data); }) {
+                    p.onInitialTransactions(seq, data);
+                }
+            };
+
+            std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
+        }
+
+        // send per object path
+        {
+            auto const expand = [&]<typename P>(P&& p, model::Transaction const& tx) {
+                if constexpr (requires { p.onInitialTransaction(seq, tx); }) {
+                    p.onInitialTransaction(seq, tx);
+                }
+            };
+
+            for (auto const& obj : data) {
+                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
             }
         }
     }
@@ -201,24 +265,96 @@ private:
     }
 };
 
-struct Test {
+class CacheExt {
+    data::LedgerCache& cache_;
+
     util::Logger log_{"ETL"};
+
+public:
+    CacheExt(data::LedgerCache& cache) : cache_(cache)
+    {
+    }
 
     void
     onData(model::Batch const& txs) const
     {
-        LOG(log_.info()) << "!!!!!!!!! got txs sent to plug2 cnt=" << txs.transactions.size();
+        LOG(log_.info()) << "!!!!!!!!! got txs sent to cacheext cnt=" << txs.transactions.size();
+    }
+
+    void
+    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs) const
+    {
+        LOG(log_.trace()) << "!!!!!!!!! got objs sent to cacheext cnt=" << objs.size();
+        cache_.update(objs, seq);
+    }
+
+    void
+    onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
+    {
+        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to nftext cnt=" << tx.size();
+        cache_.setFull();
     }
 };
 
-struct Test2 {
+class NFTExt {
+    std::shared_ptr<BackendInterface> backend_;
     util::Logger log_{"ETL"};
-    using spec = Spec<ripple::TxType::ttNFTOKEN_MINT, ripple::TxType::ttNFTOKEN_BURN>;
+
+public:
+    using spec = Spec<
+        ripple::TxType::ttNFTOKEN_MINT,
+        ripple::TxType::ttNFTOKEN_BURN,
+        ripple::TxType::ttNFTOKEN_ACCEPT_OFFER,
+        ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
+        ripple::TxType::ttNFTOKEN_CREATE_OFFER>;
+
+    NFTExt(std::shared_ptr<BackendInterface> backend) : backend_(std::move(backend))
+    {
+    }
+
+    void
+    onInitialLoadStart()
+    {
+        LOG(log_.info()) << "Initial load started in NFT extension..";
+    }
+
+    void
+    onInitialLoadFinish()
+    {
+        LOG(log_.info()) << "Initial load finished in NFT extension..";
+    }
 
     void
     onTx(model::Transaction const& tx) const
     {
-        LOG(log_.info()) << "!!!!!!!!! got tx sent to plug: " << tx.type;
+        LOG(log_.info()) << "!!!!!!!!! got tx sent to nftext: " << tx.type;
+    }
+
+    void
+    onInitialObject(uint32_t seq, model::Object const& obj) const
+    {
+        LOG(log_.trace()) << "!!!!!!!!! got OBJ sent to nftext key=" << obj.key;
+
+        backend_->writeNFTs(etl::getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw));
+    }
+
+    void
+    onInitialTransactions(std::vector<model::Transaction> const& data) const
+    {
+        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to nftext cnt=" << data.size();
+
+        std::vector<NFTsData> nfts;
+        std::vector<NFTTransactionsData> nftTxs;
+
+        for (auto& tx : data) {
+            auto const [txs, maybeNFT] = etl::getNFTDataFromTx(tx.meta, tx.sttx);
+            nftTxs.insert(nftTxs.end(), txs.begin(), txs.end());
+            if (maybeNFT)
+                nfts.push_back(*maybeNFT);
+        }
+
+        backend_->writeNFTs(etl::getUniqueNFTsDatas(nfts));
+        backend_->writeNFTTransactions(nftTxs);
     }
 };
 
@@ -233,7 +369,7 @@ class ETLService : public ETLServiceInterface {
 
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
     std::shared_ptr<ExtractorInterface> extractor_;
-    std::shared_ptr<LoaderInterface> loader_;
+    std::shared_ptr<impl::Loader> loader_;
     util::async::CoroExecutionContext ctx_;
 
     std::optional<util::async::CoroExecutionContext::Operation<void>> mainLoop_;
@@ -257,7 +393,7 @@ public:
               backend_,
               balancer_,
               fetcher_,
-              std::make_shared<impl::Registry<Test, Test2>>()
+              std::make_shared<impl::Registry<CacheExt, NFTExt>>(CacheExt{backend_->cache()}, NFTExt{backend_})
           ))
         , ctx_(8)
     {
@@ -358,10 +494,16 @@ public:
                 if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
                     auto const seq = *mostRecentValidated;
                     LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
-                    ledger = extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
-                        // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
-                        return loader_->loadInitialLedger(data, balancer_->loadInitialLedger(seq));
+
+                    auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
+                        return extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
+                            // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
+                            return loader_->loadInitialLedger(data, balancer_->loadInitialLedger(seq, *loader_));
+                        });
                     });
+
+                    LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
+                    LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
                 } else {
                     LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
                                         "Exiting monitor loop";
@@ -369,7 +511,7 @@ public:
                 }
             } catch (std::runtime_error const& e) {
                 LOG(log_.fatal()) << "Failed to load initial ledger: " << e.what();
-                // amendmentBlockHandler_.onAmendmentBlock();
+                // TODO: amendmentBlockHandler_.onAmendmentBlock();
                 return std::nullopt;
             }
 

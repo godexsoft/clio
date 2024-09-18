@@ -60,11 +60,11 @@ public:
      *
      * @param sequence Sequence of the ledger to download
      * @param numMarkers Number of markers to generate for async calls
-     * @param loader LoaderInterface implementation
+     * @param loader InitialLoadObserverInterface implementation
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
     std::pair<std::vector<std::string>, bool>
-    loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etlng::LoaderInterface& loader);
+    loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etlng::InitialLoadObserverInterface& loader);
 };
 
 }  // namespace etlng::impl
