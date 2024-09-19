@@ -39,7 +39,7 @@ struct RegistryInterface {
 
     virtual void
     dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
-   
+
     virtual void
     dispatchInitialTransactions(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
 

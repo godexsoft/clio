@@ -93,10 +93,10 @@ public:
      */
     void
     update(std::vector<LedgerObject> const& objs, uint32_t seq, bool isBackground = false);
-    
+
     void
     update(std::vector<etlng::model::Object> const& objs, uint32_t seq, bool isBackground = false);
-    
+
     /**
      * @brief Fetch a cached object by its key and sequence number.
      *

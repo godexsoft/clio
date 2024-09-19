@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <thread>
 #include <tuple>
 #include <utility>
 
@@ -125,6 +126,11 @@ public:
         };
 
         std::apply([&expand](auto&&... xs) { (... || expand(xs)); }, schedulers_);
+
+        // if in the end of it we did not have any new task, let's wait a bit to avoid busy spinning
+        if (!task.has_value())
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         return task;
     }
 };

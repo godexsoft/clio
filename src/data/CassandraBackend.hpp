@@ -860,7 +860,7 @@ public:
                 );
             }
         );
-    
+
         executor_.write(std::move(statements));
     }
 

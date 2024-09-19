@@ -416,30 +416,34 @@ public:
         mainLoop_.emplace(ctx_.execute([this] {
             [[maybe_unused]] auto rng = loadInitialLedgerIfNeeded();
 
-            // LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
-            // std::optional<uint32_t> mostRecentValidated = ledgers_->getMostRecent();
+            LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
+            std::optional<uint32_t> mostRecentValidated = ledgers_->getMostRecent();
 
-            // if (not mostRecentValidated) {
-            //     LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
-            //                         "Exiting monitor loop";
-            //     return;
+            if (not mostRecentValidated) {
+                LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
+                                    "Exiting monitor loop";
+                return;
+            }
+
+            ASSERT(rng.has_value(), "Ledger range can't be null");
+            auto const nextSequence = rng->maxSequence + 1;
+
+            LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
+
+            // todo: this should be inside of task manager
+            // while (not isStopping()) {
+            //     nextSequence = publishNextSequence(nextSequence);
             // }
 
-            // uint32_t nextSequence = *mostRecentValidated;
+            auto scheduler =
+                std::make_unique<impl::SchedulerChain<impl::ForwardScheduler /*, impl::BackfillScheduler*/>>(
+                    impl::ForwardScheduler{ledgers_, nextSequence}
+                    // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000}
+                    // todo lift limit and start with rng.minSeq
+                );
+            auto man = TaskManager(ctx_, std::move(scheduler), extractor_, loader_);
 
-            // // todo: this should be inside of task manager
-            // // while (not isStopping()) {
-            // //     nextSequence = publishNextSequence(nextSequence);
-            // // }
-
-            // auto scheduler = std::make_unique<impl::SchedulerChain<impl::ForwardScheduler, impl::BackfillScheduler>>(
-            //     impl::ForwardScheduler{ledgers_, nextSequence},
-            //     impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000}
-            //     // todo lift limit and start with rng.minSeq
-            // );
-            // auto man = TaskManager(ctx_, std::move(scheduler), extractor_, loader_);
-
-            // man.run();
+            man.run();
         }));
     }
 
