@@ -93,6 +93,8 @@ public:
                              << (isCacheFull ? "full" : "not full");
         }
 
+        // TODO: the last parameter here should also come from the task - when we backfill we know we should always
+        // getObjectNeighbors
         auto response = loadBalancer_->fetchLedger(sequence, true, !isCacheFull || isLedgerCached);
         if (response)
             LOG(log_.trace()) << "GetLedger reply = " << response->DebugString();

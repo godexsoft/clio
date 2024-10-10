@@ -60,13 +60,13 @@ extractModType(auto&& type)
 {
     switch (type) {
         case org::xrpl::rpc::v1::RawLedgerObject::UNSPECIFIED:
-            return model::Object::ModType::UNSPECIFIED;
+            return model::Object::ModType::Unspecified;
         case org::xrpl::rpc::v1::RawLedgerObject::CREATED:
-            return model::Object::ModType::CREATED;
+            return model::Object::ModType::Created;
         case org::xrpl::rpc::v1::RawLedgerObject::MODIFIED:
-            return model::Object::ModType::MODIFIED;
+            return model::Object::ModType::Modified;
         case org::xrpl::rpc::v1::RawLedgerObject::DELETED:
-            return model::Object::ModType::DELETED;
+            return model::Object::ModType::Deleted;
         default:  // some gRPC system values that we don't care about
             ASSERT(false, "Oops");
     }
@@ -81,8 +81,8 @@ extractTx(auto&& tx, uint32_t seq)
     ripple::STTx const sttx{it};
     ripple::TxMeta meta{sttx.getTransactionID(), seq, tx.metadata_blob()};
 
-    static constexpr std::size_t KEY_SIZE = 32;
-    std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KEY_SIZE};
+    static constexpr std::size_t KeySize = 32;
+    std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KeySize};
 
     return {
         .raw = std::move(raw),

@@ -102,8 +102,8 @@ public:
         // send entire batch path (for objects etc.)
         {
             auto const expand = [&](auto& p) {
-                if constexpr (requires { p.onData(data); }) {
-                    p.onData(data);
+                if constexpr (requires { p.onTransactions(data); }) {
+                    p.onTransactions(data);
                 }
             };
 
@@ -113,9 +113,9 @@ public:
         // send filtered tx path
         {
             auto const expand = [&]<typename P>(P& p, model::Transaction const& t) {
-                if constexpr (requires { p.onTx(t); }) {
+                if constexpr (requires { p.onTransaction(t); }) {
                     if (P::spec::wants(t.type))
-                        p.onTx(t);
+                        p.onTransaction(t);
                 }
             };
 
@@ -208,8 +208,8 @@ public:
     void
     run()
     {
-        constexpr static auto EXTRACTION_WORKERS = 5;
-        constexpr static auto LOADING_WORKERS = 4;
+        constexpr static auto ExtractionWorkers = 5;
+        constexpr static auto LoadingWorkers = 4;
 
         std::vector<util::async::AnyOperation<void>> extractors;
         std::vector<util::async::AnyOperation<void>> loaders;
@@ -218,14 +218,14 @@ public:
         auto loadingStrand = ctx_.makeStrand();
         PriorityQueue queue(loadingStrand);
 
-        LOG(log_.debug()) << "starting task manager...\n";
+        LOG(log_.debug()) << "Starting task manager...\n";
 
-        extractors.reserve(EXTRACTION_WORKERS);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, EXTRACTION_WORKERS))
+        extractors.reserve(ExtractionWorkers);
+        for ([[maybe_unused]] auto _ : std::views::iota(0, ExtractionWorkers))
             extractors.push_back(spawnExtractor(schedulingStrand, queue));
 
-        loaders.reserve(LOADING_WORKERS);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, LOADING_WORKERS))
+        loaders.reserve(LoadingWorkers);
+        for ([[maybe_unused]] auto _ : std::views::iota(0, LoadingWorkers))
             loaders.push_back(spawnLoader(queue));
 
         for (auto& w : extractors)
@@ -233,7 +233,7 @@ public:
         for (auto& w : loaders)
             w.wait();
 
-        LOG(log_.debug()) << "all finished in task manager..\n";
+        LOG(log_.debug()) << "All finished in task manager..\n";
     }
 
 private:
@@ -244,6 +244,7 @@ private:
             while (not stopRequested) {
                 if (auto task = schedulers_->next(); task.has_value()) {
                     if (auto maybeBatch = extractor_->extractDiff(task->seq); maybeBatch.has_value()) {
+                        LOG(log_.debug()) << "Adding a batch after extracting diff";
                         queue.add(std::move(*maybeBatch));
                     } else {
                         break;  // TODO: handle server shutdown or other node took over ETL
@@ -263,6 +264,55 @@ private:
             }
         });
     }
+
+    util::async::AnyOperation<void>
+    spawnMonitor() const
+    {
+        return ctx_.execute([this](auto stopRequested) {
+            while (not stopRequested) {
+                // monitor incoming ledgers here
+                monitor_->
+            }
+        });
+    }
+
+    // uint32_t
+    // publishNextSequence(uint32_t nextSequence)
+    // {
+    //     if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng && rng->maxSequence >= nextSequence) {
+    //         publisher_.publish(nextSequence, {});
+    //         ++nextSequence;
+    //     } else if (networkValidatedLedgers_->waitUntilValidatedByNetwork(nextSequence,
+    //     util::MILLISECONDS_PER_SECOND)) {
+    //         LOG(log_.info()) << "Ledger with sequence = " << nextSequence << " has been validated by the network. "
+    //                          << "Attempting to find in database and publish";
+
+    //         // Attempt to take over responsibility of ETL writer after 10 failed
+    //         // attempts to publish the ledger. publishLedger() fails if the
+    //         // ledger that has been validated by the network is not found in the
+    //         // database after the specified number of attempts. publishLedger()
+    //         // waits one second between each attempt to read the ledger from the
+    //         // database
+    //         constexpr size_t timeoutSeconds = 10;
+    //         bool const success = ledgerPublisher_.publish(nextSequence, timeoutSeconds);
+
+    //         if (!success) {
+    //             LOG(log_.warn()) << "Failed to publish ledger with sequence = " << nextSequence << " . Beginning
+    //             ETL";
+
+    //             // returns the most recent sequence published empty optional if no sequence was published
+    //             std::optional<uint32_t> lastPublished = runETLPipeline(nextSequence, extractorThreads_);
+    //             LOG(log_.info()) << "Aborting ETL. Falling back to publishing";
+
+    //             // if no ledger was published, don't increment nextSequence
+    //             if (lastPublished)
+    //                 nextSequence = *lastPublished + 1;
+    //         } else {
+    //             ++nextSequence;
+    //         }
+    //     }
+    //     return nextSequence;
+    // }
 };
 
 class CacheExt {
@@ -276,7 +326,7 @@ public:
     }
 
     void
-    onData(model::Batch const& txs) const
+    onTransactions(model::Batch const& txs) const
     {
         LOG(log_.info()) << "!!!!!!!!! got txs sent to cacheext cnt=" << txs.transactions.size();
     }
@@ -291,7 +341,7 @@ public:
     void
     onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
     {
-        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to nftext cnt=" << tx.size();
+        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to cacheext cnt=" << tx.size();
         cache_.setFull();
     }
 };
@@ -325,7 +375,7 @@ public:
     }
 
     void
-    onTx(model::Transaction const& tx) const
+    onTransaction(model::Transaction const& tx) const
     {
         LOG(log_.info()) << "!!!!!!!!! got tx sent to nftext: " << tx.type;
     }
@@ -443,55 +493,16 @@ public:
                 );
             auto man = TaskManager(ctx_, std::move(scheduler), extractor_, loader_);
 
-            man.run();
+            man.run();  // TODO: needs to be interruptable
         }));
     }
 
-    // uint32_t
-    // publishNextSequence(uint32_t nextSequence)
-    // {
-    //     if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng && rng->maxSequence >= nextSequence) {
-    //         publisher_.publish(nextSequence, {});
-    //         ++nextSequence;
-    //     } else if (networkValidatedLedgers_->waitUntilValidatedByNetwork(nextSequence,
-    //     util::MILLISECONDS_PER_SECOND)) {
-    //         LOG(log_.info()) << "Ledger with sequence = " << nextSequence << " has been validated by the network. "
-    //                          << "Attempting to find in database and publish";
-
-    //         // Attempt to take over responsibility of ETL writer after 10 failed
-    //         // attempts to publish the ledger. publishLedger() fails if the
-    //         // ledger that has been validated by the network is not found in the
-    //         // database after the specified number of attempts. publishLedger()
-    //         // waits one second between each attempt to read the ledger from the
-    //         // database
-    //         constexpr size_t timeoutSeconds = 10;
-    //         bool const success = ledgerPublisher_.publish(nextSequence, timeoutSeconds);
-
-    //         if (!success) {
-    //             LOG(log_.warn()) << "Failed to publish ledger with sequence = " << nextSequence << " . Beginning
-    //             ETL";
-
-    //             // returns the most recent sequence published empty optional if no sequence was published
-    //             std::optional<uint32_t> lastPublished = runETLPipeline(nextSequence, extractorThreads_);
-    //             LOG(log_.info()) << "Aborting ETL. Falling back to publishing";
-
-    //             // if no ledger was published, don't increment nextSequence
-    //             if (lastPublished)
-    //                 nextSequence = *lastPublished + 1;
-    //         } else {
-    //             ++nextSequence;
-    //         }
-    //     }
-    //     return nextSequence;
-    // }
-
+    // TODO: this better be std::expected
     std::optional<data::LedgerRange>
     loadInitialLedgerIfNeeded()
     {
-        auto rng = backend_->hardFetchLedgerRangeNoThrow();
-        if (!rng) {
+        if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); not rng.has_value()) {
             LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
-            std::optional<ripple::LedgerHeader> ledger;
 
             try {
                 LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
@@ -502,58 +513,61 @@ public:
                     auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
                         return extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
                             // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
+                            // TODO: this should be interruptable for graceful shutdown
                             return loader_->loadInitialLedger(data, balancer_->loadInitialLedger(seq, *loader_));
                         });
                     });
 
                     LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
                     LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
+
+                    if (ledger.has_value())
+                        return backend_->hardFetchLedgerRangeNoThrow();
+
+                    LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
                 } else {
                     LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
                                         "Exiting monitor loop";
-                    return std::nullopt;
                 }
             } catch (std::runtime_error const& e) {
                 LOG(log_.fatal()) << "Failed to load initial ledger: " << e.what();
                 // TODO: amendmentBlockHandler_.onAmendmentBlock();
-                return std::nullopt;
-            }
-
-            if (ledger) {
-                rng = backend_->hardFetchLedgerRangeNoThrow();
-            } else {
-                LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
-                return std::nullopt;
             }
         } else {
             LOG(log_.info()) << "Database already populated. Picking up from the tip of history";
             cacheLoader_->load(rng->maxSequence);
+
+            return rng;
         }
 
-        return rng;
+        return std::nullopt;
     }
 
     boost::json::object
     getInfo() const override
     {
+        // TODO
         return {{"ok", true}};
     }
 
     bool
     isAmendmentBlocked() const override
     {
+        // TODO
         return false;
     }
 
     bool
     isCorruptionDetected() const override
     {
+        // TODO
         return false;
     }
 
     std::optional<etl::ETLState>
     getETLState() const override
     {
+        // TODO
         return std::nullopt;
     }
 
@@ -565,6 +579,7 @@ public:
     std::uint32_t
     lastCloseAgeSeconds() const override
     {
+        // TODO
         return 0;
     }
 

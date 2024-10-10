@@ -37,7 +37,7 @@ struct LoaderInterface {
     load(model::Batch const& data) = 0;
 
     virtual std::optional<ripple::LedgerHeader>
-    loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) = 0;
+    loadInitialLedger(model::Batch const& data, std::vector<std::string> const& edgeKeys) = 0;
 };
 
 struct InitialLoadObserverInterface {

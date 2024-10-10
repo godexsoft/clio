@@ -106,7 +106,7 @@ public:
     }
 
     std::optional<ripple::LedgerHeader>
-    loadInitialLedger(model::Batch const& data, std::vector<std::string>&& edgeKeys) override
+    loadInitialLedger(model::Batch const& data, std::vector<std::string> const& edgeKeys) override
     {
         // check that database is actually empty
         auto rng = backend_->hardFetchLedgerRangeNoThrow();
@@ -161,8 +161,8 @@ public:
                 }
 
                 prev = cur->key;
-                static constexpr std::size_t LOG_INTERVAL = 100000;
-                if (numWrites % LOG_INTERVAL == 0 && numWrites != 0)
+                static constexpr std::size_t LogInterval = 100000uz;
+                if (numWrites % LogInterval == 0 && numWrites != 0)
                     LOG(log_.info()) << "Wrote " << numWrites << " book successors";
             }
 
@@ -176,7 +176,7 @@ public:
         LOG(log_.debug()) << "Loaded initial ledger";
         backend_->finishWrites(sequence);
 
-        return data.header;
+        return {data.header};
     }
 
     void

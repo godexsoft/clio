@@ -52,10 +52,10 @@ struct Transaction {
 
 struct Object {
     enum class ModType : int {
-        UNSPECIFIED = 0,
-        CREATED = 1,
-        MODIFIED = 2,
-        DELETED = 3,
+        Unspecified = 0,
+        Created = 1,
+        Modified = 2,
+        Deleted = 3,
     };
 
     ripple::uint256 key;
