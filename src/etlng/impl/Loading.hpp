@@ -85,7 +85,14 @@ public:
     load(model::Batch const& data) override
     {
         LOG(log_.debug()) << "Loading a batch for " << data.seq;
+
+        // backend_->startWrites();
+        // LOG(log_.debug()) << "Started writes";
+
         registry_->dispatch(data);
+
+        // LOG(log_.debug()) << "Committing writes for " << data.seq;
+        // backend_->finishWrites(data.seq);
     };
 
     void

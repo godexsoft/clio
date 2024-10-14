@@ -31,6 +31,7 @@
 #include "etl/NFTHelpers.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
+#include "etl/impl/LedgerPublisher.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
@@ -42,6 +43,7 @@
 #include "etlng/impl/Scheduling.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
+#include "util/Constants.hpp"
 #include "util/Profiler.hpp"
 #include "util/StrandedPriorityQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
@@ -183,11 +185,48 @@ public:
 };
 }  // namespace impl
 
+class Monitor {
+    std::shared_ptr<BackendInterface> backend_;
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
+    // std::shared_ptr<etl::impl::LedgerPublisher<data::LedgerCache>> publisher_;
+
+    uint32_t nextSequence_;
+    util::Logger log_{"ETL"};
+
+public:
+    Monitor(
+        std::shared_ptr<BackendInterface> backend,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+        // std::shared_ptr<etl::impl::LedgerPublisher<data::LedgerCache>> publisher,
+        uint32_t startSequence
+    )
+        : backend_(std::move(backend))
+        , ledgers_(std::move(ledgers))
+        // , publisher_(std::move(publisher))
+        , nextSequence_(startSequence)
+    {
+    }
+
+    void
+    publishNextWhenAvailable()
+    {
+        if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng && rng->maxSequence >= nextSequence_) {
+            // ledgerPublisher_.publish(nextSequence, {});
+            LOG(log_.info()) << "Ledger " << nextSequence_ << " is detected in DB. publish!";
+            ++nextSequence_;
+        } else if (ledgers_->waitUntilValidatedByNetwork(nextSequence_, util::MILLISECONDS_PER_SECOND)) {
+            LOG(log_.info()) << "Ledger with sequence = " << nextSequence_ << " has been validated by the network. "
+                             << "Attempting to find in database and publish";
+        }
+    }
+};
+
 class TaskManager {
     util::async::AnyExecutionContext ctx_;
     std::unique_ptr<SchedulerInterface> schedulers_;
     std::shared_ptr<ExtractorInterface> extractor_;
     std::shared_ptr<LoaderInterface> loader_;
+    std::shared_ptr<Monitor> monitor_;
 
     util::Logger log_{"ETL"};
 
@@ -199,9 +238,14 @@ public:
         CtxType& ctx,
         std::unique_ptr<SchedulerInterface> scheduler,
         std::shared_ptr<ExtractorInterface> extractor,
-        std::shared_ptr<LoaderInterface> loader
+        std::shared_ptr<LoaderInterface> loader,
+        std::shared_ptr<Monitor> monitor
     )
-        : ctx_(ctx), schedulers_(std::move(scheduler)), extractor_(std::move(extractor)), loader_(std::move(loader))
+        : ctx_(ctx)
+        , schedulers_(std::move(scheduler))
+        , extractor_(std::move(extractor))
+        , loader_(std::move(loader))
+        , monitor_(std::move(monitor))
     {
     }
 
@@ -220,6 +264,8 @@ public:
 
         LOG(log_.debug()) << "Starting task manager...\n";
 
+        auto monitor = spawnMonitor();
+
         extractors.reserve(ExtractionWorkers);
         for ([[maybe_unused]] auto _ : std::views::iota(0, ExtractionWorkers))
             extractors.push_back(spawnExtractor(schedulingStrand, queue));
@@ -227,6 +273,8 @@ public:
         loaders.reserve(LoadingWorkers);
         for ([[maybe_unused]] auto _ : std::views::iota(0, LoadingWorkers))
             loaders.push_back(spawnLoader(queue));
+
+        monitor.wait();
 
         for (auto& w : extractors)
             w.wait();
@@ -259,6 +307,7 @@ private:
     {
         return ctx_.execute([this, &queue](auto stopRequested) {
             while (not stopRequested) {
+                // TODO: currently batch does not tell the loader whether it's out of order or not
                 if (auto batch = queue.next(); batch.has_value())
                     loader_->load(*batch);
             }
@@ -270,49 +319,10 @@ private:
     {
         return ctx_.execute([this](auto stopRequested) {
             while (not stopRequested) {
-                // monitor incoming ledgers here
-                monitor_->
+                monitor_->publishNextWhenAvailable();
             }
         });
     }
-
-    // uint32_t
-    // publishNextSequence(uint32_t nextSequence)
-    // {
-    //     if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng && rng->maxSequence >= nextSequence) {
-    //         publisher_.publish(nextSequence, {});
-    //         ++nextSequence;
-    //     } else if (networkValidatedLedgers_->waitUntilValidatedByNetwork(nextSequence,
-    //     util::MILLISECONDS_PER_SECOND)) {
-    //         LOG(log_.info()) << "Ledger with sequence = " << nextSequence << " has been validated by the network. "
-    //                          << "Attempting to find in database and publish";
-
-    //         // Attempt to take over responsibility of ETL writer after 10 failed
-    //         // attempts to publish the ledger. publishLedger() fails if the
-    //         // ledger that has been validated by the network is not found in the
-    //         // database after the specified number of attempts. publishLedger()
-    //         // waits one second between each attempt to read the ledger from the
-    //         // database
-    //         constexpr size_t timeoutSeconds = 10;
-    //         bool const success = ledgerPublisher_.publish(nextSequence, timeoutSeconds);
-
-    //         if (!success) {
-    //             LOG(log_.warn()) << "Failed to publish ledger with sequence = " << nextSequence << " . Beginning
-    //             ETL";
-
-    //             // returns the most recent sequence published empty optional if no sequence was published
-    //             std::optional<uint32_t> lastPublished = runETLPipeline(nextSequence, extractorThreads_);
-    //             LOG(log_.info()) << "Aborting ETL. Falling back to publishing";
-
-    //             // if no ledger was published, don't increment nextSequence
-    //             if (lastPublished)
-    //                 nextSequence = *lastPublished + 1;
-    //         } else {
-    //             ++nextSequence;
-    //         }
-    //     }
-    //     return nextSequence;
-    // }
 };
 
 class CacheExt {
@@ -491,7 +501,13 @@ public:
                     // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000}
                     // todo lift limit and start with rng.minSeq
                 );
-            auto man = TaskManager(ctx_, std::move(scheduler), extractor_, loader_);
+            auto man = TaskManager(
+                ctx_,
+                std::move(scheduler),
+                extractor_,
+                loader_,
+                std::make_shared<Monitor>(backend_, ledgers_, nextSequence)
+            );
 
             man.run();  // TODO: needs to be interruptable
         }));

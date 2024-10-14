@@ -255,7 +255,7 @@ SubscriptionSource::handleMessage(std::string const& message)
         }
 
         if (ledgerIndex != 0) {
-            LOG(log_.trace()) << "Pushing ledger sequence = " << ledgerIndex;
+            LOG(log_.info()) << "Pushing ledger sequence = " << ledgerIndex;
             validatedLedgers_->push(ledgerIndex);
         }
 
