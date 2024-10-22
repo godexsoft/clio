@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "data/DBHelpers.hpp"
+#include "data/Types.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
 #include "etlng/ExtractorInterface.hpp"
@@ -115,11 +117,19 @@ extractObj(org::xrpl::rpc::v1::RawLedgerObject& obj)
     auto key = ripple::uint256::fromVoidChecked(obj.key());
     ASSERT(key.has_value(), "Failed to deserialize key from void");
 
+    auto value_or = [](std::string const& maybe, std::string fallback) -> std::string {
+        if (maybe.empty())
+            return fallback;
+        return maybe;
+    };
+
     return {
         .key = *key,  // trivially copyable
         .keyRaw = std::move(*obj.mutable_key()),
         .data = {obj.mutable_data()->begin(), obj.mutable_data()->end()},
         .dataRaw = std::move(*obj.mutable_data()),
+        .successor = value_or(obj.successor(), uint256ToString(data::firstKey)),
+        .predecessor = value_or(obj.predecessor(), uint256ToString(data::lastKey)),
         .type = extractModType(obj.mod_type()),
     };
 }
@@ -138,6 +148,35 @@ extractObjs(auto&& objects)
     return output;
 }
 
+static model::BookSuccessor
+extractSuccessor(org::xrpl::rpc::v1::BookSuccessor const& successor)
+{
+    return {
+        .firstBook = successor.first_book(),
+        .bookBase = successor.book_base(),
+    };
+}
+
+static std::optional<std::vector<model::BookSuccessor>>
+maybeExtractSuccessors(org::xrpl::rpc::v1::GetLedgerResponse const& data)
+{
+    namespace rg = std::ranges;
+    namespace vs = std::views;
+
+    if (not data.object_neighbors_included())
+        return std::nullopt;
+
+    // TODO: should be simplified with ranges::to<> when available
+    std::vector<model::BookSuccessor> output;
+    output.reserve(data.book_successors_size());
+
+    rg::move(
+        data.book_successors() | vs::transform([](auto&& obj) { return extractSuccessor(obj); }),
+        std::back_inserter(output)
+    );
+    return output;
+}
+
 // fetches the data in gRPC and transforms to local representation
 class Extractor : public ExtractorInterface {
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
@@ -152,14 +191,15 @@ private:
     {
         return [seq](auto&& data) {
             auto header = ::util::deserializeHeader(ripple::makeSlice(data.ledger_header()));
-            return std::make_optional<model::Batch>({
+
+            return std::make_optional<model::LedgerData>({
                 .transactions =
                     extractTxs(std::move(*data.mutable_transactions_list()->mutable_transactions()), header.seq),
                 .objects = extractObjs(std::move(*data.mutable_ledger_objects()->mutable_objects())),
+                .successors = maybeExtractSuccessors(data),
                 .header = header,
                 .rawHeader = std::move(*data.mutable_ledger_header()),
                 .seq = seq,
-                .areNeighborsIncluded = data.object_neighbors_included(),
             });
         };
     }
@@ -169,7 +209,7 @@ public:
     {
     }
 
-    std::optional<model::Batch>
+    std::optional<model::LedgerData>
     extractDiff(uint32_t seq) override
     {
         LOG(log_.debug()) << "Extracting DIFF " << seq;
@@ -184,7 +224,7 @@ public:
         return batch;
     }
 
-    std::optional<model::Batch>
+    std::optional<model::LedgerData>
     extractFull(uint32_t seq) override
     {
         LOG(log_.debug()) << "Extracting FULL " << seq;

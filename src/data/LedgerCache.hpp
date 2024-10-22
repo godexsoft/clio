@@ -73,6 +73,7 @@ class LedgerCache {
     )};
 
     std::map<ripple::uint256, CacheEntry> map_;
+    std::map<ripple::uint256, CacheEntry> deleted_;
 
     mutable std::shared_mutex mtx_;
     std::condition_variable_any cv_;
@@ -95,7 +96,7 @@ public:
     update(std::vector<LedgerObject> const& objs, uint32_t seq, bool isBackground = false);
 
     void
-    update(std::vector<etlng::model::Object> const& objs, uint32_t seq, bool isBackground = false);
+    update(std::vector<etlng::model::Object> const& objs, uint32_t seq);
 
     /**
      * @brief Fetch a cached object by its key and sequence number.
@@ -107,6 +108,8 @@ public:
     std::optional<Blob>
     get(ripple::uint256 const& key, uint32_t seq) const;
 
+    std::optional<Blob>
+    getDeleted(ripple::uint256 const& key, uint32_t seq) const;
     /**
      * @brief Gets a cached successor.
      *

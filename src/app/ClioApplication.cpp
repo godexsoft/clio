@@ -22,6 +22,8 @@
 #include "data/AmendmentCenter.hpp"
 #include "data/BackendFactory.hpp"
 #include "etl/ETLService.hpp"
+#include "etl/LoadBalancer.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgers.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "etlng/LoadBalancer.hpp"
@@ -113,7 +115,14 @@ ClioApplication::run()
     // ETL uses the balancer to extract data.
     // The server uses the balancer to forward RPCs to a rippled node.
     // The balancer itself publishes to streams (transactions_proposed and accounts_proposed)
-    auto balancer = etlng::LoadBalancer::make_LoadBalancer(config_, ioc, backend, subscriptions, ledgers);
+    auto balancer =
+        (config_.valueOr("etlng", false)
+             ? std::shared_ptr<etl::LoadBalancerInterface>(
+                   etlng::LoadBalancer::make_LoadBalancer(config_, ioc, backend, subscriptions, ledgers)
+               )
+             : std::shared_ptr<etl::LoadBalancerInterface>(
+                   etl::LoadBalancer::make_LoadBalancer(config_, ioc, backend, subscriptions, ledgers)
+               ));
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
     auto etl = etl::ETLService::make_ETLService(config_, ioc, backend, subscriptions, balancer, ledgers);

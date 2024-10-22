@@ -68,9 +68,9 @@ struct ForwardScheduler : SchedulerInterface {
         if (maxSeq_.has_value() && maxSeq_.value() <= seq_)
             return std::nullopt;
 
-        if (ledgers_->getMostRecent() >= seq_ + 1) {
+        if (ledgers_->getMostRecent() >= seq_) {
             LOG(log_.info()) << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! "
-                             << seq_ + 1;
+                             << seq_;
             return {{.priority = 1, .seq = seq_++}};
         }
 

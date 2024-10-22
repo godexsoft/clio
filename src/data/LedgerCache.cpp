@@ -58,85 +58,84 @@ LedgerCache::update(std::vector<LedgerObject> const& objs, uint32_t seq, bool is
     if (disabled_)
         return;
 
-    {
-        std::scoped_lock const lck{mtx_};
-        if (seq > latestSeq_) {
-            ASSERT(
-                seq == latestSeq_ + 1 || latestSeq_ == 0,
-                "New sequense must be either next or first. seq = {}, latestSeq_ = {}",
-                seq,
-                latestSeq_
-            );
-            latestSeq_ = seq;
-        }
-        for (auto const& obj : objs) {
-            if (!obj.blob.empty()) {
-                if (isBackground && deletes_.contains(obj.key))
-                    continue;
-
-                auto& e = map_[obj.key];
-                if (seq > e.seq) {
-                    e = {seq, obj.blob};
-                }
-            } else {
-                map_.erase(obj.key);
-                if (!full_ && !isBackground)
-                    deletes_.insert(obj.key);
-            }
-        }
-        cv_.notify_all();
+    std::scoped_lock const lck{mtx_};
+    if (seq > latestSeq_) {
+        ASSERT(
+            seq == latestSeq_ + 1 || latestSeq_ == 0,
+            "New sequense must be either next or first. seq = {}, latestSeq_ = {}",
+            seq,
+            latestSeq_
+        );
+        latestSeq_ = seq;
     }
+    for (auto const& obj : objs) {
+        if (!obj.blob.empty()) {
+            if (isBackground && deletes_.contains(obj.key))
+                continue;
+
+            auto& e = map_[obj.key];
+            if (seq > e.seq)
+                e = {seq, obj.blob};
+        } else {
+            if (map_.contains(obj.key))
+                deleted_[obj.key] = map_[obj.key];
+
+            map_.erase(obj.key);
+            if (!full_ && !isBackground)
+                deletes_.insert(obj.key);
+        }
+    }
+    cv_.notify_all();
 }
 
 void
-LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq, bool isBackground)
+LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq)
 {
     if (disabled_)
         return;
 
-    {
-        std::scoped_lock const lck{mtx_};
-        if (seq > latestSeq_) {
-            ASSERT(
-                seq == latestSeq_ + 1 || latestSeq_ == 0,
-                "New sequense must be either next or first. seq = {}, latestSeq_ = {}",
-                seq,
-                latestSeq_
-            );
-            latestSeq_ = seq;
-        }
-        for (auto const& obj : objs) {
-            if (!obj.data.empty()) {
-                if (isBackground && deletes_.contains(obj.key))
-                    continue;
-
-                auto& e = map_[obj.key];
-                if (seq > e.seq) {
-                    e = {seq, obj.data};
-                }
-            } else {
-                map_.erase(obj.key);
-                if (!full_ && !isBackground)
-                    deletes_.insert(obj.key);
-            }
-        }
-        cv_.notify_all();
+    std::scoped_lock const lck{mtx_};
+    if (seq > latestSeq_) {
+        ASSERT(
+            seq == latestSeq_ + 1 || latestSeq_ == 0,
+            "New sequense must be either next or first. seq = {}, latestSeq_ = {}",
+            seq,
+            latestSeq_
+        );
+        latestSeq_ = seq;
     }
+
+    // deleted_.clear();  // previous update's deletes no longer needed
+
+    for (auto const& obj : objs) {
+        if (!obj.data.empty()) {
+            auto& e = map_[obj.key];
+            if (seq > e.seq)
+                e = {seq, obj.data};
+        } else {
+            if (map_.contains(obj.key))
+                deleted_[obj.key] = map_[obj.key];
+
+            map_.erase(obj.key);
+        }
+    }
+    cv_.notify_all();
 }
 
 std::optional<LedgerObject>
 LedgerCache::getSuccessor(ripple::uint256 const& key, uint32_t seq) const
 {
     if (disabled_ or not full_)
-        return {};
+        return std::nullopt;
 
     std::shared_lock const lck{mtx_};
     ++successorReqCounter_.get();
-    if (seq != latestSeq_)
-        return {};
+    if (seq > latestSeq_)
+        return std::nullopt;
     auto e = map_.upper_bound(key);
     if (e == map_.end())
-        return {};
+        return std::nullopt;
+
     ++successorHitCounter_.get();
     return {{e->first, e->second.blob}};
 }
@@ -145,14 +144,15 @@ std::optional<LedgerObject>
 LedgerCache::getPredecessor(ripple::uint256 const& key, uint32_t seq) const
 {
     if (disabled_ or not full_)
-        return {};
+        return std::nullopt;
 
     std::shared_lock const lck{mtx_};
-    if (seq != latestSeq_)
-        return {};
+    if (seq > latestSeq_)
+        return std::nullopt;
+
     auto e = map_.lower_bound(key);
     if (e == map_.begin())
-        return {};
+        return std::nullopt;
     --e;
     return {{e->first, e->second.blob}};
 }
@@ -161,17 +161,43 @@ std::optional<Blob>
 LedgerCache::get(ripple::uint256 const& key, uint32_t seq) const
 {
     if (disabled_)
-        return {};
+        return std::nullopt;
 
     std::shared_lock const lck{mtx_};
     if (seq > latestSeq_)
-        return {};
+        return std::nullopt;
+
     ++objectReqCounter_.get();
+
     auto e = map_.find(key);
     if (e == map_.end())
-        return {};
+        return std::nullopt;
     if (seq < e->second.seq)
-        return {};
+        return std::nullopt;
+
+    ++objectHitCounter_.get();
+    return {e->second.blob};
+}
+
+std::optional<Blob>
+LedgerCache::getDeleted(ripple::uint256 const& key, uint32_t seq) const
+{
+    if (disabled_)
+        return std::nullopt;
+
+    std::shared_lock const lck{mtx_};
+    if (seq > latestSeq_)
+        return std::nullopt;
+
+    ++objectReqCounter_.get();
+
+    auto e = deleted_.find(key);
+    if (e == deleted_.end())
+        return std::nullopt;
+
+    if (seq < e->second.seq)
+        return std::nullopt;
+
     ++objectHitCounter_.get();
     return {e->second.blob};
 }

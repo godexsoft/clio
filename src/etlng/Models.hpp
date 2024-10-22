@@ -31,6 +31,7 @@
 #include <xrpl/protocol/TxMeta.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -62,6 +63,8 @@ struct Object {
     std::string keyRaw;
     ripple::Blob data;
     std::string dataRaw;
+    std::string successor;
+    std::string predecessor;
 
     ModType type;
 };
@@ -71,20 +74,14 @@ struct BookSuccessor {
     std::string bookBase;
 };
 
-struct Batch {
+struct LedgerData {
     std::vector<Transaction> transactions;
     std::vector<Object> objects;
+    std::optional<std::vector<BookSuccessor>> successors;
 
     ripple::LedgerHeader header;
     std::string rawHeader;
     uint32_t seq;
-    bool areNeighborsIncluded;
-
-    bool
-    operator<(Batch const& o) const
-    {
-        return seq < o.seq;
-    }
 };
 
 }  // namespace etlng::model

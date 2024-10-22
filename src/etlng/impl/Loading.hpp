@@ -21,10 +21,9 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
-#include "data/Types.hpp"
+#include "data/LedgerCache.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
-#include "etl/NFTHelpers.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
@@ -49,6 +48,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -57,6 +57,7 @@ namespace etlng::impl {
 
 class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
+    [[maybe_unused]] data::LedgerCache& cache_;
     std::shared_ptr<etl::LoadBalancerInterface> balancer_;
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
     std::shared_ptr<RegistryInterface> registry_;
@@ -70,11 +71,13 @@ public:
 
     Loader(
         std::shared_ptr<BackendInterface> backend,
+        data::LedgerCache& cache,
         std::shared_ptr<etl::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
         std::shared_ptr<RegistryInterface> registry
     )
         : backend_(std::move(backend))
+        , cache_(cache)
         , balancer_(std::move(balancer))
         , fetcher_(std::move(fetcher))
         , registry_(std::move(registry))
@@ -82,17 +85,34 @@ public:
     }
 
     void
-    load(model::Batch const& data) override
+    load(model::LedgerData const& data) override
     {
-        LOG(log_.debug()) << "Loading a batch for " << data.seq;
+        try {
+            LOG(log_.debug()) << "Loading a batch for " << data.seq;
+            backend_->startWrites();
 
-        // backend_->startWrites();
-        // LOG(log_.debug()) << "Started writes";
+            backend_->writeLedger(data.header, auto{data.rawHeader});  // CoreExt?
 
-        registry_->dispatch(data);
+            // TODO: CoreExt: for each object in data
+            for (auto const& obj : data.objects)
+                backend_->writeLedgerObject(auto{obj.keyRaw}, data.seq, auto{obj.dataRaw});
 
-        // LOG(log_.debug()) << "Committing writes for " << data.seq;
-        // backend_->finishWrites(data.seq);
+            insertTransactions(data);  // TODO: this could be inside of CoreExt (after CacheExt and before SuccessorExt)
+
+            // perform cache updates and all writes from extensions
+            registry_->dispatch(data);
+
+            auto [success, duration] =
+                ::util::timed<std::chrono::duration<double>>([&]() { return backend_->finishWrites(data.seq); });
+            LOG(log_.info()) << "Finished writes to DB for " << data.seq << ": " << (success ? "YES" : "NO")
+                             << "; took " << duration;
+        } catch (std::runtime_error const& e) {
+            LOG(log_.fatal()) << "Failed to load " << data.seq << ": " << e.what();
+
+            // TODO:
+            // amendmentBlockHandler_.get().onAmendmentBlock();
+            ASSERT(false, "This is no good for now");
+        }
     };
 
     void
@@ -102,6 +122,7 @@ public:
 
         LOG(log_.debug()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
         for (auto const& obj : data) {
+            // TODO: this should be in SuccessorExt. figure out how to do it effeciently (without looping twice)
             if (!lastKey.empty())
                 backend_->writeSuccessor(std::move(lastKey), seq, auto{obj.keyRaw});
 
@@ -113,7 +134,7 @@ public:
     }
 
     std::optional<ripple::LedgerHeader>
-    loadInitialLedger(model::Batch const& data, std::vector<std::string> const& edgeKeys) override
+    loadInitialLedger(model::LedgerData const& data, std::vector<std::string> const& edgeKeys) override
     {
         // check that database is actually empty
         auto rng = backend_->hardFetchLedgerRangeNoThrow();
@@ -125,67 +146,31 @@ public:
         LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(data.header);
         auto sequence = data.seq;
 
-        backend_->startWrites();
-        LOG(log_.debug()) << "Started writes";
+        auto seconds = ::util::timed<std::chrono::seconds>([this, &sequence, &data, &edgeKeys]() mutable {
+            backend_->startWrites();
+            LOG(log_.debug()) << "Started writes";
 
-        // TODO: think about avoiding copy here
-        backend_->writeLedger(data.header, std::string{data.rawHeader});
-        LOG(log_.debug()) << "Wrote ledger";
+            // TODO: think about avoiding copy here
+            backend_->writeLedger(data.header, auto{data.rawHeader});
+            LOG(log_.debug()) << "Wrote ledger";
 
-        insertTransactions(data);
-        registry_->dispatchInitialTransactions(sequence, data.transactions);
-        LOG(log_.debug()) << "Inserted txns";
+            insertTransactions(data);
+            writeEdgeKeys(data.seq, edgeKeys);
 
-        ASSERT(backend_->cache().isFull(), "Cache must be full at this point");
+            registry_->dispatchInitialData(sequence, data.transactions);
+            LOG(log_.debug()) << "Inserted txns";
 
-        size_t numWrites = 0;
-        auto seconds = ::util::timed<std::chrono::seconds>([this, &edgeKeys, sequence, &numWrites]() mutable {
-            writeEdgeKeys(sequence, edgeKeys);
-
-            ripple::uint256 prev = data::firstKey;
-            while (auto cur = backend_->cache().getSuccessor(prev, sequence)) {
-                ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
-                if (prev == data::firstKey)
-                    backend_->writeSuccessor(uint256ToString(prev), sequence, uint256ToString(cur->key));
-
-                if (isBookDir(cur->key, cur->blob)) {
-                    auto base = getBookBase(cur->key);
-
-                    // make sure the base is not an actual object
-                    if (!backend_->cache().get(base, sequence)) {
-                        auto succ = backend_->cache().getSuccessor(base, sequence);
-                        ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
-
-                        if (succ->key == cur->key) {
-                            LOG(log_.debug()) << "Writing book successor = " << ripple::strHex(base) << " - "
-                                              << ripple::strHex(cur->key);
-
-                            backend_->writeSuccessor(uint256ToString(base), sequence, uint256ToString(cur->key));
-                        }
-                    }
-
-                    ++numWrites;
-                }
-
-                prev = cur->key;
-                static constexpr std::size_t LogInterval = 100000uz;
-                if (numWrites % LogInterval == 0 && numWrites != 0)
-                    LOG(log_.info()) << "Wrote " << numWrites << " book successors";
-            }
-
-            backend_->writeSuccessor(uint256ToString(prev), sequence, uint256ToString(data::lastKey));
-            ++numWrites;
+            ASSERT(backend_->cache().isFull(), "Cache must be full at this point");
         });
 
-        LOG(log_.info()) << "Looping through cache and submitting all writes took " << seconds
-                         << " seconds. numWrites = " << std::to_string(numWrites);
-
+        LOG(log_.info()) << "Looping through cache and submitting all writes took " << seconds << " seconds.";
         LOG(log_.debug()) << "Loaded initial ledger";
         backend_->finishWrites(sequence);
 
         return {data.header};
     }
 
+    // TODO: ideally all writeSuccessors should be in SuccessorExt
     void
     writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys)
     {
@@ -198,7 +183,7 @@ public:
     }
 
     void
-    insertTransactions(model::Batch const& data)
+    insertTransactions(model::LedgerData const& data)
     {
         for (auto const& txn : data.transactions) {
             LOG(log_.trace()) << "Inserting transaction = " << txn.sttx.getTransactionID();

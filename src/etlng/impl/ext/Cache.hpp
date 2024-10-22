@@ -19,52 +19,45 @@
 
 #pragma once
 
-#include "util/async/AnyStrand.hpp"
+#include "data/LedgerCache.hpp"
+#include "etlng/Models.hpp"
+#include "util/log/Logger.hpp"
 
-#include <boost/asio/io_context.hpp>
-
-#include <functional>
-#include <optional>
-#include <queue>
+#include <cstdint>
 #include <vector>
 
-namespace util {
+namespace etlng::impl {
 
-/**
- * @brief A wrapper for std::priority_queue that serialises operations using a strand
- */
-template <typename T, typename Compare = std::less<T>>
-class StrandedPriorityQueue {
-    util::async::AnyStrand& strand_;
-    std::priority_queue<T, std::vector<T>, Compare> queue_;
+class CacheExt {
+    data::LedgerCache& cache_;
+
+    util::Logger log_{"ETL"};
 
 public:
-    StrandedPriorityQueue(util::async::AnyStrand& strand) : strand_(strand)
+    CacheExt(data::LedgerCache& cache) : cache_(cache)
     {
     }
 
     void
-    add(T&& element)
+    onLedgerData(model::LedgerData const& data) const
     {
-        strand_.execute([element = std::forward<T>(element), this] { queue_.push(std::move(element)); }).wait();
+        LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
+        cache_.update(data.objects, data.seq);
     }
 
-    std::optional<T>
-    next()
+    void
+    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs) const
     {
-        return strand_
-            .execute([this] -> std::optional<T> {
-                if (queue_.empty())
-                    return std::nullopt;
+        LOG(log_.trace()) << "got objects cnt = " << objs.size();
+        cache_.update(objs, seq);
+    }
 
-                auto top = queue_.top();
-                queue_.pop();
-
-                return top;
-            })
-            .get()
-            .value_or(std::nullopt);
+    void
+    onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
+    {
+        LOG(log_.trace()) << "got initial TXS cnt = " << tx.size();
+        cache_.setFull();
     }
 };
 
-}  // namespace util
+}  // namespace etlng::impl

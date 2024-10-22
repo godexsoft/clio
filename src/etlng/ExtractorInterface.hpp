@@ -29,10 +29,10 @@ namespace etlng {
 struct ExtractorInterface {
     virtual ~ExtractorInterface() = default;
 
-    virtual std::optional<model::Batch>
+    virtual std::optional<model::LedgerData>
     extractDiff(uint32_t seq) = 0;
 
-    virtual std::optional<model::Batch>
+    virtual std::optional<model::LedgerData>
     extractFull(uint32_t seq) = 0;
 };
 

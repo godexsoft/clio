@@ -28,6 +28,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
@@ -128,6 +129,7 @@ BackendInterface::fetchLedgerObjects(
     for (size_t i = 0; i < keys.size(); ++i) {
         auto obj = cache_.get(keys[i], sequence);
         if (obj) {
+            ASSERT(not obj->empty(), "cached object should not be empty for key {}", ripple::to_string(keys[i]));
             results[i] = *obj;
         } else {
             misses.push_back(keys[i]);
@@ -137,10 +139,14 @@ BackendInterface::fetchLedgerObjects(
 
     if (!misses.empty()) {
         auto objs = doFetchLedgerObjects(misses, sequence, yield);
+        ASSERT(objs.size() == misses.size(), "fetched objs must be of same size as cache misses");
+
         for (size_t i = 0, j = 0; i < results.size(); ++i) {
+            ASSERT(i >= j, "i must be equal or greater than j");
+            ASSERT(i < results.size(), "i must be less than total size");
             if (results[i].empty()) {
-                results[i] = objs[j];
-                ++j;
+                ASSERT(j < objs.size(), "j must remain less than objs.size; j = {}, size = {}", j, objs.size());
+                results[i] = objs[j++];
             }
         }
     }

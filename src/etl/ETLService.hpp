@@ -157,7 +157,7 @@ public:
         if (config.valueOr("etlng", false)) {
             ret = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
         } else {
-            ret = std::make_shared<ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
+            ret = std::make_shared<etl::ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
         }
 
         ret->run();

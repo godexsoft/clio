@@ -179,8 +179,6 @@ class TagDecoratorFactory final {
     ParentType parent_ = std::nullopt; /*< The parent tag decorator to bind */
 
 public:
-    ~TagDecoratorFactory() = default;
-
     /**
      * @brief Instantiates a tag decorator factory from `clio` configuration.
      *

@@ -41,10 +41,10 @@ struct RegistryInterface {
     dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
 
     virtual void
-    dispatchInitialTransactions(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
+    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
 
     virtual void
-    dispatch(model::Batch const& data) = 0;
+    dispatch(model::LedgerData const& data) = 0;
 };
 
 }  // namespace etlng

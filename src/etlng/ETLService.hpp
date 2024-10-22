@@ -20,35 +20,29 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "data/DBHelpers.hpp"
 #include "data/LedgerCache.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
-#include "etl/LoadBalancer.hpp"
 #include "etl/LoadBalancerInterface.hpp"
-#include "etl/NFTHelpers.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
 #include "etl/impl/LedgerPublisher.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "etlng/ExtractorInterface.hpp"
-#include "etlng/LoaderInterface.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/RegistryInterface.hpp"
-#include "etlng/SchedulerInterface.hpp"
 #include "etlng/impl/Extraction.hpp"
 #include "etlng/impl/Loading.hpp"
+#include "etlng/impl/Monitor.hpp"
+#include "etlng/impl/Registry.hpp"
 #include "etlng/impl/Scheduling.hpp"
+#include "etlng/impl/TaskManager.hpp"
+#include "etlng/impl/ext/Cache.hpp"
+#include "etlng/impl/ext/NFT.hpp"
+#include "etlng/impl/ext/Successor.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
-#include "util/Constants.hpp"
 #include "util/Profiler.hpp"
-#include "util/StrandedPriorityQueue.hpp"
-#include "util/async/AnyExecutionContext.hpp"
-#include "util/async/AnyOperation.hpp"
-#include "util/async/AnyStrand.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/Config.hpp"
 #include "util/log/Logger.hpp"
@@ -57,6 +51,7 @@
 #include <fmt/core.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/ledger.pb.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -74,349 +69,8 @@
 #include <string>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 namespace etlng {
-
-template <ripple::TxType... Types>
-struct Spec {
-    constexpr static bool
-    wants(ripple::TxType t)
-    {
-        return ((Types == t) || ...);
-    }
-};
-
-namespace impl {
-
-template <typename... Ps>
-class Registry : public RegistryInterface {
-    std::tuple<Ps...> store_;
-
-public:
-    Registry(Ps&&... exts) : store_(std::forward<Ps>(exts)...)
-    {
-    }
-
-    void
-    dispatch(model::Batch const& data) override
-    {
-        // send entire batch path (for objects etc.)
-        {
-            auto const expand = [&](auto& p) {
-                if constexpr (requires { p.onTransactions(data); }) {
-                    p.onTransactions(data);
-                }
-            };
-
-            std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
-        }
-
-        // send filtered tx path
-        {
-            auto const expand = [&]<typename P>(P& p, model::Transaction const& t) {
-                if constexpr (requires { p.onTransaction(t); }) {
-                    if (P::spec::wants(t.type))
-                        p.onTransaction(t);
-                }
-            };
-
-            for (auto const& t : data.transactions) {
-                std::apply([&expand, &t](auto&&... xs) { (expand(xs, t), ...); }, store_);
-            }
-        }
-    }
-
-    void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
-    {
-        // send entire vector path
-        {
-            auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialObjects(seq, data); }) {
-                    p.onInitialObjects(seq, data);
-                }
-            };
-
-            std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
-        }
-
-        // send per object path
-        {
-            auto const expand = [&]<typename P>(P&& p, model::Object const& o) {
-                if constexpr (requires { p.onInitialObject(seq, o); }) {
-                    p.onInitialObject(seq, o);
-                }
-            };
-
-            for (auto const& obj : data) {
-                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
-            }
-        }
-    }
-
-    void
-    dispatchInitialTransactions(uint32_t seq, std::vector<model::Transaction> const& data) override
-    {
-        // send entire vector path
-        {
-            auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialTransactions(seq, data); }) {
-                    p.onInitialTransactions(seq, data);
-                }
-            };
-
-            std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
-        }
-
-        // send per object path
-        {
-            auto const expand = [&]<typename P>(P&& p, model::Transaction const& tx) {
-                if constexpr (requires { p.onInitialTransaction(seq, tx); }) {
-                    p.onInitialTransaction(seq, tx);
-                }
-            };
-
-            for (auto const& obj : data) {
-                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
-            }
-        }
-    }
-};
-}  // namespace impl
-
-class Monitor {
-    std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
-    // std::shared_ptr<etl::impl::LedgerPublisher<data::LedgerCache>> publisher_;
-
-    uint32_t nextSequence_;
-    util::Logger log_{"ETL"};
-
-public:
-    Monitor(
-        std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
-        // std::shared_ptr<etl::impl::LedgerPublisher<data::LedgerCache>> publisher,
-        uint32_t startSequence
-    )
-        : backend_(std::move(backend))
-        , ledgers_(std::move(ledgers))
-        // , publisher_(std::move(publisher))
-        , nextSequence_(startSequence)
-    {
-    }
-
-    void
-    publishNextWhenAvailable()
-    {
-        if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng && rng->maxSequence >= nextSequence_) {
-            // ledgerPublisher_.publish(nextSequence, {});
-            LOG(log_.info()) << "Ledger " << nextSequence_ << " is detected in DB. publish!";
-            ++nextSequence_;
-        } else if (ledgers_->waitUntilValidatedByNetwork(nextSequence_, util::MILLISECONDS_PER_SECOND)) {
-            LOG(log_.info()) << "Ledger with sequence = " << nextSequence_ << " has been validated by the network. "
-                             << "Attempting to find in database and publish";
-        }
-    }
-};
-
-class TaskManager {
-    util::async::AnyExecutionContext ctx_;
-    std::unique_ptr<SchedulerInterface> schedulers_;
-    std::shared_ptr<ExtractorInterface> extractor_;
-    std::shared_ptr<LoaderInterface> loader_;
-    std::shared_ptr<Monitor> monitor_;
-
-    util::Logger log_{"ETL"};
-
-public:
-    using PriorityQueue = util::StrandedPriorityQueue<model::Batch>;
-
-    template <typename CtxType>
-    TaskManager(
-        CtxType& ctx,
-        std::unique_ptr<SchedulerInterface> scheduler,
-        std::shared_ptr<ExtractorInterface> extractor,
-        std::shared_ptr<LoaderInterface> loader,
-        std::shared_ptr<Monitor> monitor
-    )
-        : ctx_(ctx)
-        , schedulers_(std::move(scheduler))
-        , extractor_(std::move(extractor))
-        , loader_(std::move(loader))
-        , monitor_(std::move(monitor))
-    {
-    }
-
-    void
-    run()
-    {
-        constexpr static auto ExtractionWorkers = 5;
-        constexpr static auto LoadingWorkers = 4;
-
-        std::vector<util::async::AnyOperation<void>> extractors;
-        std::vector<util::async::AnyOperation<void>> loaders;
-
-        auto schedulingStrand = ctx_.makeStrand();
-        auto loadingStrand = ctx_.makeStrand();
-        PriorityQueue queue(loadingStrand);
-
-        LOG(log_.debug()) << "Starting task manager...\n";
-
-        auto monitor = spawnMonitor();
-
-        extractors.reserve(ExtractionWorkers);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, ExtractionWorkers))
-            extractors.push_back(spawnExtractor(schedulingStrand, queue));
-
-        loaders.reserve(LoadingWorkers);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, LoadingWorkers))
-            loaders.push_back(spawnLoader(queue));
-
-        monitor.wait();
-
-        for (auto& w : extractors)
-            w.wait();
-        for (auto& w : loaders)
-            w.wait();
-
-        LOG(log_.debug()) << "All finished in task manager..\n";
-    }
-
-private:
-    util::async::AnyOperation<void>
-    spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue) const
-    {
-        return strand.execute([this, &queue](auto stopRequested) {
-            while (not stopRequested) {
-                if (auto task = schedulers_->next(); task.has_value()) {
-                    if (auto maybeBatch = extractor_->extractDiff(task->seq); maybeBatch.has_value()) {
-                        LOG(log_.debug()) << "Adding a batch after extracting diff";
-                        queue.add(std::move(*maybeBatch));
-                    } else {
-                        break;  // TODO: handle server shutdown or other node took over ETL
-                    }
-                }
-            }
-        });
-    }
-
-    util::async::AnyOperation<void>
-    spawnLoader(PriorityQueue& queue) const
-    {
-        return ctx_.execute([this, &queue](auto stopRequested) {
-            while (not stopRequested) {
-                // TODO: currently batch does not tell the loader whether it's out of order or not
-                if (auto batch = queue.next(); batch.has_value())
-                    loader_->load(*batch);
-            }
-        });
-    }
-
-    util::async::AnyOperation<void>
-    spawnMonitor() const
-    {
-        return ctx_.execute([this](auto stopRequested) {
-            while (not stopRequested) {
-                monitor_->publishNextWhenAvailable();
-            }
-        });
-    }
-};
-
-class CacheExt {
-    data::LedgerCache& cache_;
-
-    util::Logger log_{"ETL"};
-
-public:
-    CacheExt(data::LedgerCache& cache) : cache_(cache)
-    {
-    }
-
-    void
-    onTransactions(model::Batch const& txs) const
-    {
-        LOG(log_.info()) << "!!!!!!!!! got txs sent to cacheext cnt=" << txs.transactions.size();
-    }
-
-    void
-    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs) const
-    {
-        LOG(log_.trace()) << "!!!!!!!!! got objs sent to cacheext cnt=" << objs.size();
-        cache_.update(objs, seq);
-    }
-
-    void
-    onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
-    {
-        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to cacheext cnt=" << tx.size();
-        cache_.setFull();
-    }
-};
-
-class NFTExt {
-    std::shared_ptr<BackendInterface> backend_;
-    util::Logger log_{"ETL"};
-
-public:
-    using spec = Spec<
-        ripple::TxType::ttNFTOKEN_MINT,
-        ripple::TxType::ttNFTOKEN_BURN,
-        ripple::TxType::ttNFTOKEN_ACCEPT_OFFER,
-        ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
-        ripple::TxType::ttNFTOKEN_CREATE_OFFER>;
-
-    NFTExt(std::shared_ptr<BackendInterface> backend) : backend_(std::move(backend))
-    {
-    }
-
-    void
-    onInitialLoadStart()
-    {
-        LOG(log_.info()) << "Initial load started in NFT extension..";
-    }
-
-    void
-    onInitialLoadFinish()
-    {
-        LOG(log_.info()) << "Initial load finished in NFT extension..";
-    }
-
-    void
-    onTransaction(model::Transaction const& tx) const
-    {
-        LOG(log_.info()) << "!!!!!!!!! got tx sent to nftext: " << tx.type;
-    }
-
-    void
-    onInitialObject(uint32_t seq, model::Object const& obj) const
-    {
-        LOG(log_.trace()) << "!!!!!!!!! got OBJ sent to nftext key=" << obj.key;
-
-        backend_->writeNFTs(etl::getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw));
-    }
-
-    void
-    onInitialTransactions(std::vector<model::Transaction> const& data) const
-    {
-        LOG(log_.trace()) << "!!!!!!!!! got initial TXS sent to nftext cnt=" << data.size();
-
-        std::vector<NFTsData> nfts;
-        std::vector<NFTTransactionsData> nftTxs;
-
-        for (auto& tx : data) {
-            auto const [txs, maybeNFT] = etl::getNFTDataFromTx(tx.meta, tx.sttx);
-            nftTxs.insert(nftTxs.end(), txs.begin(), txs.end());
-            if (maybeNFT)
-                nfts.push_back(*maybeNFT);
-        }
-
-        backend_->writeNFTs(etl::getUniqueNFTsDatas(nfts));
-        backend_->writeNFTTransactions(nftTxs);
-    }
-};
 
 class ETLService : public ETLServiceInterface {
     util::Logger log_{"ETL"};
@@ -451,21 +105,23 @@ public:
         , extractor_(std::make_shared<impl::Extractor>(fetcher_))
         , loader_(std::make_shared<impl::Loader>(
               backend_,
+              backend_->cache(),  // todo inject from outside
               balancer_,
               fetcher_,
-              std::make_shared<impl::Registry<CacheExt, NFTExt>>(CacheExt{backend_->cache()}, NFTExt{backend_})
+              std::make_shared<impl::Registry<impl::CacheExt, impl::SuccessorExt, impl::NFTExt>>(
+                  impl::CacheExt{backend_->cache()},
+                  impl::SuccessorExt{backend_, backend_->cache()},
+                  impl::NFTExt{backend_}
+              )
           ))
         , ctx_(8)
     {
-        // start monitor mode
-        // extractors, loaders, plugins all that jazz
-        // if we are a writer node, attempt to become a writer
-        LOG(log_.info()) << "Starting ETLng...";
+        LOG(log_.info()) << "Creating ETLng...";
     }
 
     ~ETLService() override
     {
-        LOG(log_.debug()) << "Stopping ETL";
+        LOG(log_.debug()) << "Stopping ETLng";
     }
 
     void
@@ -474,7 +130,7 @@ public:
         LOG(log_.info()) << "run() in ETLng...";
 
         mainLoop_.emplace(ctx_.execute([this] {
-            [[maybe_unused]] auto rng = loadInitialLedgerIfNeeded();
+            auto const rng = loadInitialLedgerIfNeeded();
 
             LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
             std::optional<uint32_t> mostRecentValidated = ledgers_->getMostRecent();
@@ -490,23 +146,18 @@ public:
 
             LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
 
-            // todo: this should be inside of task manager
-            // while (not isStopping()) {
-            //     nextSequence = publishNextSequence(nextSequence);
-            // }
-
             auto scheduler =
                 std::make_unique<impl::SchedulerChain<impl::ForwardScheduler /*, impl::BackfillScheduler*/>>(
                     impl::ForwardScheduler{ledgers_, nextSequence}
                     // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000}
                     // todo lift limit and start with rng.minSeq
                 );
-            auto man = TaskManager(
+            auto man = impl::TaskManager(
                 ctx_,
                 std::move(scheduler),
                 extractor_,
                 loader_,
-                std::make_shared<Monitor>(backend_, ledgers_, nextSequence)
+                std::make_shared<impl::Monitor>(backend_, ledgers_, nextSequence)
             );
 
             man.run();  // TODO: needs to be interruptable
