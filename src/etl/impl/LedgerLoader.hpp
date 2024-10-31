@@ -169,10 +169,6 @@ public:
         LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(lgrInfo);
 
         auto timeDiff = ::util::timed<std::chrono::duration<double>>([this, sequence, &lgrInfo, &ledgerData]() {
-            backend_->startWrites();
-
-            LOG(log_.debug()) << "Started writes";
-
             backend_->writeLedger(lgrInfo, std::move(*ledgerData->mutable_ledger_header()));
 
             LOG(log_.debug()) << "Wrote ledger";

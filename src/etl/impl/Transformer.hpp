@@ -188,7 +188,6 @@ private:
         ripple::LedgerHeader lgrInfo = ::util::deserializeHeader(ripple::makeSlice(rawData.ledger_header()));
 
         LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(lgrInfo);
-        backend_->startWrites();
         backend_->writeLedger(lgrInfo, std::move(*rawData.mutable_ledger_header()));
 
         writeSuccessors(lgrInfo, rawData);

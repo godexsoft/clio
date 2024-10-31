@@ -21,6 +21,7 @@
 
 #include "data/Types.hpp"
 #include "etlng/Models.hpp"
+#include "util/log/Logger.hpp"
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -83,6 +84,8 @@ class LedgerCache {
 
     // temporary set to prevent background thread from writing already deleted data. not used when cache is full
     std::unordered_set<ripple::uint256, ripple::hardened_hash<>> deletes_;
+
+    util::Logger log_{"ETL"};
 
 public:
     /**

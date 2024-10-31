@@ -927,13 +927,6 @@ public:
         executor_.write(std::move(statements));
     }
 
-    void
-    startWrites() const override
-    {
-        // Note: no-op in original implementation too.
-        // probably was used in PG to start a transaction or smth.
-    }
-
     bool
     isTooBusy() const override
     {

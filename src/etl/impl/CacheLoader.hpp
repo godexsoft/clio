@@ -120,7 +120,7 @@ private:
                 }
 
                 auto [start, end] = cursor.value();
-                LOG(log_.debug()) << "Starting a cursor: " << ripple::strHex(start);
+                LOG(log_.info()) << "Starting a cursor: " << ripple::strHex(start);
 
                 while (not token.isStopRequested() and not cache_.get().isDisabled()) {
                     auto res = data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
@@ -139,7 +139,7 @@ private:
 
                             cache_.get().setFull();
                         } else {
-                            LOG(log_.debug()) << "Finished a cursor. Remaining = " << remaining_;
+                            LOG(log_.info()) << "Finished a cursor. Remaining = " << remaining_;
                         }
 
                         break;  // pick up the next cursor if available

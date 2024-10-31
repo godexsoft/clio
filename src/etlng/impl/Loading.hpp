@@ -89,8 +89,6 @@ public:
     {
         try {
             LOG(log_.debug()) << "Loading a batch for " << data.seq;
-            backend_->startWrites();
-
             backend_->writeLedger(data.header, auto{data.rawHeader});  // CoreExt?
 
             // TODO: CoreExt: for each object in data
@@ -147,20 +145,16 @@ public:
         auto sequence = data.seq;
 
         auto seconds = ::util::timed<std::chrono::seconds>([this, &sequence, &data, &edgeKeys]() mutable {
-            backend_->startWrites();
-            LOG(log_.debug()) << "Started writes";
-
             // TODO: think about avoiding copy here
             backend_->writeLedger(data.header, auto{data.rawHeader});
             LOG(log_.debug()) << "Wrote ledger";
 
             insertTransactions(data);
-            writeEdgeKeys(data.seq, edgeKeys);
-
             registry_->dispatchInitialData(sequence, data.transactions);
             LOG(log_.debug()) << "Inserted txns";
 
             ASSERT(backend_->cache().isFull(), "Cache must be full at this point");
+            writeEdgeKeys(data.seq, edgeKeys);
         });
 
         LOG(log_.info()) << "Looping through cache and submitting all writes took " << seconds << " seconds.";
@@ -176,7 +170,7 @@ public:
     {
         for (auto& key : edgeKeys) {
             LOG(log_.debug()) << "Writing edge key = " << ripple::strHex(key);
-            auto succ = backend_->cache().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
+            auto succ = cache_.getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
             if (succ)
                 backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
         }

@@ -60,7 +60,7 @@ public:
                           << "; got successors = " << data.successors.has_value();
 
         if (data.successors.has_value()) {
-            LOG(log_.trace()) << "object neighbors included";
+            LOG(log_.info()) << "object neighbors included";
 
             for (auto const& successor : data.successors.value())
                 writeIncludedSuccessor(data.seq, successor);
@@ -70,7 +70,7 @@ public:
             for (auto const& obj : filtered)
                 writeIncludedSuccessor(data.seq, obj);
         } else {
-            LOG(log_.trace()) << "object neighbors not included. using cache";
+            LOG(log_.info()) << "object neighbors not included. using cache";
             if (not cache_.isFull() or cache_.latestLedgerSequence() != data.seq)
                 throw std::logic_error("Cache is not full, but object neighbors were not included");
 
@@ -81,8 +81,42 @@ public:
         }
     }
 
+    // void
+    // onInitialObjects(uint32_t seq, [[maybe_unused]] std::vector<model::Object> const& objs) const
+    // {
+    //     ripple::uint256 prev = data::firstKey;
+    //     while (auto cur = cache_.getSuccessor(prev, seq)) {
+    //         ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
+    //         if (prev == data::firstKey)
+    //             backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
+
+    //         if (isBookDir(cur->key, cur->blob)) {
+    //             auto base = getBookBase(cur->key);
+
+    //             // make sure the base is not an actual object
+    //             if (not cache_.get(base, seq)) {
+    //                 auto succ = backend_->cache().getSuccessor(base, seq);
+    //                 ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
+
+    //                 if (succ->key == cur->key) {
+    //                     LOG(log_.debug())
+    //                         << "Writing book successor = " << ripple::strHex(base) << " - " <<
+    //                         ripple::strHex(cur->key);
+
+    //                     backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
+    //                 }
+    //             }
+    //         }
+
+    //         prev = cur->key;
+    //     }
+
+    //     backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(data::lastKey));
+    // }
+
     void
-    onInitialObjects(uint32_t seq, [[maybe_unused]] std::vector<model::Object> const& objs) const
+    onInitialTransactions([[maybe_unused]] uint32_t seq, [[maybe_unused]] std::vector<model::Transaction> const& tx)
+        const
     {
         ripple::uint256 prev = data::firstKey;
         while (auto cur = cache_.getSuccessor(prev, seq)) {
@@ -113,10 +147,6 @@ public:
         backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(data::lastKey));
     }
 
-    // void
-    // onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
-    // {
-    // }
 private:
     void
     writeIncludedSuccessor(uint32_t seq, model::BookSuccessor const& succ) const

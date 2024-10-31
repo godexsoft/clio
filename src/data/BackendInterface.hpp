@@ -631,14 +631,6 @@ public:
     writeSuccessor(std::string&& key, std::uint32_t seq, std::string&& successor) = 0;
 
     /**
-     * @brief Starts a write transaction with the DB. No-op for cassandra.
-     *
-     * Note: Can potentially be deprecated and removed.
-     */
-    virtual void
-    startWrites() const = 0;
-
-    /**
      * @brief Tells database we finished writing all data for a specific ledger.
      *
      * Uses doFinishWrites to synchronize with the pending writes.

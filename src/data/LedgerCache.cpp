@@ -22,6 +22,7 @@
 #include "data/Types.hpp"
 #include "etlng/Models.hpp"
 #include "util/Assert.hpp"
+#include "util/log/Logger.hpp"
 
 #include <xrpl/basics/base_uint.h>
 
@@ -77,8 +78,10 @@ LedgerCache::update(std::vector<LedgerObject> const& objs, uint32_t seq, bool is
             if (seq > e.seq)
                 e = {seq, obj.blob};
         } else {
-            if (map_.contains(obj.key))
+            if (map_.contains(obj.key)) {
+                LOG(log_.info()) << "1 adding deleted object to cache " << ripple::to_string(obj.key);
                 deleted_[obj.key] = map_[obj.key];
+            }
 
             map_.erase(obj.key);
             if (!full_ && !isBackground)
@@ -113,10 +116,14 @@ LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq)
             if (seq > e.seq)
                 e = {seq, obj.data};
         } else {
-            if (map_.contains(obj.key))
+            if (map_.contains(obj.key)) {
+                // LOG(log_.info()) << "2 adding deleted object to cache " << ripple::to_string(obj.key);
                 deleted_[obj.key] = map_[obj.key];
+            }
 
             map_.erase(obj.key);
+            if (!full_)
+                deletes_.insert(obj.key);
         }
     }
     cv_.notify_all();
@@ -190,6 +197,12 @@ LedgerCache::getDeleted(ripple::uint256 const& key, uint32_t seq) const
         return std::nullopt;
 
     ++objectReqCounter_.get();
+
+    if (deleted_.contains(key)) {
+        LOG(log_.info()) << "DELETED object is in deleted cache " << ripple::to_string(key);
+    } else {
+        LOG(log_.info()) << "DELETED object is NOT in deleted cache " << ripple::to_string(key);
+    }
 
     auto e = deleted_.find(key);
     if (e == deleted_.end())

@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
+#include <tuple>
 #include <vector>
 
 namespace etlng::impl {
@@ -110,8 +111,8 @@ public:
         // send entire vector path
         {
             auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialData(seq, data); }) {
-                    p.onInitialData(seq, data);
+                if constexpr (requires { p.onInitialTransactions(seq, data); }) {
+                    p.onInitialTransactions(seq, data);
                 }
             };
 
