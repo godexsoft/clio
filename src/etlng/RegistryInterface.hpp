@@ -51,7 +51,7 @@ struct RegistryInterface {
      * @param data The objects to dispatch
      */
     virtual void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) noexcept(false) = 0;
 
     /**
      * @brief Dispatch initial transactions.
@@ -62,7 +62,7 @@ struct RegistryInterface {
      * @param data The transactions to dispatch
      */
     virtual void
-    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
+    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) noexcept(false) = 0;
 
     /**
      * @brief Dispatch an entire ledger diff.
@@ -72,7 +72,7 @@ struct RegistryInterface {
      * @param data The data to dispatch
      */
     virtual void
-    dispatch(model::LedgerData const& data) = 0;
+    dispatch(model::LedgerData const& data) noexcept(false) = 0;
 };
 
 }  // namespace etlng

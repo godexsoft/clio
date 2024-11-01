@@ -121,13 +121,13 @@ class Registry : public RegistryInterface {
     );
 
 public:
-    Registry(SomeExtension auto&&... exts)
+    explicit constexpr Registry(SomeExtension auto&&... exts)
         requires(std::is_same_v<std::decay_t<decltype(exts)>, std::decay_t<Ps>> and ...)
         : store_(std::forward<Ps>(exts)...)
     {
     }
 
-    void
+    constexpr void
     dispatch(model::LedgerData const& data) override
     {
         // send entire batch of data at once
@@ -156,7 +156,7 @@ public:
         }
     }
 
-    void
+    constexpr void
     dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
     {
         // send entire vector path
@@ -184,7 +184,7 @@ public:
         }
     }
 
-    void
+    constexpr void
     dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) override
     {
         // send entire vector path
@@ -213,4 +213,5 @@ public:
         }
     }
 };
+
 }  // namespace etlng::impl

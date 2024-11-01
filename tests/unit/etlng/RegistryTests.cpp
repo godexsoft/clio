@@ -31,7 +31,6 @@
 #include <xrpl/protocol/TxMeta.h>
 
 #include <cstdint>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
