@@ -30,12 +30,48 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace etlng::model {
+
+static consteval auto
+checkNoDuplicates(auto&&... types)
+{
+    auto store = std::array{types...};
+    auto end = store.end();
+    std::ranges::sort(store);
+    return (std::unique(std::begin(store), end) == end);
+}
+
+/**
+ * @brief A specification for the Registry.
+ *
+ * This specification simply defines the transaction types that are to be filtered out from the incoming transactions by
+ * the Registry for its `onTransaction` and `onInitialTransaction` hooks.
+ * It's a compilation error to list the same transaction type more than once.
+ */
+template <ripple::TxType... Types>
+    requires(checkNoDuplicates(Types...))
+struct Spec {
+    static constexpr bool SpecTag = true;
+
+    /**
+     * @brief Checks if the transaction type was requested.
+     *
+     * @param type The transaction type
+     * @return true if the transaction was requested; false otherwise
+     */
+    constexpr static bool
+    wants(ripple::TxType type)
+    {
+        return ((Types == type) || ...);
+    }
+};
 
 /**
  * @brief Represents a single transaction on the ledger.

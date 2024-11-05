@@ -24,10 +24,9 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
-#include <algorithm>
-#include <array>
 #include <concepts>
 #include <cstdint>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -35,30 +34,14 @@
 
 namespace etlng::impl {
 
-consteval auto
-checkNoDuplicates(auto&&... types)
-{
-    auto store = std::array{types...};
-    auto end = store.end();
-    std::ranges::sort(store);
-    return (std::unique(std::begin(store), end) == end);
-}
-
-template <ripple::TxType... Types>
-    requires(checkNoDuplicates(Types...))
-struct Spec {
-    static constexpr bool SpecTag = true;
-
-    constexpr static bool
-    wants(ripple::TxType t)
-    {
-        return ((Types == t) || ...);
-    }
-};
-
 template <typename T>
 concept HasLedgerDataHook = requires(T p) {
     { p.onLedgerData(std::declval<etlng::model::LedgerData>()) } -> std::same_as<void>;
+};
+
+template <typename T>
+concept HasInitialDataHook = requires(T p) {
+    { p.onInitialData(std::declval<etlng::model::LedgerData>()) } -> std::same_as<void>;
 };
 
 template <typename T>
@@ -67,10 +50,8 @@ concept HasTransactionHook = requires(T p) {
 };
 
 template <typename T>
-concept HasInitialTransactionsHook = requires(T p) {
-    {
-        p.onInitialTransactions(uint32_t{}, std::declval<std::vector<etlng::model::Transaction>>())
-    } -> std::same_as<void>;
+concept HasObjectHook = requires(T p) {
+    { p.onObject(uint32_t{}, std::declval<etlng::model::Object>()) } -> std::same_as<void>;
 };
 
 template <typename T>
@@ -80,7 +61,9 @@ concept HasInitialTransactionHook = requires(T p) {
 
 template <typename T>
 concept HasInitialObjectsHook = requires(T p) {
-    { p.onInitialObjects(uint32_t{}, std::declval<std::vector<etlng::model::Object>>()) } -> std::same_as<void>;
+    {
+        p.onInitialObjects(uint32_t{}, std::declval<std::vector<etlng::model::Object>>(), std::string{})
+    } -> std::same_as<void>;
 };
 
 template <typename T>
@@ -92,13 +75,13 @@ template <typename T>
 concept ContainsSpec = std::decay_t<T>::spec::SpecTag;
 
 template <typename T>
-concept ContainsValidHook =
-    HasLedgerDataHook<T> or (HasTransactionHook<T> and ContainsSpec<T>) or HasInitialTransactionsHook<T> or
-    (HasInitialTransactionHook<T> and ContainsSpec<T>) or HasInitialObjectsHook<T> or HasInitialObjectHook<T>;
+concept ContainsValidHook = HasLedgerDataHook<T> or HasInitialDataHook<T> or
+    (HasTransactionHook<T> and ContainsSpec<T>) or (HasInitialTransactionHook<T> and ContainsSpec<T>) or
+    HasObjectHook<T> or HasInitialObjectsHook<T> or HasInitialObjectHook<T>;
 
 template <typename T>
 concept NoTwoOfKind = not(HasLedgerDataHook<T> and HasTransactionHook<T>) and
-    not(HasInitialTransactionsHook<T> and HasInitialTransactionHook<T>) and
+    not(HasInitialDataHook<T> and HasInitialTransactionHook<T>) and not(HasInitialDataHook<T> and HasObjectHook<T>) and
     not(HasInitialObjectsHook<T> and HasInitialObjectHook<T>);
 
 template <typename T>
@@ -154,16 +137,29 @@ public:
                 std::apply([&expand, &t](auto&&... xs) { (expand(xs, t), ...); }, store_);
             }
         }
+
+        // send per object path
+        {
+            auto const expand = [&]<typename P>(P&& p, model::Object const& o) {
+                if constexpr (requires { p.onObject(data.seq, o); }) {
+                    p.onObject(data.seq, o);
+                }
+            };
+
+            for (auto const& obj : data.objects) {
+                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
+            }
+        }
     }
 
     constexpr void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) override
     {
         // send entire vector path
         {
             auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialObjects(seq, data); }) {
-                    p.onInitialObjects(seq, data);
+                if constexpr (requires { p.onInitialObjects(seq, data, lastKey); }) {
+                    p.onInitialObjects(seq, data, lastKey);
                 }
             };
 
@@ -184,31 +180,31 @@ public:
         }
     }
 
-    constexpr void
-    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) override
+    void
+    dispatchInitialData(model::LedgerData const& data) override
     {
-        // send entire vector path
+        // send entire batch path
         {
             auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialTransactions(seq, data); }) {
-                    p.onInitialTransactions(seq, data);
+                if constexpr (requires { p.onInitialData(data); }) {
+                    p.onInitialData(data);
                 }
             };
 
             std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
         }
 
-        // send per object path
+        // send per tx path
         {
             auto const expand = [&]<typename P>(P&& p, model::Transaction const& tx) {
-                if constexpr (requires { p.onInitialTransaction(seq, tx); }) {
+                if constexpr (requires { p.onInitialTransaction(data.seq, tx); }) {
                     if (std::decay_t<P>::spec::wants(tx.type))
-                        p.onInitialTransaction(seq, tx);
+                        p.onInitialTransaction(data.seq, tx);
                 }
             };
 
-            for (auto const& obj : data) {
-                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
+            for (auto const& tx : data.transactions) {
+                std::apply([&expand, &tx](auto&&... xs) { (expand(xs, tx), ...); }, store_);
             }
         }
     }

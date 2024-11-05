@@ -46,12 +46,12 @@ struct Ext1 {
 
 struct Ext2 {
     static void
-    onInitialObjects(uint32_t, std::vector<etlng::model::Object> const&);
+    onInitialObjects(uint32_t, std::vector<etlng::model::Object> const&, std::string);
 };
 
 struct Ext3 {
     static void
-    onInitialTransactions(uint32_t, std::vector<etlng::model::Transaction> const&);
+    onInitialData(etlng::model::LedgerData const&);
 };
 
 struct Ext4SpecMissing {
@@ -60,7 +60,7 @@ struct Ext4SpecMissing {
 };
 
 struct Ext4Fixed {
-    using spec = Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
 
     static void
     onTransaction(uint32_t, etlng::model::Transaction const&);
@@ -77,14 +77,14 @@ struct Ext6SpecMissing {
 };
 
 struct Ext6Fixed {
-    using spec = Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
 
     static void
     onInitialTransaction(uint32_t, etlng::model::Transaction const&);
 };
 
 struct ExtRealistic {
-    using spec = Spec<
+    using spec = etlng::model::Spec<
         ripple::TxType::ttNFTOKEN_BURN,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER,
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
@@ -116,12 +116,12 @@ static_assert(SomeExtension<ExtRealistic>);
 static_assert(not SomeExtension<ExtCombinesTwoOfKind>);
 
 struct ValidSpec {
-    using spec = Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
+    using spec = etlng::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
 };
 
 // invalid spec does not compile:
 // struct DuplicatesSpec {
-//     using spec = Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
+//     using spec = etlng::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
 // };
 
 static_assert(ContainsSpec<ValidSpec>);
@@ -137,21 +137,25 @@ struct MockExtLedgerData {
     MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
 };
 
+struct MockExtInitialData {
+    MOCK_METHOD(void, onInitialData, (etlng::model::LedgerData const&), (const));
+};
+
+struct MockExtOnObject {
+    MOCK_METHOD(void, onObject, (uint32_t, etlng::model::Object const&), (const));
+};
+
 struct MockExtTransactionNftBurn {
-    using spec = Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
     MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
 };
 
 struct MockExtTransactionNftOffer {
-    using spec = Spec<
+    using spec = etlng::model::Spec<
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
         ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER>;
     MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
-};
-
-struct MockExtInitialTransactions {
-    MOCK_METHOD(void, onInitialTransactions, (uint32_t, std::vector<etlng::model::Transaction> const&), (const));
 };
 
 struct MockExtInitialObject {
@@ -159,16 +163,16 @@ struct MockExtInitialObject {
 };
 
 struct MockExtInitialObjects {
-    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&), (const));
+    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&, std::string), (const));
 };
 
 struct MockExtNftBurn {
-    using spec = Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
     MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
 };
 
 struct MockExtNftOffer {
-    using spec = Spec<
+    using spec = etlng::model::Spec<
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
         ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER>;
@@ -345,8 +349,16 @@ TEST(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
     EXPECT_CALL(extBurn, onInitialTransaction(testing::_, testing::_)).Times(2);   // 2 burn txs
     EXPECT_CALL(extOffer, onInitialTransaction(testing::_, testing::_)).Times(1);  // 1 create offer
 
+    auto const header = CreateLedgerHeader(LEDGERHASH, SEQ);
     auto reg = Registry<MockExtNftBurn&, MockExtNftOffer&>(extBurn, extOffer);
-    reg.dispatchInitialData(SEQ, transactions);
+    reg.dispatchInitialData(etlng::model::LedgerData{
+        .transactions = transactions,
+        .objects = {},
+        .successors = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = SEQ,
+    });
 }
 
 TEST(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
@@ -375,32 +387,16 @@ TEST(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
     });
 }
 
-TEST(RegistryTest, OnInitialTransactions)
-{
-    auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
-    };
-
-    auto ext = MockExtInitialTransactions{};
-
-    EXPECT_CALL(ext, onInitialTransactions(testing::_, testing::_)).Times(1);  // 1 vector passed as is
-
-    auto reg = Registry<MockExtInitialTransactions&>(ext);
-    reg.dispatchInitialData(SEQ, transactions);
-}
-
 TEST(RegistryTest, InitialObjectsEmpty)
 {
     auto extObj = MockExtInitialObject{};
     auto extObjs = MockExtInitialObjects{};
 
-    EXPECT_CALL(extObj, onInitialObject(testing::_, testing::_)).Times(0);    // 0 empty objects sent
-    EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_)).Times(1);  // 1 vector passed as is
+    EXPECT_CALL(extObj, onInitialObject(testing::_, testing::_)).Times(0);                // 0 empty objects sent
+    EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_, testing::_)).Times(1);  // 1 vector passed as is
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(SEQ, {});
+    reg.dispatchInitialObjects(SEQ, {}, {});
 }
 
 TEST(RegistryTest, InitialObjectsDispatched)
@@ -408,11 +404,29 @@ TEST(RegistryTest, InitialObjectsDispatched)
     auto extObj = MockExtInitialObject{};
     auto extObjs = MockExtInitialObjects{};
 
-    EXPECT_CALL(extObj, onInitialObject(testing::_, testing::_)).Times(3);    // 3 objects sent
-    EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_)).Times(1);  // 1 vector passed as is
+    EXPECT_CALL(extObj, onInitialObject(testing::_, testing::_)).Times(3);                // 3 objects sent
+    EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_, testing::_)).Times(1);  // 1 vector passed as is
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(SEQ, {util::CreateObject(), util::CreateObject(), util::CreateObject()});
+    reg.dispatchInitialObjects(SEQ, {util::CreateObject(), util::CreateObject(), util::CreateObject()}, {});
+}
+
+TEST(RegistryTest, ObjectsDispatched)
+{
+    auto extObj = MockExtOnObject{};
+
+    EXPECT_CALL(extObj, onObject(testing::_, testing::_)).Times(3);  // 3 objects sent
+
+    auto const header = CreateLedgerHeader(LEDGERHASH, SEQ);
+    auto reg = Registry<MockExtOnObject&>(extObj);
+    reg.dispatch(etlng::model::LedgerData{
+        .transactions = {},
+        .objects = {util::CreateObject(), util::CreateObject(), util::CreateObject()},
+        .successors = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = SEQ
+    });
 }
 
 TEST(RegistryTest, OnLedgerDataForBatch)
@@ -437,4 +451,96 @@ TEST(RegistryTest, OnLedgerDataForBatch)
         .rawHeader = {},
         .seq = SEQ
     });
+}
+
+TEST(RegistryTest, InitialObjectsCorrectOrderOfHookCalls)
+{
+    uint32_t order = 0;
+    auto extObjs = MockExtInitialObjects{};
+    auto extObj = MockExtInitialObject{};
+
+    EXPECT_CALL(extObjs, onInitialObjects).Times(1).WillRepeatedly([&](auto, auto const&, auto) {
+        EXPECT_EQ(order++, 0);
+    });
+    EXPECT_CALL(extObj, onInitialObject).Times(3).WillRepeatedly([&](auto, auto const&) { EXPECT_GE(order++, 1); });
+
+    auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
+    reg.dispatchInitialObjects(SEQ, {util::CreateObject(), util::CreateObject(), util::CreateObject()}, {});
+
+    EXPECT_EQ(order, 4);
+}
+
+TEST(RegistryTest, InitialDataCorrectOrderOfHookCalls)
+{
+    uint32_t order = 0;
+    auto extInitialData = MockExtInitialData{};
+    auto extInitialTransaction = MockExtNftBurn{};
+
+    auto transactions = std::vector{
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+    };
+
+    EXPECT_CALL(extInitialData, onInitialData).Times(1).WillRepeatedly([&](auto const&) { EXPECT_EQ(order++, 0); });
+    EXPECT_CALL(extInitialTransaction, onInitialTransaction).Times(2).WillRepeatedly([&](auto, auto const&) {
+        EXPECT_GE(order++, 1);
+    });
+
+    auto const header = CreateLedgerHeader(LEDGERHASH, SEQ);
+    auto reg = Registry<MockExtNftBurn&, MockExtInitialData&>(extInitialTransaction, extInitialData);
+    reg.dispatchInitialData(etlng::model::LedgerData{
+        .transactions = std::move(transactions),
+        .objects = {},
+        .successors = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = SEQ
+    });
+
+    EXPECT_EQ(order, 3);  // 2 burn txs and 1 full data sent
+}
+
+TEST(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
+{
+    uint32_t order = 0;
+    auto extLedgerData = MockExtLedgerData{};
+    auto extOnTransaction = MockExtTransactionNftBurn{};
+    auto extOnObject = MockExtOnObject{};
+
+    auto transactions = std::vector{
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+    };
+    auto objects = std::vector{
+        util::CreateObject(),
+        util::CreateObject(),
+        util::CreateObject(),
+    };
+
+    EXPECT_CALL(extLedgerData, onLedgerData).Times(1).WillRepeatedly([&](auto const&) { EXPECT_EQ(order++, 0); });
+    EXPECT_CALL(extOnTransaction, onTransaction).Times(2).WillRepeatedly([&](auto, auto const&) {
+        EXPECT_GE(order++, 1);
+        EXPECT_LE(order, 3);
+    });
+    EXPECT_CALL(extOnObject, onObject).Times(3).WillRepeatedly([&](auto, auto const&) {
+        EXPECT_GE(order++, 3);
+        EXPECT_LE(order, 6);
+    });
+
+    auto const header = CreateLedgerHeader(LEDGERHASH, SEQ);
+    auto reg = Registry<MockExtOnObject&, MockExtTransactionNftBurn&, MockExtLedgerData&>(
+        extOnObject, extOnTransaction, extLedgerData
+    );
+    reg.dispatch(etlng::model::LedgerData{
+        .transactions = std::move(transactions),
+        .objects = std::move(objects),
+        .successors = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = SEQ
+    });
+
+    EXPECT_EQ(order, 6);  // 1 full data sent, 2 burn tx and 3 objects
 }

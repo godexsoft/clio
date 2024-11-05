@@ -21,11 +21,8 @@
 
 #include "etlng/Models.hpp"
 
-#include <org/xrpl/rpc/v1/ledger.pb.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
-
 #include <cstdint>
-#include <optional>
+#include <string>
 #include <vector>
 
 namespace etlng {
@@ -34,12 +31,45 @@ namespace etlng {
  * @brief The interface for a registry that can dispatch transactions and objects to extensions.
  *
  * This class defines the interface for dispatching data through to extensions.
+ *
+ * @note
+ * The registry itself consists of Extensions.
+ * Each extension must define at least one valid hook:
+ * - for ongoing ETL dispatch:
+ *   - void onLedgerData(etlng::model::LedgerData const&)
+ *   - void onTransaction(uint32_t, etlng::model::Transaction const&)
+ *   - void onObject(uint32_t, etlng::model::Object const&)
+ * - for initial ledger load
+ *   - void onInitialData(etlng::model::LedgerData const&)
+ *   - void onInitialTransaction(uint32_t, etlng::model::Transaction const&)
+ * - for initial objects (called for each downloaded batch)
+ *   - void onInitialObjects(uint32_t, std::vector<etlng::model::Object> const&, std::string)
+ *   - void onInitialObject(uint32_t, etlng::model::Object const&)
+ *
+ * When the registry dispatches (initial)data or objects, each of the above hooks will be called in order on each
+ * registered extension.
+ * This means that the order of execution is from left to right (hooks) and top to bottom (registered extensions).
+ *
+ * If either `onTransaction` or `onInitialTransaction` are defined, the extension will have to additionally define a
+ * Specification. The specification lists transaction types to filter from the incoming data such that `onTransaction`
+ * and `onInitialTransaction` are only called for the transactions that are of interest for the given extension.
+ *
+ * The specification is setup like so:
+ * @code{.cpp}
+ * struct Ext {
+ *   using spec = etlng::model::Spec<
+ *     ripple::TxType::ttNFTOKEN_BURN,
+ *     ripple::TxType::ttNFTOKEN_ACCEPT_OFFER,
+ *     ripple::TxType::ttNFTOKEN_CREATE_OFFER,
+ *     ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
+ *     ripple::TxType::ttNFTOKEN_MINT>;
+ *
+ *   static void
+ *   onInitialTransaction(uint32_t, etlng::model::Transaction const&);
+ * };
+ * @endcode
  */
 struct RegistryInterface {
-    using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
-    using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
-    using OptionalGetLedgerResponseType = std::optional<GetLedgerResponseType>;
-
     virtual ~RegistryInterface() = default;
 
     /**
@@ -49,25 +79,25 @@ struct RegistryInterface {
      *
      * @param seq The sequence
      * @param data The objects to dispatch
+     * @param lastKey The predcessor of the first object in data if known; an empty string otherwise
      */
     virtual void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) noexcept(false) = 0;
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) = 0;
 
     /**
-     * @brief Dispatch initial transactions.
+     * @brief Dispatch initial ledger data.
      *
-     * These transactions are received during initial ledger load.
+     * The transactions, header and edge keys are received during initial ledger load.
      *
-     * @param seq The sequence
-     * @param data The transactions to dispatch
+     * @param data The data to dispatch
      */
     virtual void
-    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) noexcept(false) = 0;
+    dispatchInitialData(model::LedgerData const& data) noexcept(false) = 0;
 
     /**
      * @brief Dispatch an entire ledger diff.
      *
-     * This is used to dispatch incoming diffs to the extensions.
+     * This is used to dispatch incoming diffs through the extensions.
      *
      * @param data The data to dispatch
      */
