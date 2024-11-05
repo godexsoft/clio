@@ -92,7 +92,7 @@ struct RegistryInterface {
      * @param data The data to dispatch
      */
     virtual void
-    dispatchInitialData(model::LedgerData const& data) noexcept(false) = 0;
+    dispatchInitialData(model::LedgerData const& data) = 0;
 
     /**
      * @brief Dispatch an entire ledger diff.
@@ -102,7 +102,7 @@ struct RegistryInterface {
      * @param data The data to dispatch
      */
     virtual void
-    dispatch(model::LedgerData const& data) noexcept(false) = 0;
+    dispatch(model::LedgerData const& data) = 0;
 };
 
 }  // namespace etlng

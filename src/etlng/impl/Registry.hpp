@@ -87,8 +87,6 @@ concept NoTwoOfKind = not(HasLedgerDataHook<T> and HasTransactionHook<T>) and
 template <typename T>
 concept SomeExtension = NoTwoOfKind<T> and ContainsValidHook<T>;
 
-// Add spec stuff for non (s) versions
-
 template <SomeExtension... Ps>
 class Registry : public RegistryInterface {
     std::tuple<Ps...> store_;
@@ -109,6 +107,14 @@ public:
         : store_(std::forward<Ps>(exts)...)
     {
     }
+
+    ~Registry() override = default;
+    Registry(Registry const&) = delete;
+    Registry(Registry&&) = default;
+    Registry&
+    operator=(Registry const&) = delete;
+    Registry&
+    operator=(Registry&&) = default;
 
     constexpr void
     dispatch(model::LedgerData const& data) override
@@ -180,7 +186,7 @@ public:
         }
     }
 
-    void
+    constexpr void
     dispatchInitialData(model::LedgerData const& data) override
     {
         // send entire batch path

@@ -38,6 +38,7 @@
 #include <vector>
 
 namespace etlng::model {
+namespace impl {
 
 static consteval auto
 checkNoDuplicates(auto&&... types)
@@ -48,6 +49,8 @@ checkNoDuplicates(auto&&... types)
     return (std::unique(std::begin(store), end) == end);
 }
 
+}  // namespace impl
+
 /**
  * @brief A specification for the Registry.
  *
@@ -56,7 +59,7 @@ checkNoDuplicates(auto&&... types)
  * It's a compilation error to list the same transaction type more than once.
  */
 template <ripple::TxType... Types>
-    requires(checkNoDuplicates(Types...))
+    requires(impl::checkNoDuplicates(Types...))
 struct Spec {
     static constexpr bool SpecTag = true;
 
@@ -66,8 +69,8 @@ struct Spec {
      * @param type The transaction type
      * @return true if the transaction was requested; false otherwise
      */
-    constexpr static bool
-    wants(ripple::TxType type)
+    [[nodiscard]] constexpr static bool
+    wants(ripple::TxType type) noexcept
     {
         return ((Types == type) || ...);
     }
