@@ -24,6 +24,7 @@
 #include "util/log/Logger.hpp"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace etlng::impl {
@@ -41,22 +42,23 @@ public:
     void
     onLedgerData(model::LedgerData const& data) const
     {
-        LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
         cache_.update(data.objects, data.seq);
+        LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
     }
 
     void
-    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs) const
+    onInitialData(model::LedgerData const& data) const
     {
-        LOG(log_.trace()) << "got objects cnt = " << objs.size();
-        cache_.update(objs, seq);
-    }
-
-    void
-    onInitialTransactions([[maybe_unused]] uint32_t seq, std::vector<model::Transaction> const& tx) const
-    {
-        LOG(log_.trace()) << "got initial TXS cnt = " << tx.size();
+        LOG(log_.trace()) << "got initial data. objects cnt = " << data.objects.size();
+        cache_.update(data.objects, data.seq);
         cache_.setFull();
+    }
+
+    void
+    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs, [[maybe_unused]] std::string lastKey) const
+    {
+        LOG(log_.trace()) << "got initial objects cnt = " << objs.size();
+        cache_.update(objs, seq);
     }
 };
 

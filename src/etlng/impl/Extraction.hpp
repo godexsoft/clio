@@ -112,7 +112,7 @@ extractTxs(auto&& transactions, uint32_t seq)
 }
 
 static model::Object
-extractObj(org::xrpl::rpc::v1::RawLedgerObject& obj)
+extractObj(org::xrpl::rpc::v1::RawLedgerObject obj)
 {
     auto key = ripple::uint256::fromVoidChecked(obj.key());
     ASSERT(key.has_value(), "Failed to deserialize key from void");
@@ -197,6 +197,7 @@ private:
                     extractTxs(std::move(*data.mutable_transactions_list()->mutable_transactions()), header.seq),
                 .objects = extractObjs(std::move(*data.mutable_ledger_objects()->mutable_objects())),
                 .successors = maybeExtractSuccessors(data),
+                .edgeKeys = std::nullopt,
                 .header = header,
                 .rawHeader = std::move(*data.mutable_ledger_header()),
                 .seq = seq,

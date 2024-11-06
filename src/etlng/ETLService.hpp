@@ -38,6 +38,7 @@
 #include "etlng/impl/Scheduling.hpp"
 #include "etlng/impl/TaskManager.hpp"
 #include "etlng/impl/ext/Cache.hpp"
+#include "etlng/impl/ext/Core.hpp"
 #include "etlng/impl/ext/NFT.hpp"
 #include "etlng/impl/ext/Successor.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
@@ -108,8 +109,9 @@ public:
               backend_->cache(),  // todo inject from outside
               balancer_,
               fetcher_,
-              std::make_shared<impl::Registry<impl::CacheExt, impl::SuccessorExt, impl::NFTExt>>(
+              std::make_shared<impl::Registry<impl::CacheExt, impl::CoreExt, impl::SuccessorExt, impl::NFTExt>>(
                   impl::CacheExt{backend_->cache()},
+                  impl::CoreExt{backend_},
                   impl::SuccessorExt{backend_, backend_->cache()},
                   impl::NFTExt{backend_}
               )
@@ -180,8 +182,10 @@ public:
                     auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
                         return extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
                             // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
+                            data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
+
                             // TODO: this should be interruptable for graceful shutdown
-                            return loader_->loadInitialLedger(data, balancer_->loadInitialLedger(seq, *loader_));
+                            return loader_->loadInitialLedger(data);
                         });
                     });
 

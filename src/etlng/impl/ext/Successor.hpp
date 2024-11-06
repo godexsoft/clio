@@ -34,6 +34,7 @@
 #include <memory>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -52,99 +53,53 @@ public:
     }
 
     void
+    onInitialData(model::LedgerData const& data) const
+    {
+        ASSERT(cache_.isFull(), "Cache must be full at this point");
+        ASSERT(data.edgeKeys.has_value(), "Expecting to have edge keys on initial data load");
+        ASSERT(data.objects.empty(), "Should not have objects from initial data");
+        writeSuccessors(data.seq);
+        writeEdgeKeys(data.seq, data.edgeKeys.value());
+    }
+
+    void
+    onInitialObjects(uint32_t seq, [[maybe_unused]] std::vector<model::Object> const& objs, std::string lastKey) const
+    {
+        for (auto const& obj : objs) {
+            if (!lastKey.empty())
+                backend_->writeSuccessor(std::move(lastKey), seq, auto{obj.keyRaw});
+            lastKey = obj.keyRaw;
+        }
+    }
+
+    void
     onLedgerData(model::LedgerData const& data) const
     {
         namespace vs = std::views;
 
-        LOG(log_.trace()) << "got objects cnt = " << data.objects.size()
-                          << "; got successors = " << data.successors.has_value();
+        LOG(log_.info()) << "Received ledger data for successor ext; obj cnt = " << data.objects.size()
+                         << "; got successors = " << data.successors.has_value() << "; cache is "
+                         << (cache_.isFull() ? "FULL" : "Not full");
+
+        auto filtered = data.objects  //
+            | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
 
         if (data.successors.has_value()) {
-            LOG(log_.info()) << "object neighbors included";
+            LOG(log_.debug()) << "object neighbors included";
 
             for (auto const& successor : data.successors.value())
                 writeIncludedSuccessor(data.seq, successor);
 
-            auto filtered = data.objects  //
-                | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
             for (auto const& obj : filtered)
                 writeIncludedSuccessor(data.seq, obj);
         } else {
-            LOG(log_.info()) << "object neighbors not included. using cache";
+            LOG(log_.debug()) << "object neighbors not included. using cache";
             if (not cache_.isFull() or cache_.latestLedgerSequence() != data.seq)
                 throw std::logic_error("Cache is not full, but object neighbors were not included");
 
-            auto filtered = data.objects  //
-                | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
             for (auto const& obj : filtered)
                 updateSuccessorFromCache(data.seq, obj);
         }
-    }
-
-    // void
-    // onInitialObjects(uint32_t seq, [[maybe_unused]] std::vector<model::Object> const& objs) const
-    // {
-    //     ripple::uint256 prev = data::firstKey;
-    //     while (auto cur = cache_.getSuccessor(prev, seq)) {
-    //         ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
-    //         if (prev == data::firstKey)
-    //             backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
-
-    //         if (isBookDir(cur->key, cur->blob)) {
-    //             auto base = getBookBase(cur->key);
-
-    //             // make sure the base is not an actual object
-    //             if (not cache_.get(base, seq)) {
-    //                 auto succ = backend_->cache().getSuccessor(base, seq);
-    //                 ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
-
-    //                 if (succ->key == cur->key) {
-    //                     LOG(log_.debug())
-    //                         << "Writing book successor = " << ripple::strHex(base) << " - " <<
-    //                         ripple::strHex(cur->key);
-
-    //                     backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
-    //                 }
-    //             }
-    //         }
-
-    //         prev = cur->key;
-    //     }
-
-    //     backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(data::lastKey));
-    // }
-
-    void
-    onInitialTransactions([[maybe_unused]] uint32_t seq, [[maybe_unused]] std::vector<model::Transaction> const& tx)
-        const
-    {
-        ripple::uint256 prev = data::firstKey;
-        while (auto cur = cache_.getSuccessor(prev, seq)) {
-            ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
-            if (prev == data::firstKey)
-                backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
-
-            if (isBookDir(cur->key, cur->blob)) {
-                auto base = getBookBase(cur->key);
-
-                // make sure the base is not an actual object
-                if (not cache_.get(base, seq)) {
-                    auto succ = backend_->cache().getSuccessor(base, seq);
-                    ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
-
-                    if (succ->key == cur->key) {
-                        LOG(log_.debug())
-                            << "Writing book successor = " << ripple::strHex(base) << " - " << ripple::strHex(cur->key);
-
-                        backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
-                    }
-                }
-            }
-
-            prev = cur->key;
-        }
-
-        backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(data::lastKey));
     }
 
 private:
@@ -227,9 +182,8 @@ private:
                 auto const successor = cache_.getSuccessor(bookBase, seq);
                 ASSERT(successor.has_value(), "Book base must have a successor for seq = {}", seq);
 
-                if (successor->key == obj.key) {
+                if (successor->key == obj.key)
                     rewireSuccessor(seq, obj, bookBase);
-                }
             }
         }
     }
@@ -254,7 +208,50 @@ private:
             LOG(log_.debug()) << "Updating book successor " << ripple::strHex(bookBase) << " - "
                               << ripple::strHex(data::lastKey);
         }
-    };
+    }
+
+    void
+    writeSuccessors(uint32_t seq) const
+    {
+        ripple::uint256 prev = data::firstKey;
+        while (auto cur = cache_.getSuccessor(prev, seq)) {
+            ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
+            if (prev == data::firstKey)
+                backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
+
+            if (isBookDir(cur->key, cur->blob)) {
+                auto base = getBookBase(cur->key);
+
+                // make sure the base is not an actual object
+                if (not cache_.get(base, seq)) {
+                    auto succ = cache_.getSuccessor(base, seq);
+                    ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
+
+                    if (succ->key == cur->key) {
+                        LOG(log_.debug())
+                            << "Writing book successor = " << ripple::strHex(base) << " - " << ripple::strHex(cur->key);
+
+                        backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
+                    }
+                }
+            }
+
+            prev = cur->key;
+        }
+
+        backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(data::lastKey));
+    }
+
+    void
+    writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
+    {
+        for (auto& key : edgeKeys) {
+            LOG(log_.debug()) << "Writing edge key = " << ripple::strHex(key);
+            auto succ = cache_.getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
+            if (succ)
+                backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
+        }
+    }
 };
 
 }  // namespace etlng::impl

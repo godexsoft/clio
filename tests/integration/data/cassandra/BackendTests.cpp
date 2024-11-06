@@ -613,8 +613,6 @@ TEST_F(BackendCassandraTest, Basic)
             return lgrInfo;
         };
         auto writeLedger = [&](auto lgrInfo, auto txns, auto objs, auto accountTx, auto state) {
-            backend->startWrites();
-
             backend->writeLedger(lgrInfo, ledgerHeaderToBinaryString(lgrInfo));
             for (auto [hash, txn, meta] : txns) {
                 backend->writeTransaction(
@@ -895,7 +893,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
         std::string const accountIndexBlob = hexStringToBinaryString(accountIndexHex);
         ripple::LedgerHeader const lgrInfo = util::deserializeHeader(ripple::makeSlice(rawHeaderBlob));
 
-        backend->startWrites();
         backend->writeLedger(lgrInfo, std::move(rawHeaderBlob));
         backend->writeSuccessor(uint256ToString(data::firstKey), lgrInfo.seq, uint256ToString(data::lastKey));
         ASSERT_TRUE(backend->finishWrites(lgrInfo.seq));
@@ -927,7 +924,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
         {
             std::string infoBlob = ledgerHeaderToBinaryString(lgrInfoNext);
 
-            backend->startWrites();
             backend->writeLedger(lgrInfoNext, std::move(infoBlob));
             ASSERT_TRUE(backend->finishWrites(lgrInfoNext.seq));
         }
@@ -960,7 +956,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             EXPECT_EQ(hashes.size(), 0);
         }
         {
-            backend->startWrites();
             lgrInfoNext.seq = lgrInfoNext.seq + 1;
             lgrInfoNext.txHash = ~lgrInfo.txHash;
             lgrInfoNext.accountHash = lgrInfoNext.accountHash ^ lgrInfoNext.txHash;
@@ -997,7 +992,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
         }
         std::string accountBlobOld = accountBlob;
         {
-            backend->startWrites();
             lgrInfoNext.seq = lgrInfoNext.seq + 1;
             lgrInfoNext.parentHash = lgrInfoNext.hash;
             lgrInfoNext.hash++;
@@ -1035,7 +1029,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             EXPECT_FALSE(obj);
         }
         {
-            backend->startWrites();
             lgrInfoNext.seq = lgrInfoNext.seq + 1;
             lgrInfoNext.parentHash = lgrInfoNext.hash;
             lgrInfoNext.hash++;
@@ -1100,8 +1093,6 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             return lgrInfo;
         };
         auto writeLedger = [&](auto lgrInfo, auto objs, auto state) {
-            backend->startWrites();
-
             backend->writeLedger(lgrInfo, std::move(ledgerHeaderToBinaryString(lgrInfo)));
             std::vector<data::LedgerObject> cacheUpdates;
             for (auto [key, obj] : objs) {

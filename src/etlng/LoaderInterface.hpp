@@ -37,7 +37,7 @@ struct LoaderInterface {
     load(model::LedgerData const& data) = 0;
 
     virtual std::optional<ripple::LedgerHeader>
-    loadInitialLedger(model::LedgerData const& data, std::vector<std::string> const& edgeKeys) = 0;
+    loadInitialLedger(model::LedgerData const& data) = 0;
 };
 
 struct InitialLoadObserverInterface {
@@ -45,7 +45,7 @@ struct InitialLoadObserverInterface {
 
     // called from AsyncCallData for each batch of objects from the async downloaders
     virtual void
-    onInitialLoadGotMoreObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
+    onInitialLoadGotMoreObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) = 0;
 };
 
 }  // namespace etlng

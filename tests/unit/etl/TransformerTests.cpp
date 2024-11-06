@@ -110,7 +110,6 @@ TEST_F(ETLTransformerTest, StopsOnEmptyFetchResponse)
 
     // TODO: most of this should be hidden in a smaller entity that is injected into the transformer thread
     EXPECT_CALL(dataPipe_, popNext).Times(AtLeast(1));
-    EXPECT_CALL(*backend, startWrites).Times(AtLeast(1));
     EXPECT_CALL(*backend, writeLedger(_, _)).Times(AtLeast(1));
     EXPECT_CALL(ledgerLoader_, insertTransactions).Times(AtLeast(1));
     EXPECT_CALL(*backend, writeAccountTransactions).Times(AtLeast(1));
@@ -141,7 +140,6 @@ TEST_F(ETLTransformerTest, DoesNotPublishIfCanNotBuildNextLedger)
 
     // TODO: most of this should be hidden in a smaller entity that is injected into the transformer thread
     EXPECT_CALL(dataPipe_, popNext).Times(AtLeast(1));
-    EXPECT_CALL(*backend, startWrites).Times(AtLeast(1));
     EXPECT_CALL(*backend, writeLedger(_, _)).Times(AtLeast(1));
     EXPECT_CALL(ledgerLoader_, insertTransactions).Times(AtLeast(1));
     EXPECT_CALL(*backend, writeAccountTransactions).Times(AtLeast(1));

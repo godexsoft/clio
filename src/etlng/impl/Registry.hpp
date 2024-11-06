@@ -25,7 +25,9 @@
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
+#include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace etlng::impl {
@@ -75,16 +77,29 @@ public:
                 std::apply([&expand, &t](auto&&... xs) { (expand(xs, t), ...); }, store_);
             }
         }
+
+        // send per object path
+        {
+            auto const expand = [&]<typename P>(P&& p, model::Object const& o) {
+                if constexpr (requires { p.onObject(data.seq, o); }) {
+                    p.onObject(data.seq, o);
+                }
+            };
+
+            for (auto const& obj : data.objects) {
+                std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
+            }
+        }
     }
 
     void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) override
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) override
     {
         // send entire vector path
         {
             auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialObjects(seq, data); }) {
-                    p.onInitialObjects(seq, data);
+                if constexpr (requires { p.onInitialObjects(seq, data, lastKey); }) {
+                    p.onInitialObjects(seq, data, std::move(lastKey));
                 }
             };
 
@@ -106,28 +121,42 @@ public:
     }
 
     void
-    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) override
+    dispatchInitialData(model::LedgerData const& data) override
     {
-        // send entire vector path
+        // send entire batch path
         {
             auto const expand = [&](auto&& p) {
-                if constexpr (requires { p.onInitialTransactions(seq, data); }) {
-                    p.onInitialTransactions(seq, data);
+                if constexpr (requires { p.onInitialData(data); }) {
+                    p.onInitialData(data);
                 }
             };
 
             std::apply([&expand](auto&&... xs) { (expand(xs), ...); }, store_);
         }
 
-        // send per object path
+        // send per tx path
         {
             auto const expand = [&]<typename P>(P&& p, model::Transaction const& tx) {
-                if constexpr (requires { p.onInitialTransaction(seq, tx); }) {
-                    p.onInitialTransaction(seq, tx);
+                if constexpr (requires { p.onInitialTransaction(data.seq, tx); }) {
+                    if (P::spec::wants(tx.type))
+                        p.onInitialTransaction(data.seq, tx);
                 }
             };
 
-            for (auto const& obj : data) {
+            for (auto const& tx : data.transactions) {
+                std::apply([&expand, &tx](auto&&... xs) { (expand(xs, tx), ...); }, store_);
+            }
+        }
+
+        // send per object path
+        {
+            auto const expand = [&]<typename P>(P&& p, model::Object const& o) {
+                if constexpr (requires { p.onInitialObject(data.seq, o); }) {
+                    p.onInitialObject(data.seq, o);
+                }
+            };
+
+            for (auto const& obj : data.objects) {
                 std::apply([&expand, &obj](auto&&... xs) { (expand(xs, obj), ...); }, store_);
             }
         }

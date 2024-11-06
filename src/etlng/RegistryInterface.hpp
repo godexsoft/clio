@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace etlng {
@@ -37,11 +38,13 @@ struct RegistryInterface {
 
     virtual ~RegistryInterface() = default;
 
+    // called async from multiple downloaders
+    // that's why for now it's not unified into dispatchInitialData
     virtual void
-    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data) = 0;
+    dispatchInitialObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) = 0;
 
     virtual void
-    dispatchInitialData(uint32_t seq, std::vector<model::Transaction> const& data) = 0;
+    dispatchInitialData(model::LedgerData const& data) = 0;
 
     virtual void
     dispatch(model::LedgerData const& data) = 0;

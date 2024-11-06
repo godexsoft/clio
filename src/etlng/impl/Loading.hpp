@@ -88,15 +88,6 @@ public:
     load(model::LedgerData const& data) override
     {
         try {
-            LOG(log_.debug()) << "Loading a batch for " << data.seq;
-            backend_->writeLedger(data.header, auto{data.rawHeader});  // CoreExt?
-
-            // TODO: CoreExt: for each object in data
-            for (auto const& obj : data.objects)
-                backend_->writeLedgerObject(auto{obj.keyRaw}, data.seq, auto{obj.dataRaw});
-
-            insertTransactions(data);  // TODO: this could be inside of CoreExt (after CacheExt and before SuccessorExt)
-
             // perform cache updates and all writes from extensions
             registry_->dispatch(data);
 
@@ -114,25 +105,14 @@ public:
     };
 
     void
-    onInitialLoadGotMoreObjects(uint32_t seq, std::vector<model::Object> const& data) override
+    onInitialLoadGotMoreObjects(uint32_t seq, std::vector<model::Object> const& data, std::string lastKey) override
     {
-        std::string lastKey;
-
         LOG(log_.debug()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
-        for (auto const& obj : data) {
-            // TODO: this should be in SuccessorExt. figure out how to do it effeciently (without looping twice)
-            if (!lastKey.empty())
-                backend_->writeSuccessor(std::move(lastKey), seq, auto{obj.keyRaw});
-
-            backend_->writeLedgerObject(auto{obj.keyRaw}, seq, auto{obj.dataRaw});
-            lastKey = obj.keyRaw;
-        }
-
-        registry_->dispatchInitialObjects(seq, data);
+        registry_->dispatchInitialObjects(seq, data, std::move(lastKey));
     }
 
     std::optional<ripple::LedgerHeader>
-    loadInitialLedger(model::LedgerData const& data, std::vector<std::string> const& edgeKeys) override
+    loadInitialLedger(model::LedgerData const& data) override
     {
         // check that database is actually empty
         auto rng = backend_->hardFetchLedgerRangeNoThrow();
@@ -144,53 +124,13 @@ public:
         LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(data.header);
         auto sequence = data.seq;
 
-        auto seconds = ::util::timed<std::chrono::seconds>([this, &sequence, &data, &edgeKeys]() mutable {
-            // TODO: think about avoiding copy here
-            backend_->writeLedger(data.header, auto{data.rawHeader});
-            LOG(log_.debug()) << "Wrote ledger";
+        auto seconds = ::util::timed<std::chrono::seconds>([this, &data]() { registry_->dispatchInitialData(data); });
 
-            insertTransactions(data);
-            registry_->dispatchInitialData(sequence, data.transactions);
-            LOG(log_.debug()) << "Inserted txns";
-
-            ASSERT(backend_->cache().isFull(), "Cache must be full at this point");
-            writeEdgeKeys(data.seq, edgeKeys);
-        });
-
-        LOG(log_.info()) << "Looping through cache and submitting all writes took " << seconds << " seconds.";
+        LOG(log_.info()) << "Dispatching initial data and submitting all writes took " << seconds << " seconds.";
         LOG(log_.debug()) << "Loaded initial ledger";
         backend_->finishWrites(sequence);
 
         return {data.header};
-    }
-
-    // TODO: ideally all writeSuccessors should be in SuccessorExt
-    void
-    writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys)
-    {
-        for (auto& key : edgeKeys) {
-            LOG(log_.debug()) << "Writing edge key = " << ripple::strHex(key);
-            auto succ = cache_.getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
-            if (succ)
-                backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
-        }
-    }
-
-    void
-    insertTransactions(model::LedgerData const& data)
-    {
-        for (auto const& txn : data.transactions) {
-            LOG(log_.trace()) << "Inserting transaction = " << txn.sttx.getTransactionID();
-
-            backend_->writeAccountTransaction({txn.meta, txn.sttx.getTransactionID()});
-            backend_->writeTransaction(
-                auto{txn.key},
-                data.seq,
-                data.header.closeTime.time_since_epoch().count(),
-                auto{txn.raw},
-                auto{txn.metaRaw}
-            );
-        }
     }
 };
 
