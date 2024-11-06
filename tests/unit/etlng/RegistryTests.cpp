@@ -459,7 +459,7 @@ TEST(RegistryTest, InitialObjectsCorrectOrderOfHookCalls)
     auto extObjs = MockExtInitialObjects{};
     auto extObj = MockExtInitialObject{};
 
-    EXPECT_CALL(extObjs, onInitialObjects).Times(1).WillRepeatedly([&](auto, auto const&, auto) {
+    EXPECT_CALL(extObjs, onInitialObjects).WillOnce([&](auto, auto const&, auto) {
         EXPECT_EQ(order++, 0);
     });
     EXPECT_CALL(extObj, onInitialObject).Times(3).WillRepeatedly([&](auto, auto const&) { EXPECT_GE(order++, 1); });
