@@ -78,11 +78,6 @@ LedgerCache::update(std::vector<LedgerObject> const& objs, uint32_t seq, bool is
             if (seq > e.seq)
                 e = {seq, obj.blob};
         } else {
-            if (map_.contains(obj.key)) {
-                LOG(log_.info()) << "1 adding deleted object to cache " << ripple::to_string(obj.key);
-                deleted_[obj.key] = map_[obj.key];
-            }
-
             map_.erase(obj.key);
             if (!full_ && !isBackground)
                 deletes_.insert(obj.key);
@@ -108,7 +103,7 @@ LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq)
         latestSeq_ = seq;
     }
 
-    // deleted_.clear();  // previous update's deletes no longer needed
+    deleted_.clear();  // previous update's deletes no longer needed
 
     for (auto const& obj : objs) {
         if (!obj.data.empty()) {
@@ -116,10 +111,8 @@ LedgerCache::update(std::vector<etlng::model::Object> const& objs, uint32_t seq)
             if (seq > e.seq)
                 e = {seq, obj.data};
         } else {
-            if (map_.contains(obj.key)) {
-                // LOG(log_.info()) << "2 adding deleted object to cache " << ripple::to_string(obj.key);
+            if (map_.contains(obj.key))
                 deleted_[obj.key] = map_[obj.key];
-            }
 
             map_.erase(obj.key);
             if (!full_)
@@ -197,12 +190,6 @@ LedgerCache::getDeleted(ripple::uint256 const& key, uint32_t seq) const
         return std::nullopt;
 
     ++objectReqCounter_.get();
-
-    if (deleted_.contains(key)) {
-        LOG(log_.info()) << "DELETED object is in deleted cache " << ripple::to_string(key);
-    } else {
-        LOG(log_.info()) << "DELETED object is NOT in deleted cache " << ripple::to_string(key);
-    }
 
     auto e = deleted_.find(key);
     if (e == deleted_.end())

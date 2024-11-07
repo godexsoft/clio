@@ -81,23 +81,20 @@ public:
                          << "; got successors = " << data.successors.has_value() << "; cache is "
                          << (cache_.isFull() ? "FULL" : "Not full");
 
-        auto filtered = data.objects  //
+        auto filteredObjects = data.objects  //
             | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
 
         if (data.successors.has_value()) {
-            LOG(log_.debug()) << "object neighbors included";
-
             for (auto const& successor : data.successors.value())
                 writeIncludedSuccessor(data.seq, successor);
 
-            for (auto const& obj : filtered)
+            for (auto const& obj : filteredObjects)
                 writeIncludedSuccessor(data.seq, obj);
         } else {
-            LOG(log_.debug()) << "object neighbors not included. using cache";
             if (not cache_.isFull() or cache_.latestLedgerSequence() != data.seq)
                 throw std::logic_error("Cache is not full, but object neighbors were not included");
 
-            for (auto const& obj : filtered)
+            for (auto const& obj : filteredObjects)
                 updateSuccessorFromCache(data.seq, obj);
         }
     }
@@ -109,8 +106,6 @@ private:
         auto firstBook = succ.firstBook;
         if (firstBook.empty())
             firstBook = uint256ToString(data::lastKey);
-        LOG(log_.debug()) << "writing book successor " << ripple::strHex(succ.bookBase) << " - "
-                          << ripple::strHex(firstBook);
 
         backend_->writeSuccessor(auto{succ.bookBase}, seq, std::move(firstBook));
     }
@@ -125,14 +120,8 @@ private:
         auto succ = obj.successor;
 
         if (obj.type == model::Object::ModType::Deleted) {
-            LOG(log_.debug()) << "Modifying successors for deleted object " << ripple::strHex(obj.key) << " - "
-                              << ripple::strHex(pred) << " - " << ripple::strHex(succ);
-
             backend_->writeSuccessor(std::move(pred), seq, std::move(succ));
         } else if (obj.type == model::Object::ModType::Created) {
-            LOG(log_.debug()) << "adding successor for new object " << ripple::strHex(obj.key) << " - "
-                              << ripple::strHex(pred) << " - " << ripple::strHex(succ);
-
             backend_->writeSuccessor(std::move(pred), seq, auto{obj.keyRaw});
             backend_->writeSuccessor(auto{obj.keyRaw}, seq, std::move(succ));
         }
@@ -148,15 +137,8 @@ private:
         auto const isDeleted = obj.data.empty();
 
         if (isDeleted) {
-            LOG(log_.debug()) << "writing successor for deleted object " << ripple::strHex(obj.key) << " - "
-                              << ripple::strHex(lb.key) << " - " << ripple::strHex(ub.key);
-
             backend_->writeSuccessor(uint256ToString(lb.key), seq, uint256ToString(ub.key));
-
         } else {
-            LOG(log_.debug()) << "writing successor for new object " << ripple::strHex(lb.key) << " - "
-                              << ripple::strHex(obj.key) << " - " << ripple::strHex(ub.key);
-
             backend_->writeSuccessor(uint256ToString(lb.key), seq, uint256ToString(obj.key));
             backend_->writeSuccessor(uint256ToString(obj.key), seq, uint256ToString(ub.key));
         }
@@ -171,42 +153,28 @@ private:
         }
 
         if (checkBookBase) {
-            LOG(log_.debug()) << "Is book dir. Key = " << ripple::strHex(obj.key);
-
             auto const current = cache_.get(obj.key, seq);
             auto const bookBase = getBookBase(obj.key);
 
             if (isDeleted and not current.has_value()) {
-                rewireSuccessor(seq, obj, bookBase);
+                updateBookSuccessor(seq, bookBase);
             } else if (current.has_value()) {
                 auto const successor = cache_.getSuccessor(bookBase, seq);
                 ASSERT(successor.has_value(), "Book base must have a successor for seq = {}", seq);
 
                 if (successor->key == obj.key)
-                    rewireSuccessor(seq, obj, bookBase);
+                    updateBookSuccessor(seq, bookBase);
             }
         }
     }
 
     void
-    rewireSuccessor(auto seq, model::Object const& obj, ripple::uint256 const& bookBase) const
+    updateBookSuccessor(auto seq, ripple::uint256 const& bookBase) const
     {
-        auto const isDeleted = obj.data.empty();
-
-        LOG(log_.debug()) << "Need to recalculate book base successor. base = " << ripple::strHex(bookBase)
-                          << " - key = " << ripple::strHex(obj.key) << " - isDeleted = " << isDeleted
-                          << " - seq = " << seq;
-
         if (auto succ = cache_.getSuccessor(bookBase, seq); succ.has_value()) {
             backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(succ->key));
-
-            LOG(log_.debug()) << "Updating book successor " << ripple::strHex(bookBase) << " - "
-                              << ripple::strHex(succ->key);
         } else {
             backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(data::lastKey));
-
-            LOG(log_.debug()) << "Updating book successor " << ripple::strHex(bookBase) << " - "
-                              << ripple::strHex(data::lastKey);
         }
     }
 
@@ -227,12 +195,8 @@ private:
                     auto succ = cache_.getSuccessor(base, seq);
                     ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
 
-                    if (succ->key == cur->key) {
-                        LOG(log_.debug())
-                            << "Writing book successor = " << ripple::strHex(base) << " - " << ripple::strHex(cur->key);
-
+                    if (succ->key == cur->key)
                         backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
-                    }
                 }
             }
 
@@ -246,7 +210,6 @@ private:
     writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
     {
         for (auto& key : edgeKeys) {
-            LOG(log_.debug()) << "Writing edge key = " << ripple::strHex(key);
             auto succ = cache_.getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
             if (succ)
                 backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));

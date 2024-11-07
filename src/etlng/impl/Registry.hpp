@@ -99,7 +99,7 @@ public:
         {
             auto const expand = [&](auto&& p) {
                 if constexpr (requires { p.onInitialObjects(seq, data, lastKey); }) {
-                    p.onInitialObjects(seq, data, std::move(lastKey));
+                    p.onInitialObjects(seq, data, lastKey);
                 }
             };
 
