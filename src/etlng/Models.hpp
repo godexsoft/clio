@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "util/Concepts.hpp"
+
 #include <boost/json/object.hpp>
 #include <fmt/core.h>
 #include <xrpl/basics/Blob.h>
@@ -30,26 +32,12 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
-#include <algorithm>
-#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace etlng::model {
-namespace impl {
-
-static consteval auto
-checkNoDuplicates(auto&&... types)
-{
-    auto store = std::array{types...};
-    auto end = store.end();
-    std::ranges::sort(store);
-    return (std::unique(std::begin(store), end) == end);
-}
-
-}  // namespace impl
 
 /**
  * @brief A specification for the Registry.
@@ -59,7 +47,7 @@ checkNoDuplicates(auto&&... types)
  * It's a compilation error to list the same transaction type more than once.
  */
 template <ripple::TxType... Types>
-    requires(impl::checkNoDuplicates(Types...))
+    requires(util::hasNoDuplicates(Types...))
 struct Spec {
     static constexpr bool SpecTag = true;
 
