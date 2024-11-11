@@ -949,7 +949,8 @@ accountHolds(
     auto const blob = backend.fetchLedgerObject(key, sequence, yield);
 
     if (!blob) {
-        amount.clear({currency, issuer});
+        amount.setIssue(ripple::Issue(currency, issuer));
+        amount.clear();
         return amount;
     }
 
@@ -957,7 +958,8 @@ accountHolds(
     ripple::SLE const sle{it, key};
 
     if (zeroIfFrozen && isFrozen(backend, sequence, account, currency, issuer, yield)) {
-        amount.clear(ripple::Issue(currency, issuer));
+        amount.setIssue(ripple::Issue(currency, issuer));
+        amount.clear();
     } else {
         amount = sle.getFieldAmount(ripple::sfBalance);
         if (account > issuer) {
