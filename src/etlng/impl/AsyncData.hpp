@@ -123,17 +123,13 @@ public:
         bool more = true;
 
         // if no marker returned, we are done
-        if (cur_->marker().empty()) {
-            std::cout << "NO MARKER!!!\n";
+        if (cur_->marker().empty())
             more = false;
-        }
 
         // if returned marker is greater than our end, we are done
         unsigned char const prefix = cur_->marker()[0];
-        if (nextPrefix_ != 0x00 && prefix >= nextPrefix_) {
-            std::cout << "prefix " << prefix << " is already out of scope for next " << nextPrefix_ << '\n';
+        if (nextPrefix_ != 0x00 && prefix >= nextPrefix_)
             more = false;
-        }
 
         // if we are not done, make the next async call
         if (more) {
@@ -142,8 +138,6 @@ public:
         }
 
         auto const numObjects = cur_->ledger_objects().objects_size();
-        LOG(log_.trace()) << "Writing " << numObjects << " objects";
-
         std::vector<etlng::model::Object> data;
         data.reserve(numObjects);
 
@@ -158,15 +152,12 @@ public:
             data.push_back(etlng::impl::extractObj(obj));  // TODO: add move(obj) at some point
         }
 
-        loader.onInitialLoadGotMoreObjects(request_.ledger().sequence(), data, predcessorKey_);
-
-        std::cout << "has more after " << data.size() << " objects from prev key '" << ripple::strHex(predcessorKey_)
-                  << "': " << (more ? " MORE " : " NOMORE ") << '\n';
+        if (not data.empty())
+            loader.onInitialLoadGotMoreObjects(request_.ledger().sequence(), data, predcessorKey_);
 
         predcessorKey_ = lastKey_;  // but for ongoing onInitialObjects calls we need to pass along the key we left
                                     // off at so that we can link the two lists correctly
 
-        LOG(log_.trace()) << "Wrote " << data.size() << " objects. Got more: " << (more ? "YES" : "NO");
         return more ? CallStatus::MORE : CallStatus::DONE;
     }
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include "data/Types.hpp"
 #include "etl/ETLHelpers.hpp"
 #include "etl/impl/GrpcSource.hpp"
 #include "etlng/LoaderInterface.hpp"
@@ -26,11 +25,9 @@
 #include "etlng/impl/Loading.hpp"
 #include "util/Assert.hpp"
 #include "util/LoggerFixtures.hpp"
-#include "util/MockBackend.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockXrpLedgerAPIService.hpp"
 #include "util/TestObject.hpp"
-#include "util/config/Config.hpp"
 
 #include <gmock/gmock.h>
 #include <grpcpp/server_context.h>
@@ -40,20 +37,22 @@
 #include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <atomic>
-#include <chrono>
-#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
-#include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <string>
-#include <thread>
 #include <vector>
 
 using namespace etl::impl;
+
+namespace {
 
 struct MockLoadObserver : etlng::InitialLoadObserverInterface {
     MOCK_METHOD(
@@ -73,6 +72,67 @@ struct GrpcSourceNgTests : NoLoggerFixture, util::prometheus::WithPrometheus, te
     testing::StrictMock<MockLoadObserver> loader_;
     testing::StrictMock<etlng::impl::GrpcSource> grpcSource_;
 };
+
+class KeyStore {
+    std::vector<ripple::uint256> keys_;
+    std::map<std::string, std::queue<ripple::uint256>, std::greater<>> store_;
+
+    std::mutex mtx_;
+
+public:
+    KeyStore(std::size_t totalKeys, std::size_t numMarkers) : keys_(etl::getMarkers(totalKeys))
+    {
+        auto const totalPerMarker = totalKeys / numMarkers;
+        auto const markers = etl::getMarkers(numMarkers);
+        for (auto mi = 0uz; mi < markers.size(); ++mi) {
+            for (auto i = 0uz; i < totalPerMarker; ++i) {
+                auto mapKey = ripple::strHex(markers.at(mi)).substr(0, 2);
+
+                auto& keysForMarker = store_[mapKey];
+                auto const& key = keys_.at(mi * totalPerMarker + i);
+                keysForMarker.push(key);
+            }
+        }
+    }
+
+    std::optional<std::string>
+    next(std::string const& marker)
+    {
+        std::scoped_lock lock(mtx_);
+
+        auto const mapKey = ripple::strHex(marker).substr(0, 2);
+        auto k = store_.lower_bound(mapKey);
+        ASSERT(k != store_.end(), "Lower bound not found for '{}'", mapKey);
+
+        auto& q = k->second;
+        if (q.empty())
+            return std::nullopt;
+
+        auto t = q.front();
+        q.pop();
+
+        return std::make_optional<std::string>(reinterpret_cast<char const*>(t.data()), ripple::uint256::size());
+    };
+
+    std::optional<std::string>
+    peek(std::string const& marker)
+    {
+        std::scoped_lock lock(mtx_);
+
+        auto const mapKey = ripple::strHex(marker).substr(0, 2);
+        auto k = store_.lower_bound(mapKey);
+        ASSERT(k != store_.end(), "Lower bound not found for '{}'", mapKey);
+
+        auto& q = k->second;
+        if (q.empty())
+            return std::nullopt;
+
+        auto t = q.front();
+        return std::make_optional<std::string>(reinterpret_cast<char const*>(t.data()), ripple::uint256::size());
+    };
+};
+
+}  // namespace
 
 TEST_F(GrpcSourceNgTests, fetchLedger)
 {
@@ -125,7 +185,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, GetLedgerDataFailed)
     EXPECT_FALSE(success);
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, worksFine)
+TEST_F(GrpcSourceLoadInitialLedgerTests, LoaderCalledCorrectly)
 {
     auto const key = ripple::uint256{4};
     std::string const keyStr{reinterpret_cast<char const*>(key.data()), ripple::uint256::size()};
@@ -163,51 +223,17 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, worksFine)
     EXPECT_EQ(data, std::vector<std::string>(4, keyStr));
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, worksFine2)
+TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndLoaderCalledCorrectly)
 {
     auto const totalKeys = 256uz;
-    auto const markers = etl::getMarkers(numMarkers_);
     auto const totalPerMarker = totalKeys / numMarkers_;
-    auto const batchSize = totalPerMarker / 32uz;
+    auto const batchSize = totalPerMarker / 4uz;
     auto const batchesPerMarker = totalPerMarker / batchSize;
 
-    auto allKeys = etl::getMarkers(totalKeys);
-    auto keysFor = std::map<ripple::uint256, std::queue<ripple::uint256>>();
-
-    for (auto mi = 0uz; mi < markers.size(); ++mi) {
-        for (auto i = 0uz; i < totalPerMarker; ++i) {
-            keysFor[markers.at(mi)].push(allKeys.at(mi * totalPerMarker + i));
-        }
-    }
-
-    std::mutex mtx;
-    auto nextKey = [&mtx, &keysFor](auto const& marker) {
-        std::scoped_lock lock(mtx);
-
-        auto& k = keysFor.at(ripple::uint256(marker));
-        ASSERT(not k.empty(), "Can't be empty");
-
-        auto t = k.front();
-        k.pop();
-
-        return t;
-    };
-    auto moreAvailable = [&mtx, &keysFor](auto const& marker) {
-        std::scoped_lock lock(mtx);
-        return not keysFor.at(ripple::uint256(marker)).empty();
-    };
+    auto keyStore = KeyStore(totalKeys, numMarkers_);
 
     auto const object = CreateTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
     auto const objectData = object.getSerializer().peekData();
-
-    for (auto [k, q] : keysFor) {
-        std::cout << "{" << ripple::strHex(k) << "} " << q.size() << '\n';
-
-        while (not q.empty()) {
-            std::cout << "{" << ripple::strHex(k) << "} " << ripple::strHex(q.front()) << '\n';
-            q.pop();
-        }
-    }
 
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
         .Times(numMarkers_ * batchesPerMarker)
@@ -218,41 +244,46 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, worksFine2)
             EXPECT_EQ(request->user(), "ETL");
 
             response->set_is_unlimited(true);
-            std::cout << "called GetLedgerData for " << ripple::strHex(request->marker()) << '\n';
-            auto lastKey = data::firstKey;
 
+            auto next = request->marker().empty() ? std::string("00") : request->marker();
             for (auto i = 0uz; i < batchSize; ++i) {
-                auto const key = nextKey(request->marker());
-                lastKey = key;
+                if (auto maybeLastKey = keyStore.next(next); maybeLastKey.has_value()) {
+                    next = *maybeLastKey;
 
-                auto newObject = response->mutable_ledger_objects()->add_objects();
-                newObject->set_key(reinterpret_cast<char const*>(key.data()), ripple::uint256::size());
-                newObject->set_data(objectData.data(), objectData.size());
-                std::cout << " - add object with key " << ripple::strHex(key) << '\n';
+                    auto newObject = response->mutable_ledger_objects()->add_objects();
+                    newObject->set_key(next);
+                    newObject->set_data(objectData.data(), objectData.size());
+                }
             }
-            if (moreAvailable(request->marker()))
-                response->set_marker(ripple::strHex(lastKey));
 
-            return grpc::Status{};
+            if (auto maybeNext = keyStore.peek(next); maybeNext.has_value())
+                response->set_marker(*maybeNext);  // hack
+
+            return grpc::Status::OK;
         });
 
-    std::atomic_int callCount = 0;
+    std::atomic_int total = 0;
+    testing::InSequence seqGuard;
+
     EXPECT_CALL(loader_, onInitialLoadGotMoreObjects)
-        .Times(numMarkers_ * batchesPerMarker)
+        .Times(numMarkers_)
         .WillRepeatedly([&](uint32_t, std::vector<etlng::model::Object> const& data, std::string lastKey) {
-            ++callCount;
-            if (callCount > 4) {
-                EXPECT_FALSE(lastKey.empty());
-            } else {
-                EXPECT_TRUE(lastKey.empty());
-            }
-
-            std::cout << "called onInitialLoadGotMoreObjects with " << data.size() << " batch\n";
-            EXPECT_EQ(data.size(), batchSize);
+            EXPECT_LE(data.size(), batchSize);
+            EXPECT_TRUE(lastKey.empty());
+            total += data.size();
         });
+
+    EXPECT_CALL(loader_, onInitialLoadGotMoreObjects)
+        .Times((numMarkers_ - 1) * batchesPerMarker)
+        .WillRepeatedly([&](uint32_t, std::vector<etlng::model::Object> const& data, std::string lastKey) {
+            EXPECT_LE(data.size(), batchSize);
+            EXPECT_FALSE(lastKey.empty());
+            total += data.size();
+        });
+
     auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, loader_);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     EXPECT_TRUE(success);
     EXPECT_EQ(data.size(), numMarkers_);
+    EXPECT_EQ(total, totalKeys);
 }

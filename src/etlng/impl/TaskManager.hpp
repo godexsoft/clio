@@ -112,7 +112,7 @@ private:
         return strand.execute([this, &queue](auto stopRequested) {
             while (not stopRequested) {
                 if (auto task = schedulers_->next(); task.has_value()) {
-                    if (auto maybeBatch = extractor_->extractDiff(task->seq); maybeBatch.has_value()) {
+                    if (auto maybeBatch = extractor_->extractLedgerWithDiff(task->seq); maybeBatch.has_value()) {
                         LOG(log_.debug()) << "Adding data after extracting diff";
                         queue.add(std::move(*maybeBatch));
                     } else {

@@ -20,20 +20,37 @@
 #pragma once
 
 #include "etlng/Models.hpp"
+#include "etlng/impl/Extraction.hpp"
 
-#include <cstdint>
-#include <optional>
+#include <gtest/gtest.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
 
-namespace etlng {
+#include <string>
+#include <utility>
 
-struct ExtractorInterface {
-    virtual ~ExtractorInterface() = default;
+namespace util {
 
-    virtual std::optional<model::LedgerData>
-    extractLedgerWithDiff(uint32_t seq) = 0;
+[[maybe_unused, nodiscard]] std::pair<std::string, std::string>
+CreateNftTxAndMetaBlobs();
 
-    virtual std::optional<model::LedgerData>
-    extractLedgerOnly(uint32_t seq) = 0;
-};
+[[maybe_unused, nodiscard]] std::pair<ripple::STTx, ripple::TxMeta>
+CreateNftTxAndMeta();
 
-}  // namespace etlng
+[[maybe_unused, nodiscard]] etlng::model::Transaction
+CreateTransaction(ripple::TxType type);
+
+[[maybe_unused, nodiscard]] etlng::model::Object
+CreateObject();
+
+[[maybe_unused, nodiscard]] etlng::model::BookSuccessor
+CreateSuccessor();
+
+[[maybe_unused, nodiscard]] etlng::impl::PBLedgerResponseType
+CreateDataAndDiff();
+
+[[maybe_unused, nodiscard]] etlng::impl::PBLedgerResponseType
+CreateData();
+
+}  // namespace util

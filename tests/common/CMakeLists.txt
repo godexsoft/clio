@@ -1,8 +1,14 @@
 add_library(clio_testing_common)
 
 target_sources(
-  clio_testing_common PRIVATE util/StringUtils.cpp util/TestHttpServer.cpp util/TestWsServer.cpp util/TestObject.cpp
-                              util/AssignRandomPort.cpp util/WithTimeout.cpp
+  clio_testing_common
+  PRIVATE util/StringUtils.cpp
+          util/TestHttpServer.cpp
+          util/TestWsServer.cpp
+          util/BinaryTestObject.cpp
+          util/TestObject.cpp
+          util/AssignRandomPort.cpp
+          util/WithTimeout.cpp
 )
 
 include(deps/gtest)

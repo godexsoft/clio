@@ -40,6 +40,7 @@
 #include "etlng/impl/ext/Cache.hpp"
 #include "etlng/impl/ext/Core.hpp"
 #include "etlng/impl/ext/NFT.hpp"
+#include "etlng/impl/ext/SpyingEye.hpp"
 #include "etlng/impl/ext/Successor.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
@@ -109,11 +110,12 @@ public:
               backend_->cache(),  // todo inject from outside
               balancer_,
               fetcher_,
-              std::make_shared<impl::Registry<impl::CacheExt, impl::CoreExt, impl::SuccessorExt, impl::NFTExt>>(
+              impl::makeRegistry(
                   impl::CacheExt{backend_->cache()},
                   impl::CoreExt{backend_},
                   impl::SuccessorExt{backend_, backend_->cache()},
-                  impl::NFTExt{backend_}
+                  impl::NFTExt{backend_},
+                  impl::SpyExt{}
               )
           ))
         , ctx_(8)
@@ -148,12 +150,11 @@ public:
 
             LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
 
-            auto scheduler =
-                std::make_unique<impl::SchedulerChain<impl::ForwardScheduler /*, impl::BackfillScheduler*/>>(
-                    impl::ForwardScheduler{ledgers_, nextSequence}
-                    // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000}
-                    // todo lift limit and start with rng.minSeq
-                );
+            auto scheduler = impl::makeScheduler(impl::ForwardScheduler{ledgers_, nextSequence}
+                                                 // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000},
+                                                 // TODO lift limit and start with rng.minSeq
+            );
+
             auto man = impl::TaskManager(
                 ctx_,
                 std::move(scheduler),
@@ -180,7 +181,7 @@ public:
                     LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
 
                     auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
-                        return extractor_->extractFull(seq).and_then([this, seq](auto&& data) {
+                        return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
                             // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
                             data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
 

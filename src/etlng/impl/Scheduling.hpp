@@ -32,6 +32,7 @@
 #include <optional>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace etlng::impl {
@@ -134,5 +135,13 @@ public:
         return task;
     }
 };
+
+static auto
+makeScheduler(auto&&... scheduler)
+{
+    return std::make_unique<SchedulerChain<std::decay_t<decltype(scheduler)>...>>(
+        std::forward<decltype(scheduler)>(scheduler)...
+    );
+}
 
 }  // namespace etlng::impl

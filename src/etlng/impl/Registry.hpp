@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -162,5 +163,11 @@ public:
         }
     }
 };
+
+static auto
+makeRegistry(auto&&... exts)
+{
+    return std::make_unique<Registry<std::decay_t<decltype(exts)>...>>(std::forward<decltype(exts)>(exts)...);
+}
 
 }  // namespace etlng::impl
