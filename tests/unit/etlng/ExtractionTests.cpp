@@ -125,6 +125,25 @@ TEST_F(ExtractionTests, OneObject)
     EXPECT_EQ(res.type, expected.type);
 }
 
+TEST_F(ExtractionTests, OneObjectWithSuccessorAndPredecessor)
+{
+    using namespace etlng::impl;
+
+    auto expected = util::CreateObject();
+    auto original = org::xrpl::rpc::v1::RawLedgerObject();
+    original.set_data(expected.dataRaw);
+    original.set_key(expected.keyRaw);
+    original.set_predecessor(expected.predecessor);
+    original.set_successor(expected.successor);
+
+    auto res = extractObj(original);
+    EXPECT_EQ(ripple::strHex(res.key), ripple::strHex(expected.keyRaw));
+    EXPECT_EQ(ripple::strHex(res.data), ripple::strHex(expected.dataRaw));
+    EXPECT_EQ(res.predecessor, expected.predecessor);
+    EXPECT_EQ(res.successor, expected.successor);
+    EXPECT_EQ(res.type, expected.type);
+}
+
 TEST_F(ExtractionTests, MultipleObjects)
 {
     using namespace etlng::impl;

@@ -196,6 +196,8 @@ CreateObject()
 {
     // random object taken from initial ledger load
     static constinit auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    static constinit auto const objPred = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960A";
+    static constinit auto const objSucc = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960F";
     static constinit auto const objBlob =
         "11007222002200002504270918370000000000000C4538000000000000000A554D94799200CC37EFAF45DA76704ED3CBEDBB4B4FCD"
         "56E9CBA5399EB40A7B3BEC629546DD24CDB4C0004C4A50590000000000000000000000000000000000000000000000000000000000"
@@ -207,8 +209,8 @@ CreateObject()
         .keyRaw = hexStringToBinaryString(objKey),
         .data = {},
         .dataRaw = hexStringToBinaryString(objBlob),
-        .successor = {},
-        .predecessor = {},
+        .successor = hexStringToBinaryString(objSucc),
+        .predecessor = hexStringToBinaryString(objPred),
         .type = {},
     };
 }
