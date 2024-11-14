@@ -46,7 +46,7 @@
 #include <optional>
 
 namespace {
-auto constinit Seq = 30;
+constinit auto const Seq = 30;
 }  // namespace
 
 struct ExtractionTests : NoLoggerFixture {};

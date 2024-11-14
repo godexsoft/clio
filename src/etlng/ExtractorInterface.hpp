@@ -36,9 +36,9 @@ struct ExtractorInterface {
      * @brief Extract diff data for a particular ledger
      *
      * @param seq sequence of the ledger to extract
-     * @return Ledger data diff between sequance and parent if available
+     * @return Ledger data diff between sequence and parent if available
      */
-    virtual std::optional<model::LedgerData>
+    [[nodiscard]] virtual std::optional<model::LedgerData>
     extractLedgerWithDiff(uint32_t seq) = 0;
 
     /**
@@ -47,7 +47,7 @@ struct ExtractorInterface {
      * @param seq sequence of the ledger to extract
      * @return Ledger header and transaction+metadata blobs if available
      */
-    virtual std::optional<model::LedgerData>
+    [[nodiscard]] virtual std::optional<model::LedgerData>
     extractLedgerOnly(uint32_t seq) = 0;
 };
 

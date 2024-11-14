@@ -46,7 +46,7 @@ struct LedgerFetcherInterface {
      * @param seq sequence of the ledger to extract
      * @return Ledger header and transaction+metadata blobs; Empty optional if the server is shutting down
      */
-    virtual OptionalGetLedgerResponseType
+    [[nodiscard]] virtual OptionalGetLedgerResponseType
     fetchData(uint32_t seq) = 0;
 
     /**
@@ -58,7 +58,7 @@ struct LedgerFetcherInterface {
      * @param seq sequence of the ledger to extract
      * @return Ledger data diff between sequance and parent; Empty optional if the server is shutting down
      */
-    virtual OptionalGetLedgerResponseType
+    [[nodiscard]] virtual OptionalGetLedgerResponseType
     fetchDataAndDiff(uint32_t seq) = 0;
 };
 
