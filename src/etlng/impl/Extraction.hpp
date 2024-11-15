@@ -83,7 +83,7 @@ class Extractor : public ExtractorInterface {
 
 private:
     [[nodiscard]] static auto
-    makeExtractor(uint32_t seq);
+    unpack();
 
 public:
     Extractor(std::shared_ptr<etl::LedgerFetcherInterface> fetcher) : fetcher_(std::move(fetcher))

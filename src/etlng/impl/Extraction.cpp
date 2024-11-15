@@ -81,16 +81,13 @@ extractTx(PBTxType tx, uint32_t seq)
     ripple::STTx const sttx{it};
     ripple::TxMeta meta{sttx.getTransactionID(), seq, tx.metadata_blob()};
 
-    static constexpr std::size_t KeySize = 32;
-    std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KeySize};
-
     return {
         .raw = std::move(raw),
         .metaRaw = std::move(*tx.mutable_metadata_blob()),
         .sttx = sttx,  // trivially copyable
         .meta = std::move(meta),
         .id = sttx.getTransactionID(),
-        .key = std::move(keyStr),
+        .key = uint256ToString(sttx.getTransactionID()),
         .type = sttx.getTxnType()
     };
 }
@@ -112,10 +109,10 @@ extractTxs(PBTxListType transactions, uint32_t seq)
 model::Object
 extractObj(PBObjType obj)
 {
-    auto key = ripple::uint256::fromVoidChecked(obj.key());
+    auto const key = ripple::uint256::fromVoidChecked(obj.key());
     ASSERT(key.has_value(), "Failed to deserialize key from void");
 
-    auto value_or = [](std::string const& maybe, std::string fallback) -> std::string {
+    auto const valueOr = [](std::string const& maybe, std::string fallback) -> std::string {
         if (maybe.empty())
             return fallback;
         return maybe;
@@ -126,8 +123,8 @@ extractObj(PBObjType obj)
         .keyRaw = std::move(*obj.mutable_key()),
         .data = {obj.mutable_data()->begin(), obj.mutable_data()->end()},
         .dataRaw = std::move(*obj.mutable_data()),
-        .successor = value_or(obj.successor(), uint256ToString(data::firstKey)),
-        .predecessor = value_or(obj.predecessor(), uint256ToString(data::lastKey)),
+        .successor = valueOr(obj.successor(), uint256ToString(data::firstKey)),
+        .predecessor = valueOr(obj.predecessor(), uint256ToString(data::lastKey)),
         .type = extractModType(obj.mod_type()),
     };
 }
@@ -150,8 +147,8 @@ model::BookSuccessor
 extractSuccessor(PBBookSuccessorType successor)
 {
     return {
-        .firstBook = successor.first_book(),
-        .bookBase = successor.book_base(),
+        .firstBook = std::move(successor.first_book()),
+        .bookBase = std::move(successor.book_base()),
     };
 }
 
@@ -176,9 +173,9 @@ maybeExtractSuccessors(PBLedgerResponseType const& data)
 }
 
 auto
-Extractor::makeExtractor(uint32_t seq)
+Extractor::unpack()
 {
-    return [seq](auto&& data) {
+    return [](auto&& data) {
         auto header = ::util::deserializeHeader(ripple::makeSlice(data.ledger_header()));
 
         return std::make_optional<model::LedgerData>({
@@ -189,7 +186,7 @@ Extractor::makeExtractor(uint32_t seq)
             .edgeKeys = std::nullopt,
             .header = header,
             .rawHeader = std::move(*data.mutable_ledger_header()),
-            .seq = seq,
+            .seq = header.seq,
         });
     };
 }
@@ -199,8 +196,8 @@ Extractor::extractLedgerWithDiff(uint32_t seq)
 {
     LOG(log_.debug()) << "Extracting DIFF " << seq;
 
-    auto [batch, time] = ::util::timed<std::chrono::duration<double>>([this, seq] {
-        return fetcher_->fetchDataAndDiff(seq).and_then(makeExtractor(seq));
+    auto const [batch, time] = ::util::timed<std::chrono::duration<double>>([this, seq] {
+        return fetcher_->fetchDataAndDiff(seq).and_then(unpack());
     });
 
     LOG(log_.debug()) << "Extracted and Transformed diff for " << seq << " in " << time << "ms";
@@ -214,8 +211,8 @@ Extractor::extractLedgerOnly(uint32_t seq)
 {
     LOG(log_.debug()) << "Extracting FULL " << seq;
 
-    auto [batch, time] = ::util::timed<std::chrono::duration<double>>([this, seq] {
-        return fetcher_->fetchData(seq).and_then(makeExtractor(seq));
+    auto const [batch, time] = ::util::timed<std::chrono::duration<double>>([this, seq] {
+        return fetcher_->fetchData(seq).and_then(unpack());
     });
 
     LOG(log_.debug()) << "Extracted and Transformed full ledger for " << seq << " in " << time << "ms";
