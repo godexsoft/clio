@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "data/DBHelpers.hpp"
 #include "etl/ETLHelpers.hpp"
 #include "etl/impl/GrpcSource.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
@@ -68,8 +69,8 @@ struct GrpcSourceNgTests : NoLoggerFixture, util::prometheus::WithPrometheus, te
     {
     }
 
-    testing::StrictMock<MockLoadObserver> loader_;
-    testing::StrictMock<etlng::impl::GrpcSource> grpcSource_;
+    testing::StrictMock<MockLoadObserver> observer_;
+    etlng::impl::GrpcSource grpcSource_;
 };
 
 class KeyStore {
@@ -83,6 +84,7 @@ public:
     {
         auto const totalPerMarker = totalKeys / numMarkers;
         auto const markers = etl::getMarkers(numMarkers);
+
         for (auto mi = 0uz; mi < markers.size(); ++mi) {
             for (auto i = 0uz; i < totalPerMarker; ++i) {
                 auto const mapKey = ripple::strHex(markers.at(mi)).substr(0, 2);
@@ -97,17 +99,17 @@ public:
         std::scoped_lock lock(mtx_);
 
         auto const mapKey = ripple::strHex(marker).substr(0, 2);
-        auto k = store_.lower_bound(mapKey);
-        ASSERT(k != store_.end(), "Lower bound not found for '{}'", mapKey);
+        auto it = store_.lower_bound(mapKey);
+        ASSERT(it != store_.end(), "Lower bound not found for '{}'", mapKey);
 
-        auto& q = k->second;
-        if (q.empty())
+        auto& queue = it->second;
+        if (queue.empty())
             return std::nullopt;
 
-        auto t = q.front();
-        q.pop();
+        auto data = queue.front();
+        queue.pop();
 
-        return std::make_optional<std::string>(reinterpret_cast<char const*>(t.data()), ripple::uint256::size());
+        return std::make_optional(uint256ToString(data));
     };
 
     std::optional<std::string>
@@ -116,15 +118,15 @@ public:
         std::scoped_lock lock(mtx_);
 
         auto const mapKey = ripple::strHex(marker).substr(0, 2);
-        auto k = store_.lower_bound(mapKey);
-        ASSERT(k != store_.end(), "Lower bound not found for '{}'", mapKey);
+        auto it = store_.lower_bound(mapKey);
+        ASSERT(it != store_.end(), "Lower bound not found for '{}'", mapKey);
 
-        auto& q = k->second;
-        if (q.empty())
+        auto& queue = it->second;
+        if (queue.empty())
             return std::nullopt;
 
-        auto t = q.front();
-        return std::make_optional<std::string>(reinterpret_cast<char const*>(t.data()), ripple::uint256::size());
+        auto data = queue.front();
+        return std::make_optional(uint256ToString(data));
     };
 };
 
@@ -132,7 +134,7 @@ public:
 
 TEST_F(GrpcSourceNgTests, BasicFetchLedger)
 {
-    uint32_t const sequence = 123;
+    uint32_t const sequence = 123u;
     bool const getObjects = true;
     bool const getObjectNeighbors = false;
 
@@ -146,11 +148,14 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
             EXPECT_EQ(request->get_objects(), getObjects);
             EXPECT_EQ(request->get_object_neighbors(), getObjectNeighbors);
             EXPECT_EQ(request->user(), "ETL");
+
             response->set_validated(true);
             response->set_is_unlimited(false);
             response->set_object_neighbors_included(false);
+
             return grpc::Status{};
         });
+
     auto const [status, response] = grpcSource_.fetchLedger(sequence, getObjects, getObjectNeighbors);
     ASSERT_TRUE(status.ok());
     EXPECT_TRUE(response.validated());
@@ -159,8 +164,8 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
 }
 
 struct GrpcSourceLoadInitialLedgerTests : GrpcSourceNgTests {
-    uint32_t const sequence_ = 123;
-    uint32_t const numMarkers_ = 4;
+    uint32_t const sequence_ = 123u;
+    uint32_t const numMarkers_ = 4u;
     bool const cacheOnly_ = false;
 };
 
@@ -173,18 +178,19 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, GetLedgerDataNotFound)
                             org::xrpl::rpc::v1::GetLedgerDataResponse* /*response*/) {
             EXPECT_EQ(request->ledger().sequence(), sequence_);
             EXPECT_EQ(request->user(), "ETL");
+
             return grpc::Status{grpc::StatusCode::NOT_FOUND, "Not found"};
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, loader_);
+    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
     EXPECT_TRUE(data.empty());
     EXPECT_FALSE(success);
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, LoaderCalledCorrectly)
+TEST_F(GrpcSourceLoadInitialLedgerTests, ObserverCalledCorrectly)
 {
     auto const key = ripple::uint256{4};
-    std::string const keyStr{reinterpret_cast<char const*>(key.data()), ripple::uint256::size()};
+    auto const keyStr = uint256ToString(key);
     auto const object = CreateTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
     auto const objectData = object.getSerializer().peekData();
 
@@ -198,20 +204,20 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, LoaderCalledCorrectly)
 
             response->set_is_unlimited(true);
             auto newObject = response->mutable_ledger_objects()->add_objects();
-            newObject->set_key(reinterpret_cast<char const*>(key.data()), ripple::uint256::size());
+            newObject->set_key(uint256ToString(key));
             newObject->set_data(objectData.data(), objectData.size());
 
             return grpc::Status{};
         });
 
-    EXPECT_CALL(loader_, onInitialLoadGotMoreObjects)
+    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
         .Times(numMarkers_)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_FALSE(lastKey.has_value());
             EXPECT_EQ(data.size(), 1);
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, loader_);
+    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
 
     EXPECT_TRUE(success);
     EXPECT_EQ(data.size(), numMarkers_);
@@ -219,7 +225,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, LoaderCalledCorrectly)
     EXPECT_EQ(data, std::vector<std::string>(4, keyStr));
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndLoaderCalledCorrectly)
+TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
 {
     auto const totalKeys = 256uz;
     auto const totalPerMarker = totalKeys / numMarkers_;
@@ -253,15 +259,15 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndLoaderCalledCorrectly
             }
 
             if (auto maybeNext = keyStore.peek(next); maybeNext.has_value())
-                response->set_marker(*maybeNext);  // hack
+                response->set_marker(*maybeNext);
 
             return grpc::Status::OK;
         });
 
-    std::atomic_int total = 0;
-    testing::InSequence seqGuard;
+    std::atomic_uint total = 0u;
+    [[maybe_unused]] testing::InSequence seqGuard;
 
-    EXPECT_CALL(loader_, onInitialLoadGotMoreObjects)
+    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
         .Times(numMarkers_)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_LE(data.size(), batchSize);
@@ -269,7 +275,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndLoaderCalledCorrectly
             total += data.size();
         });
 
-    EXPECT_CALL(loader_, onInitialLoadGotMoreObjects)
+    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
         .Times((numMarkers_ - 1) * batchesPerMarker)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_LE(data.size(), batchSize);
@@ -277,7 +283,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndLoaderCalledCorrectly
             total += data.size();
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, loader_);
+    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
 
     EXPECT_TRUE(success);
     EXPECT_EQ(data.size(), numMarkers_);
