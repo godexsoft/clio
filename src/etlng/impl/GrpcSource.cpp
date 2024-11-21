@@ -23,6 +23,7 @@
 #include "etlng/impl/AsyncGrpcCall.hpp"
 #include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
+#include "web/Resolver.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -46,20 +47,14 @@
 namespace {
 
 std::string
-toString(auto const& endpoint)
+resolve(std::string const& ip, std::string const& port)
 {
-    std::stringstream ss;
-    ss << endpoint;
-    return ss.str();
-}
+    web::Resolver resolver;
 
-std::string
-resolve(boost::asio::io_context& ctx, std::string const& ip, std::string const& port)
-{
-    boost::asio::ip::tcp::resolver resolver{ctx};
-
-    if (auto const result = resolver.resolve(ip, port); not result.empty())
-        return toString(result.begin()->endpoint());
+    if (auto const results = resolver.resolve(ip, port); not results.empty()) {
+        std::cout << "resolved ip: '" << results.at(0) << '\n';
+        return results.at(0);
+    }
 
     throw std::runtime_error("Failed to resolve " + ip + ":" + port);
 }
@@ -72,12 +67,11 @@ GrpcSource::GrpcSource(std::string const& ip, std::string const& grpcPort)
     : log_(fmt::format("ETL_Grpc[{}:{}]", ip, grpcPort))
 {
     try {
-        boost::asio::io_context ctx;
         grpc::ChannelArguments chArgs;
         chArgs.SetMaxReceiveMessageSize(-1);
 
         stub_ = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
-            grpc::CreateCustomChannel(resolve(ctx, ip, grpcPort), grpc::InsecureChannelCredentials(), chArgs)
+            grpc::CreateCustomChannel(resolve(ip, grpcPort), grpc::InsecureChannelCredentials(), chArgs)
         );
 
         LOG(log_.debug()) << "Made stub for remote.";
