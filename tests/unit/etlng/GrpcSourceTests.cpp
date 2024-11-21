@@ -25,7 +25,6 @@
 #include "etlng/impl/GrpcSource.hpp"
 #include "util/Assert.hpp"
 #include "util/LoggerFixtures.hpp"
-#include "util/MockPrometheus.hpp"
 #include "util/MockXrpLedgerAPIService.hpp"
 #include "util/TestObject.hpp"
 
@@ -63,7 +62,7 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
     );
 };
 
-struct GrpcSourceNgTests : NoLoggerFixture, util::prometheus::WithPrometheus, tests::util::WithMockXrpLedgerAPIService {
+struct GrpcSourceNgTests : NoLoggerFixture, tests::util::WithMockXrpLedgerAPIService {
     GrpcSourceNgTests()
         : WithMockXrpLedgerAPIService("localhost:0"), grpcSource_("localhost", std::to_string(getXRPLMockPort()))
     {
@@ -163,13 +162,13 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
     EXPECT_FALSE(response.object_neighbors_included());
 }
 
-struct GrpcSourceLoadInitialLedgerTests : GrpcSourceNgTests {
+struct GrpcSourceNgLoadInitialLedgerTests : GrpcSourceNgTests {
     uint32_t const sequence_ = 123u;
     uint32_t const numMarkers_ = 4u;
     bool const cacheOnly_ = false;
 };
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, GetLedgerDataNotFound)
+TEST_F(GrpcSourceNgLoadInitialLedgerTests, GetLedgerDataNotFound)
 {
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
         .Times(numMarkers_)
@@ -187,7 +186,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, GetLedgerDataNotFound)
     EXPECT_FALSE(success);
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, ObserverCalledCorrectly)
+TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
 {
     auto const key = ripple::uint256{4};
     auto const keyStr = uint256ToString(key);
@@ -225,7 +224,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, ObserverCalledCorrectly)
     EXPECT_EQ(data, std::vector<std::string>(4, keyStr));
 }
 
-TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
+TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
 {
     auto const totalKeys = 256uz;
     auto const totalPerMarker = totalKeys / numMarkers_;
