@@ -27,7 +27,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace asio = boost::asio;
@@ -98,7 +97,7 @@ Resolver::doResolve(std::string_view hostname, std::string_view service)
 {
     std::vector<boost::asio::ip::tcp::endpoint> endpoints;
     for (auto&& endpoint : resolver_.resolve(hostname, service))
-        endpoints.push_back(std::move(endpoint));
+        endpoints.push_back(endpoint);
 
     return endpoints;
 }

@@ -950,7 +950,7 @@ public:
         std::vector<Statement> statements;
         statements.reserve(data.size());
         for (auto [mptId, holder] : data)
-            statements.push_back(schema_->insertMPTHolder.bind(std::move(mptId), std::move(holder)));
+            statements.push_back(schema_->insertMPTHolder.bind(mptId, holder));
 
         executor_.write(std::move(statements));
     }
