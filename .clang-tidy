@@ -123,6 +123,7 @@ Checks: '-*,
   readability-else-after-return,
   readability-implicit-bool-conversion,
   readability-inconsistent-declaration-parameter-name,
+  readability-identifier-naming,
   readability-make-member-function-const,
   readability-misleading-indentation,
   readability-non-const-parameter,
@@ -140,6 +141,17 @@ Checks: '-*,
 
 CheckOptions:
   readability-braces-around-statements.ShortStatementLines: 2
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
+  readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  readability-identifier-naming.ClassMemberCase: camelBack
+  readability-identifier-naming.ClassConstantCase: camelBack
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.PublicMemberSuffix: ''
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h'

@@ -48,7 +48,7 @@ namespace util {
  */
 class Config final {
     boost::json::value store_;
-    static constexpr char Separator = '.';
+    static constexpr char separator = '.';
 
 public:
     using KeyType = std::string;

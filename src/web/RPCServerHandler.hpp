@@ -253,10 +253,10 @@ private:
             }
 
             boost::json::array warnings = std::move(result.warnings);
-            warnings.emplace_back(rpc::makeWarning(rpc::warnRPC_CLIO));
+            warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcClio));
 
             if (etl_->lastCloseAgeSeconds() >= 60)
-                warnings.emplace_back(rpc::makeWarning(rpc::warnRPC_OUTDATED));
+                warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcOutdated));
 
             response["warnings"] = warnings;
             connection->send(boost::json::serialize(response));

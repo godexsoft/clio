@@ -105,7 +105,7 @@ public:
     /**
      * @brief The default timeout for send, receive, and close operations.
      */
-    static constexpr std::chrono::steady_clock::duration DEFAULT_TIMEOUT = std::chrono::seconds{30};
+    static constexpr std::chrono::steady_clock::duration defaultTimeout = std::chrono::seconds{30};
 
     /**
      * @brief Construct a new Connection object
@@ -128,7 +128,7 @@ public:
     send(
         Response response,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT
+        std::chrono::steady_clock::duration timeout = defaultTimeout
     ) = 0;
 
     /**
@@ -139,7 +139,7 @@ public:
      * @return The request if it was received or an error if the operation failed.
      */
     virtual std::expected<Request, Error>
-    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT) = 0;
+    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) = 0;
 
     /**
      * @brief Gracefully close the connection.
@@ -148,7 +148,7 @@ public:
      * @param timeout The timeout for the operation.
      */
     virtual void
-    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT) = 0;
+    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) = 0;
 };
 
 /**

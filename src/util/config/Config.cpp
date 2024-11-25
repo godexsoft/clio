@@ -73,7 +73,7 @@ Config::lookup(KeyType key) const
 
     std::reference_wrapper<boost::json::value const> cur = std::cref(store_);
     auto hasBrokenPath = false;
-    auto tokenized = impl::Tokenizer<KeyType, Separator>{key};
+    auto tokenized = impl::Tokenizer<KeyType, separator>{key};
     std::string subkey{};
 
     auto maybeSection = tokenized.next();
@@ -91,7 +91,7 @@ Config::lookup(KeyType key) const
             }
         }
 
-        subkey += Separator;
+        subkey += separator;
         maybeSection = tokenized.next();
     }
 

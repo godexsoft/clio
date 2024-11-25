@@ -43,7 +43,7 @@
 namespace data::cassandra::impl {
 
 class Statement : public ManagedObject<CassStatement> {
-    static constexpr auto deleter = [](CassStatement* ptr) { cass_statement_free(ptr); };
+    constexpr static auto deleter = [](CassStatement* ptr) { cass_statement_free(ptr); };
 
 public:
     /**
@@ -150,7 +150,7 @@ public:
  * This is used to produce Statement objects that can be executed.
  */
 class PreparedStatement : public ManagedObject<CassPrepared const> {
-    static constexpr auto deleter = [](CassPrepared const* ptr) { cass_prepared_free(ptr); };
+    constexpr static auto deleter = [](CassPrepared const* ptr) { cass_prepared_free(ptr); };
 
 public:
     /* implicit */ PreparedStatement(CassPrepared const* ptr) : ManagedObject{ptr, deleter}

@@ -67,7 +67,7 @@ namespace rpc {
  */
 template <typename LoadBalancerType, typename ETLServiceType, typename CountersType>
 class BaseServerInfoHandler {
-    static constexpr auto BACKEND_COUNTERS_KEY = "backend_counters";
+    constexpr static auto backendCountersKey = "backend_counters";
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
@@ -301,7 +301,7 @@ private:
             jv.as_object()[JS(counters)] = info.adminSection->counters;
             jv.as_object()[JS(counters)].as_object()["subscriptions"] = info.adminSection->subscriptions;
             if (info.adminSection->backendCounters.has_value()) {
-                jv.as_object()[BACKEND_COUNTERS_KEY] = *info.adminSection->backendCounters;
+                jv.as_object()[backendCountersKey] = *info.adminSection->backendCounters;
             }
         }
     }
@@ -337,8 +337,8 @@ private:
     {
         auto input = BaseServerInfoHandler::Input{};
         auto const jsonObject = jv.as_object();
-        if (jsonObject.contains(BACKEND_COUNTERS_KEY) && jsonObject.at(BACKEND_COUNTERS_KEY).is_bool())
-            input.backendCounters = jv.at(BACKEND_COUNTERS_KEY).as_bool();
+        if (jsonObject.contains(backendCountersKey) && jsonObject.at(backendCountersKey).is_bool())
+            input.backendCounters = jv.at(backendCountersKey).as_bool();
         return input;
     }
 };

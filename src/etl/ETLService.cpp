@@ -88,9 +88,9 @@ ETLService::runETLPipeline(uint32_t startSequence, uint32_t numExtractors)
 
     auto const end = std::chrono::system_clock::now();
     auto const lastPublishedSeq = ledgerPublisher_.getLastPublishedSequence();
-    static constexpr auto NANOSECONDS_PER_SECOND = 1'000'000'000.0;
+    constexpr static auto NanosecondsPerSecond = 1'000'000'000.0;
     LOG(log_.debug()) << "Extracted and wrote " << lastPublishedSeq.value_or(startSequence) - startSequence << " in "
-                      << ((end - begin).count()) / NANOSECONDS_PER_SECOND;
+                      << ((end - begin).count()) / NanosecondsPerSecond;
 
     state_.isWriting = false;
 

@@ -145,9 +145,9 @@ private:
     bool
     isForcedForward(web::Context const& ctx) const
     {
-        static constexpr auto FORCE_FORWARD = "force_forward";
-        return ctx.isAdmin and ctx.params.contains(FORCE_FORWARD) and ctx.params.at(FORCE_FORWARD).is_bool() and
-            ctx.params.at(FORCE_FORWARD).as_bool();
+        constexpr static auto ForceForward = "force_forward";
+        return ctx.isAdmin and ctx.params.contains(ForceForward) and ctx.params.at(ForceForward).is_bool() and
+            ctx.params.at(ForceForward).as_bool();
     }
 };
 

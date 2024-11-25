@@ -53,9 +53,9 @@ class NFTHistoryHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr LIMIT_MIN = 1;
-    static auto constexpr LIMIT_MAX = 100;
-    static auto constexpr LIMIT_DEFAULT = 50;
+    static auto constexpr limitMin = 1;
+    static auto constexpr limitMax = 100;
+    static auto constexpr limitDefault = 50;
 
     /**
      * @brief A struct to hold the marker data
@@ -119,17 +119,15 @@ public:
     spec([[maybe_unused]] uint32_t apiVersion)
     {
         static auto const rpcSpec = RpcSpec{
-            {JS(nft_id), validation::Required{}, validation::CustomValidators::Uint256HexStringValidator},
-            {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
+            {JS(nft_id), validation::Required{}, validation::CustomValidators::uint256HexStringValidator},
+            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
+            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             {JS(ledger_index_min), validation::Type<int32_t>{}},
             {JS(ledger_index_max), validation::Type<int32_t>{}},
             {JS(binary), validation::Type<bool>{}},
             {JS(forward), validation::Type<bool>{}},
-            {JS(limit),
-             validation::Type<uint32_t>{},
-             validation::Min(1u),
-             modifiers::Clamp<int32_t>{LIMIT_MIN, LIMIT_MAX}},
+            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
+            },
             {JS(marker),
              meta::WithCustomError{
                  validation::Type<boost::json::object>{}, Status{RippledError::rpcINVALID_PARAMS, "invalidMarker"}

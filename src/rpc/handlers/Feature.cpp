@@ -116,8 +116,8 @@ FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
              validation::NotSupported{},
              Status(RippledError::rpcNO_PERMISSION, "The admin portion of feature API is not available through Clio.")
          }},
-        {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
-        {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
+        {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
+        {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
     };
     return rpcSpec;
 }

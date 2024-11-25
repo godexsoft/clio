@@ -341,7 +341,7 @@ private:
 static constinit PortConstraint validatePort{};
 static constinit ValidIPConstraint validateIP{};
 
-static constinit OneOf validateChannelName{"channel", Logger::CHANNELS};
+static constinit OneOf validateChannelName{"channel", Logger::channels};
 static constinit OneOf validateLogLevelName{"log_level", LOG_LEVELS};
 static constinit OneOf validateCassandraName{"database.type", DATABASE_TYPE};
 static constinit OneOf validateLoadMode{"cache.load", LOAD_CACHE_MODE};

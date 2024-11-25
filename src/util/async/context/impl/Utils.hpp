@@ -75,7 +75,7 @@ outcomeForHandler(auto&& fn)
 
 struct SelfContextProvider {
     template <typename CtxType>
-    [[nodiscard]] static constexpr auto&
+    [[nodiscard]] constexpr static auto&
     getContext(CtxType& self) noexcept
     {
         return self;

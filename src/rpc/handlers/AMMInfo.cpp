@@ -231,8 +231,8 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
         }};
 
     static auto const rpcSpec = RpcSpec{
-        {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
-        {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
+        {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
+        {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
         {JS(asset),
          meta::WithCustomError{
              validation::Type<std::string, boost::json::object>{}, Status(RippledError::rpcISSUE_MALFORMED)
@@ -240,7 +240,7 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
          meta::IfType<std::string>{stringIssueValidator},
          meta::IfType<boost::json::object>{
              meta::WithCustomError{
-                 validation::CustomValidators::CurrencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
+                 validation::CustomValidators::currencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
              },
          }},
         {JS(asset2),
@@ -250,13 +250,13 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
          meta::IfType<std::string>{stringIssueValidator},
          meta::IfType<boost::json::object>{
              meta::WithCustomError{
-                 validation::CustomValidators::CurrencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
+                 validation::CustomValidators::currencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
              },
          }},
         {JS(amm_account),
-         meta::WithCustomError{validation::CustomValidators::AccountValidator, Status(RippledError::rpcACT_MALFORMED)}},
+         meta::WithCustomError{validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)}},
         {JS(account),
-         meta::WithCustomError{validation::CustomValidators::AccountValidator, Status(RippledError::rpcACT_MALFORMED)}},
+         meta::WithCustomError{validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)}},
     };
 
     return rpcSpec;

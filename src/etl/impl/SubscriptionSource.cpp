@@ -77,7 +77,7 @@ SubscriptionSource::SubscriptionSource(
     , subscriptions_(std::move(subscriptions))
     , strand_(boost::asio::make_strand(ioContext))
     , wsTimeout_(wsTimeout)
-    , retry_(util::makeRetryExponentialBackoff(retryDelay, RETRY_MAX_DELAY, strand_))
+    , retry_(util::makeRetryExponentialBackoff(retryDelay, retryMaxDelay, strand_))
     , onConnect_(std::move(onConnect))
     , onDisconnect_(std::move(onDisconnect))
     , onLedgerClosed_(std::move(onLedgerClosed))

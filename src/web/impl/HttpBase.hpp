@@ -80,9 +80,9 @@ class HttpBase : public ConnectionBase {
 
     // TODO: this should be rewritten using http::message_generator instead
     struct SendLambda {
-        HttpBase& self_;
+        HttpBase& self;
 
-        explicit SendLambda(HttpBase& self) : self_(self)
+        explicit SendLambda(HttpBase& self) : self(self)
         {
         }
 
@@ -90,7 +90,7 @@ class HttpBase : public ConnectionBase {
         void
         operator()(http::message<isRequest, Body, Fields>&& msg) const
         {
-            if (self_.dead())
+            if (self.dead())
                 return;
 
             // The lifetime of the message has to extend for the duration of the async operation so we use a shared_ptr
@@ -98,13 +98,13 @@ class HttpBase : public ConnectionBase {
             auto sp = std::make_shared<http::message<isRequest, Body, Fields>>(std::move(msg));
 
             // Store a type-erased version of the shared pointer in the class to keep it alive.
-            self_.res_ = sp;
+            self.res_ = sp;
 
             // Write the response
             http::async_write(
-                self_.derived().stream(),
+                self.derived().stream(),
                 *sp,
-                boost::beast::bind_front_handler(&HttpBase::onWrite, self_.derived().shared_from_this(), sp->need_eof())
+                boost::beast::bind_front_handler(&HttpBase::onWrite, self.derived().shared_from_this(), sp->need_eof())
             );
         }
     };
@@ -266,9 +266,9 @@ public:
             auto jsonResponse = boost::json::parse(msg).as_object();
             jsonResponse["warning"] = "load";
             if (jsonResponse.contains("warnings") && jsonResponse["warnings"].is_array()) {
-                jsonResponse["warnings"].as_array().push_back(rpc::makeWarning(rpc::warnRPC_RATE_LIMIT));
+                jsonResponse["warnings"].as_array().push_back(rpc::makeWarning(rpc::WarnRpcRateLimit));
             } else {
-                jsonResponse["warnings"] = boost::json::array{rpc::makeWarning(rpc::warnRPC_RATE_LIMIT)};
+                jsonResponse["warnings"] = boost::json::array{rpc::makeWarning(rpc::WarnRpcRateLimit)};
             }
 
             // Reserialize when we need to include this warning

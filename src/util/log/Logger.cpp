@@ -61,9 +61,9 @@
 
 namespace util {
 
-Logger LogService::general_log_ = Logger{"General"};
-Logger LogService::alert_log_ = Logger{"Alert"};
-boost::log::filter LogService::filter_{};
+Logger LogService::generalLog = Logger{"General"};
+Logger LogService::alertLog = Logger{"Alert"};
+boost::log::filter LogService::filter{};
 
 std::ostream&
 operator<<(std::ostream& stream, Severity sev)
@@ -118,12 +118,12 @@ LogService::init(util::Config const& config)
 
     if (config.valueOr("log_to_console", false)) {
         boost::log::add_console_log(
-            std::cout, keywords::format = format, keywords::filter = log_severity < Severity::FTL
+            std::cout, keywords::format = format, keywords::filter = LogSeverity < Severity::FTL
         );
     }
 
     // Always print fatal logs to cerr
-    boost::log::add_console_log(std::cerr, keywords::format = format, keywords::filter = log_severity >= Severity::FTL);
+    boost::log::add_console_log(std::cerr, keywords::format = format, keywords::filter = LogSeverity >= Severity::FTL);
 
     if (auto logDir = config.maybeValue<std::string>("log_directory"); logDir) {
         boost::filesystem::path dirPath{logDir.value()};
@@ -152,13 +152,13 @@ LogService::init(util::Config const& config)
     auto defaultSeverity = config.valueOr<Severity>("log_level", Severity::NFO);
 
     std::unordered_map<std::string, Severity> min_severity;
-    for (auto const& channel : Logger::CHANNELS)
+    for (auto const& channel : Logger::channels)
         min_severity[channel] = defaultSeverity;
     min_severity["Alert"] = Severity::WRN;  // Channel for alerts, always warning severity
 
     for (auto const overrides = config.arrayOr("log_channels", {}); auto const& cfg : overrides) {
         auto name = cfg.valueOrThrow<std::string>("channel", "Channel name is required");
-        if (std::count(std::begin(Logger::CHANNELS), std::end(Logger::CHANNELS), name) == 0)
+        if (std::count(std::begin(Logger::channels), std::end(Logger::channels), name) == 0)
             throw std::runtime_error("Can't override settings for log channel " + name + ": invalid channel");
 
         min_severity[name] = cfg.valueOr<Severity>("log_level", defaultSeverity);
@@ -166,8 +166,8 @@ LogService::init(util::Config const& config)
 
     auto log_filter = [min_severity = std::move(min_severity),
                        defaultSeverity](boost::log::attribute_value_set const& attributes) -> bool {
-        auto const channel = attributes[log_channel];
-        auto const severity = attributes[log_severity];
+        auto const channel = attributes[LogChannel];
+        auto const severity = attributes[LogSeverity];
         if (!channel || !severity)
             return false;
         if (auto const it = min_severity.find(channel.get()); it != min_severity.end())
@@ -175,8 +175,8 @@ LogService::init(util::Config const& config)
         return severity.get() >= defaultSeverity;
     };
 
-    filter_ = boost::log::filter{std::move(log_filter)};
-    boost::log::core::get()->set_filter(filter_);
+    filter = boost::log::filter{std::move(log_filter)};
+    boost::log::core::get()->set_filter(filter);
     LOG(LogService::info()) << "Default log level = " << defaultSeverity;
 }
 

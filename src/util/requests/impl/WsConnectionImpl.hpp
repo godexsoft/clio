@@ -101,8 +101,7 @@ public:
     }
 
     std::optional<RequestError>
-    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration const timeout = DEFAULT_TIMEOUT)
-        override
+    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration const timeout = defaultTimeout) override
     {
         // Set the timeout for closing the connection
         boost::beast::websocket::stream_base::timeout wsTimeout{};

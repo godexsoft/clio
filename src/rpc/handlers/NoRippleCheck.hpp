@@ -55,9 +55,9 @@ class NoRippleCheckHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr LIMIT_MIN = 1;
-    static auto constexpr LIMIT_MAX = 500;
-    static auto constexpr LIMIT_DEFAULT = 300;
+    static auto constexpr limitMin = 1;
+    static auto constexpr limitMax = 500;
+    static auto constexpr limitDefault = 300;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -79,7 +79,7 @@ public:
         bool roleGateway = false;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = LIMIT_DEFAULT;
+        uint32_t limit = limitDefault;
         JsonBool transactions{false};
     };
 
@@ -105,18 +105,16 @@ public:
     spec([[maybe_unused]] uint32_t apiVersion)
     {
         static auto const rpcSpecV1 = RpcSpec{
-            {JS(account), validation::Required{}, validation::CustomValidators::AccountValidator},
+            {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(role),
              validation::Required{},
              meta::WithCustomError{
                  validation::OneOf{"gateway", "user"}, Status{RippledError::rpcINVALID_PARAMS, "role field is invalid"}
              }},
-            {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
-            {JS(limit),
-             validation::Type<uint32_t>(),
-             validation::Min(1u),
-             modifiers::Clamp<int32_t>{LIMIT_MIN, LIMIT_MAX}}
+            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
+            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
+            {JS(limit), validation::Type<uint32_t>(), validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
+            }
         };
 
         static auto const rpcSpec = RpcSpec{

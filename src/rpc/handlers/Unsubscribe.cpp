@@ -78,9 +78,9 @@ UnsubscribeHandler::spec([[maybe_unused]] uint32_t apiVersion)
         }};
 
     static auto const rpcSpec = RpcSpec{
-        {JS(streams), validation::CustomValidators::SubscribeStreamValidator},
-        {JS(accounts), validation::CustomValidators::SubscribeAccountsValidator},
-        {JS(accounts_proposed), validation::CustomValidators::SubscribeAccountsValidator},
+        {JS(streams), validation::CustomValidators::subscribeStreamValidator},
+        {JS(accounts), validation::CustomValidators::subscribeAccountsValidator},
+        {JS(accounts_proposed), validation::CustomValidators::subscribeAccountsValidator},
         {JS(books), booksValidator},
         {JS(url), check::Deprecated{}},
         {JS(rt_accounts), check::Deprecated{}},

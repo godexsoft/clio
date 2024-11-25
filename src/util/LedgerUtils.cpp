@@ -32,8 +32,8 @@ LedgerTypes::GetLedgerEntryTypeFromStr(std::string const& entryName)
 {
     static std::unordered_map<std::string, ripple::LedgerEntryType> typeMap = []() {
         std::unordered_map<std::string, ripple::LedgerEntryType> map;
-        std::for_each(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), [&map](auto const& item) {
-            map[item.name] = item.type;
+        std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&map](auto const& item) {
+            map[item.name_] = item.type_;
         });
         return map;
     }();

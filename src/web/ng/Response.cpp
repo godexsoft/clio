@@ -58,6 +58,7 @@ prepareResponse(http::response<http::string_body> response, http::request<http::
     response.set(http::field::server, fmt::format("clio-server-{}", util::build::getClioVersionString()));
     response.keep_alive(request.keep_alive());
     response.prepare_payload();
+
     return response;
 }
 
@@ -66,6 +67,7 @@ std::variant<http::response<http::string_body>, std::string>
 makeData(http::status status, MessageType message, Request const& request)
 {
     std::string body;
+
     if constexpr (isString<MessageType>()) {
         body = std::move(message);
     } else {
@@ -86,19 +88,19 @@ makeData(http::status status, MessageType message, Request const& request)
 }  // namespace
 
 Response::Response(boost::beast::http::status status, std::string message, Request const& request)
-    : data_{makeData(status, std::move(message), request)}
+    : data{makeData(status, std::move(message), request)}
 {
 }
 
 Response::Response(boost::beast::http::status status, boost::json::object const& message, Request const& request)
-    : data_{makeData(status, message, request)}
+    : data{makeData(status, message, request)}
 {
 }
 
 Response::Response(boost::beast::http::response<boost::beast::http::string_body> response, Request const& request)
 {
     ASSERT(request.isHttp(), "Request must be HTTP to construct response from HTTP response");
-    data_ = prepareResponse(std::move(response), request.asHttpRequest()->get());
+    data = prepareResponse(std::move(response), request.asHttpRequest()->get());
 }
 
 std::string const&
@@ -109,23 +111,24 @@ Response::message() const
             [](http::response<http::string_body> const& response) -> std::string const& { return response.body(); },
             [](std::string const& message) -> std::string const& { return message; },
         },
-        data_
+        data
     );
 }
 
 http::response<http::string_body>
 Response::intoHttpResponse() &&
 {
-    ASSERT(std::holds_alternative<http::response<http::string_body>>(data_), "Response must contain HTTP data");
+    ASSERT(std::holds_alternative<http::response<http::string_body>>(data), "Response must contain HTTP data");
 
-    return std::move(std::get<http::response<http::string_body>>(data_));
+    return std::move(std::get<http::response<http::string_body>>(data));
 }
 
 boost::asio::const_buffer
 Response::asWsResponse() const&
 {
-    ASSERT(std::holds_alternative<std::string>(data_), "Response must contain WebSocket data");
-    auto const& message = std::get<std::string>(data_);
+    ASSERT(std::holds_alternative<std::string>(data), "Response must contain WebSocket data");
+    auto const& message = std::get<std::string>(data);
+
     return boost::asio::buffer(message.data(), message.size());
 }
 

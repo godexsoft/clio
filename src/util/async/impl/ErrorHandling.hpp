@@ -53,7 +53,7 @@ struct DefaultErrorHandler {
 };
 
 struct NoErrorHandler {
-    [[nodiscard]] static constexpr auto
+    [[nodiscard]] constexpr static auto
     wrap(auto&& fn)
     {
         return std::forward<decltype(fn)>(fn);

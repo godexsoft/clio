@@ -83,7 +83,7 @@ struct SameThreadContext {
 
 struct SystemContextProvider {
     template <typename CtxType>
-    [[nodiscard]] static constexpr auto&
+    [[nodiscard]] constexpr static auto&
     getContext([[maybe_unused]] CtxType& self) noexcept
     {
         return SystemExecutionContext::instance();

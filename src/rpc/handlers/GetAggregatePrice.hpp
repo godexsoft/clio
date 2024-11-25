@@ -153,7 +153,7 @@ public:
                         return maybeError;
 
                     maybeError =
-                        validation::CustomValidators::AccountBase58Validator.verify(oracle.as_object(), JS(account));
+                        validation::CustomValidators::accountBase58Validator.verify(oracle.as_object(), JS(account));
                     if (!maybeError)
                         return Error{Status{RippledError::rpcINVALID_PARAMS}};
                 };
@@ -162,20 +162,20 @@ public:
             }};
 
         static auto const rpcSpec = RpcSpec{
-            {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
+            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
+            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             // validate quoteAsset and base_asset in accordance to the currency code found in XRPL doc:
             // https://xrpl.org/docs/references/protocol/data-types/currency-formats#currency-codes
             // usually Clio returns rpcMALFORMED_CURRENCY , return InvalidParam here just to mimic rippled
             {JS(base_asset),
              validation::Required{},
              meta::WithCustomError{
-                 validation::CustomValidators::CurrencyValidator, Status(RippledError::rpcINVALID_PARAMS)
+                 validation::CustomValidators::currencyValidator, Status(RippledError::rpcINVALID_PARAMS)
              }},
             {JS(quote_asset),
              validation::Required{},
              meta::WithCustomError{
-                 validation::CustomValidators::CurrencyValidator, Status(RippledError::rpcINVALID_PARAMS)
+                 validation::CustomValidators::currencyValidator, Status(RippledError::rpcINVALID_PARAMS)
              }},
             {JS(oracles), validation::Required{}, oraclesValidator},
             // note: Unlike `rippled`, Clio only supports UInt as input, no string, no `null`, etc.

@@ -47,12 +47,13 @@ class LedgerTypeAttribute {
         Chain,           // The ledger object is shared across the chain
         DeletionBlocker  // The ledger object is owned by account and it blocks deletion
     };
-    ripple::LedgerEntryType type = ripple::ltANY;
-    char const* name = nullptr;
-    LedgerCategory category = LedgerCategory::Invalid;
+
+    ripple::LedgerEntryType type_ = ripple::ltANY;
+    char const* name_ = nullptr;
+    LedgerCategory category_ = LedgerCategory::Invalid;
 
     constexpr LedgerTypeAttribute(char const* name, ripple::LedgerEntryType type, LedgerCategory category)
-        : type(type), name(name), category(category)
+        : type_(type), name_(name), category_(category)
     {
     }
 
@@ -86,7 +87,7 @@ class LedgerTypes {
     using LedgerTypeAttribute = impl::LedgerTypeAttribute;
     using LedgerTypeAttributeList = LedgerTypeAttribute[];
 
-    static constexpr LedgerTypeAttributeList const LEDGER_TYPES{
+    static constexpr LedgerTypeAttributeList const ledgerTypes{
         LedgerTypeAttribute::AccountOwnedLedgerType(JS(account), ripple::ltACCOUNT_ROOT),
         LedgerTypeAttribute::ChainLedgerType(JS(amendments), ripple::ltAMENDMENTS),
         LedgerTypeAttribute::DeletionBlockerLedgerType(JS(check), ripple::ltCHECK),
@@ -123,12 +124,12 @@ public:
      * @brief Returns a list of all ledger entry type as string.
      * @return A list of all ledger entry type as string.
      */
-    static constexpr auto
+    constexpr static auto
     GetLedgerEntryTypeStrList()
     {
-        std::array<char const*, std::size(LEDGER_TYPES)> res{};
-        std::transform(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), std::begin(res), [](auto const& item) {
-            return item.name;
+        std::array<char const*, std::size(ledgerTypes)> res{};
+        std::transform(std::begin(ledgerTypes), std::end(ledgerTypes), std::begin(res), [](auto const& item) {
+            return item.name_;
         });
         return res;
     }
@@ -138,19 +139,19 @@ public:
      *
      * @return A list of all account owned ledger entry type as string.
      */
-    static constexpr auto
+    constexpr static auto
     GetAccountOwnedLedgerTypeStrList()
     {
         auto constexpr filter = [](auto const& item) {
-            return item.category != LedgerTypeAttribute::LedgerCategory::Chain;
+            return item.category_ != LedgerTypeAttribute::LedgerCategory::Chain;
         };
 
-        auto constexpr accountOwnedCount = std::count_if(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), filter);
+        auto constexpr accountOwnedCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
         std::array<char const*, accountOwnedCount> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), [&](auto const& item) {
+        std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {
             if (filter(item)) {
-                *it = item.name;
+                *it = item.name_;
                 ++it;
             }
         });
@@ -162,19 +163,19 @@ public:
      *
      * @return A list of all account deletion blocker's type as string.
      */
-    static constexpr auto
+    constexpr static auto
     GetDeletionBlockerLedgerTypes()
     {
         auto constexpr filter = [](auto const& item) {
-            return item.category == LedgerTypeAttribute::LedgerCategory::DeletionBlocker;
+            return item.category_ == LedgerTypeAttribute::LedgerCategory::DeletionBlocker;
         };
 
-        auto constexpr deletionBlockersCount = std::count_if(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), filter);
+        auto constexpr deletionBlockersCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
         std::array<ripple::LedgerEntryType, deletionBlockersCount> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(LEDGER_TYPES), std::end(LEDGER_TYPES), [&](auto const& item) {
+        std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {
             if (filter(item)) {
-                *it = item.type;
+                *it = item.type_;
                 ++it;
             }
         });

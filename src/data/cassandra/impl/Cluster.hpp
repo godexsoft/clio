@@ -25,6 +25,8 @@
 #include <cassandra.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -39,10 +41,10 @@ namespace data::cassandra::impl {
  * @brief Bundles all cassandra settings in one place.
  */
 struct Settings {
-    static constexpr std::size_t DEFAULT_CONNECTION_TIMEOUT = 10000;
-    static constexpr uint32_t DEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING = 10'000;
-    static constexpr uint32_t DEFAULT_MAX_READ_REQUESTS_OUTSTANDING = 100'000;
-    static constexpr std::size_t DEFAULT_BATCH_SIZE = 20;
+    static constexpr std::size_t defaultConnectionTimeout = 10000;
+    static constexpr uint32_t defaultMaxWriteRequestsOutstanding = 10'000;
+    static constexpr uint32_t defaultMaxReadRequestsOutstanding = 100'000;
+    static constexpr std::size_t defaultBatchSize = 20;
 
     /**
      * @brief Represents the configuration of contact points for cassandra.
@@ -63,7 +65,7 @@ struct Settings {
     bool enableLog = false;
 
     /** @brief Connect timeout specified in milliseconds */
-    std::chrono::milliseconds connectionTimeout = std::chrono::milliseconds{DEFAULT_CONNECTION_TIMEOUT};
+    std::chrono::milliseconds connectionTimeout = std::chrono::milliseconds{defaultConnectionTimeout};
 
     /** @brief Request timeout specified in milliseconds */
     std::chrono::milliseconds requestTimeout = std::chrono::milliseconds{0};  // no timeout at all
@@ -75,16 +77,16 @@ struct Settings {
     uint32_t threads = std::thread::hardware_concurrency();
 
     /** @brief The maximum number of outstanding write requests at any given moment */
-    uint32_t maxWriteRequestsOutstanding = DEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING;
+    uint32_t maxWriteRequestsOutstanding = defaultMaxWriteRequestsOutstanding;
 
     /** @brief The maximum number of outstanding read requests at any given moment */
-    uint32_t maxReadRequestsOutstanding = DEFAULT_MAX_READ_REQUESTS_OUTSTANDING;
+    uint32_t maxReadRequestsOutstanding = defaultMaxReadRequestsOutstanding;
 
     /** @brief The number of connection per host to always have active */
     uint32_t coreConnectionsPerHost = 1u;
 
     /** @brief Size of batches when writing */
-    std::size_t writeBatchSize = DEFAULT_BATCH_SIZE;
+    std::size_t writeBatchSize = defaultBatchSize;
 
     /** @brief Size of the IO queue */
     std::optional<uint32_t> queueSizeIO = std::nullopt;  // NOLINT(readability-redundant-member-init)

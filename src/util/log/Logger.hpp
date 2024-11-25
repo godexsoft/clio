@@ -81,8 +81,8 @@ enum class Severity {
 };
 
 /** @cond */
-BOOST_LOG_ATTRIBUTE_KEYWORD(log_severity, "Severity", Severity);
-BOOST_LOG_ATTRIBUTE_KEYWORD(log_channel, "Channel", std::string);
+BOOST_LOG_ATTRIBUTE_KEYWORD(LogSeverity, "Severity", Severity);
+BOOST_LOG_ATTRIBUTE_KEYWORD(LogChannel, "Channel", std::string);
 /** @endcond */
 
 /**
@@ -177,7 +177,7 @@ class Logger final {
     };
 
 public:
-    static constexpr std::array<char const*, 7> CHANNELS = {
+    static constexpr std::array<char const*, 7> channels = {
         "General",
         "WebServer",
         "Backend",
@@ -272,9 +272,9 @@ public:
  * entrypoint for logging into the `General` channel as well as raising alerts.
  */
 class LogService {
-    static Logger general_log_; /*< Global logger for General channel */
-    static Logger alert_log_;   /*< Global logger for Alerts channel */
-    static boost::log::filter filter_;
+    static Logger generalLog; /*< Global logger for General channel */
+    static Logger alertLog;   /*< Global logger for Alerts channel */
+    static boost::log::filter filter;
 
 public:
     LogService() = delete;
@@ -296,7 +296,7 @@ public:
     [[nodiscard]] static Logger::Pump
     trace(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.trace(loc);
+        return generalLog.trace(loc);
     }
 
     /**
@@ -308,7 +308,7 @@ public:
     [[nodiscard]] static Logger::Pump
     debug(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.debug(loc);
+        return generalLog.debug(loc);
     }
 
     /**
@@ -320,7 +320,7 @@ public:
     [[nodiscard]] static Logger::Pump
     info(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.info(loc);
+        return generalLog.info(loc);
     }
 
     /**
@@ -332,7 +332,7 @@ public:
     [[nodiscard]] static Logger::Pump
     warn(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.warn(loc);
+        return generalLog.warn(loc);
     }
 
     /**
@@ -344,7 +344,7 @@ public:
     [[nodiscard]] static Logger::Pump
     error(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.error(loc);
+        return generalLog.error(loc);
     }
 
     /**
@@ -356,7 +356,7 @@ public:
     [[nodiscard]] static Logger::Pump
     fatal(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return general_log_.fatal(loc);
+        return generalLog.fatal(loc);
     }
 
     /**
@@ -368,7 +368,7 @@ public:
     [[nodiscard]] static Logger::Pump
     alert(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
     {
-        return alert_log_.warn(loc);
+        return alertLog.warn(loc);
     }
 };
 

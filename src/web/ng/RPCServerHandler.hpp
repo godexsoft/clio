@@ -293,10 +293,10 @@ private:
             }
 
             boost::json::array warnings = std::move(result.warnings);
-            warnings.emplace_back(rpc::makeWarning(rpc::warnRPC_CLIO));
+            warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcClio));
 
             if (etl_->lastCloseAgeSeconds() >= 60)
-                warnings.emplace_back(rpc::makeWarning(rpc::warnRPC_OUTDATED));
+                warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcOutdated));
 
             response["warnings"] = warnings;
             return Response{boost::beast::http::status::ok, response, rawRequest};

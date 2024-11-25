@@ -56,7 +56,7 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input input, Context const& ct
 
     auto const lgrInfo = std::get<LedgerHeader>(lgrInfoOrStatus);
 
-    auto const limit = input.limit.value_or(NFTsByIssuerHandler::LIMIT_DEFAULT);
+    auto const limit = input.limit.value_or(NFTsByIssuerHandler::limitDefault);
 
     auto const issuer = accountFromStringStrict(input.issuer);
     auto const accountLedgerObject =
