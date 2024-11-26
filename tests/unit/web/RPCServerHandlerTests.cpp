@@ -37,6 +37,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -905,7 +906,7 @@ TEST_P(WebRPCServerHandlerInvalidAPIVersionParamTest, WSInvalidAPIVersion)
     EXPECT_TRUE(response.as_object().contains("error_message"));
     EXPECT_EQ(response.at("error_message").as_string(), GetParam().wsMessage);
     EXPECT_TRUE(response.as_object().contains("error_code"));
-    EXPECT_EQ(response.at("error_code").as_int64(), rpc::ClioError::rpcINVALID_API_VERSION);
+    EXPECT_EQ(response.at("error_code").as_int64(), static_cast<int64_t>(rpc::ClioError::rpcINVALID_API_VERSION));
 }
 
 }  // namespace
