@@ -188,10 +188,10 @@ public:
 static auto
 generateData()
 {
-    constexpr auto TOTAL = 10'000;
+    constexpr auto total = 10'000;
     std::vector<uint64_t> data;
-    data.reserve(TOTAL);
-    for (auto i = 0; i < TOTAL; ++i)
+    data.reserve(total);
+    for (auto i = 0; i < total; ++i)
         data.push_back(util::Random::uniform(1, 100'000'000));
 
     return data;

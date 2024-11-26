@@ -44,7 +44,7 @@ class ConfigValue;
 /**
  * @brief specific values that are accepted for logger levels in config.
  */
-static constexpr std::array<char const*, 7> LOG_LEVELS = {
+static constexpr std::array<char const*, 7> logLevels = {
     "trace",
     "debug",
     "info",
@@ -57,7 +57,7 @@ static constexpr std::array<char const*, 7> LOG_LEVELS = {
 /**
  * @brief specific values that are accepted for logger tag style in config.
  */
-static constexpr std::array<char const*, 5> LOG_TAGS = {
+static constexpr std::array<char const*, 5> logTags = {
     "int",
     "uint",
     "null",
@@ -68,7 +68,7 @@ static constexpr std::array<char const*, 5> LOG_TAGS = {
 /**
  * @brief specific values that are accepted for cache loading in config.
  */
-static constexpr std::array<char const*, 3> LOAD_CACHE_MODE = {
+static constexpr std::array<char const*, 3> loadCacheMode = {
     "sync",
     "async",
     "none",
@@ -77,7 +77,7 @@ static constexpr std::array<char const*, 3> LOAD_CACHE_MODE = {
 /**
  * @brief specific values that are accepted for database type in config.
  */
-static constexpr std::array<char const*, 1> DATABASE_TYPE = {"cassandra"};
+static constexpr std::array<char const*, 1> databaseType = {"cassandra"};
 
 /**
  * @brief An interface to enforce constraints on certain values within ClioConfigDefinition.
@@ -342,10 +342,10 @@ static constinit PortConstraint validatePort{};
 static constinit ValidIPConstraint validateIP{};
 
 static constinit OneOf validateChannelName{"channel", Logger::channels};
-static constinit OneOf validateLogLevelName{"log_level", LOG_LEVELS};
-static constinit OneOf validateCassandraName{"database.type", DATABASE_TYPE};
-static constinit OneOf validateLoadMode{"cache.load", LOAD_CACHE_MODE};
-static constinit OneOf validateLogTag{"log_tag_style", LOG_TAGS};
+static constinit OneOf validateLogLevelName{"log_level", logLevels};
+static constinit OneOf validateCassandraName{"database.type", databaseType};
+static constinit OneOf validateLoadMode{"cache.load", loadCacheMode};
+static constinit OneOf validateLogTag{"log_tag_style", logTags};
 
 static constinit PositiveDouble validatePositiveDouble{};
 
@@ -357,6 +357,6 @@ static constinit NumberValueConstraint<uint32_t> validateUint32{
     std::numeric_limits<uint32_t>::min(),
     std::numeric_limits<uint32_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> validateApiVersion{rpc::API_VERSION_MIN, rpc::API_VERSION_MAX};
+static constinit NumberValueConstraint<uint32_t> validateApiVersion{rpc::apiVersionMin, rpc::apiVersionMax};
 
 }  // namespace util::config

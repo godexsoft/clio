@@ -616,8 +616,8 @@ decodeCTID(T const ctid) noexcept
     auto const getCTID64 = [](T const ctid) noexcept -> std::optional<uint64_t> {
         if constexpr (std::is_convertible_v<T, std::string>) {
             std::string const ctidString(ctid);
-            static constexpr std::size_t CTID_STRING_LENGTH = 16;
-            if (ctidString.length() != CTID_STRING_LENGTH)
+            static constexpr std::size_t ctidStringLength = 16;
+            if (ctidString.length() != ctidStringLength)
                 return {};
 
             if (!boost::regex_match(ctidString, boost::regex("^[0-9A-F]+$")))
@@ -634,10 +634,10 @@ decodeCTID(T const ctid) noexcept
 
     auto const ctidValue = getCTID64(ctid).value_or(0);
 
-    static constexpr uint64_t CTID_PREFIX = 0xC000'0000'0000'0000ULL;
-    static constexpr uint64_t CTID_PREFIX_MASK = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t ctidPrefix = 0xC000'0000'0000'0000ULL;
+    static constexpr uint64_t ctidPrefixMask = 0xF000'0000'0000'0000ULL;
 
-    if ((ctidValue & CTID_PREFIX_MASK) != CTID_PREFIX)
+    if ((ctidValue & ctidPrefixMask) != ctidPrefix)
         return {};
 
     uint32_t const ledgerSeq = (ctidValue >> 32) & 0xFFFF'FFFUL;
@@ -660,7 +660,7 @@ logDuration(web::Context const& ctx, T const& dur)
     using boost::json::serialize;
 
     static util::Logger const log{"RPC"};
-    static constexpr std::int64_t DURATION_ERROR_THRESHOLD_SECONDS = 10;
+    static constexpr std::int64_t durationErrorThresholdSeconds = 10;
 
     auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
     auto const seconds = std::chrono::duration_cast<std::chrono::seconds>(dur).count();
@@ -668,7 +668,7 @@ logDuration(web::Context const& ctx, T const& dur)
         "Request processing duration = {} milliseconds. request = {}", millis, serialize(util::removeSecret(ctx.params))
     );
 
-    if (seconds > DURATION_ERROR_THRESHOLD_SECONDS) {
+    if (seconds > durationErrorThresholdSeconds) {
         LOG(log.error()) << ctx.tag() << msg;
     } else if (seconds > 1) {
         LOG(log.warn()) << ctx.tag() << msg;

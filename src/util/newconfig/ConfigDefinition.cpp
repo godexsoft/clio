@@ -52,7 +52,7 @@ namespace util::config {
  * Specifies which keys are valid in Clio Config and provides default values if user's do not specify one. Those
  * without default values must be present in the user's config file.
  */
-static ClioConfigDefinition ClioConfig = ClioConfigDefinition{
+static ClioConfigDefinition clioConfig = ClioConfigDefinition{
     {{"database.type", ConfigValue{ConfigType::String}.defaultValue("cassandra").withConstraint(validateCassandraName)},
      {"database.cassandra.contact_points", ConfigValue{ConfigType::String}.defaultValue("localhost")},
      {"database.cassandra.port", ConfigValue{ConfigType::Integer}.withConstraint(validatePort)},

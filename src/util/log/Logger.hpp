@@ -81,8 +81,8 @@ enum class Severity {
 };
 
 /** @cond */
-BOOST_LOG_ATTRIBUTE_KEYWORD(LogSeverity, "Severity", Severity);
-BOOST_LOG_ATTRIBUTE_KEYWORD(LogChannel, "Channel", std::string);
+BOOST_LOG_ATTRIBUTE_KEYWORD(logSeverity, "Severity", Severity);
+BOOST_LOG_ATTRIBUTE_KEYWORD(logChannel, "Channel", std::string);
 /** @endcond */
 
 /**

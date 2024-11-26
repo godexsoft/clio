@@ -35,9 +35,9 @@ namespace rpc::impl {
 
 ProductionAPIVersionParser::ProductionAPIVersionParser(util::Config const& config)
     : ProductionAPIVersionParser(
-          config.valueOr("default", API_VERSION_DEFAULT),
-          config.valueOr("min", API_VERSION_MIN),
-          config.valueOr("max", API_VERSION_MAX)
+          config.valueOr("default", apiVersionDefault),
+          config.valueOr("min", apiVersionMin),
+          config.valueOr("max", apiVersionMax)
       )
 {
 }

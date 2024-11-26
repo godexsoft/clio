@@ -222,9 +222,9 @@ SubscriptionSource::handleMessage(std::string const& message)
         auto const object = raw.as_object();
         uint32_t ledgerIndex = 0;
 
-        static constexpr auto JS_LedgerClosed = "ledgerClosed";
-        static constexpr auto JS_ValidationReceived = "validationReceived";
-        static constexpr auto JS_ManifestReceived = "manifestReceived";
+        static constexpr auto jsLedgerClosed = "ledgerClosed";
+        static constexpr auto jsValidationReceived = "validationReceived";
+        static constexpr auto jsManifestReceived = "manifestReceived";
 
         if (object.contains(JS(result))) {
             auto const& result = object.at(JS(result)).as_object();
@@ -237,7 +237,7 @@ SubscriptionSource::handleMessage(std::string const& message)
             }
             LOG(log_.debug()) << "Received a message on ledger subscription stream. Message: " << object;
 
-        } else if (object.contains(JS(type)) && object.at(JS(type)) == JS_LedgerClosed) {
+        } else if (object.contains(JS(type)) && object.at(JS(type)) == jsLedgerClosed) {
             LOG(log_.debug()) << "Received a message of type 'ledgerClosed' on ledger subscription stream. Message: "
                               << object;
             if (object.contains(JS(ledger_index))) {
@@ -259,10 +259,10 @@ SubscriptionSource::handleMessage(std::string const& message)
                 if (object.contains(JS(transaction)) and !object.contains(JS(meta))) {
                     LOG(log_.debug()) << "Forwarding proposed transaction: " << object;
                     subscriptions_->forwardProposedTransaction(object);
-                } else if (object.contains(JS(type)) && object.at(JS(type)) == JS_ValidationReceived) {
+                } else if (object.contains(JS(type)) && object.at(JS(type)) == jsValidationReceived) {
                     LOG(log_.debug()) << "Forwarding validation: " << object;
                     subscriptions_->forwardValidation(object);
-                } else if (object.contains(JS(type)) && object.at(JS(type)) == JS_ManifestReceived) {
+                } else if (object.contains(JS(type)) && object.at(JS(type)) == jsManifestReceived) {
                     LOG(log_.debug()) << "Forwarding manifest: " << object;
                     subscriptions_->forwardManifest(object);
                 }

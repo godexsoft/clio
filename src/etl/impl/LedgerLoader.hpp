@@ -131,8 +131,8 @@ public:
                 result.mptHoldersData.push_back(*maybeMPTHolder);
 
             result.accountTxData.emplace_back(txMeta, sttx.getTransactionID());
-            static constexpr std::size_t KEY_SIZE = 32;
-            std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KEY_SIZE};
+            static constexpr std::size_t keySize = 32;
+            std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), keySize};
             backend_->writeTransaction(
                 std::move(keyStr),
                 ledger.seq,
@@ -228,8 +228,8 @@ public:
                     }
 
                     prev = cur->key;
-                    static constexpr std::size_t LOG_INTERVAL = 100000;
-                    if (numWrites % LOG_INTERVAL == 0 && numWrites != 0)
+                    static constexpr std::size_t logInterval = 100000;
+                    if (numWrites % logInterval == 0 && numWrites != 0)
                         LOG(log_.info()) << "Wrote " << numWrites << " book successors";
                 }
 

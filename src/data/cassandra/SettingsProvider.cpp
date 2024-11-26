@@ -127,11 +127,11 @@ SettingsProvider::parseSettings() const
 
     auto const connectTimeoutSecond = config_.maybeValue<uint32_t>("connect_timeout");
     if (connectTimeoutSecond)
-        settings.connectionTimeout = std::chrono::milliseconds{*connectTimeoutSecond * util::MILLISECONDS_PER_SECOND};
+        settings.connectionTimeout = std::chrono::milliseconds{*connectTimeoutSecond * util::millisecondsPerSecond};
 
     auto const requestTimeoutSecond = config_.maybeValue<uint32_t>("request_timeout");
     if (requestTimeoutSecond)
-        settings.requestTimeout = std::chrono::milliseconds{*requestTimeoutSecond * util::MILLISECONDS_PER_SECOND};
+        settings.requestTimeout = std::chrono::milliseconds{*requestTimeoutSecond * util::millisecondsPerSecond};
 
     settings.certificate = parseOptionalCertificate();
     settings.username = config_.maybeValue<std::string>("username");

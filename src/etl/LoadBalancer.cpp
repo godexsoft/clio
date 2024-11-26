@@ -87,9 +87,9 @@ LoadBalancer::LoadBalancer(
         };
     }
 
-    static constexpr std::uint32_t MAX_DOWNLOAD = 256;
+    static constexpr std::uint32_t maxDownload = 256;
     if (auto value = config.maybeValue<uint32_t>("num_markers"); value) {
-        ASSERT(*value > 0 and *value <= MAX_DOWNLOAD, "'num_markers' value in config must be in range 1-256");
+        ASSERT(*value > 0 and *value <= maxDownload, "'num_markers' value in config must be in range 1-256");
         downloadRanges_ = *value;
     } else if (backend->fetchLedgerRange()) {
         downloadRanges_ = 4;
