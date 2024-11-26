@@ -280,7 +280,7 @@ struct IncorrectOverrideValues : testing::Test {
 
 TEST_F(IncorrectOverrideValues, InvalidJsonErrors)
 {
-    ConfigFileJson const jsonFileObj{boost::json::parse(invalidJSONData).as_object()};
+    ConfigFileJson const jsonFileObj{boost::json::parse(InvalidJSONData).as_object()};
     auto const errors = configData.parse(jsonFileObj);
     EXPECT_TRUE(errors.has_value());
 

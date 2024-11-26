@@ -35,18 +35,22 @@
 #include <string>
 #include <vector>
 
-static constexpr auto ACCOUNT = "rM2AGCCCRb373FRuD8wHyUwUsh2dV4BW5Q";
-static constexpr auto NFTID = "0008013AE1CD8B79A8BCB52335CD40DE97401B2D60A828720000099B00000000";
-static constexpr auto NFTID2 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DA";
-static constexpr auto OFFER1 = "23F1A95D7AAB7108D5CE7EEAF504B2894B8C674E6D68499076441C4837282BF8";
-static constexpr auto TX = "13F1A95D7AAB7108D5CE7EEAF504B2894B8C674E6D68499076441C4837282BF8";
+namespace {
+
+constexpr auto Account = "rM2AGCCCRb373FRuD8wHyUwUsh2dV4BW5Q";
+constexpr auto NftID = "0008013AE1CD8B79A8BCB52335CD40DE97401B2D60A828720000099B00000000";
+constexpr auto NftID2 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DA";
+constexpr auto Offer1 = "23F1A95D7AAB7108D5CE7EEAF504B2894B8C674E6D68499076441C4837282BF8";
+constexpr auto Tx = "13F1A95D7AAB7108D5CE7EEAF504B2894B8C674E6D68499076441C4837282BF8";
+
+}  // namespace
 
 struct NFTHelpersTests : public NoLoggerFixture {};
 
 TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTx)
 {
-    auto const tx = CreateCancelNFTOffersTxWithMetadata(ACCOUNT, 1, 2, std::vector<std::string>{NFTID2, NFTID});
-    ripple::TxMeta const txMeta(ripple::uint256(TX), 1, tx.metadata);
+    auto const tx = CreateCancelNFTOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID});
+    ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, tx.metadata);
     auto const [nftTxs, nftDatas] =
         etl::getNFTDataFromTx(txMeta, ripple::STTx(ripple::SerialIter{tx.transaction.data(), tx.transaction.size()}));
 
@@ -57,8 +61,8 @@ TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTx)
 TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTxContainingDuplicateNFT)
 {
     auto const tx =
-        CreateCancelNFTOffersTxWithMetadata(ACCOUNT, 1, 2, std::vector<std::string>{NFTID2, NFTID, NFTID2, NFTID});
-    ripple::TxMeta const txMeta(ripple::uint256(TX), 1, tx.metadata);
+        CreateCancelNFTOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID, NftID2, NftID});
+    ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, tx.metadata);
     auto const [nftTxs, nftDatas] =
         etl::getNFTDataFromTx(txMeta, ripple::STTx(ripple::SerialIter{tx.transaction.data(), tx.transaction.size()}));
 
@@ -71,23 +75,23 @@ TEST_F(NFTHelpersTests, UniqueNFTDatas)
     std::vector<NFTsData> nftDatas;
 
     auto const generateNFTsData = [](char const* nftID, std::uint32_t txIndex) {
-        auto const tx = CreateCreateNFTOfferTxWithMetadata(ACCOUNT, 1, 50, nftID, 123, OFFER1);
+        auto const tx = CreateCreateNFTOfferTxWithMetadata(Account, 1, 50, nftID, 123, Offer1);
         ripple::SerialIter s{tx.metadata.data(), tx.metadata.size()};
         ripple::STObject meta{s, ripple::sfMetadata};
         meta.setFieldU32(ripple::sfTransactionIndex, txIndex);
-        ripple::TxMeta const txMeta(ripple::uint256(TX), 1, meta.getSerializer().peekData());
+        ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, meta.getSerializer().peekData());
 
-        auto const account = GetAccountIDWithString(ACCOUNT);
+        auto const account = GetAccountIDWithString(Account);
         return NFTsData{ripple::uint256(nftID), account, ripple::Blob{}, txMeta};
     };
 
-    nftDatas.push_back(generateNFTsData(NFTID, 3));
-    nftDatas.push_back(generateNFTsData(NFTID, 1));
-    nftDatas.push_back(generateNFTsData(NFTID, 2));
+    nftDatas.push_back(generateNFTsData(NftID, 3));
+    nftDatas.push_back(generateNFTsData(NftID, 1));
+    nftDatas.push_back(generateNFTsData(NftID, 2));
 
-    nftDatas.push_back(generateNFTsData(NFTID2, 4));
-    nftDatas.push_back(generateNFTsData(NFTID2, 1));
-    nftDatas.push_back(generateNFTsData(NFTID2, 5));
+    nftDatas.push_back(generateNFTsData(NftID2, 4));
+    nftDatas.push_back(generateNFTsData(NftID2, 1));
+    nftDatas.push_back(generateNFTsData(NftID2, 5));
 
     auto const uniqueNFTDatas = etl::getUniqueNFTsDatas(nftDatas);
 
@@ -96,6 +100,6 @@ TEST_F(NFTHelpersTests, UniqueNFTDatas)
     EXPECT_EQ(uniqueNFTDatas[1].ledgerSequence, 1);
     EXPECT_EQ(uniqueNFTDatas[0].transactionIndex, 5);
     EXPECT_EQ(uniqueNFTDatas[1].transactionIndex, 3);
-    EXPECT_EQ(uniqueNFTDatas[0].tokenID, ripple::uint256(NFTID2));
-    EXPECT_EQ(uniqueNFTDatas[1].tokenID, ripple::uint256(NFTID));
+    EXPECT_EQ(uniqueNFTDatas[0].tokenID, ripple::uint256(NftID2));
+    EXPECT_EQ(uniqueNFTDatas[1].tokenID, ripple::uint256(NftID));
 }

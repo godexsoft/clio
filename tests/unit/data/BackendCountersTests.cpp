@@ -155,15 +155,15 @@ TEST_F(BackendCountersTest, RegisterReadFinished)
 
 TEST_F(BackendCountersTest, RegisterReadStartedFinishedWithCounters)
 {
-    static constexpr auto OPERATIONS_STARTED = 7u;
-    static constexpr auto OPERATIONS_COMPLETED = 4u;
+    static constexpr auto OperationsStarted = 7u;
+    static constexpr auto OperationsCompleted = 4u;
 
-    counters->registerReadStarted(OPERATIONS_STARTED);
-    counters->registerReadFinished(startTime, OPERATIONS_COMPLETED);
+    counters->registerReadStarted(OperationsStarted);
+    counters->registerReadFinished(startTime, OperationsCompleted);
 
     auto expectedReport = emptyReport();
-    expectedReport["read_async_pending"] = OPERATIONS_STARTED - OPERATIONS_COMPLETED;
-    expectedReport["read_async_completed"] = OPERATIONS_COMPLETED;
+    expectedReport["read_async_pending"] = OperationsStarted - OperationsCompleted;
+    expectedReport["read_async_completed"] = OperationsCompleted;
     EXPECT_EQ(counters->report(), expectedReport);
 }
 
@@ -179,18 +179,18 @@ TEST_F(BackendCountersTest, RegisterReadRetry)
 
 TEST_F(BackendCountersTest, RegisterReadError)
 {
-    static constexpr auto OPERATIONS_STARTED = 7u;
-    static constexpr auto OPERATIONS_ERROR = 2u;
-    static constexpr auto OPERATIONS_COMPLETED = 1u;
+    static constexpr auto OperationsStarted = 7u;
+    static constexpr auto OperationsError = 2u;
+    static constexpr auto OperationsCompleted = 1u;
 
-    counters->registerReadStarted(OPERATIONS_STARTED);
-    counters->registerReadError(OPERATIONS_ERROR);
-    counters->registerReadFinished(startTime, OPERATIONS_COMPLETED);
+    counters->registerReadStarted(OperationsStarted);
+    counters->registerReadError(OperationsError);
+    counters->registerReadFinished(startTime, OperationsCompleted);
 
     auto expectedReport = emptyReport();
-    expectedReport["read_async_pending"] = OPERATIONS_STARTED - OPERATIONS_COMPLETED - OPERATIONS_ERROR;
-    expectedReport["read_async_completed"] = OPERATIONS_COMPLETED;
-    expectedReport["read_async_error"] = OPERATIONS_ERROR;
+    expectedReport["read_async_pending"] = OperationsStarted - OperationsCompleted - OperationsError;
+    expectedReport["read_async_completed"] = OperationsCompleted;
+    expectedReport["read_async_error"] = OperationsError;
     EXPECT_EQ(counters->report(), expectedReport);
 }
 

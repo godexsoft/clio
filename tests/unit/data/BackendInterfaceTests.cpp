@@ -38,22 +38,26 @@ using namespace data;
 using namespace util::prometheus;
 using namespace testing;
 
-static constexpr auto MAXSEQ = 30;
-static constexpr auto MINSEQ = 10;
+namespace {
+
+constexpr auto MaxSeq = 30;
+constexpr auto MinSeq = 10;
+
+}  // namespace
 
 struct BackendInterfaceTest : WithPrometheus, MockBackendTestNaggy, SyncAsioContextTest {};
 
 TEST_F(BackendInterfaceTest, FetchFeesSuccessPath)
 {
     using namespace ripple;
-    backend->setRange(MINSEQ, MAXSEQ);
+    backend->setRange(MinSeq, MaxSeq);
 
     // New fee setting (after XRPFees amendment)
-    EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MAXSEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MaxSeq, _))
         .WillRepeatedly(Return(CreateFeeSettingBlob(XRPAmount(1), XRPAmount(2), XRPAmount(3), 0)));
 
     runSpawn([this](auto yield) {
-        auto fees = backend->fetchFees(MAXSEQ, yield);
+        auto fees = backend->fetchFees(MaxSeq, yield);
 
         EXPECT_TRUE(fees.has_value());
         EXPECT_EQ(fees->base, XRPAmount(1));
@@ -65,14 +69,14 @@ TEST_F(BackendInterfaceTest, FetchFeesSuccessPath)
 TEST_F(BackendInterfaceTest, FetchFeesLegacySuccessPath)
 {
     using namespace ripple;
-    backend->setRange(MINSEQ, MAXSEQ);
+    backend->setRange(MinSeq, MaxSeq);
 
     // Legacy fee setting (before XRPFees amendment)
-    EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MAXSEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MaxSeq, _))
         .WillRepeatedly(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     runSpawn([this](auto yield) {
-        auto fees = backend->fetchFees(MAXSEQ, yield);
+        auto fees = backend->fetchFees(MaxSeq, yield);
 
         EXPECT_TRUE(fees.has_value());
         EXPECT_EQ(fees->base, XRPAmount(1));
@@ -84,7 +88,7 @@ TEST_F(BackendInterfaceTest, FetchFeesLegacySuccessPath)
 TEST_F(BackendInterfaceTest, FetchLedgerPageSuccessPath)
 {
     using namespace ripple;
-    backend->setRange(MINSEQ, MAXSEQ);
+    backend->setRange(MinSeq, MaxSeq);
 
     auto state = etl::SystemState{};
     backend->setCorruptionDetector(etl::CorruptionDetector{state, backend->cache()});
@@ -95,14 +99,14 @@ TEST_F(BackendInterfaceTest, FetchLedgerPageSuccessPath)
         .WillRepeatedly(Return(uint256{"1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"}));
     EXPECT_CALL(*backend, doFetchLedgerObjects(_, _, _)).WillOnce(Return(std::vector<Blob>(10, Blob{'s'})));
 
-    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MAXSEQ, 10, false, yield); });
+    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MaxSeq, 10, false, yield); });
     EXPECT_FALSE(backend->cache().isDisabled());
 }
 
 TEST_F(BackendInterfaceTest, FetchLedgerPageDisablesCacheOnMissingData)
 {
     using namespace ripple;
-    backend->setRange(MINSEQ, MAXSEQ);
+    backend->setRange(MinSeq, MaxSeq);
 
     auto state = etl::SystemState{};
     backend->setCorruptionDetector(etl::CorruptionDetector{state, backend->cache()});
@@ -116,14 +120,14 @@ TEST_F(BackendInterfaceTest, FetchLedgerPageDisablesCacheOnMissingData)
             Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{}
         }));
 
-    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MAXSEQ, 10, false, yield); });
+    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MaxSeq, 10, false, yield); });
     EXPECT_TRUE(backend->cache().isDisabled());
 }
 
 TEST_F(BackendInterfaceTest, FetchLedgerPageWithoutCorruptionDetectorDoesNotDisableCacheOnMissingData)
 {
     using namespace ripple;
-    backend->setRange(MINSEQ, MAXSEQ);
+    backend->setRange(MinSeq, MaxSeq);
 
     EXPECT_FALSE(backend->cache().isDisabled());
     EXPECT_CALL(*backend, doFetchSuccessorKey(_, _, _))
@@ -134,6 +138,6 @@ TEST_F(BackendInterfaceTest, FetchLedgerPageWithoutCorruptionDetectorDoesNotDisa
             Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{'s'}, Blob{}
         }));
 
-    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MAXSEQ, 10, false, yield); });
+    runSpawn([this](auto yield) { backend->fetchLedgerPage(std::nullopt, MaxSeq, 10, false, yield); });
     EXPECT_FALSE(backend->cache().isDisabled());
 }

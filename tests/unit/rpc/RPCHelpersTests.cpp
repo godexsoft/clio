@@ -56,11 +56,15 @@
 using namespace rpc;
 using namespace testing;
 
-static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-static constexpr auto INDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-static constexpr auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-static constexpr auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+namespace {
+
+constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto Index1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto Index2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+constexpr auto TxnID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+
+}  // namespace
 
 class RPCHelpersTest : public util::prometheus::WithPrometheus, public MockBackendTest, public SyncAsioContextTest {
     void
@@ -78,7 +82,7 @@ class RPCHelpersTest : public util::prometheus::WithPrometheus, public MockBacke
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
 {
     boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto account = GetAccountIDWithString(ACCOUNT);
+        auto account = GetAccountIDWithString(Account);
         auto ret = traverseOwnedNodes(*backend, account, 9, 10, "nothex,10", yield, [](auto) {
 
         });
@@ -93,7 +97,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
 {
     boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto account = GetAccountIDWithString(ACCOUNT);
+        auto account = GetAccountIDWithString(Account);
         auto ret = traverseOwnedNodes(*backend, account, 9, 10, "nothex,abc", yield, [](auto) {
 
         });
@@ -108,19 +112,19 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
 // limit = 10, return 2 objects
 TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
 {
-    auto account = GetAccountIDWithString(ACCOUNT);
+    auto account = GetAccountIDWithString(Account);
     auto owneDirKk = ripple::keylet::ownerDir(account).key;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
 
     // return owner index
     ripple::STObject const ownerDir =
-        CreateOwnerDirLedgerObject({ripple::uint256{INDEX1}, ripple::uint256{INDEX2}}, INDEX1);
+        CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
     ON_CALL(*backend, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
     // return two payment channel objects
     std::vector<Blob> bbs;
-    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 10, 32, TXNID, 28);
+    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     bbs.push_back(channel1.getSerializer().peekData());
     bbs.push_back(channel1.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -144,23 +148,23 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
 // limit = 10, return 10 objects and marker
 TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
 {
-    auto account = GetAccountIDWithString(ACCOUNT);
+    auto account = GetAccountIDWithString(Account);
     auto owneDirKk = ripple::keylet::ownerDir(account).key;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
 
     std::vector<Blob> bbs;
 
     int objectsCount = 11;
-    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 10, 32, TXNID, 28);
+    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     std::vector<ripple::uint256> indexes;
     while (objectsCount != 0) {
         // return owner index
-        indexes.emplace_back(INDEX1);
+        indexes.emplace_back(Index1);
         bbs.push_back(channel1.getSerializer().peekData());
         objectsCount--;
     }
 
-    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, INDEX1);
+    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 99);
     ON_CALL(*backend, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -174,7 +178,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
         EXPECT_EQ(count, 10);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},0", INDEX1));
+        EXPECT_EQ(cursor->toString(), fmt::format("{},0", Index1));
     });
     ctx.run();
 }
@@ -182,22 +186,22 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
 // 10 objects per page, limit is 15, return the second page as marker
 TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
 {
-    auto account = GetAccountIDWithString(ACCOUNT);
+    auto account = GetAccountIDWithString(Account);
     auto ownerDirKk = ripple::keylet::ownerDir(account).key;
-    static constexpr auto nextPage = 99;
-    static constexpr auto limit = 15;
-    auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), nextPage).key;
+    static constexpr auto NextPage = 99;
+    static constexpr auto Limit = 15;
+    auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), NextPage).key;
 
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
 
     int objectsCount = 10;
-    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 10, 32, TXNID, 28);
+    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     std::vector<ripple::uint256> indexes;
     while (objectsCount != 0) {
         // return owner index
-        indexes.emplace_back(INDEX1);
+        indexes.emplace_back(Index1);
         objectsCount--;
     }
     objectsCount = 15;
@@ -206,12 +210,12 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
         objectsCount--;
     }
 
-    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, INDEX1);
-    ownerDir.setFieldU64(ripple::sfIndexNext, nextPage);
+    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
+    ownerDir.setFieldU64(ripple::sfIndexNext, NextPage);
     // first page 's next page is 99
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
-    ripple::STObject ownerDir2 = CreateOwnerDirLedgerObject(indexes, INDEX1);
+    ripple::STObject ownerDir2 = CreateOwnerDirLedgerObject(indexes, Index1);
     // second page's next page is 0
     ownerDir2.setFieldU64(ripple::sfIndexNext, 0);
     ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
@@ -222,11 +226,11 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
 
     boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
-        auto ret = traverseOwnedNodes(*backend, account, 9, limit, {}, yield, [&](auto) { count++; });
+        auto ret = traverseOwnedNodes(*backend, account, 9, Limit, {}, yield, [&](auto) { count++; });
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
-        EXPECT_EQ(count, limit);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", INDEX1, nextPage));
+        EXPECT_EQ(count, Limit);
+        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", Index1, NextPage));
     });
     ctx.run();
 }
@@ -234,20 +238,20 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
 // Send a valid marker
 TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
 {
-    auto account = GetAccountIDWithString(ACCOUNT);
+    auto account = GetAccountIDWithString(Account);
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
-    static constexpr auto limit = 8;
-    static constexpr auto pageNum = 99;
+    static constexpr auto Limit = 8;
+    static constexpr auto PageNum = 99;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
 
     int objectsCount = 10;
-    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 10, 32, TXNID, 28);
+    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     std::vector<ripple::uint256> indexes;
     while (objectsCount != 0) {
         // return owner index
-        indexes.emplace_back(INDEX1);
+        indexes.emplace_back(Index1);
         objectsCount--;
     }
     objectsCount = 10;
@@ -256,7 +260,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
         objectsCount--;
     }
 
-    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, INDEX1);
+    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 0);
     // return ownerdir when search by marker
     ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
@@ -268,12 +272,12 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
     boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(
-            *backend, account, 9, limit, fmt::format("{},{}", INDEX1, pageNum), yield, [&](auto) { count++; }
+            *backend, account, 9, Limit, fmt::format("{},{}", Index1, PageNum), yield, [&](auto) { count++; }
         );
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
-        EXPECT_EQ(count, limit);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", INDEX1, pageNum));
+        EXPECT_EQ(count, Limit);
+        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", Index1, PageNum));
     });
     ctx.run();
 }
@@ -282,21 +286,21 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
 // return invalid params error
 TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
 {
-    auto account = GetAccountIDWithString(ACCOUNT);
+    auto account = GetAccountIDWithString(Account);
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
-    static constexpr auto limit = 8;
-    static constexpr auto pageNum = 99;
+    static constexpr auto Limit = 8;
+    static constexpr auto PageNum = 99;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
 
     int objectsCount = 10;
-    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 10, 32, TXNID, 28);
+    ripple::STObject const channel1 = CreatePaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     std::vector<ripple::uint256> indexes;
     while (objectsCount != 0) {
         // return owner index
-        indexes.emplace_back(INDEX1);
+        indexes.emplace_back(Index1);
         objectsCount--;
     }
-    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, INDEX1);
+    ripple::STObject ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 0);
     // return ownerdir when search by marker
     ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
@@ -305,7 +309,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
     boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(
-            *backend, account, 9, limit, fmt::format("{},{}", INDEX2, pageNum), yield, [&](auto) { count++; }
+            *backend, account, 9, Limit, fmt::format("{},{}", Index2, PageNum), yield, [&](auto) { count++; }
         );
         auto status = std::get_if<Status>(&ret);
         EXPECT_TRUE(status != nullptr);
@@ -431,7 +435,7 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV2)
 
 TEST_F(RPCHelpersTest, LedgerHeaderJson)
 {
-    auto const ledgerHeader = CreateLedgerHeader(INDEX1, 30);
+    auto const ledgerHeader = CreateLedgerHeader(Index1, 30);
     auto const binJson = toJson(ledgerHeader, true, 1u);
 
     constexpr auto EXPECTBIN = R"({
@@ -455,7 +459,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
             "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "closed": true
         }})",
-        INDEX1,
+        Index1,
         30
     );
     auto json = toJson(ledgerHeader, false, 1u);
@@ -466,7 +470,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
 
 TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
 {
-    auto const ledgerHeader = CreateLedgerHeader(INDEX1, 30);
+    auto const ledgerHeader = CreateLedgerHeader(Index1, 30);
 
     auto const EXPECTJSON = fmt::format(
         R"({{
@@ -483,7 +487,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
             "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "closed": true
         }})",
-        INDEX1,
+        Index1,
         30
     );
     auto json = toJson(ledgerHeader, false, 2u);
@@ -494,7 +498,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
 
 TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV1)
 {
-    auto const txMeta = CreateAcceptNFTOfferTxWithMetadata(ACCOUNT, 30, 1, INDEX1);
+    auto const txMeta = CreateAcceptNFTOfferTxWithMetadata(Account, 30, 1, Index1);
     auto const json = toJsonWithBinaryTx(txMeta, 1);
     EXPECT_TRUE(json.contains(JS(tx_blob)));
     EXPECT_TRUE(json.contains(JS(meta)));
@@ -502,7 +506,7 @@ TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV1)
 
 TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV2)
 {
-    auto const txMeta = CreateAcceptNFTOfferTxWithMetadata(ACCOUNT, 30, 1, INDEX1);
+    auto const txMeta = CreateAcceptNFTOfferTxWithMetadata(Account, 30, 1, Index1);
     auto const json = toJsonWithBinaryTx(txMeta, 2);
     EXPECT_TRUE(json.contains(JS(tx_blob)));
     EXPECT_TRUE(json.contains(JS(meta_blob)));
@@ -517,7 +521,7 @@ TEST_F(RPCHelpersTest, ParseIssue)
                                     })"
     )
                                 .as_object());
-    EXPECT_TRUE(issue.account == GetAccountIDWithString(ACCOUNT2));
+    EXPECT_TRUE(issue.account == GetAccountIDWithString(Account2));
 
     issue = parseIssue(boost::json::parse(R"({"currency": "XRP"})").as_object());
     EXPECT_TRUE(ripple::isXRP(issue.currency));

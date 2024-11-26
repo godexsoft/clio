@@ -393,6 +393,8 @@ TEST_F(WebServerTest, WsTooManyConnection)
     EXPECT_TRUE(exceptionThrown);
 }
 
+namespace {
+
 std::string
 JSONServerConfigWithAdminPassword(uint32_t const port)
 {
@@ -454,7 +456,9 @@ JSONServerConfigWithNoSpecifiedAdmin(uint32_t const port)
 }
 
 // get this value from online sha256 generator
-static constexpr auto SecretSha256 = "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b";
+constexpr auto SecretSha256 = "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b";
+
+}  // namespace
 
 class AdminCheckExecutor {
 public:

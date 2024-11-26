@@ -101,50 +101,48 @@ generateConfig()
 */
 
 /* Used to test overwriting default values in ClioConfigDefinition Above */
-static constexpr auto JSONData = R"JSON(
-    {
+static constexpr auto JSONData = R"JSON({
     "header": {
-       "text1": "value",
-       "port": 321,
-       "admin": false,
-       "sub": {
-           "sub2Value": "TSM"
-       }
-     },
-     "array": [
-       {
-           "sub": 111.11,
-           "sub2": "subCategory"
-       },
-       {
-           "sub": 4321.55,
+        "text1": "value",
+        "port": 321,
+        "admin": false,
+        "sub": {
+            "sub2Value": "TSM"
+        }
+    },
+    "array": [
+        {
+            "sub": 111.11,
+            "sub2": "subCategory"
+        },
+        {
+            "sub": 4321.55,
            "sub2": "temporary"
-       },
-       {
-           "sub": 5555.44,
-           "sub2": "london"
-       }
-     ],
-      "higher": [
-       {
-           "low": {
-               "section": "WebServer",
-               "admin": false
-           }
-       }
-     ],
-     "dosguard":  {
+        },
+        {
+            "sub": 5555.44,
+            "sub2": "london"
+        }
+    ],
+    "higher": [
+        {
+            "low": {
+                "section": "WebServer",
+                "admin": false
+            }
+        }
+    ],
+    "dosguard":  {
         "whitelist": [
             "125.5.5.1", "204.2.2.1"
         ],
         "port" : 44444
-        },
+    },
     "optional" : {
         "withDefault" : 0.0
-        },
+    },
     "requireValue" : "required"
-    }
-)JSON";
+})JSON";
 
 /* After parsing jsonValue and populating it into ClioConfig, It will look like this below in json format;
 {
@@ -194,8 +192,7 @@ static constexpr auto JSONData = R"JSON(
 */
 
 // Invalid Json key/values
-static constexpr auto invalidJSONData = R"JSON(
-{
+static constexpr auto InvalidJSONData = R"JSON({
     "header": {
         "port": "999",
         "admin": "true"
@@ -209,6 +206,5 @@ static constexpr auto invalidJSONData = R"JSON(
     "requireValue" : "required",
     "optional" : {
         "withDefault" : "0.0"
-        }
-}
-)JSON";
+    }
+})JSON";

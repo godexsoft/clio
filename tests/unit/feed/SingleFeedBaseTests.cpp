@@ -31,7 +31,9 @@
 
 #include <memory>
 
-static constexpr auto FEED = R"({"test":"test"})";
+namespace {
+constexpr auto Feed = R"({"test":"test"})";
+}  // namespace
 
 using namespace feed::impl;
 using namespace util::prometheus;
@@ -79,24 +81,24 @@ using SingleFeedBaseTest = FeedBaseTest<NamedSingleFeedTest>;
 TEST_F(SingleFeedBaseTest, Test)
 {
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(FEED)));
+    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed)));
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 1);
-    testFeedPtr->pub(FEED);
+    testFeedPtr->pub(Feed);
 
     testFeedPtr->unsub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 0);
-    testFeedPtr->pub(FEED);
+    testFeedPtr->pub(Feed);
 }
 
 TEST_F(SingleFeedBaseTest, TestAutoDisconnect)
 {
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(FEED)));
+    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed)));
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 1);
-    testFeedPtr->pub(FEED);
+    testFeedPtr->pub(Feed);
 
     slot(sessionPtr.get());
     sessionPtr.reset();

@@ -92,30 +92,30 @@ TEST_F(GaugeIntTests, set)
 
 TEST_F(GaugeIntTests, multithreadAddAndSubstract)
 {
-    static constexpr auto numAdditions = 1000;
-    static constexpr auto numNumberAdditions = 100;
-    static constexpr auto numberToAdd = 11;
-    static constexpr auto numSubstractions = 2000;
-    static constexpr auto numNumberSubstractions = 300;
-    static constexpr auto numberToSubstract = 300;
+    static constexpr auto NumAdditions = 1000;
+    static constexpr auto NumNumberAdditions = 100;
+    static constexpr auto NumberToAdd = 11;
+    static constexpr auto NumSubstractions = 2000;
+    static constexpr auto NumNumberSubstractions = 300;
+    static constexpr auto NumberToSubstract = 300;
     std::thread thread1([&] {
-        for (int i = 0; i < numAdditions; ++i) {
+        for (int i = 0; i < NumAdditions; ++i) {
             ++gauge;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < numNumberAdditions; ++i) {
-            gauge += numberToAdd;
+        for (int i = 0; i < NumNumberAdditions; ++i) {
+            gauge += NumberToAdd;
         }
     });
     std::thread thread3([&] {
-        for (int i = 0; i < numSubstractions; ++i) {
+        for (int i = 0; i < NumSubstractions; ++i) {
             --gauge;
         }
     });
     std::thread thread4([&] {
-        for (int i = 0; i < numNumberSubstractions; ++i) {
-            gauge -= numberToSubstract;
+        for (int i = 0; i < NumNumberSubstractions; ++i) {
+            gauge -= NumberToSubstract;
         }
     });
     thread1.join();
@@ -124,7 +124,7 @@ TEST_F(GaugeIntTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_EQ(
         gauge.value(),
-        numAdditions + numNumberAdditions * numberToAdd - numSubstractions - numNumberSubstractions * numberToSubstract
+        NumAdditions + NumNumberAdditions * NumberToAdd - NumSubstractions - NumNumberSubstractions * NumberToSubstract
     );
 }
 
@@ -165,30 +165,30 @@ TEST_F(GaugeDoubleTests, set)
 
 TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
 {
-    static constexpr auto numAdditions = 1000;
-    static constexpr auto numNumberAdditions = 100;
-    static constexpr auto numberToAdd = 11.1234;
-    static constexpr auto numSubstractions = 2000;
-    static constexpr auto numNumberSubstractions = 300;
-    static constexpr auto numberToSubstract = 300.321;
+    static constexpr auto NumAdditions = 1000;
+    static constexpr auto NumNumberAdditions = 100;
+    static constexpr auto NumberToAdd = 11.1234;
+    static constexpr auto NumSubstractions = 2000;
+    static constexpr auto NumNumberSubstractions = 300;
+    static constexpr auto NumberToSubstract = 300.321;
     std::thread thread1([&] {
-        for (int i = 0; i < numAdditions; ++i) {
+        for (int i = 0; i < NumAdditions; ++i) {
             ++gauge;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < numNumberAdditions; ++i) {
-            gauge += numberToAdd;
+        for (int i = 0; i < NumNumberAdditions; ++i) {
+            gauge += NumberToAdd;
         }
     });
     std::thread thread3([&] {
-        for (int i = 0; i < numSubstractions; ++i) {
+        for (int i = 0; i < NumSubstractions; ++i) {
             --gauge;
         }
     });
     std::thread thread4([&] {
-        for (int i = 0; i < numNumberSubstractions; ++i) {
-            gauge -= numberToSubstract;
+        for (int i = 0; i < NumNumberSubstractions; ++i) {
+            gauge -= NumberToSubstract;
         }
     });
     thread1.join();
@@ -197,7 +197,7 @@ TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_NEAR(
         gauge.value(),
-        numAdditions + numNumberAdditions * numberToAdd - numSubstractions - numNumberSubstractions * numberToSubstract,
+        NumAdditions + NumNumberAdditions * NumberToAdd - NumSubstractions - NumNumberSubstractions * NumberToSubstract,
         1e-9
     );
 }

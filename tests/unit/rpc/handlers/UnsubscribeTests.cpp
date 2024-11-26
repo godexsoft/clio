@@ -45,8 +45,12 @@ namespace json = boost::json;
 using namespace testing;
 using namespace feed;
 
-static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+namespace {
+
+constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+
+}  // namespace
 
 struct RPCUnsubscribeTest : HandlerBaseTest {
 protected:
@@ -546,12 +550,12 @@ TEST_F(RPCUnsubscribeTest, Accounts)
         R"({{
             "accounts": ["{}","{}"]
         }})",
-        ACCOUNT,
-        ACCOUNT2
+        Account,
+        Account2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(ACCOUNT).value(), _)).Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(ACCOUNT2).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(Account).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(Account2).value(), _)).Times(1);
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{backend, mockSubscriptionManagerPtr_}};
@@ -567,13 +571,13 @@ TEST_F(RPCUnsubscribeTest, AccountsProposed)
         R"({{
             "accounts_proposed": ["{}","{}"]
         }})",
-        ACCOUNT,
-        ACCOUNT2
+        Account,
+        Account2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(ACCOUNT).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(Account).value(), _))
         .Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(ACCOUNT2).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(Account2).value(), _))
         .Times(1);
 
     runSpawn([&, this](auto yield) {
@@ -601,7 +605,7 @@ TEST_F(RPCUnsubscribeTest, Books)
                 }}
             ]
         }})",
-        ACCOUNT
+        Account
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
@@ -634,7 +638,7 @@ TEST_F(RPCUnsubscribeTest, SingleBooks)
                 }}
             ]
         }})",
-        ACCOUNT
+        Account
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());

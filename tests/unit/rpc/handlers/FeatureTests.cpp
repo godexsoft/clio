@@ -40,10 +40,14 @@
 
 using namespace rpc;
 
-static constexpr auto RANGEMIN = 10;
-static constexpr auto RANGEMAX = 30;
-static constexpr auto SEQ = 30;
-static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+namespace {
+
+constexpr auto RangeMin = 10;
+constexpr auto RangeMax = 30;
+constexpr auto Seq = 30;
+constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+
+}  // namespace
 
 class RPCFeatureHandlerTest : public HandlerBaseTest {
 protected:
@@ -149,8 +153,8 @@ TEST_P(RPCFeatureHandlerParamTest, InvalidParams)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
+    backend->setRange(RangeMin, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
@@ -158,7 +162,7 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
             R"({{
                 "ledger_index": {}
             }})",
-            RANGEMAX
+            RangeMax
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -170,8 +174,8 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
+    backend->setRange(RangeMin, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
@@ -179,7 +183,7 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
             R"({{
                 "ledger_index": "{}"
             }})",
-            RANGEMAX
+            RangeMax
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -191,8 +195,8 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerByHash(ripple::uint256{LEDGERHASH}, testing::_))
+    backend->setRange(RangeMin, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, testing::_))
         .WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
@@ -201,7 +205,7 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
             R"({{
                 "ledger_hash": "{}"
             }})",
-            LEDGERHASH
+            LedgerHash
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -250,9 +254,9 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
     auto const enabled = std::vector<bool>{true};
 
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
@@ -267,8 +271,8 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        LedgerHash,
+        Seq
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
@@ -302,9 +306,9 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
     auto const enabled = std::vector<bool>{true};
 
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
@@ -319,8 +323,8 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        LedgerHash,
+        Seq
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
@@ -348,7 +352,7 @@ TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
     auto const keys = std::vector<data::AmendmentKey>{"nonexistent"};
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     runSpawn([this](auto yield) {
@@ -386,9 +390,9 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
     auto const enabled = std::vector<bool>{true, false};
 
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const amendments =
@@ -414,8 +418,8 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        LedgerHash,
+        Seq
     );
 
     runSpawn([this, &expectedOutput](auto yield) {

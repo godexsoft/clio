@@ -42,7 +42,7 @@ using namespace testing;
 
 namespace {
 
-constexpr auto SEQ = 30;
+constexpr auto Seq = 30;
 
 struct CacheLoaderTest : util::prometheus::WithPrometheus, MockBackendTest {
     DiffProvider diffProvider;
@@ -94,11 +94,11 @@ TEST_P(ParametrizedCacheLoaderTest, LoadCacheWithDifferentSettings)
     auto const keysSize = 14;
 
     EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).WillRepeatedly(Return(diffs));
-    EXPECT_CALL(*backend, doFetchSuccessorKey(_, SEQ, _)).Times(keysSize * loops).WillRepeatedly([this]() {
+    EXPECT_CALL(*backend, doFetchSuccessorKey(_, Seq, _)).Times(keysSize * loops).WillRepeatedly([this]() {
         return diffProvider.nextKey(keysSize);
     });
 
-    EXPECT_CALL(*backend, doFetchLedgerObjects(_, SEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjects(_, Seq, _))
         .WillRepeatedly(Return(std::vector<Blob>(keysSize - 1, Blob{'s'})));
 
     EXPECT_CALL(cache, isDisabled).WillRepeatedly(Return(false));
@@ -109,7 +109,7 @@ TEST_P(ParametrizedCacheLoaderTest, LoadCacheWithDifferentSettings)
     etl::impl::CursorFromFixDiffNumProvider const provider{backend, settings.numCacheDiffs};
 
     etl::impl::CacheLoaderImpl<MockCache> loader{
-        ctx, backend, cache, SEQ, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(SEQ)
+        ctx, backend, cache, Seq, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(Seq)
     };
 
     loader.wait();
@@ -123,11 +123,11 @@ TEST_P(ParametrizedCacheLoaderTest, AutomaticallyCancelledAndAwaitedInDestructor
     auto const keysSize = 1024;
 
     EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).WillRepeatedly(Return(diffs));
-    EXPECT_CALL(*backend, doFetchSuccessorKey(_, SEQ, _)).Times(AtMost(keysSize * loops)).WillRepeatedly([this]() {
+    EXPECT_CALL(*backend, doFetchSuccessorKey(_, Seq, _)).Times(AtMost(keysSize * loops)).WillRepeatedly([this]() {
         return diffProvider.nextKey(keysSize);
     });
 
-    EXPECT_CALL(*backend, doFetchLedgerObjects(_, SEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjects(_, Seq, _))
         .WillRepeatedly(Return(std::vector<Blob>(keysSize - 1, Blob{'s'})));
 
     EXPECT_CALL(cache, isDisabled).WillRepeatedly(Return(false));
@@ -138,7 +138,7 @@ TEST_P(ParametrizedCacheLoaderTest, AutomaticallyCancelledAndAwaitedInDestructor
     etl::impl::CursorFromFixDiffNumProvider const provider{backend, settings.numCacheDiffs};
 
     etl::impl::CacheLoaderImpl<MockCache> const loader{
-        ctx, backend, cache, SEQ, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(SEQ)
+        ctx, backend, cache, Seq, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(Seq)
     };
 
     // no loader.wait(): loader is immediately stopped and awaited in destructor
@@ -152,11 +152,11 @@ TEST_P(ParametrizedCacheLoaderTest, CacheDisabledLeadsToCancellation)
     auto const keysSize = 1024;
 
     EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).WillRepeatedly(Return(diffs));
-    EXPECT_CALL(*backend, doFetchSuccessorKey(_, SEQ, _)).Times(AtMost(keysSize * loops)).WillRepeatedly([this]() {
+    EXPECT_CALL(*backend, doFetchSuccessorKey(_, Seq, _)).Times(AtMost(keysSize * loops)).WillRepeatedly([this]() {
         return diffProvider.nextKey(keysSize);
     });
 
-    EXPECT_CALL(*backend, doFetchLedgerObjects(_, SEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjects(_, Seq, _))
         .WillRepeatedly(Return(std::vector<Blob>(keysSize - 1, Blob{'s'})));
 
     EXPECT_CALL(cache, isDisabled).WillOnce(Return(false)).WillRepeatedly(Return(true));
@@ -167,7 +167,7 @@ TEST_P(ParametrizedCacheLoaderTest, CacheDisabledLeadsToCancellation)
     etl::impl::CursorFromFixDiffNumProvider const provider{backend, settings.numCacheDiffs};
 
     etl::impl::CacheLoaderImpl<MockCache> loader{
-        ctx, backend, cache, SEQ, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(SEQ)
+        ctx, backend, cache, Seq, settings.numCacheMarkers, settings.cachePageFetchSize, provider.getCursors(Seq)
     };
 
     loader.wait();
@@ -190,7 +190,7 @@ TEST_F(CacheLoaderTest, SyncCacheLoaderWaitsTillFullyLoaded)
         return diffProvider.nextKey(keysSize);
     });
 
-    EXPECT_CALL(*backend, doFetchLedgerObjects(_, SEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjects(_, Seq, _))
         .Times(loops)
         .WillRepeatedly(Return(std::vector<Blob>{keysSize - 1, Blob{'s'}}));
 
@@ -199,7 +199,7 @@ TEST_F(CacheLoaderTest, SyncCacheLoaderWaitsTillFullyLoaded)
     EXPECT_CALL(cache, isFull).WillOnce(Return(false)).WillRepeatedly(Return(true));
     EXPECT_CALL(cache, setFull).Times(1);
 
-    loader.load(SEQ);
+    loader.load(Seq);
 }
 
 TEST_F(CacheLoaderTest, AsyncCacheLoaderCanBeStopped)
@@ -216,7 +216,7 @@ TEST_F(CacheLoaderTest, AsyncCacheLoaderCanBeStopped)
         return diffProvider.nextKey(keysSize);
     });
 
-    EXPECT_CALL(*backend, doFetchLedgerObjects(_, SEQ, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjects(_, Seq, _))
         .Times(AtMost(loops))
         .WillRepeatedly(Return(std::vector<Blob>{keysSize - 1, Blob{'s'}}));
 
@@ -225,7 +225,7 @@ TEST_F(CacheLoaderTest, AsyncCacheLoaderCanBeStopped)
     EXPECT_CALL(cache, isFull).WillRepeatedly(Return(false));
     EXPECT_CALL(cache, setFull).Times(AtMost(1));
 
-    loader.load(SEQ);
+    loader.load(Seq);
     loader.stop();
     loader.wait();
 }
@@ -239,5 +239,5 @@ TEST_F(CacheLoaderTest, DisabledCacheLoaderDoesNotLoadCache)
     EXPECT_CALL(cache, isFull).WillRepeatedly(Return(false));
     EXPECT_CALL(cache, setDisabled).Times(1);
 
-    loader.load(SEQ);
+    loader.load(Seq);
 }

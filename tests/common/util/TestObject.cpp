@@ -57,7 +57,9 @@
 #include <utility>
 #include <vector>
 
-static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+namespace {
+constexpr auto Index1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+}  // namespace
 
 ripple::AccountID
 GetAccountIDWithString(std::string_view id)
@@ -702,7 +704,7 @@ CreateMintNFTTxWithMetadata(
     NFTArray1.push_back(entry);
 
     auto entry2 = ripple::STObject(ripple::sfNFToken);
-    entry2.setFieldH256(ripple::sfNFTokenID, ripple::uint256{INDEX1});
+    entry2.setFieldH256(ripple::sfNFTokenID, ripple::uint256{Index1});
     entry2.setFieldVL(ripple::sfURI, ripple::Slice(url, 7));
     NFTArray1.push_back(entry2);
 
@@ -736,7 +738,7 @@ CreateAcceptNFTOfferTxWithMetadata(std::string_view accountId, uint32_t seq, uin
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfSequence, seq);
-    tx.setFieldH256(ripple::sfNFTokenBuyOffer, ripple::uint256{INDEX1});
+    tx.setFieldH256(ripple::sfNFTokenBuyOffer, ripple::uint256{Index1});
     char const* key = "test";
     ripple::Slice const slice(key, 4);
     tx.setFieldVL(ripple::sfSigningPubKey, slice);

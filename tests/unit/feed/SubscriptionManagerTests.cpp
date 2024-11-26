@@ -44,11 +44,15 @@
 #include <memory>
 #include <vector>
 
-static constexpr auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+namespace {
+
+constexpr auto Account1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto Currency = "0158415500000000C1F76FF6ECB0BAC600000000";
+constexpr auto Issuer = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+
+}  // namespace
 
 namespace json = boost::json;
 using namespace feed;
@@ -79,13 +83,13 @@ TEST_F(SubscriptionManagerAsyncTest, MultipleThreadCtx)
     EXPECT_CALL(*sessionPtr, onDisconnect);
     subscriptionManagerPtr->subValidation(session);
 
-    static constexpr auto jsonManifest = R"({"manifest":"test"})";
-    static constexpr auto jsonValidation = R"({"validation":"test"})";
+    static constexpr auto JsonManifest = R"({"manifest":"test"})";
+    static constexpr auto JsonValidation = R"({"validation":"test"})";
 
     EXPECT_CALL(*sessionPtr, send(testing::_)).Times(testing::AtMost(2));
 
-    subscriptionManagerPtr->forwardManifest(json::parse(jsonManifest).get_object());
-    subscriptionManagerPtr->forwardValidation(json::parse(jsonValidation).get_object());
+    subscriptionManagerPtr->forwardManifest(json::parse(JsonManifest).get_object());
+    subscriptionManagerPtr->forwardValidation(json::parse(JsonValidation).get_object());
 }
 
 TEST_F(SubscriptionManagerAsyncTest, MultipleThreadCtxSessionDieEarly)
@@ -142,12 +146,12 @@ TEST_F(SubscriptionManagerTest, ReportCurrentSubscriber)
     subscriptionManagerPtr->subTransactions(session2);
     subscriptionManagerPtr->subValidation(session1);
     subscriptionManagerPtr->subValidation(session2);
-    auto const account = GetAccountIDWithString(ACCOUNT1);
+    auto const account = GetAccountIDWithString(Account1);
     subscriptionManagerPtr->subAccount(account, session1);
     subscriptionManagerPtr->subAccount(account, session2);
     subscriptionManagerPtr->subProposedAccount(account, session1);
     subscriptionManagerPtr->subProposedAccount(account, session2);
-    auto const issue1 = GetIssue(CURRENCY, ISSUER);
+    auto const issue1 = GetIssue(Currency, Issuer);
     ripple::Book const book{ripple::xrpIssue(), issue1};
     subscriptionManagerPtr->subBook(book, session1);
     subscriptionManagerPtr->subBook(book, session2);
@@ -164,7 +168,7 @@ TEST_F(SubscriptionManagerTest, ReportCurrentSubscriber)
     subscriptionManagerPtr->unsubBook(book, session1);
 
     // try to unsub an account which is not subscribed
-    auto const account2 = GetAccountIDWithString(ACCOUNT2);
+    auto const account2 = GetAccountIDWithString(Account2);
     subscriptionManagerPtr->unsubAccount(account2, session1);
     subscriptionManagerPtr->unsubProposedAccount(account2, session1);
     auto checkResult = [](json::object reportReturn, int result) {
@@ -187,28 +191,28 @@ TEST_F(SubscriptionManagerTest, ReportCurrentSubscriber)
 
 TEST_F(SubscriptionManagerTest, ManifestTest)
 {
-    static constexpr auto dummyManifest = R"({"manifest":"test"})";
+    static constexpr auto DummyManifest = R"({"manifest":"test"})";
     EXPECT_CALL(*sessionPtr, onDisconnect);
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummyManifest)));
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(DummyManifest)));
     subscriptionManagerPtr->subManifest(session);
-    subscriptionManagerPtr->forwardManifest(json::parse(dummyManifest).get_object());
+    subscriptionManagerPtr->forwardManifest(json::parse(DummyManifest).get_object());
 
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummyManifest))).Times(0);
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(DummyManifest))).Times(0);
     subscriptionManagerPtr->unsubManifest(session);
-    subscriptionManagerPtr->forwardManifest(json::parse(dummyManifest).get_object());
+    subscriptionManagerPtr->forwardManifest(json::parse(DummyManifest).get_object());
 }
 
 TEST_F(SubscriptionManagerTest, ValidationTest)
 {
-    static constexpr auto dummy = R"({"validation":"test"})";
+    static constexpr auto Dummy = R"({"validation":"test"})";
     EXPECT_CALL(*sessionPtr, onDisconnect);
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummy)));
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(Dummy)));
     subscriptionManagerPtr->subValidation(session);
-    subscriptionManagerPtr->forwardValidation(json::parse(dummy).get_object());
+    subscriptionManagerPtr->forwardValidation(json::parse(Dummy).get_object());
 
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummy))).Times(0);
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(Dummy))).Times(0);
     subscriptionManagerPtr->unsubValidation(session);
-    subscriptionManagerPtr->forwardValidation(json::parse(dummy).get_object());
+    subscriptionManagerPtr->forwardValidation(json::parse(Dummy).get_object());
 }
 
 TEST_F(SubscriptionManagerTest, BookChangesTest)
@@ -217,16 +221,16 @@ TEST_F(SubscriptionManagerTest, BookChangesTest)
     subscriptionManagerPtr->subBookChanges(session);
     EXPECT_EQ(subscriptionManagerPtr->report()["book_changes"], 1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 32);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 32);
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    ripple::STObject const obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
-    ripple::STObject const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 1, 3, 3, 1);
+    ripple::STObject const metaObj = CreateMetaDataForBookChange(Currency, Issuer, 22, 1, 3, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
-    static constexpr auto bookChangePublish =
+    static constexpr auto BookChangePublish =
         R"({
             "type":"bookChanges",
             "ledger_index":32,
@@ -246,7 +250,7 @@ TEST_F(SubscriptionManagerTest, BookChangesTest)
                 }
             ]
         })";
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(bookChangePublish)));
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(BookChangePublish)));
 
     subscriptionManagerPtr->pubBookChanges(ledgerHeader, transactions);
 
@@ -257,7 +261,7 @@ TEST_F(SubscriptionManagerTest, BookChangesTest)
 TEST_F(SubscriptionManagerTest, LedgerTest)
 {
     backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
@@ -287,10 +291,10 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
     EXPECT_EQ(subscriptionManagerPtr->report()["ledger"], 1);
 
     // test publish
-    auto const ledgerHeader2 = CreateLedgerHeader(LEDGERHASH, 31);
+    auto const ledgerHeader2 = CreateLedgerHeader(LedgerHash, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
-    static constexpr auto ledgerPub =
+    static constexpr auto LedgerPub =
         R"({
             "type":"ledgerClosed",
             "ledger_index":31,
@@ -302,7 +306,7 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
             "validated_ledgers":"10-31",
             "txn_count":8
         })";
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(ledgerPub)));
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(LedgerPub)));
     subscriptionManagerPtr->pubLedger(ledgerHeader2, fee2, "10-31", 8);
 
     // test unsub
@@ -312,8 +316,8 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
 
 TEST_F(SubscriptionManagerTest, TransactionTest)
 {
-    auto const issue1 = GetIssue(CURRENCY, ISSUER);
-    auto const account = GetAccountIDWithString(ISSUER);
+    auto const issue1 = GetIssue(Currency, Issuer);
+    auto const account = GetAccountIDWithString(Issuer);
     ripple::Book const book{ripple::xrpIssue(), issue1};
     EXPECT_CALL(*sessionPtr, onDisconnect).Times(3);
     subscriptionManagerPtr->subBook(book, session);
@@ -323,13 +327,13 @@ TEST_F(SubscriptionManagerTest, TransactionTest)
     EXPECT_EQ(subscriptionManagerPtr->report()["transactions"], 1);
     EXPECT_EQ(subscriptionManagerPtr->report()["books"], 1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 33);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 33);
     auto trans1 = TransactionAndMetadata();
-    auto obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    auto obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
 
-    auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 3, 1, 1, 3);
+    auto const metaObj = CreateMetaDataForBookChange(Currency, Issuer, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
     static constexpr auto OrderbookPublish =
         R"({
@@ -405,14 +409,14 @@ TEST_F(SubscriptionManagerTest, TransactionTest)
 
 TEST_F(SubscriptionManagerTest, ProposedTransactionTest)
 {
-    auto const account = GetAccountIDWithString(ACCOUNT1);
+    auto const account = GetAccountIDWithString(Account1);
     EXPECT_CALL(*sessionPtr, onDisconnect).Times(4);
     subscriptionManagerPtr->subProposedAccount(account, session);
     subscriptionManagerPtr->subProposedTransactions(session);
     EXPECT_EQ(subscriptionManagerPtr->report()["accounts_proposed"], 1);
     EXPECT_EQ(subscriptionManagerPtr->report()["transactions_proposed"], 1);
 
-    static constexpr auto dummyTransaction =
+    static constexpr auto DummyTransaction =
         R"({
             "transaction":
             {
@@ -480,17 +484,17 @@ TEST_F(SubscriptionManagerTest, ProposedTransactionTest)
             "close_time_iso": "2000-01-01T00:00:00Z",
             "engine_result_message":"The transaction was applied. Only final in a validated ledger."
         })";
-    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummyTransaction))).Times(2);
+    EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(DummyTransaction))).Times(2);
     EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(OrderbookPublish))).Times(2);
-    subscriptionManagerPtr->forwardProposedTransaction(json::parse(dummyTransaction).get_object());
+    subscriptionManagerPtr->forwardProposedTransaction(json::parse(DummyTransaction).get_object());
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 33);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 33);
     auto trans1 = TransactionAndMetadata();
-    auto obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    auto obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
 
-    auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ACCOUNT1, 22, 3, 1, 1, 3);
+    auto const metaObj = CreateMetaDataForBookChange(Currency, Account1, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
     EXPECT_CALL(*sessionPtr, apiSubversion).Times(2).WillRepeatedly(testing::Return(1));
     subscriptionManagerPtr->pubTransaction(trans1, ledgerHeader);
@@ -512,13 +516,13 @@ TEST_F(SubscriptionManagerTest, DuplicateResponseSubTxAndProposedTx)
 
     EXPECT_CALL(*sessionPtr, send(testing::_)).Times(2);
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 33);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 33);
     auto trans1 = TransactionAndMetadata();
-    auto obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    auto obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
 
-    auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ACCOUNT1, 22, 3, 1, 1, 3);
+    auto const metaObj = CreateMetaDataForBookChange(Currency, Account1, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
     EXPECT_CALL(*sessionPtr, apiSubversion).Times(2).WillRepeatedly(testing::Return(1));
     subscriptionManagerPtr->pubTransaction(trans1, ledgerHeader);
@@ -531,7 +535,7 @@ TEST_F(SubscriptionManagerTest, DuplicateResponseSubTxAndProposedTx)
 
 TEST_F(SubscriptionManagerTest, NoDuplicateResponseSubAccountAndProposedAccount)
 {
-    auto const account = GetAccountIDWithString(ACCOUNT1);
+    auto const account = GetAccountIDWithString(Account1);
     EXPECT_CALL(*sessionPtr, onDisconnect).Times(3);
     subscriptionManagerPtr->subProposedAccount(account, session);
     subscriptionManagerPtr->subAccount(account, session);
@@ -540,13 +544,13 @@ TEST_F(SubscriptionManagerTest, NoDuplicateResponseSubAccountAndProposedAccount)
 
     EXPECT_CALL(*sessionPtr, send(testing::_));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 33);
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 33);
     auto trans1 = TransactionAndMetadata();
-    auto obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    auto obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
 
-    auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ACCOUNT1, 22, 3, 1, 1, 3);
+    auto const metaObj = CreateMetaDataForBookChange(Currency, Account1, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
     EXPECT_CALL(*sessionPtr, apiSubversion).WillRepeatedly(testing::Return(1));
     subscriptionManagerPtr->pubTransaction(trans1, ledgerHeader);

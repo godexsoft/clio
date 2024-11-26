@@ -35,7 +35,7 @@ using namespace testing;
 
 namespace {
 
-constexpr auto SEQ = 30;
+constexpr auto Seq = 30;
 
 std::vector<ripple::uint256> const ACCOUNTROOTS = {
     ripple::uint256{"05E1EAC2574BE082B00B16F907CE32E6058DEB8F9E81CF34A00E80A5D71FA4FE"},
@@ -58,10 +58,10 @@ TEST_F(CursorFromAccountProviderTests, EnoughAccountRoots)
     auto const pageSize = 100;
     auto const provider = etl::impl::CursorFromAccountProvider{backend, numCursors, pageSize};
 
-    ON_CALL(*backend, fetchAccountRoots(numCursors, _, SEQ, _)).WillByDefault(Return(ACCOUNTROOTS));
+    ON_CALL(*backend, fetchAccountRoots(numCursors, _, Seq, _)).WillByDefault(Return(ACCOUNTROOTS));
     EXPECT_CALL(*backend, fetchAccountRoots(_, _, _, _)).Times(1);
 
-    auto const cursors = provider.getCursors(SEQ);
+    auto const cursors = provider.getCursors(Seq);
     ASSERT_EQ(cursors.size(), numCursors + 1);
 
     EXPECT_EQ(cursors.front().start, firstKey);

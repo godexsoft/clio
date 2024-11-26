@@ -62,17 +62,21 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-static constexpr auto INDEX1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-static constexpr auto ACCOUNT3 = "rhzcyub9SbyZ4YF1JYskN5rLrTDUuLZG6D";
-static constexpr auto RANGEMIN = 10;
-static constexpr auto RANGEMAX = 30;
-static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-static constexpr auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
-static constexpr auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
-static constexpr auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-static constexpr auto CREDENTIALTYPE = "4B5943";
+namespace {
+
+constexpr auto Index1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto Account3 = "rhzcyub9SbyZ4YF1JYskN5rLrTDUuLZG6D";
+constexpr auto RangeMin = 10;
+constexpr auto RangeMax = 30;
+constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto TokenID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
+constexpr auto NftID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+constexpr auto TxnID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+constexpr auto CredentialType = "4B5943";
+
+}  // namespace
 
 class RPCLedgerEntryTest : public HandlerBaseTest {};
 
@@ -201,7 +205,7 @@ generateTestValuesForParametersTest()
                         "authorized": 123
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "invalidParams",
             "authorizedNotString"
@@ -216,7 +220,7 @@ generateTestValuesForParametersTest()
                         "authorized_credentials": "asdf"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "authorized_credentials not array"
@@ -231,7 +235,7 @@ generateTestValuesForParametersTest()
                         "authorized_credentials": ["C2F2A19C8D0D893D18F18FDCFE13A3ECB41767E48422DF07F2455CDA08FDF09B"]
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedAuthorizedCredentials",
             "authorized_credentials elements in array are not objects."
@@ -245,7 +249,7 @@ generateTestValuesForParametersTest()
                         "owner": "{}"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Must have one of authorized or authorized_credentials."
@@ -266,10 +270,10 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT3,
-                CREDENTIALTYPE
+                Account,
+                Account2,
+                Account3,
+                CredentialType
             ),
             "malformedRequest",
             "Must have one of authorized or authorized_credentials."
@@ -285,7 +289,7 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedAuthorizedCredentials",
             "Requires at least one element in authorized_credentials array."
@@ -304,8 +308,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedAuthorizedCredentials",
             "Field 'CredentialType' is required but missing."
@@ -324,8 +328,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                CREDENTIALTYPE
+                Account,
+                CredentialType
             ),
             "malformedAuthorizedCredentials",
             "Field 'Issuer' is required but missing."
@@ -345,8 +349,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                CREDENTIALTYPE
+                Account,
+                CredentialType
             ),
             "malformedAuthorizedCredentials",
             "issuer NotString"
@@ -366,8 +370,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedAuthorizedCredentials",
             "credential_type NotString"
@@ -387,8 +391,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedAuthorizedCredentials",
             "credential_type NotHexString"
@@ -408,8 +412,8 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedAuthorizedCredentials",
             "credential_type is empty"
@@ -433,11 +437,11 @@ generateTestValuesForParametersTest()
                         ]
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                CREDENTIALTYPE,
-                ACCOUNT2,
-                CREDENTIALTYPE
+                Account,
+                Account2,
+                CredentialType,
+                Account2,
+                CredentialType
             ),
             "malformedAuthorizedCredentials",
             "duplicates in credentials."
@@ -503,7 +507,7 @@ generateTestValuesForParametersTest()
                         "ticket_seq": "123"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -569,7 +573,7 @@ generateTestValuesForParametersTest()
                         "seq": "123"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -635,7 +639,7 @@ generateTestValuesForParametersTest()
                         "seq": "123"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -678,7 +682,7 @@ generateTestValuesForParametersTest()
                         "accounts" : ["{}"]
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "invalidParams",
             "malformedAccounts"
@@ -693,8 +697,8 @@ generateTestValuesForParametersTest()
                         "currency": "USD"
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT
+                Account,
+                Account
             ),
             "invalidParams",
             "malformedAccounts"
@@ -709,7 +713,7 @@ generateTestValuesForParametersTest()
                         "currency": "USD"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "invalidParams",
             "malformedAccounts"
@@ -724,7 +728,7 @@ generateTestValuesForParametersTest()
                         "currency": "USD"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedAddress",
             "malformedAddresses"
@@ -739,8 +743,8 @@ generateTestValuesForParametersTest()
                         "currency": "XXXX"
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedCurrency",
             "malformedCurrency"
@@ -755,8 +759,8 @@ generateTestValuesForParametersTest()
                         "currency": 123
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "invalidParams",
             "currencyNotString"
@@ -842,8 +846,8 @@ generateTestValuesForParametersTest()
                         "owner": "{}"
                     }}
                 }})",
-                INDEX1,
-                ACCOUNT
+                Index1,
+                Account
             ),
             "invalidParams",
             "mayNotSpecifyBothDirRootAndOwner"
@@ -858,7 +862,7 @@ generateTestValuesForParametersTest()
                         "sub_index": "not int"
                     }}
                 }})",
-                INDEX1
+                Index1
             ),
             "malformedRequest",
             "Malformed request."
@@ -908,7 +912,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -928,7 +932,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -947,7 +951,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -966,7 +970,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -986,7 +990,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1006,7 +1010,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1029,7 +1033,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1052,7 +1056,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1075,7 +1079,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1099,8 +1103,8 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT
+                Account,
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1122,7 +1126,7 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1146,10 +1150,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1174,11 +1178,11 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
+                Account,
                 1,
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1203,9 +1207,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
+                Account,
                 "JPY",
                 2
             ),
@@ -1228,9 +1232,9 @@ generateTestValuesForParametersTest()
                         "IssuingChainIssue": 1
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT
+                Account,
+                Account,
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1255,10 +1259,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1283,10 +1287,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1311,9 +1315,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
+                Account,
                 "JPY"
             ),
             "malformedRequest",
@@ -1339,10 +1343,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT2
+                Account,
+                Account,
+                Account2,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1368,11 +1372,11 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT2,
-                ACCOUNT2
+                Account,
+                Account,
+                Account2,
+                Account2,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1396,9 +1400,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1423,10 +1427,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT2,
-                ACCOUNT2
+                Account,
+                Account2,
+                Account2,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1450,9 +1454,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1473,10 +1477,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account,
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1497,10 +1501,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account,
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1512,7 +1516,7 @@ generateTestValuesForParametersTest()
                     "bridge_account": "{}",
                     "bridge": "invalid"
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1544,10 +1548,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1571,9 +1575,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1593,8 +1597,8 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT
+                Account,
+                Account
             ),
 
             "malformedRequest",
@@ -1620,9 +1624,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1646,8 +1650,8 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY"
             ),
             "malformedRequest",
@@ -1680,10 +1684,10 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1707,9 +1711,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1729,8 +1733,8 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT
+                Account,
+                Account
             ),
 
             "malformedRequest",
@@ -1756,9 +1760,9 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
+                Account,
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -1782,8 +1786,8 @@ generateTestValuesForParametersTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
+                Account,
+                Account,
                 "JPY"
             ),
             "malformedRequest",
@@ -1797,7 +1801,7 @@ generateTestValuesForParametersTest()
                         "account": "{}"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -1811,7 +1815,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": -1
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -1825,7 +1829,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": "invalid"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -1839,7 +1843,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": 3.21
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -1853,7 +1857,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": {{}}
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -1867,7 +1871,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": []
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -1881,7 +1885,7 @@ generateTestValuesForParametersTest()
                         "oracle_document_id": null
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedDocumentID",
             "Malformed oracle_document_id."
@@ -2020,7 +2024,7 @@ generateTestValuesForParametersTest()
                     "issuer": ["{}"]
                 }}
             }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -2067,7 +2071,7 @@ generateTestValuesForParametersTest()
                         "account": "{}"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             "malformedRequest",
             "Malformed request."
@@ -2082,8 +2086,8 @@ generateTestValuesForParametersTest()
                     "credential_type": 1234
                 }}
             }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -2097,8 +2101,8 @@ generateTestValuesForParametersTest()
                     "credential_type": "1234"
                 }}
             }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             "malformedRequest",
             "Malformed request."
@@ -2213,14 +2217,14 @@ TEST_P(IndexTest, InvalidIndexNotString)
 
 TEST_F(RPCLedgerEntryTest, LedgerEntryNotFound)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerHeader));
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerHeader));
 
     // return null for ledger entry
-    auto const key = ripple::keylet::account(GetAccountIDWithString(ACCOUNT)).key;
-    EXPECT_CALL(*backend, doFetchLedgerObject(key, RANGEMAX, _)).WillRepeatedly(Return(std::optional<Blob>{}));
+    auto const key = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    EXPECT_CALL(*backend, doFetchLedgerObject(key, RangeMax, _)).WillRepeatedly(Return(std::optional<Blob>{}));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -2228,7 +2232,7 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryNotFound)
             R"({{
                 "account_root": "{}"
             }})",
-            ACCOUNT
+            Account
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -2249,8 +2253,8 @@ struct RPCLedgerEntryNormalPathTest : public RPCLedgerEntryTest, public WithPara
 static auto
 generateTestValuesForNormalPathTest()
 {
-    auto account1 = GetAccountIDWithString(ACCOUNT);
-    auto account2 = GetAccountIDWithString(ACCOUNT2);
+    auto account1 = GetAccountIDWithString(Account);
+    auto account2 = GetAccountIDWithString(Account2);
     ripple::Currency currency;
     ripple::to_currency(currency, "USD");
 
@@ -2262,10 +2266,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "index": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateAccountRootObject(ACCOUNT2, ripple::lsfGlobalFreeze, 1, 10, 2, INDEX1, 3)
+            ripple::uint256{Index1},
+            CreateAccountRootObject(Account2, ripple::lsfGlobalFreeze, 1, 10, 2, Index1, 3)
         },
         NormalPathTestBundle{
             "Payment_channel",
@@ -2274,10 +2278,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "payment_channel": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 200, 300, INDEX1, 400)
+            ripple::uint256{Index1},
+            CreatePaymentChannelLedgerObject(Account, Account2, 100, 200, 300, Index1, 400)
         },
         NormalPathTestBundle{
             "Nft_page",
@@ -2286,11 +2290,11 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "nft_page": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
+            ripple::uint256{Index1},
             CreateNFTTokenPage(
-                std::vector{std::make_pair<std::string, std::string>(TOKENID, "www.ok.com")}, std::nullopt
+                std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt
             )
         },
         NormalPathTestBundle{
@@ -2300,10 +2304,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "check": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateCheckLedgerObject(ACCOUNT, ACCOUNT2)
+            ripple::uint256{Index1},
+            CreateCheckLedgerObject(Account, Account2)
         },
         NormalPathTestBundle{
             "DirectoryIndex",
@@ -2312,10 +2316,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "directory": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{INDEX1}}, INDEX1)
+            ripple::uint256{Index1},
+            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{Index1}}, Index1)
         },
         NormalPathTestBundle{
             "OfferIndex",
@@ -2324,11 +2328,11 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "offer": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
+            ripple::uint256{Index1},
             CreateOfferLedgerObject(
-                ACCOUNT, 100, 200, "USD", "XRP", ACCOUNT2, ripple::toBase58(ripple::xrpAccount()), INDEX1
+                Account, 100, 200, "USD", "XRP", Account2, ripple::toBase58(ripple::xrpAccount()), Index1
             )
         },
         NormalPathTestBundle{
@@ -2338,10 +2342,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "escrow": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateEscrowLedgerObject(ACCOUNT, ACCOUNT2)
+            ripple::uint256{Index1},
+            CreateEscrowLedgerObject(Account, Account2)
         },
         NormalPathTestBundle{
             "TicketIndex",
@@ -2350,10 +2354,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "ticket": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateTicketLedgerObject(ACCOUNT, 0)
+            ripple::uint256{Index1},
+            CreateTicketLedgerObject(Account, 0)
         },
         NormalPathTestBundle{
             "DepositPreauthIndex",
@@ -2362,10 +2366,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "deposit_preauth": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateDepositPreauthLedgerObjectByAuth(ACCOUNT, ACCOUNT2)
+            ripple::uint256{Index1},
+            CreateDepositPreauthLedgerObjectByAuth(Account, Account2)
         },
         NormalPathTestBundle{
             "AccountRoot",
@@ -2374,10 +2378,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "account_root": "{}"
                 }})",
-                ACCOUNT
+                Account
             ),
-            ripple::keylet::account(GetAccountIDWithString(ACCOUNT)).key,
-            CreateAccountRootObject(ACCOUNT, 0, 1, 1, 1, INDEX1, 1)
+            ripple::keylet::account(GetAccountIDWithString(Account)).key,
+            CreateAccountRootObject(Account, 0, 1, 1, 1, Index1, 1)
         },
         NormalPathTestBundle{
             "DID",
@@ -2386,10 +2390,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "did": "{}"
                 }})",
-                ACCOUNT
+                Account
             ),
-            ripple::keylet::did(GetAccountIDWithString(ACCOUNT)).key,
-            CreateDidObject(ACCOUNT, "mydocument", "myURI", "mydata")
+            ripple::keylet::did(GetAccountIDWithString(Account)).key,
+            CreateDidObject(Account, "mydocument", "myURI", "mydata")
         },
         NormalPathTestBundle{
             "DirectoryViaDirRoot",
@@ -2401,10 +2405,10 @@ generateTestValuesForNormalPathTest()
                         "sub_index": 2
                     }}
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::keylet::page(ripple::uint256{INDEX1}, 2).key,
-            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{INDEX1}}, INDEX1)
+            ripple::keylet::page(ripple::uint256{Index1}, 2).key,
+            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{Index1}}, Index1)
         },
         NormalPathTestBundle{
             "DirectoryViaOwner",
@@ -2416,10 +2420,10 @@ generateTestValuesForNormalPathTest()
                         "sub_index": 2
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             ripple::keylet::page(ripple::keylet::ownerDir(account1), 2).key,
-            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{INDEX1}}, INDEX1)
+            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{Index1}}, Index1)
         },
         NormalPathTestBundle{
             "DirectoryViaDefaultSubIndex",
@@ -2430,11 +2434,11 @@ generateTestValuesForNormalPathTest()
                         "owner": "{}"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             // default sub_index is 0
             ripple::keylet::page(ripple::keylet::ownerDir(account1), 0).key,
-            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{INDEX1}}, INDEX1)
+            CreateOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{Index1}}, Index1)
         },
         NormalPathTestBundle{
             "Escrow",
@@ -2446,10 +2450,10 @@ generateTestValuesForNormalPathTest()
                         "seq": 1
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             ripple::keylet::escrow(account1, 1).key,
-            CreateEscrowLedgerObject(ACCOUNT, ACCOUNT2)
+            CreateEscrowLedgerObject(Account, Account2)
         },
         NormalPathTestBundle{
             "DepositPreauthByAuth",
@@ -2461,11 +2465,11 @@ generateTestValuesForNormalPathTest()
                         "authorized": "{}"
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             ripple::keylet::depositPreauth(account1, account2).key,
-            CreateDepositPreauthLedgerObjectByAuth(ACCOUNT, ACCOUNT2)
+            CreateDepositPreauthLedgerObjectByAuth(Account, Account2)
         },
         NormalPathTestBundle{
             "DepositPreauthByAuthCredentials",
@@ -2482,18 +2486,18 @@ generateTestValuesForNormalPathTest()
                            ]
                        }}
                    }})",
-                ACCOUNT,
-                ACCOUNT2,
-                CREDENTIALTYPE
+                Account,
+                Account2,
+                CredentialType
             ),
             ripple::keylet::depositPreauth(
                 account1,
                 credentials::createAuthCredentials(CreateAuthCredentialArray(
-                    std::vector<std::string_view>{ACCOUNT2}, std::vector<std::string_view>{CREDENTIALTYPE}
+                    std::vector<std::string_view>{Account2}, std::vector<std::string_view>{CredentialType}
                 ))
             )
                 .key,
-            CreateDepositPreauthLedgerObjectByAuthCredentials(ACCOUNT, ACCOUNT2, CREDENTIALTYPE)
+            CreateDepositPreauthLedgerObjectByAuthCredentials(Account, Account2, CredentialType)
         },
         NormalPathTestBundle{
             "Credentials",
@@ -2506,17 +2510,17 @@ generateTestValuesForNormalPathTest()
                         "credential_type": "{}"
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                CREDENTIALTYPE
+                Account,
+                Account2,
+                CredentialType
             ),
             ripple::keylet::credential(
                 account1,
                 account2,
-                ripple::Slice(ripple::strUnHex(CREDENTIALTYPE)->data(), ripple::strUnHex(CREDENTIALTYPE)->size())
+                ripple::Slice(ripple::strUnHex(CredentialType)->data(), ripple::strUnHex(CredentialType)->size())
             )
                 .key,
-            CreateCredentialObject(ACCOUNT, ACCOUNT2, CREDENTIALTYPE)
+            CreateCredentialObject(Account, Account2, CredentialType)
         },
         NormalPathTestBundle{
             "RippleState",
@@ -2528,11 +2532,11 @@ generateTestValuesForNormalPathTest()
                         "currency": "USD"
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2
+                Account,
+                Account2
             ),
             ripple::keylet::line(account1, account2, currency).key,
-            CreateRippleStateLedgerObject("USD", ACCOUNT2, 100, ACCOUNT, 10, ACCOUNT2, 20, INDEX1, 123, 0)
+            CreateRippleStateLedgerObject("USD", Account2, 100, Account, 10, Account2, 20, Index1, 123, 0)
         },
         NormalPathTestBundle{
             "Ticket",
@@ -2544,10 +2548,10 @@ generateTestValuesForNormalPathTest()
                         "ticket_seq": 2
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             ripple::getTicketIndex(account1, 2),
-            CreateTicketLedgerObject(ACCOUNT, 0)
+            CreateTicketLedgerObject(Account, 0)
         },
         NormalPathTestBundle{
             "Offer",
@@ -2559,11 +2563,11 @@ generateTestValuesForNormalPathTest()
                         "seq": 2
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
             ripple::keylet::offer(account1, 2).key,
             CreateOfferLedgerObject(
-                ACCOUNT, 100, 200, "USD", "XRP", ACCOUNT2, ripple::toBase58(ripple::xrpAccount()), INDEX1
+                Account, 100, 200, "USD", "XRP", Account2, ripple::toBase58(ripple::xrpAccount()), Index1
             )
         },
         NormalPathTestBundle{
@@ -2573,10 +2577,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "amm": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateAMMObject(ACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", ACCOUNT2)
+            ripple::uint256{Index1},
+            CreateAMMObject(Account, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", Account2)
         },
         NormalPathTestBundle{
             "AMMViaJson",
@@ -2594,10 +2598,10 @@ generateTestValuesForNormalPathTest()
                     }}
                 }})",
                 "JPY",
-                ACCOUNT2
+                Account2
             ),
-            ripple::keylet::amm(GetIssue("XRP", ripple::toBase58(ripple::xrpAccount())), GetIssue("JPY", ACCOUNT2)).key,
-            CreateAMMObject(ACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", ACCOUNT2)
+            ripple::keylet::amm(GetIssue("XRP", ripple::toBase58(ripple::xrpAccount())), GetIssue("JPY", Account2)).key,
+            CreateAMMObject(Account, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", Account2)
         },
         NormalPathTestBundle{
             "BridgeLocking",
@@ -2617,22 +2621,22 @@ generateTestValuesForNormalPathTest()
                         }}
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT3
+                Account,
+                Account,
+                Account2,
+                Account3
             ),
             ripple::keylet::bridge(
                 ripple::STXChainBridge(
-                    GetAccountIDWithString(ACCOUNT),
+                    GetAccountIDWithString(Account),
                     ripple::xrpIssue(),
-                    GetAccountIDWithString(ACCOUNT2),
-                    GetIssue("JPY", ACCOUNT3)
+                    GetAccountIDWithString(Account2),
+                    GetIssue("JPY", Account3)
                 ),
                 ripple::STXChainBridge::ChainType::locking
             )
                 .key,
-            CreateBridgeObject(ACCOUNT, ACCOUNT, ACCOUNT2, "JPY", ACCOUNT3)
+            CreateBridgeObject(Account, Account, Account2, "JPY", Account3)
         },
         NormalPathTestBundle{
             "BridgeIssuing",
@@ -2652,22 +2656,22 @@ generateTestValuesForNormalPathTest()
                         }}
                     }}
                 }})",
-                ACCOUNT2,
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT3
+                Account2,
+                Account,
+                Account2,
+                Account3
             ),
             ripple::keylet::bridge(
                 ripple::STXChainBridge(
-                    GetAccountIDWithString(ACCOUNT),
+                    GetAccountIDWithString(Account),
                     ripple::xrpIssue(),
-                    GetAccountIDWithString(ACCOUNT2),
-                    GetIssue("JPY", ACCOUNT3)
+                    GetAccountIDWithString(Account2),
+                    GetIssue("JPY", Account3)
                 ),
                 ripple::STXChainBridge::ChainType::issuing
             )
                 .key,
-            CreateBridgeObject(ACCOUNT, ACCOUNT, ACCOUNT2, "JPY", ACCOUNT3)
+            CreateBridgeObject(Account, Account, Account2, "JPY", Account3)
         },
         NormalPathTestBundle{
             "XChainOwnedClaimId",
@@ -2687,21 +2691,21 @@ generateTestValuesForNormalPathTest()
                         "xchain_owned_claim_id": 10
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT3
+                Account,
+                Account2,
+                Account3
             ),
             ripple::keylet::xChainClaimID(
                 ripple::STXChainBridge(
-                    GetAccountIDWithString(ACCOUNT),
+                    GetAccountIDWithString(Account),
                     ripple::xrpIssue(),
-                    GetAccountIDWithString(ACCOUNT2),
-                    GetIssue("JPY", ACCOUNT3)
+                    GetAccountIDWithString(Account2),
+                    GetIssue("JPY", Account3)
                 ),
                 10
             )
                 .key,
-            CreateChainOwnedClaimIDObject(ACCOUNT, ACCOUNT, ACCOUNT2, "JPY", ACCOUNT3, ACCOUNT)
+            CreateChainOwnedClaimIDObject(Account, Account, Account2, "JPY", Account3, Account)
         },
         NormalPathTestBundle{
             "XChainOwnedCreateAccountClaimId",
@@ -2721,21 +2725,21 @@ generateTestValuesForNormalPathTest()
                         "xchain_owned_create_account_claim_id": 10
                     }}
                 }})",
-                ACCOUNT,
-                ACCOUNT2,
-                ACCOUNT3
+                Account,
+                Account2,
+                Account3
             ),
             ripple::keylet::xChainCreateAccountClaimID(
                 ripple::STXChainBridge(
-                    GetAccountIDWithString(ACCOUNT),
+                    GetAccountIDWithString(Account),
                     ripple::xrpIssue(),
-                    GetAccountIDWithString(ACCOUNT2),
-                    GetIssue("JPY", ACCOUNT3)
+                    GetAccountIDWithString(Account2),
+                    GetIssue("JPY", Account3)
                 ),
                 10
             )
                 .key,
-            CreateChainOwnedClaimIDObject(ACCOUNT, ACCOUNT, ACCOUNT2, "JPY", ACCOUNT3, ACCOUNT)
+            CreateChainOwnedClaimIDObject(Account, Account, Account2, "JPY", Account3, Account)
         },
         NormalPathTestBundle{
             "OracleEntryFoundViaIntOracleDocumentId",
@@ -2747,17 +2751,17 @@ generateTestValuesForNormalPathTest()
                         "oracle_document_id": 1
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
-            ripple::keylet::oracle(GetAccountIDWithString(ACCOUNT), 1).key,
+            ripple::keylet::oracle(GetAccountIDWithString(Account), 1).key,
             CreateOracleObject(
-                ACCOUNT,
+                Account,
                 "70726F7669646572",
                 32u,
                 1234u,
                 ripple::Blob(8, 's'),
                 ripple::Blob(8, 's'),
-                RANGEMAX - 2,
+                RangeMax - 2,
                 ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321"},
                 CreatePriceDataSeries(
                     {CreateOraclePriceData(2e4, ripple::to_currency("XRP"), ripple::to_currency("USD"), 3)}
@@ -2774,17 +2778,17 @@ generateTestValuesForNormalPathTest()
                         "oracle_document_id": "1"
                     }}
                 }})",
-                ACCOUNT
+                Account
             ),
-            ripple::keylet::oracle(GetAccountIDWithString(ACCOUNT), 1).key,
+            ripple::keylet::oracle(GetAccountIDWithString(Account), 1).key,
             CreateOracleObject(
-                ACCOUNT,
+                Account,
                 "70726F7669646572",
                 32u,
                 1234u,
                 ripple::Blob(8, 's'),
                 ripple::Blob(8, 's'),
-                RANGEMAX - 2,
+                RangeMax - 2,
                 ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321"},
                 CreatePriceDataSeries(
                     {CreateOraclePriceData(2e4, ripple::to_currency("XRP"), ripple::to_currency("USD"), 3)}
@@ -2798,17 +2802,17 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "oracle": "{}"
                 }})",
-                ripple::to_string(ripple::keylet::oracle(GetAccountIDWithString(ACCOUNT), 1).key)
+                ripple::to_string(ripple::keylet::oracle(GetAccountIDWithString(Account), 1).key)
             ),
-            ripple::keylet::oracle(GetAccountIDWithString(ACCOUNT), 1).key,
+            ripple::keylet::oracle(GetAccountIDWithString(Account), 1).key,
             CreateOracleObject(
-                ACCOUNT,
+                Account,
                 "70726F7669646572",
                 64u,
                 4321u,
                 ripple::Blob(8, 'a'),
                 ripple::Blob(8, 'a'),
-                RANGEMAX - 4,
+                RangeMax - 4,
                 ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321"},
                 CreatePriceDataSeries(
                     {CreateOraclePriceData(1e3, ripple::to_currency("USD"), ripple::to_currency("XRP"), 2)}
@@ -2825,7 +2829,7 @@ generateTestValuesForNormalPathTest()
                 ripple::to_string(ripple::makeMptID(2, account1))
             ),
             ripple::keylet::mptIssuance(ripple::makeMptID(2, account1)).key,
-            CreateMPTIssuanceObject(ACCOUNT, 2, "metadata")
+            CreateMPTIssuanceObject(Account, 2, "metadata")
         },
         NormalPathTestBundle{
             "MPTokenViaIndex",
@@ -2834,10 +2838,10 @@ generateTestValuesForNormalPathTest()
                     "binary": true,
                     "mptoken": "{}"
                 }})",
-                INDEX1
+                Index1
             ),
-            ripple::uint256{INDEX1},
-            CreateMPTokenObject(ACCOUNT, ripple::makeMptID(2, account1))
+            ripple::uint256{Index1},
+            CreateMPTokenObject(Account, ripple::makeMptID(2, account1))
         },
         NormalPathTestBundle{
             "MPTokenViaObject",
@@ -2849,11 +2853,11 @@ generateTestValuesForNormalPathTest()
                         "mpt_issuance_id": "{}"
                     }}
                 }})",
-                ACCOUNT,
+                Account,
                 ripple::to_string(ripple::makeMptID(2, account1))
             ),
             ripple::keylet::mptoken(ripple::makeMptID(2, account1), account1).key,
-            CreateMPTokenObject(ACCOUNT, ripple::makeMptID(2, account1))
+            CreateMPTokenObject(Account, ripple::makeMptID(2, account1))
         },
     };
 }
@@ -2871,12 +2875,12 @@ TEST_P(RPCLedgerEntryNormalPathTest, NormalPath)
 {
     auto const testBundle = GetParam();
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerHeader));
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerHeader));
 
-    EXPECT_CALL(*backend, doFetchLedgerObject(testBundle.expectedIndex, RANGEMAX, _))
+    EXPECT_CALL(*backend, doFetchLedgerObject(testBundle.expectedIndex, RangeMax, _))
         .WillRepeatedly(Return(testBundle.mockedEntity.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -2884,8 +2888,8 @@ TEST_P(RPCLedgerEntryNormalPathTest, NormalPath)
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result.value().at("ledger_hash").as_string(), LEDGERHASH);
-        EXPECT_EQ(output.result.value().at("ledger_index").as_uint64(), RANGEMAX);
+        EXPECT_EQ(output.result.value().at("ledger_hash").as_string(), LedgerHash);
+        EXPECT_EQ(output.result.value().at("ledger_index").as_uint64(), RangeMax);
         EXPECT_EQ(
             output.result.value().at("node_binary").as_string(),
             ripple::strHex(testBundle.mockedEntity.getSerializer().peekData())
@@ -2900,7 +2904,7 @@ TEST_P(RPCLedgerEntryNormalPathTest, NormalPath)
 // this testcase will test the deserialization of ledger entry
 TEST_F(RPCLedgerEntryTest, BinaryFalse)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
         "validated":true,
@@ -2921,14 +2925,14 @@ TEST_F(RPCLedgerEntryTest, BinaryFalse)
         }
     })";
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerHeader));
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerHeader));
 
     // return valid ledger entry which can be deserialized
-    auto const ledgerEntry = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 200, 300, INDEX1, 400);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const ledgerEntry = CreatePaymentChannelLedgerObject(Account, Account2, 100, 200, 300, Index1, 400);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillRepeatedly(Return(ledgerEntry.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -2937,24 +2941,24 @@ TEST_F(RPCLedgerEntryTest, BinaryFalse)
             R"({{
                 "payment_channel": "{}"
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
 TEST_F(RPCLedgerEntryTest, UnexpectedLedgerType)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerHeader));
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerHeader));
 
     // return valid ledger entry which can be deserialized
-    auto const ledgerEntry = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 200, 300, INDEX1, 400);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const ledgerEntry = CreatePaymentChannelLedgerObject(Account, Account2, 100, 200, 300, Index1, 400);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillRepeatedly(Return(ledgerEntry.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -2963,7 +2967,7 @@ TEST_F(RPCLedgerEntryTest, UnexpectedLedgerType)
             R"({{
                 "check": "{}"
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -2974,9 +2978,9 @@ TEST_F(RPCLedgerEntryTest, UnexpectedLedgerType)
 
 TEST_F(RPCLedgerEntryTest, LedgerNotExistViaIntSequence)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(std::nullopt));
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -2985,8 +2989,8 @@ TEST_F(RPCLedgerEntryTest, LedgerNotExistViaIntSequence)
                 "check": "{}",
                 "ledger_index": {}
             }})",
-            INDEX1,
-            RANGEMAX
+            Index1,
+            RangeMax
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -2998,9 +3002,9 @@ TEST_F(RPCLedgerEntryTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCLedgerEntryTest, LedgerNotExistViaStringSequence)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(std::nullopt));
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -3009,8 +3013,8 @@ TEST_F(RPCLedgerEntryTest, LedgerNotExistViaStringSequence)
                 "check": "{}",
                 "ledger_index": "{}"
             }})",
-            INDEX1,
-            RANGEMAX
+            Index1,
+            RangeMax
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -3022,9 +3026,9 @@ TEST_F(RPCLedgerEntryTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCLedgerEntryTest, LedgerNotExistViaHash)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
 
-    EXPECT_CALL(*backend, fetchLedgerByHash(ripple::uint256{LEDGERHASH}, _)).WillRepeatedly(Return(std::nullopt));
+    EXPECT_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillRepeatedly(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -3033,8 +3037,8 @@ TEST_F(RPCLedgerEntryTest, LedgerNotExistViaHash)
                 "check": "{}",
                 "ledger_hash": "{}"
             }})",
-            INDEX1,
-            LEDGERHASH
+            Index1,
+            LedgerHash
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -3088,7 +3092,7 @@ TEST(RPCLedgerEntrySpecTest, DeprecatedFields)
 // Expected Result: same as BinaryFalse
 TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3109,14 +3113,14 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
         }
     })";
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerinfo
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
 
     // return valid ledger entry which can be deserialized
-    auto const ledgerEntry = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 200, 300, INDEX1, 400);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const ledgerEntry = CreatePaymentChannelLedgerObject(Account, Account2, 100, 200, 300, Index1, 400);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillRepeatedly(Return(ledgerEntry.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -3126,11 +3130,11 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3138,7 +3142,7 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
 // Expected Result: return the latest object that is not deleted
 TEST_F(RPCLedgerEntryTest, LedgerEntryDeleted)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3157,16 +3161,16 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryDeleted)
             "index": "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD"
             }
         })";
-    backend->setRange(RANGEMIN, RANGEMAX);
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
+    backend->setRange(RangeMin, RangeMax);
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
     // return valid ledger entry which can be deserialized
-    auto const offer = CreateNFTBuyOffer(NFTID, ACCOUNT);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillOnce(Return(std::optional<Blob>{}));
-    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{INDEX1}, RANGEMAX, _))
-        .WillOnce(Return(uint32_t{RANGEMAX}));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX - 1, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{Index1}, RangeMax, _))
+        .WillOnce(Return(uint32_t{RangeMax}));
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax - 1, _))
         .WillOnce(Return(offer.getSerializer().peekData()));
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -3175,11 +3179,11 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryDeleted)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3187,14 +3191,14 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryDeleted)
 // Expected Result: return entryNotFound error
 TEST_F(RPCLedgerEntryTest, LedgerEntryNotExist)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    backend->setRange(RangeMin, RangeMax);
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillOnce(Return(std::optional<Blob>{}));
-    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{INDEX1}, RANGEMAX, _))
-        .WillOnce(Return(uint32_t{RANGEMAX}));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX - 1, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{Index1}, RangeMax, _))
+        .WillOnce(Return(uint32_t{RangeMax}));
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax - 1, _))
         .WillOnce(Return(std::optional<Blob>{}));
 
     runSpawn([&, this](auto yield) {
@@ -3204,7 +3208,7 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryNotExist)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -3218,7 +3222,7 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryNotExist)
 // Expected Result: same as BinaryFalse
 TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3239,14 +3243,14 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
         }
     })";
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerinfo
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
 
     // return valid ledger entry which can be deserialized
-    auto const ledgerEntry = CreatePaymentChannelLedgerObject(ACCOUNT, ACCOUNT2, 100, 200, 300, INDEX1, 400);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const ledgerEntry = CreatePaymentChannelLedgerObject(Account, Account2, 100, 200, 300, Index1, 400);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillRepeatedly(Return(ledgerEntry.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -3256,11 +3260,11 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
                 "payment_channel": "{}",
                 "include_deleted": false
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3268,7 +3272,7 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
 // Expected Result: return the latest object that is not deleted (latest object in this test)
 TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3297,17 +3301,17 @@ TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
             }
         })";
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerinfo
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
 
     // return valid ledger entry which can be deserialized
-    auto const line1 = CreateRippleStateLedgerObject("USD", ACCOUNT2, 10, ACCOUNT, 100, ACCOUNT2, 200, TXNID, 123);
-    auto const line2 = CreateRippleStateLedgerObject("USD", ACCOUNT, 10, ACCOUNT2, 100, ACCOUNT, 200, TXNID, 123);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const line1 = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+    auto const line2 = CreateRippleStateLedgerObject("USD", Account, 10, Account2, 100, Account, 200, TxnID, 123);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillRepeatedly(Return(line1.getSerializer().peekData()));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX - 1, _))
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax - 1, _))
         .WillRepeatedly(Return(line2.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -3317,11 +3321,11 @@ TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3329,7 +3333,7 @@ TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
 // Expected Result: return the latest object that is not deleted
 TEST_F(RPCLedgerEntryTest, ObjectDeletedPreviously)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3348,16 +3352,16 @@ TEST_F(RPCLedgerEntryTest, ObjectDeletedPreviously)
             "index": "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD"
             }
         })";
-    backend->setRange(RANGEMIN, RANGEMAX);
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
+    backend->setRange(RangeMin, RangeMax);
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
     // return valid ledger entry which can be deserialized
-    auto const offer = CreateNFTBuyOffer(NFTID, ACCOUNT);
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillOnce(Return(std::optional<Blob>{}));
-    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{INDEX1}, RANGEMAX, _))
-        .WillOnce(Return(uint32_t{RANGEMAX - 4}));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX - 5, _))
+    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{Index1}, RangeMax, _))
+        .WillOnce(Return(uint32_t{RangeMax - 4}));
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax - 5, _))
         .WillOnce(Return(offer.getSerializer().peekData()));
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -3366,11 +3370,11 @@ TEST_F(RPCLedgerEntryTest, ObjectDeletedPreviously)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3378,12 +3382,12 @@ TEST_F(RPCLedgerEntryTest, ObjectDeletedPreviously)
 // Expected Result: return entryNotFound error
 TEST_F(RPCLedgerEntryTest, ObjectSeqNotExist)
 {
-    backend->setRange(RANGEMIN, RANGEMAX);
-    auto const ledgerinfo = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerinfo));
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{INDEX1}, RANGEMAX, _))
+    backend->setRange(RangeMin, RangeMax);
+    auto const ledgerinfo = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerinfo));
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillOnce(Return(std::optional<Blob>{}));
-    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{INDEX1}, RANGEMAX, _)).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(*backend, doFetchLedgerObjectSeq(ripple::uint256{Index1}, RangeMax, _)).WillOnce(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerEntryHandler{backend}};
@@ -3392,7 +3396,7 @@ TEST_F(RPCLedgerEntryTest, ObjectSeqNotExist)
                 "index": "{}",
                 "include_deleted": true
             }})",
-            INDEX1
+            Index1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -3405,7 +3409,7 @@ TEST_F(RPCLedgerEntryTest, ObjectSeqNotExist)
 // this testcase will test the if response includes synthetic mpt_issuance_id
 TEST_F(RPCLedgerEntryTest, SyntheticMPTIssuanceID)
 {
-    static constexpr auto OUT = R"({
+    static constexpr auto Out = R"({
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
         "validated":true,
@@ -3426,16 +3430,16 @@ TEST_F(RPCLedgerEntryTest, SyntheticMPTIssuanceID)
         }
     })";
 
-    auto const mptId = ripple::makeMptID(2, GetAccountIDWithString(ACCOUNT));
+    auto const mptId = ripple::makeMptID(2, GetAccountIDWithString(Account));
 
-    backend->setRange(RANGEMIN, RANGEMAX);
+    backend->setRange(RangeMin, RangeMax);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, RANGEMAX);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _)).WillRepeatedly(Return(ledgerHeader));
+    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax);
+    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillRepeatedly(Return(ledgerHeader));
 
     // return valid ledger entry which can be deserialized
-    auto const ledgerEntry = CreateMPTIssuanceObject(ACCOUNT, 2, "metadata");
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::mptIssuance(mptId).key, RANGEMAX, _))
+    auto const ledgerEntry = CreateMPTIssuanceObject(Account, 2, "metadata");
+    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::mptIssuance(mptId).key, RangeMax, _))
         .WillRepeatedly(Return(ledgerEntry.getSerializer().peekData()));
 
     runSpawn([&, this](auto yield) {
@@ -3448,7 +3452,7 @@ TEST_F(RPCLedgerEntryTest, SyntheticMPTIssuanceID)
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(OUT));
+        EXPECT_EQ(*output.result, json::parse(Out));
     });
 }
 
@@ -3464,7 +3468,7 @@ TEST_F(RPCLedgerEntryDeathTest, RangeNotAvailable)
             R"({{
                 "index": "{}"
             }})",
-            INDEX1
+            Index1
         ));
         checkCalled = true;
         EXPECT_DEATH(

@@ -31,7 +31,7 @@
 TEST(LedgerUtilsTests, LedgerObjectTypeList)
 {
     constexpr auto types = util::LedgerTypes::GetLedgerEntryTypeStrList();
-    static constexpr char const* typesList[] = {
+    static constexpr char const* TypesList[] = {
         JS(account),
         JS(amendments),
         JS(check),
@@ -59,9 +59,9 @@ TEST(LedgerUtilsTests, LedgerObjectTypeList)
         JS(nunl)
     };
 
-    static_assert(std::size(typesList) == types.size());
+    static_assert(std::size(TypesList) == types.size());
 
-    static_assert(std::all_of(std::cbegin(typesList), std::cend(typesList), [&types](std::string_view type) {
+    static_assert(std::all_of(std::cbegin(TypesList), std::cend(TypesList), [&types](std::string_view type) {
         return std::find(std::cbegin(types), std::cend(types), type) != std::cend(types);
     }));
 }
@@ -69,7 +69,7 @@ TEST(LedgerUtilsTests, LedgerObjectTypeList)
 TEST(LedgerUtilsTests, AccountOwnedTypeList)
 {
     constexpr auto accountOwned = util::LedgerTypes::GetAccountOwnedLedgerTypeStrList();
-    static constexpr char const* correctTypes[] = {
+    static constexpr char const* CorrectTypes[] = {
         JS(account),
         JS(check),
         JS(deposit_preauth),
@@ -92,11 +92,11 @@ TEST(LedgerUtilsTests, AccountOwnedTypeList)
         JS(mptoken)
     };
 
-    static_assert(std::size(correctTypes) == accountOwned.size());
+    static_assert(std::size(CorrectTypes) == accountOwned.size());
 
     static_assert(std::all_of(
-        std::cbegin(correctTypes),
-        std::cend(correctTypes),
+        std::cbegin(CorrectTypes),
+        std::cend(CorrectTypes),
         [&accountOwned](std::string_view type) {
             return std::find(std::cbegin(accountOwned), std::cend(accountOwned), type) != std::cend(accountOwned);
         }
@@ -119,7 +119,7 @@ TEST(LedgerUtilsTests, DeletionBlockerTypes)
 {
     constexpr auto testedTypes = util::LedgerTypes::GetDeletionBlockerLedgerTypes();
 
-    static constexpr ripple::LedgerEntryType deletionBlockers[] = {
+    static constexpr ripple::LedgerEntryType DeletionBlockers[] = {
         ripple::ltCHECK,
         ripple::ltESCROW,
         ripple::ltNFTOKEN_PAGE,
@@ -132,9 +132,9 @@ TEST(LedgerUtilsTests, DeletionBlockerTypes)
         ripple::ltMPTOKEN
     };
 
-    static_assert(std::size(deletionBlockers) == testedTypes.size());
+    static_assert(std::size(DeletionBlockers) == testedTypes.size());
     static_assert(std::any_of(testedTypes.cbegin(), testedTypes.cend(), [](auto const& type) {
-        return std::find(std::cbegin(deletionBlockers), std::cend(deletionBlockers), type) !=
-            std::cend(deletionBlockers);
+        return std::find(std::cbegin(DeletionBlockers), std::cend(DeletionBlockers), type) !=
+            std::cend(DeletionBlockers);
     }));
 }

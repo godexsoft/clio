@@ -124,22 +124,22 @@ TEST_F(CounterIntTests, reset)
 
 TEST_F(CounterIntTests, multithreadAdd)
 {
-    static constexpr auto numAdditions = 1000;
-    static constexpr auto numNumberAdditions = 100;
-    static constexpr auto numberToAdd = 11;
+    static constexpr auto NumAdditions = 1000;
+    static constexpr auto NumNumberAdditions = 100;
+    static constexpr auto NumberToAdd = 11;
     std::thread thread1([&] {
-        for (int i = 0; i < numAdditions; ++i) {
+        for (int i = 0; i < NumAdditions; ++i) {
             ++counter;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < numNumberAdditions; ++i) {
-            counter += numberToAdd;
+        for (int i = 0; i < NumNumberAdditions; ++i) {
+            counter += NumberToAdd;
         }
     });
     thread1.join();
     thread2.join();
-    EXPECT_EQ(counter.value(), numAdditions + numNumberAdditions * numberToAdd);
+    EXPECT_EQ(counter.value(), NumAdditions + NumNumberAdditions * NumberToAdd);
 }
 
 struct CounterDoubleTests : ::testing::Test {
@@ -163,20 +163,20 @@ TEST_F(CounterDoubleTests, reset)
 
 TEST_F(CounterDoubleTests, multithreadAdd)
 {
-    static constexpr auto numAdditions = 1000;
-    static constexpr auto numNumberAdditions = 100;
-    static constexpr auto numberToAdd = 11.1234;
+    static constexpr auto NumAdditions = 1000;
+    static constexpr auto NumNumberAdditions = 100;
+    static constexpr auto NumberToAdd = 11.1234;
     std::thread thread1([&] {
-        for (int i = 0; i < numAdditions; ++i) {
+        for (int i = 0; i < NumAdditions; ++i) {
             ++counter;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < numNumberAdditions; ++i) {
-            counter += numberToAdd;
+        for (int i = 0; i < NumNumberAdditions; ++i) {
+            counter += NumberToAdd;
         }
     });
     thread1.join();
     thread2.join();
-    EXPECT_NEAR(counter.value(), numAdditions + numNumberAdditions * numberToAdd, 1e-9);
+    EXPECT_NEAR(counter.value(), NumAdditions + NumNumberAdditions * NumberToAdd, 1e-9);
 }

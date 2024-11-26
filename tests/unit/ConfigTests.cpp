@@ -41,7 +41,9 @@ using namespace boost::log;
 using namespace std;
 namespace json = boost::json;
 
-static constexpr auto JSONData = R"JSON(
+namespace {
+
+constexpr auto JSONData = R"JSON(
     {
         "arr": [                
             { "first": 1234 },
@@ -61,6 +63,8 @@ static constexpr auto JSONData = R"JSON(
         "top": 420
     }
 )JSON";
+
+}  // namespace
 
 class ConfigTest : public NoLoggerFixture {
 protected:

@@ -45,16 +45,20 @@
 #include <string_view>
 #include <vector>
 
-static constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-static constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-static constexpr auto Index1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-static constexpr auto Index2 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1";
-static constexpr std::string_view CredentialType = "credType";
-static constexpr auto CredentialHash = "F245428267E6177AEEFDD4FEA3533285712A4B1091CF82A7EA7BC39A62C3FB1A";
+namespace {
 
-static constexpr auto RangeMin = 10;
-static constexpr auto RangeMax = 30;
+constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto Index1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+constexpr auto Index2 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1";
+constexpr auto CredentialHash = "F245428267E6177AEEFDD4FEA3533285712A4B1091CF82A7EA7BC39A62C3FB1A";
+constexpr std::string_view CredentialType = "credType";
+
+constexpr auto RangeMin = 10;
+constexpr auto RangeMax = 30;
+
+}  // namespace
 
 using namespace rpc;
 namespace json = boost::json;
@@ -386,7 +390,7 @@ TEST_F(RPCDepositAuthorizedTest, DestinationAccountDoesNotExist)
 
 TEST_F(RPCDepositAuthorizedTest, AccountsAreEqual)
 {
-    static constexpr auto expectedOut =
+    static constexpr auto ExpectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -423,13 +427,13 @@ TEST_F(RPCDepositAuthorizedTest, AccountsAreEqual)
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOut));
+        EXPECT_EQ(*output.result, json::parse(ExpectedOut));
     });
 }
 
 TEST_F(RPCDepositAuthorizedTest, DifferentAccountsNoDepositAuthFlag)
 {
-    static constexpr auto expectedOut =
+    static constexpr auto ExpectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -471,13 +475,13 @@ TEST_F(RPCDepositAuthorizedTest, DifferentAccountsNoDepositAuthFlag)
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOut));
+        EXPECT_EQ(*output.result, json::parse(ExpectedOut));
     });
 }
 
 TEST_F(RPCDepositAuthorizedTest, DifferentAccountsWithDepositAuthFlagReturnsFalse)
 {
-    static constexpr auto expectedOut =
+    static constexpr auto ExpectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -520,13 +524,13 @@ TEST_F(RPCDepositAuthorizedTest, DifferentAccountsWithDepositAuthFlagReturnsFals
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOut));
+        EXPECT_EQ(*output.result, json::parse(ExpectedOut));
     });
 }
 
 TEST_F(RPCDepositAuthorizedTest, DifferentAccountsWithDepositAuthFlagReturnsTrue)
 {
-    static constexpr auto expectedOut =
+    static constexpr auto ExpectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -569,13 +573,13 @@ TEST_F(RPCDepositAuthorizedTest, DifferentAccountsWithDepositAuthFlagReturnsTrue
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOut));
+        EXPECT_EQ(*output.result, json::parse(ExpectedOut));
     });
 }
 
 TEST_F(RPCDepositAuthorizedTest, CredentialAcceptedAndNotExpiredReturnsTrue)
 {
-    static auto const expectedOut = fmt::format(
+    static auto const ExpectedOut = fmt::format(
         R"({{
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -631,7 +635,7 @@ TEST_F(RPCDepositAuthorizedTest, CredentialAcceptedAndNotExpiredReturnsTrue)
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOut));
+        EXPECT_EQ(*output.result, json::parse(ExpectedOut));
     });
 }
 
@@ -908,7 +912,7 @@ TEST_F(RPCDepositAuthorizedTest, DifferenSubjectAccountForCredentialReturnsFalse
     auto const account1Root = CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2);
     auto const account2Root = CreateAccountRootObject(Account2, ripple::lsfDepositAuth, 2, 200, 2, Index2, 2);
 
-    // reverse the subject and issuer account. Now subject is ACCOUNT2
+    // reverse the subject and issuer account. Now subject is Account2
     auto const credential = CreateCredentialObject(Account2, Account, CredentialType);
     auto const credentialIndex = ripple::keylet::credential(
                                      GetAccountIDWithString(Account2),

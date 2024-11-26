@@ -35,7 +35,7 @@ using namespace testing;
 
 namespace {
 
-constexpr auto SEQ = 30;
+constexpr auto Seq = 30;
 
 struct CursorProviderTest : util::prometheus::WithPrometheus, MockBackendTestNaggy {
     DiffProvider diffProvider;
@@ -63,7 +63,7 @@ TEST_P(ParametrizedCursorProviderTest, GetCursorsWithDifferentProviderSettings)
     ON_CALL(*backend, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
     EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(numDiffs);
 
-    auto const cursors = provider.getCursors(SEQ);
+    auto const cursors = provider.getCursors(Seq);
     ASSERT_EQ(cursors.size(), diffs.size() + 1);
 
     EXPECT_EQ(cursors.front().start, firstKey);
@@ -78,7 +78,7 @@ TEST_F(CursorProviderTest, EmptyCursorIsHandledCorrectly)
     ON_CALL(*backend, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
     EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(0);
 
-    auto const cursors = provider.getCursors(SEQ);
+    auto const cursors = provider.getCursors(Seq);
 
     ASSERT_EQ(cursors.size(), 1);
     EXPECT_EQ(cursors.front().start, firstKey);

@@ -28,7 +28,7 @@ namespace tests {
 std::string_view
 sslCert()
 {
-    static constexpr auto CERT = R"(
+    static constexpr auto Cert = R"(
 -----BEGIN CERTIFICATE-----
 MIIDrjCCApagAwIBAgIJAOE4Hv/P8CO3MA0GCSqGSIb3DQEBCwUAMDkxEjAQBgNV
 BAMMCTEyNy4wLjAuMTELMAkGA1UEBhMCVVMxFjAUBgNVBAcMDVNhbiBGcmFuc2lz
@@ -52,7 +52,7 @@ LLuOOuPuy2d+HqjKE7z00j28Uf7gZK29bGx1rK+xH6veAr4plKBavBr8WWpAoUG+
 PAMNb1i80cMsjK98xXDdr+7Uvy5M4COMwA5XHmMZDEW8Jw==
 -----END CERTIFICATE-----
 )";
-    return CERT;
+    return Cert;
 }
 
 TmpFile
@@ -64,7 +64,7 @@ sslCertFile()
 std::string_view
 sslKey()
 {
-    static constexpr auto KEY = R"(
+    static constexpr auto Key = R"(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAqP3K4WDIhk63zbxSoN8tJqRZD3W0IWFMwCluZchUwsHPxEC4
 32sPk58YonynY5nGtTeSGhedSqHD0gFBLcU/su4dSsj+kgGgJwKmiPmoQiTpzEmd
@@ -93,7 +93,7 @@ O2R4tGOOkGAX/0/actRXptFk23ucHnSIwcW6HYgDM3tDBP7n3GYdu5CSE1eiR5k7
 Zl3fuvbMYcmYKgutFcRj+8NvzRWT2suzGU2x4PiPX+fh5kpvmMdvLA==
 -----END RSA PRIVATE KEY-----
 )";
-    return KEY;
+    return Key;
 }
 
 TmpFile
