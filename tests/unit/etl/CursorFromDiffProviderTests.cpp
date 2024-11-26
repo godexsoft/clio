@@ -91,12 +91,12 @@ TEST_F(CursorFromDiffProviderTests, NotEnoughDiffs)
 {
     auto const numCursors = 35;
     auto const provider = etl::impl::CursorFromDiffProvider{backend, numCursors};
-    auto const AVAILABLE_DIFFS = 10;
-    backend->setRange(Seq - AVAILABLE_DIFFS + 1, Seq);
+    auto const availableDiffs = 10;
+    backend->setRange(Seq - availableDiffs + 1, Seq);
     ON_CALL(*backend, fetchLedgerDiff(_, _)).WillByDefault(Return(std::vector<data::LedgerObject>{}));
     ON_CALL(*backend, fetchLedgerDiff(Seq, _)).WillByDefault(Return(DiffsForSeq));
     ON_CALL(*backend, fetchLedgerDiff(Seq - 1, _)).WillByDefault(Return(DiffsForSeqMinus1));
-    EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(AVAILABLE_DIFFS);
+    EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(availableDiffs);
 
     auto const cursors = provider.getCursors(Seq);
     auto const removed = 2;   // lost 2 objects because it is removed.

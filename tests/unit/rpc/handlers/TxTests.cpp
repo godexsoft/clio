@@ -54,8 +54,9 @@ constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E
 constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
 constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
 constexpr auto Currency = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr auto CTID = "C002807000010002";  // seq 163952 txindex 1 netid 2
-constexpr auto SeqFromCtid = 163952;
+constexpr auto CtID = "C002807000010002";  // seq 163952 txindex 1 netid 2
+constexpr auto SeqFromCtID = 163952;
+
 constexpr auto DefaultOut1 = R"({
     "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
     "Fee": "2",
@@ -327,7 +328,7 @@ TEST_F(RPCTxTest, TxnNotFoundInGivenRangeSearchAllTrue)
 TEST_F(RPCTxTest, CtidNotFoundSearchAllFalse)
 {
     backend->setRange(1, 1000);
-    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtid, _))
+    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtID, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{}));
 
     auto const rawETLPtr = dynamic_cast<MockETLService*>(mockETLServicePtr.get());
@@ -342,7 +343,7 @@ TEST_F(RPCTxTest, CtidNotFoundSearchAllFalse)
                 "min_ledger": 1,
                 "max_ledger": 1000
             }})",
-            CTID
+            CtID
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -750,7 +751,7 @@ TEST_F(RPCTxTest, CTIDAndTransactionBothProvided)
                 "ctid": "{}"
             }})",
             TxnID,
-            CTID
+            CtID
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -820,7 +821,7 @@ TEST_F(RPCTxTest, CTIDNotMatch)
                 "command": "tx",
                 "ctid": "{}"
             }})",
-            CTID
+            CtID
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -1028,9 +1029,9 @@ TEST_F(RPCTxTest, ViaCTID)
             "inLedger":{},
             "validated": true
     }})",
-        CTID,
-        SeqFromCtid,
-        SeqFromCtid
+        CtID,
+        SeqFromCtID,
+        SeqFromCtID
     );
 
     TransactionAndMetadata tx1;
@@ -1038,14 +1039,14 @@ TEST_F(RPCTxTest, ViaCTID)
     tx1.transaction =
         CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx1.date = 123456;
-    tx1.ledgerSequence = SeqFromCtid;
+    tx1.ledgerSequence = SeqFromCtID;
 
     TransactionAndMetadata tx2;
     tx2.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
     tx2.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
-    tx2.ledgerSequence = SeqFromCtid;
+    tx2.ledgerSequence = SeqFromCtID;
 
-    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtid, _)).WillOnce(Return(std::vector{tx1, tx2}));
+    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtID, _)).WillOnce(Return(std::vector{tx1, tx2}));
 
     auto const rawETLPtr = dynamic_cast<MockETLService*>(mockETLServicePtr.get());
     ASSERT_NE(rawETLPtr, nullptr);
@@ -1058,7 +1059,7 @@ TEST_F(RPCTxTest, ViaCTID)
                 "command": "tx",
                 "ctid": "{}"
             }})",
-            CTID
+            CtID
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1073,20 +1074,20 @@ TEST_F(RPCTxTest, ViaLowercaseCTID)
     tx1.transaction =
         CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx1.date = 123456;
-    tx1.ledgerSequence = SeqFromCtid;
+    tx1.ledgerSequence = SeqFromCtID;
 
     TransactionAndMetadata tx2;
     tx2.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
     tx2.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
-    tx2.ledgerSequence = SeqFromCtid;
+    tx2.ledgerSequence = SeqFromCtID;
 
-    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtid, _)).WillOnce(Return(std::vector{tx1, tx2}));
+    EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtID, _)).WillOnce(Return(std::vector{tx1, tx2}));
 
     auto const rawETLPtr = dynamic_cast<MockETLService*>(mockETLServicePtr.get());
     ASSERT_NE(rawETLPtr, nullptr);
     EXPECT_CALL(*rawETLPtr, getETLState).WillOnce(Return(etl::ETLState{.networkID = 2}));
 
-    std::string ctid(CTID);
+    std::string ctid(CtID);
     std::transform(ctid.begin(), ctid.end(), ctid.begin(), ::tolower);
 
     runSpawn([&, this](auto yield) {
@@ -1100,6 +1101,6 @@ TEST_F(RPCTxTest, ViaLowercaseCTID)
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("ctid").as_string(), CTID);
+        EXPECT_EQ(output.result->at("ctid").as_string(), CtID);
     });
 }
