@@ -53,7 +53,7 @@ struct WorkQueueTest : WithPrometheus, WorkQueueTestBase {};
 
 TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 {
-    auto constexpr static TOTAL = 512u;
+    static constexpr auto TOTAL = 512u;
     uint32_t executeCount = 0u;
 
     std::mutex mtx;
@@ -80,7 +80,7 @@ TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 
 TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
 {
-    auto constexpr static TOTAL = 3u;
+    static constexpr auto TOTAL = 3u;
     auto expectedCount = 2u;
     auto unblocked = false;
 

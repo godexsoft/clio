@@ -40,8 +40,8 @@
 
 using namespace web;
 
-constexpr static auto MINSEQ = 10;
-constexpr static auto MAXSEQ = 30;
+static constexpr auto MINSEQ = 10;
+static constexpr auto MAXSEQ = 30;
 
 struct MockWsBase : public web::ConnectionBase {
     std::string message;
@@ -85,15 +85,15 @@ struct WebRPCServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTe
 
 TEST_F(WebRPCServerHandlerTest, HTTPDefaultPath)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr result = "{}";
-    static auto constexpr response = R"({
+    static constexpr auto result = "{}";
+    static constexpr auto response = R"({
                                         "result": {
                                             "status": "success"
                                         },
@@ -117,7 +117,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPDefaultPath)
 TEST_F(WebRPCServerHandlerTest, WsNormalPath)
 {
     session->upgraded = true;
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99,
                                         "api_version": 2
@@ -125,8 +125,8 @@ TEST_F(WebRPCServerHandlerTest, WsNormalPath)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr result = "{}";
-    static auto constexpr response = R"({
+    static constexpr auto result = "{}";
+    static constexpr auto response = R"({
                                         "result":{},
                                         "id": 99,
                                         "status": "success",
@@ -151,7 +151,7 @@ TEST_F(WebRPCServerHandlerTest, WsNormalPath)
 
 TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
@@ -159,13 +159,13 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
     backend->setRange(MINSEQ, MAXSEQ);
 
     // Note: forwarding always goes thru WS API
-    static auto constexpr result = R"({
+    static constexpr auto result = R"({
                                         "result": {
                                             "index": 1
                                         },
                                         "forwarded": true
                                     })";
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result":{
                                                 "index": 1,
                                                 "status": "success"
@@ -190,7 +190,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
 
 TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
@@ -198,7 +198,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
     backend->setRange(MINSEQ, MAXSEQ);
 
     // Note: forwarding always goes thru WS API
-    static auto constexpr result = R"({
+    static constexpr auto result = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -206,7 +206,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
                                         "type": "response",
                                         "forwarded": true
                                     })";
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result":{
                                             "error": "error",
                                             "error_code": 123,
@@ -235,7 +235,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
 TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
 {
     session->upgraded = true;
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
@@ -243,13 +243,13 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
     backend->setRange(MINSEQ, MAXSEQ);
 
     // Note: forwarding always goes thru WS API
-    static auto constexpr result = R"({
+    static constexpr auto result = R"({
                                         "result": {
                                             "index": 1
                                         },
                                         "forwarded": true
                                    })";
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result":{
                                             "index": 1
                                         },
@@ -277,7 +277,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
 TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
 {
     session->upgraded = true;
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
@@ -285,7 +285,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
     backend->setRange(MINSEQ, MAXSEQ);
 
     // Note: forwarding always goes thru WS API
-    static auto constexpr result = R"({
+    static constexpr auto result = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -294,7 +294,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
                                         "forwarded": true
                                    })";
     // WS error responses, unlike their successful counterpart, contain everything on top level without "result"
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -322,7 +322,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
 
 TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
 {
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result": {
                                             "error": "invalidParams",
                                             "error_code": 31,
@@ -348,7 +348,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "method": "ledger",
                                             "params": [
                                                 {
@@ -369,7 +369,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
 TEST_F(WebRPCServerHandlerTest, WsErrorPath)
 {
     session->upgraded = true;
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "id": "123",
                                         "error": "invalidParams",
                                         "error_code": 31,
@@ -393,7 +393,7 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "command": "ledger",
                                             "ledger_index": "xx",
                                             "id": "123",
@@ -411,12 +411,12 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
 
 TEST_F(WebRPCServerHandlerTest, HTTPNotReady)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result": {
                                             "error": "notReady",
                                             "error_code": 13,
@@ -440,12 +440,12 @@ TEST_F(WebRPCServerHandlerTest, WsNotReady)
 {
     session->upgraded = true;
 
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "error": "notReady",
                                         "error_code": 13,
                                         "error_message": "Not ready to handle this request.",
@@ -466,7 +466,7 @@ TEST_F(WebRPCServerHandlerTest, WsNotReady)
 
 TEST_F(WebRPCServerHandlerTest, HTTPInvalidAPIVersion)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{
                                             "api_version": null
@@ -475,7 +475,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPInvalidAPIVersion)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = "invalid_API_version";
+    static constexpr auto response = "invalid_API_version";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -487,14 +487,14 @@ TEST_F(WebRPCServerHandlerTest, HTTPInvalidAPIVersion)
 TEST_F(WebRPCServerHandlerTest, WSInvalidAPIVersion)
 {
     session->upgraded = true;
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "api_version": null
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "error": "invalid_API_version",
                                         "error_code": 6000,
                                         "error_message": "API version must be an integer",
@@ -514,11 +514,11 @@ TEST_F(WebRPCServerHandlerTest, WSInvalidAPIVersion)
 
 TEST_F(WebRPCServerHandlerTest, HTTPBadSyntaxWhenRequestSubscribe)
 {
-    static auto constexpr request = R"({"method": "subscribe"})";
+    static constexpr auto request = R"({"method": "subscribe"})";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result": {
                                             "error": "badSyntax",
                                             "error_code": 1,
@@ -540,11 +540,11 @@ TEST_F(WebRPCServerHandlerTest, HTTPBadSyntaxWhenRequestSubscribe)
 
 TEST_F(WebRPCServerHandlerTest, HTTPMissingCommand)
 {
-    static auto constexpr request = R"({"method2": "server_info"})";
+    static constexpr auto request = R"({"method2": "server_info"})";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = "Null method";
+    static constexpr auto response = "Null method";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -555,11 +555,11 @@ TEST_F(WebRPCServerHandlerTest, HTTPMissingCommand)
 
 TEST_F(WebRPCServerHandlerTest, HTTPCommandNotString)
 {
-    static auto constexpr request = R"({"method": 1})";
+    static constexpr auto request = R"({"method": 1})";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = "method is not string";
+    static constexpr auto response = "method is not string";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -570,11 +570,11 @@ TEST_F(WebRPCServerHandlerTest, HTTPCommandNotString)
 
 TEST_F(WebRPCServerHandlerTest, HTTPCommandIsEmpty)
 {
-    static auto constexpr request = R"({"method": ""})";
+    static constexpr auto request = R"({"method": ""})";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = "method is empty";
+    static constexpr auto response = "method is empty";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -586,14 +586,14 @@ TEST_F(WebRPCServerHandlerTest, HTTPCommandIsEmpty)
 TEST_F(WebRPCServerHandlerTest, WsMissingCommand)
 {
     session->upgraded = true;
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command2": "server_info",
                                         "id": 99
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "error": "missingCommand",
                                         "error_code": 6001,
                                         "error_message": "Method/Command is not specified or is not a string.",
@@ -614,11 +614,11 @@ TEST_F(WebRPCServerHandlerTest, WsMissingCommand)
 
 TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableNotArray)
 {
-    static auto constexpr response = "params unparseable";
+    static constexpr auto response = "params unparseable";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "method": "ledger",
                                             "params": "wrong"
                                         })";
@@ -632,11 +632,11 @@ TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableNotArray)
 
 TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableArrayWithDigit)
 {
-    static auto constexpr response = "params unparseable";
+    static constexpr auto response = "params unparseable";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "method": "ledger",
                                             "params": [1]
                                         })";
@@ -650,7 +650,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableArrayWithDigit)
 
 TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
 {
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "result": {
                                             "error": "internal",
                                             "error_code": 73,
@@ -666,7 +666,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "method": "ledger",
                                             "params": [{}]
                                         })";
@@ -682,7 +682,7 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
 {
     session->upgraded = true;
 
-    static auto constexpr response = R"({
+    static constexpr auto response = R"({
                                         "error": "internal",
                                         "error_code": 73,
                                         "error_message": "Internal error.",
@@ -697,7 +697,7 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr requestJSON = R"({
+    static constexpr auto requestJSON = R"({
                                             "command": "ledger",
                                             "id": "123"
                                         })";
@@ -711,15 +711,15 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
 
 TEST_F(WebRPCServerHandlerTest, HTTPOutDated)
 {
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr result = "{}";
-    static auto constexpr response = R"({
+    static constexpr auto result = "{}";
+    static constexpr auto response = R"({
                                         "result": {
                                             "status": "success"
                                         },
@@ -748,15 +748,15 @@ TEST_F(WebRPCServerHandlerTest, WsOutdated)
 {
     session->upgraded = true;
 
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr result = "{}";
-    static auto constexpr response = R"({
+    static constexpr auto result = "{}";
+    static constexpr auto response = R"({
                                         "result":{},
                                         "id": 99,
                                         "status": "success",
@@ -789,14 +789,14 @@ TEST_F(WebRPCServerHandlerTest, WsTooBusy)
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
         std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend, localRpcEngine, etl);
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response =
+    static constexpr auto response =
         R"({
             "error": "tooBusy",
             "error_code": 9,
@@ -817,14 +817,14 @@ TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
         std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend, localRpcEngine, etl);
-    static auto constexpr request = R"({
+    static constexpr auto request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
     backend->setRange(MINSEQ, MAXSEQ);
 
-    static auto constexpr response =
+    static constexpr auto response =
         R"({
             "error": "tooBusy",
             "error_code": 9,
@@ -842,8 +842,8 @@ TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
 
 TEST_F(WebRPCServerHandlerTest, HTTPRequestNotJson)
 {
-    static auto constexpr request = "not json";
-    static auto constexpr responsePrefix = "Unable to parse JSON from the request";
+    static constexpr auto request = "not json";
+    static constexpr auto responsePrefix = "Unable to parse JSON from the request";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -855,8 +855,8 @@ TEST_F(WebRPCServerHandlerTest, HTTPRequestNotJson)
 TEST_F(WebRPCServerHandlerTest, WsRequestNotJson)
 {
     session->upgraded = true;
-    static auto constexpr request = "not json";
-    static auto constexpr response =
+    static constexpr auto request = "not json";
+    static constexpr auto response =
         R"({
             "error": "badSyntax",
             "error_code": 1,

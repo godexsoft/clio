@@ -39,7 +39,7 @@ public:
     using DataType = std::optional<RawDataType>;
     using QueueType = ThreadSafeQueue<DataType>;  // TODO: probably should use boost::lockfree::queue instead?
 
-    constexpr static auto totalMaxInQueue = 1000u;
+    static constexpr auto totalMaxInQueue = 1000u;
 
 private:
     util::Logger log_{"ETL"};

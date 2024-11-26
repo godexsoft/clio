@@ -37,7 +37,7 @@
 namespace data::cassandra::impl {
 
 class Tuple : public ManagedObject<CassTuple> {
-    constexpr static auto deleter = [](CassTuple* ptr) { cass_tuple_free(ptr); };
+    static constexpr auto deleter = [](CassTuple* ptr) { cass_tuple_free(ptr); };
 
 public:
     /* implicit */ Tuple(CassTuple* ptr);

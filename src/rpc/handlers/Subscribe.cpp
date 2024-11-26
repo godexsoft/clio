@@ -195,7 +195,7 @@ SubscribeHandler::subscribeToBooks(
     Output& output
 ) const
 {
-    static auto constexpr fetchLimit = 200;
+    static constexpr auto fetchLimit = 200;
 
     std::optional<data::LedgerRange> rng;
 

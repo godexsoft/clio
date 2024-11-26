@@ -98,7 +98,7 @@ public:
         stopSignal_.connect(static_cast<int>(priority), std::forward<SomeCallback>(callback));
     }
 
-    constexpr static auto handledSignals = {SIGINT, SIGTERM};
+    static constexpr auto handledSignals = {SIGINT, SIGTERM};
 
 private:
     /**
@@ -115,7 +115,7 @@ private:
     static void
     setHandler(void (*handler)(int) = nullptr);
 
-    static auto constexpr defaultForceExitHandler = []() { std::exit(EXIT_FAILURE); };
+    static constexpr auto defaultForceExitHandler = []() { std::exit(EXIT_FAILURE); };
 };
 
 }  // namespace util

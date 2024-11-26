@@ -50,9 +50,9 @@ class AccountOffersHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr limitMin = 10;
-    static auto constexpr limitMax = 400;
-    static auto constexpr limitDefault = 200;
+    static constexpr auto limitMin = 10;
+    static constexpr auto limitMax = 400;
+    static constexpr auto limitDefault = 200;
 
     /**
      * @brief A struct to hold data for one offer response

@@ -40,10 +40,10 @@
 
 using namespace rpc;
 
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
-constexpr static auto SEQ = 30;
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto RANGEMIN = 10;
+static constexpr auto RANGEMAX = 30;
+static constexpr auto SEQ = 30;
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 class RPCFeatureHandlerTest : public HandlerBaseTest {
 protected:

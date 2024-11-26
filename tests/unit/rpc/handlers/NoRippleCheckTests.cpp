@@ -42,13 +42,13 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr static auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-constexpr static auto TXNID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+static constexpr auto TXNID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
 
 class RPCNoRippleCheckTest : public HandlerBaseTest {};
 
@@ -177,7 +177,7 @@ TEST_P(NoRippleCheckParameterTest, InvalidParams)
 
 TEST_F(NoRippleCheckParameterTest, V1ApiTransactionsIsNotBool)
 {
-    constexpr static auto reqJson = R"(
+    static constexpr auto reqJson = R"(
         {
             "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
             "role": "gateway",
@@ -226,7 +226,7 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaHash)
 
 TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaIntIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(10, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -254,7 +254,7 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaIntIndex)
 
 TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaStringIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(10, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -310,8 +310,8 @@ TEST_F(RPCNoRippleCheckTest, AccountNotExist)
 
 TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRippleSet)
 {
-    static auto constexpr seq = 30;
-    static auto constexpr expectedOutput =
+    static constexpr auto seq = 30;
+    static constexpr auto expectedOutput =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -372,8 +372,8 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRipple
 
 TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleUnsetTrustLineNoRippleUnSet)
 {
-    static auto constexpr seq = 30;
-    static auto constexpr expectedOutput =
+    static constexpr auto seq = 30;
+    static constexpr auto expectedOutput =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -428,8 +428,8 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleUnsetTrustLineNoRipp
 
 TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRippleSet)
 {
-    static auto constexpr seq = 30;
-    static auto constexpr expectedOutput =
+    static constexpr auto seq = 30;
+    static constexpr auto expectedOutput =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -491,8 +491,8 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRip
 
 TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoRippleUnset)
 {
-    static auto constexpr seq = 30;
-    static auto constexpr expectedOutput =
+    static constexpr auto seq = 30;
+    static constexpr auto expectedOutput =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -547,7 +547,7 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
 
 TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoRippleUnsetHighAccount)
 {
-    static auto constexpr seq = 30;
+    static constexpr auto seq = 30;
 
     backend->setRange(10, seq);
     auto ledgerHeader = CreateLedgerHeader(LEDGERHASH, seq);

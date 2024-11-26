@@ -42,7 +42,7 @@ TEST_F(WhitelistHandlerTest, TestWhiteListIPV4)
 
     testing::StrictMock<MockResolver> mockResolver;
 
-    constexpr static auto JSONDataIPV4 = R"JSON(
+    static constexpr auto JSONDataIPV4 = R"JSON(
         {
             "dos_guard": {
                 "whitelist": [
@@ -69,7 +69,7 @@ TEST_F(WhitelistHandlerTest, TestWhiteListIPV4)
 
 TEST_F(WhitelistHandlerTest, TestWhiteListResolvesHostname)
 {
-    constexpr static auto JSONDataIPV4 = R"JSON(
+    static constexpr auto JSONDataIPV4 = R"JSON(
         {
             "dos_guard": {
                 "whitelist": [
@@ -91,7 +91,7 @@ TEST_F(WhitelistHandlerTest, TestWhiteListResolvesHostname)
 
 TEST_F(WhitelistHandlerTest, TestWhiteListIPV6)
 {
-    constexpr static auto JSONDataIPV6 = R"JSON(
+    static constexpr auto JSONDataIPV6 = R"JSON(
         {
             "dos_guard": {
                 "whitelist": [

@@ -41,7 +41,7 @@ namespace rpc {
  */
 class LedgerIndexHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
-    constexpr static auto dateFormat = "%Y-%m-%dT%TZ";
+    static constexpr auto dateFormat = "%Y-%m-%dT%TZ";
 
 public:
     /**

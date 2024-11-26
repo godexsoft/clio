@@ -44,13 +44,13 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto ACCOUNT3 = "rB9BMzh27F3Q6a5FtGPDayQoCCEdiRdqcK";
-constexpr static auto INDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr static auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr static auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto ACCOUNT3 = "rB9BMzh27F3Q6a5FtGPDayQoCCEdiRdqcK";
+static constexpr auto INDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+static constexpr auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
 
 class RPCAccountChannelsHandlerTest : public HandlerBaseTest {};
 
@@ -421,7 +421,7 @@ TEST_F(RPCAccountChannelsHandlerTest, NonExistAccount)
 // normal case when only provide account
 TEST_F(RPCAccountChannelsHandlerTest, DefaultParameterTest)
 {
-    constexpr static auto correctOutput = R"({
+    static constexpr auto correctOutput = R"({
         "account":"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
@@ -669,7 +669,7 @@ TEST_F(RPCAccountChannelsHandlerTest, EmptyChannel)
 // Return expiration cancel_offer source_tag destination_tag when available
 TEST_F(RPCAccountChannelsHandlerTest, OptionalResponseField)
 {
-    constexpr static auto correctOutput = R"({
+    static constexpr auto correctOutput = R"({
         "account":"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
@@ -759,8 +759,8 @@ TEST_F(RPCAccountChannelsHandlerTest, MarkerOutput)
     auto account = GetAccountIDWithString(ACCOUNT);
     auto accountKk = ripple::keylet::account(account).key;
     auto ownerDirKk = ripple::keylet::ownerDir(account).key;
-    constexpr static auto nextPage = 99;
-    constexpr static auto limit = 15;
+    static constexpr auto nextPage = 99;
+    static constexpr auto limit = 15;
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), nextPage).key;
     auto ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
@@ -827,8 +827,8 @@ TEST_F(RPCAccountChannelsHandlerTest, MarkerInput)
     backend->setRange(10, 30);
     auto account = GetAccountIDWithString(ACCOUNT);
     auto accountKk = ripple::keylet::account(account).key;
-    constexpr static auto nextPage = 99;
-    constexpr static auto limit = 15;
+    static constexpr auto nextPage = 99;
+    static constexpr auto limit = 15;
     auto ownerDirKk = ripple::keylet::page(ripple::keylet::ownerDir(account), nextPage).key;
     auto ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));

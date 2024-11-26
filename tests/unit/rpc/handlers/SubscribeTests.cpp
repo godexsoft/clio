@@ -54,14 +54,14 @@ namespace json = boost::json;
 using namespace testing;
 using std::chrono::milliseconds;
 
-constexpr static auto MINSEQ = 10;
-constexpr static auto MAXSEQ = 30;
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto PAYS20USDGETS10XRPBOOKDIR = "43B83ADC452B85FCBADA6CAEAC5181C255A213630D58FFD455071AFD498D0000";
-constexpr static auto PAYS20XRPGETS10USDBOOKDIR = "7B1767D41DBCE79D9585CF9D0262A5FEC45E5206FF524F8B55071AFD498D0000";
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr static auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto MINSEQ = 10;
+static constexpr auto MAXSEQ = 30;
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto PAYS20USDGETS10XRPBOOKDIR = "43B83ADC452B85FCBADA6CAEAC5181C255A213630D58FFD455071AFD498D0000";
+static constexpr auto PAYS20XRPGETS10USDBOOKDIR = "7B1767D41DBCE79D9585CF9D0262A5FEC45E5206FF524F8B55071AFD498D0000";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
 
 struct RPCSubscribeHandlerTest : HandlerBaseTest {
 protected:
@@ -599,7 +599,7 @@ TEST_F(RPCSubscribeHandlerTest, StreamsWithoutLedger)
 
 TEST_F(RPCSubscribeHandlerTest, StreamsLedger)
 {
-    static auto constexpr expectedOutput =
+    static constexpr auto expectedOutput =
         R"({      
             "validated_ledgers":"10-30",
             "ledger_index":30,

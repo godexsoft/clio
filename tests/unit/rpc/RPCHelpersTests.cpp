@@ -56,11 +56,11 @@
 using namespace rpc;
 using namespace testing;
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto INDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr static auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr static auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto INDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+static constexpr auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
 
 class RPCHelpersTest : public util::prometheus::WithPrometheus, public MockBackendTest, public SyncAsioContextTest {
     void
@@ -184,8 +184,8 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
 {
     auto account = GetAccountIDWithString(ACCOUNT);
     auto ownerDirKk = ripple::keylet::ownerDir(account).key;
-    constexpr static auto nextPage = 99;
-    constexpr static auto limit = 15;
+    static constexpr auto nextPage = 99;
+    static constexpr auto limit = 15;
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), nextPage).key;
 
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
@@ -236,8 +236,8 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
 {
     auto account = GetAccountIDWithString(ACCOUNT);
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
-    constexpr static auto limit = 8;
-    constexpr static auto pageNum = 99;
+    static constexpr auto limit = 8;
+    static constexpr auto pageNum = 99;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
@@ -284,8 +284,8 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
 {
     auto account = GetAccountIDWithString(ACCOUNT);
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
-    constexpr static auto limit = 8;
-    constexpr static auto pageNum = 99;
+    static constexpr auto limit = 8;
+    static constexpr auto pageNum = 99;
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
 
     int objectsCount = 10;
@@ -434,7 +434,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
     auto const ledgerHeader = CreateLedgerHeader(INDEX1, 30);
     auto const binJson = toJson(ledgerHeader, true, 1u);
 
-    auto constexpr EXPECTBIN = R"({
+    constexpr auto EXPECTBIN = R"({
                                     "ledger_data": "0000001E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                                     "closed": true
                                 })";

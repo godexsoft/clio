@@ -43,10 +43,10 @@
 #include <string>
 #include <vector>
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
 
 using namespace rpc;
 namespace json = boost::json;
@@ -187,7 +187,7 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaHash)
 
 TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaStringIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(10, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -214,7 +214,7 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaStringIndex)
 
 TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaIntIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(10, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -294,7 +294,7 @@ TEST_F(RPCAccountOffersHandlerTest, DefaultParams)
         ACCOUNT,
         ACCOUNT2
     );
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);
@@ -343,7 +343,7 @@ TEST_F(RPCAccountOffersHandlerTest, DefaultParams)
 
 TEST_F(RPCAccountOffersHandlerTest, Limit)
 {
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);
@@ -394,7 +394,7 @@ TEST_F(RPCAccountOffersHandlerTest, Limit)
 
 TEST_F(RPCAccountOffersHandlerTest, Marker)
 {
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);
@@ -450,7 +450,7 @@ TEST_F(RPCAccountOffersHandlerTest, Marker)
 
 TEST_F(RPCAccountOffersHandlerTest, MarkerNotExists)
 {
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);
@@ -488,7 +488,7 @@ TEST_F(RPCAccountOffersHandlerTest, MarkerNotExists)
 
 TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
 {
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);
@@ -543,7 +543,7 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
 
 TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
 {
-    auto constexpr ledgerSeq = 30;
+    constexpr auto ledgerSeq = 30;
 
     backend->setRange(10, ledgerSeq);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, ledgerSeq);

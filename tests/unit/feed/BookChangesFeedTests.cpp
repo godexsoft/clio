@@ -31,11 +31,11 @@
 
 using namespace feed::impl;
 
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
 
 using FeedBookChangeTest = FeedBaseTest<BookChangesFeed>;
 
@@ -55,7 +55,7 @@ TEST_F(FeedBookChangeTest, Pub)
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
-    constexpr static auto bookChangePublish =
+    static constexpr auto bookChangePublish =
         R"({
             "type":"bookChanges",
             "ledger_index":32,

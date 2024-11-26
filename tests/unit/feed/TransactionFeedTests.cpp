@@ -43,14 +43,14 @@
 #include <memory>
 #include <vector>
 
-constexpr static auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-constexpr static auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+static constexpr auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
 
-constexpr static auto TRAN_V1 =
+static constexpr auto TRAN_V1 =
     R"({
         "transaction":
         {
@@ -107,7 +107,7 @@ constexpr static auto TRAN_V1 =
         "engine_result_message":"The transaction was applied. Only final in a validated ledger."
     })";
 
-constexpr static auto TRAN_V2 =
+static constexpr auto TRAN_V2 =
     R"({
         "tx_json":
         {
@@ -352,7 +352,7 @@ TEST_F(FeedTransactionTest, SubBookV1)
     auto metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
 
-    constexpr static auto OrderbookPublish =
+    static constexpr auto OrderbookPublish =
         R"({
             "transaction":
             {
@@ -420,7 +420,7 @@ TEST_F(FeedTransactionTest, SubBookV1)
     metaObj = CreateMetaDataForCancelOffer(CURRENCY, ISSUER, 22, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
 
-    constexpr static auto OrderbookCancelPublish =
+    static constexpr auto OrderbookCancelPublish =
         R"({
             "transaction":{
                 "Account":"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -473,7 +473,7 @@ TEST_F(FeedTransactionTest, SubBookV1)
     testFeedPtr->pub(trans1, ledgerHeader, backend);
 
     // trigger by offer create meta data
-    constexpr static auto OrderbookCreatePublish =
+    static constexpr auto OrderbookCreatePublish =
         R"({
             "transaction":
             {
@@ -553,7 +553,7 @@ TEST_F(FeedTransactionTest, SubBookV2)
     auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
 
-    constexpr static auto OrderbookPublish =
+    static constexpr auto OrderbookPublish =
         R"({
             "tx_json":
             {
@@ -822,7 +822,7 @@ TEST_F(FeedTransactionTest, PubTransactionWithOwnerFund)
     ON_CALL(*backend, doFetchLedgerObject(kk, testing::_, testing::_))
         .WillByDefault(testing::Return(accountRoot.getSerializer().peekData()));
 
-    constexpr static auto TransactionForOwnerFund =
+    static constexpr auto TransactionForOwnerFund =
         R"({
             "transaction":
             {
@@ -864,7 +864,7 @@ TEST_F(FeedTransactionTest, PubTransactionWithOwnerFund)
     testFeedPtr->pub(trans1, ledgerHeader, backend);
 }
 
-constexpr static auto TRAN_FROZEN =
+static constexpr auto TRAN_FROZEN =
     R"({
         "transaction":
         {

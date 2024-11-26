@@ -155,8 +155,8 @@ TEST_F(BackendCountersTest, RegisterReadFinished)
 
 TEST_F(BackendCountersTest, RegisterReadStartedFinishedWithCounters)
 {
-    constexpr static auto OPERATIONS_STARTED = 7u;
-    constexpr static auto OPERATIONS_COMPLETED = 4u;
+    static constexpr auto OPERATIONS_STARTED = 7u;
+    static constexpr auto OPERATIONS_COMPLETED = 4u;
 
     counters->registerReadStarted(OPERATIONS_STARTED);
     counters->registerReadFinished(startTime, OPERATIONS_COMPLETED);
@@ -179,9 +179,9 @@ TEST_F(BackendCountersTest, RegisterReadRetry)
 
 TEST_F(BackendCountersTest, RegisterReadError)
 {
-    constexpr static auto OPERATIONS_STARTED = 7u;
-    constexpr static auto OPERATIONS_ERROR = 2u;
-    constexpr static auto OPERATIONS_COMPLETED = 1u;
+    static constexpr auto OPERATIONS_STARTED = 7u;
+    static constexpr auto OPERATIONS_ERROR = 2u;
+    static constexpr auto OPERATIONS_COMPLETED = 1u;
 
     counters->registerReadStarted(OPERATIONS_STARTED);
     counters->registerReadError(OPERATIONS_ERROR);

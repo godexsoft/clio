@@ -124,7 +124,7 @@ public:
      * @brief Returns a list of all ledger entry type as string.
      * @return A list of all ledger entry type as string.
      */
-    constexpr static auto
+    static constexpr auto
     GetLedgerEntryTypeStrList()
     {
         std::array<char const*, std::size(ledgerTypes)> res{};
@@ -139,14 +139,14 @@ public:
      *
      * @return A list of all account owned ledger entry type as string.
      */
-    constexpr static auto
+    static constexpr auto
     GetAccountOwnedLedgerTypeStrList()
     {
-        auto constexpr filter = [](auto const& item) {
+        constexpr auto filter = [](auto const& item) {
             return item.category_ != LedgerTypeAttribute::LedgerCategory::Chain;
         };
 
-        auto constexpr accountOwnedCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
+        constexpr auto accountOwnedCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
         std::array<char const*, accountOwnedCount> res{};
         auto it = std::begin(res);
         std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {
@@ -163,14 +163,14 @@ public:
      *
      * @return A list of all account deletion blocker's type as string.
      */
-    constexpr static auto
+    static constexpr auto
     GetDeletionBlockerLedgerTypes()
     {
-        auto constexpr filter = [](auto const& item) {
+        constexpr auto filter = [](auto const& item) {
             return item.category_ == LedgerTypeAttribute::LedgerCategory::DeletionBlocker;
         };
 
-        auto constexpr deletionBlockersCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
+        constexpr auto deletionBlockersCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
         std::array<ripple::LedgerEntryType, deletionBlockersCount> res{};
         auto it = std::begin(res);
         std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {

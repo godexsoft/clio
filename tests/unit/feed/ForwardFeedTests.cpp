@@ -32,7 +32,7 @@ using namespace feed::impl;
 namespace json = boost::json;
 using namespace util::prometheus;
 
-constexpr static auto FEED = R"({"test":"test"})";
+static constexpr auto FEED = R"({"test":"test"})";
 
 class NamedForwardFeedTest : public ForwardFeed {
 public:

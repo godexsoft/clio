@@ -33,7 +33,7 @@
 namespace data::cassandra::impl {
 
 class Collection : public ManagedObject<CassCollection> {
-    constexpr static auto deleter = [](CassCollection* ptr) { cass_collection_free(ptr); };
+    static constexpr auto deleter = [](CassCollection* ptr) { cass_collection_free(ptr); };
 
     static void
     throwErrorIfNeeded(CassError const rc, std::string_view const label)

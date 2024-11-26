@@ -454,7 +454,7 @@ JSONServerConfigWithNoSpecifiedAdmin(uint32_t const port)
 }
 
 // get this value from online sha256 generator
-static auto constexpr SecretSha256 = "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b";
+static constexpr auto SecretSha256 = "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b";
 
 class AdminCheckExecutor {
 public:

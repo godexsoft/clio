@@ -57,7 +57,7 @@ struct Spec {
      * @param type The transaction type
      * @return true if the transaction was requested; false otherwise
      */
-    [[nodiscard]] constexpr static bool
+    [[nodiscard]] static constexpr bool
     wants(ripple::TxType type) noexcept
     {
         return ((Types == type) || ...);

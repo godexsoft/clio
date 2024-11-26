@@ -44,11 +44,11 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-// constexpr static auto ISSUER_ACCOUNT = "rsS8ju2jYabSKJ6uzLarAS1gEzvRQ6JAiF";
-constexpr static auto HOLDER1_ACCOUNT = "rrnAZCqMahreZrKMcZU3t2DZ6yUndT4ubN";
-constexpr static auto HOLDER2_ACCOUNT = "rEiNkzogdHEzUxPfsri5XSMqtXUixf2Yx";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto MPTID = "000004C463C52827307480341125DA0577DEFC38405B0E3E";
+// static constexpr auto ISSUER_ACCOUNT = "rsS8ju2jYabSKJ6uzLarAS1gEzvRQ6JAiF";
+static constexpr auto HOLDER1_ACCOUNT = "rrnAZCqMahreZrKMcZU3t2DZ6yUndT4ubN";
+static constexpr auto HOLDER2_ACCOUNT = "rEiNkzogdHEzUxPfsri5XSMqtXUixf2Yx";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto MPTID = "000004C463C52827307480341125DA0577DEFC38405B0E3E";
 
 static std::string MPTOUT1 =
     R"({

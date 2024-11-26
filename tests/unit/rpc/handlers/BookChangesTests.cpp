@@ -42,13 +42,13 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-constexpr static auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto MAXSEQ = 30;
-constexpr static auto MINSEQ = 10;
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+static constexpr auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto MAXSEQ = 30;
+static constexpr auto MINSEQ = 10;
 
 class RPCBookChangesHandlerTest : public HandlerBaseTest {};
 
@@ -162,7 +162,7 @@ TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaHash)
 
 TEST_F(RPCBookChangesHandlerTest, NormalPath)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "type":"bookChanges",
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",

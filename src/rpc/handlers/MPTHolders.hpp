@@ -45,9 +45,9 @@ class MPTHoldersHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr limitMin = 1;
-    static auto constexpr limitMax = 100;
-    static auto constexpr limitDefault = 50;
+    static constexpr auto limitMin = 1;
+    static constexpr auto limitMax = 100;
+    static constexpr auto limitDefault = 50;
 
     /**
      * @brief A struct to hold the output data of the command

@@ -64,7 +64,7 @@ std::string
 toIso8601(ripple::NetClock::time_point tp)
 {
     using namespace std::chrono;
-    static auto constexpr rippleEpochOffset = seconds{rippleEpochStart};
+    static constexpr auto rippleEpochOffset = seconds{rippleEpochStart};
 
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",

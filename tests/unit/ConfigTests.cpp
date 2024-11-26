@@ -41,7 +41,7 @@ using namespace boost::log;
 using namespace std;
 namespace json = boost::json;
 
-constexpr static auto JSONData = R"JSON(
+static constexpr auto JSONData = R"JSON(
     {
         "arr": [                
             { "first": 1234 },

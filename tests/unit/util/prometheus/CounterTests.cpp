@@ -124,9 +124,9 @@ TEST_F(CounterIntTests, reset)
 
 TEST_F(CounterIntTests, multithreadAdd)
 {
-    static auto constexpr numAdditions = 1000;
-    static auto constexpr numNumberAdditions = 100;
-    static auto constexpr numberToAdd = 11;
+    static constexpr auto numAdditions = 1000;
+    static constexpr auto numNumberAdditions = 100;
+    static constexpr auto numberToAdd = 11;
     std::thread thread1([&] {
         for (int i = 0; i < numAdditions; ++i) {
             ++counter;
@@ -163,9 +163,9 @@ TEST_F(CounterDoubleTests, reset)
 
 TEST_F(CounterDoubleTests, multithreadAdd)
 {
-    static auto constexpr numAdditions = 1000;
-    static auto constexpr numNumberAdditions = 100;
-    static auto constexpr numberToAdd = 11.1234;
+    static constexpr auto numAdditions = 1000;
+    static constexpr auto numNumberAdditions = 100;
+    static constexpr auto numberToAdd = 11.1234;
     std::thread thread1([&] {
         for (int i = 0; i < numAdditions; ++i) {
             ++counter;

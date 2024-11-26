@@ -34,10 +34,10 @@
 #include <memory>
 #include <vector>
 
-constexpr static auto ACCOUNT1 = "rh1HPuRVsYYvThxG2Bs1MfjmrVC73S16Fb";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto ACCOUNT3 = "r92yNeoiCdwULRbjh6cUBEbD71iHcqe1hE";
-constexpr static auto DUMMY_TRANSACTION =
+static constexpr auto ACCOUNT1 = "rh1HPuRVsYYvThxG2Bs1MfjmrVC73S16Fb";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto ACCOUNT3 = "r92yNeoiCdwULRbjh6cUBEbD71iHcqe1hE";
+static constexpr auto DUMMY_TRANSACTION =
     R"({
         "transaction":
         {

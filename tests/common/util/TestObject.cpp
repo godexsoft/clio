@@ -57,7 +57,7 @@
 #include <utility>
 #include <vector>
 
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
 
 ripple::AccountID
 GetAccountIDWithString(std::string_view id)

@@ -92,12 +92,12 @@ TEST_F(GaugeIntTests, set)
 
 TEST_F(GaugeIntTests, multithreadAddAndSubstract)
 {
-    constexpr static auto numAdditions = 1000;
-    constexpr static auto numNumberAdditions = 100;
-    constexpr static auto numberToAdd = 11;
-    constexpr static auto numSubstractions = 2000;
-    constexpr static auto numNumberSubstractions = 300;
-    constexpr static auto numberToSubstract = 300;
+    static constexpr auto numAdditions = 1000;
+    static constexpr auto numNumberAdditions = 100;
+    static constexpr auto numberToAdd = 11;
+    static constexpr auto numSubstractions = 2000;
+    static constexpr auto numNumberSubstractions = 300;
+    static constexpr auto numberToSubstract = 300;
     std::thread thread1([&] {
         for (int i = 0; i < numAdditions; ++i) {
             ++gauge;
@@ -165,12 +165,12 @@ TEST_F(GaugeDoubleTests, set)
 
 TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
 {
-    constexpr static auto numAdditions = 1000;
-    constexpr static auto numNumberAdditions = 100;
-    constexpr static auto numberToAdd = 11.1234;
-    constexpr static auto numSubstractions = 2000;
-    constexpr static auto numNumberSubstractions = 300;
-    constexpr static auto numberToSubstract = 300.321;
+    static constexpr auto numAdditions = 1000;
+    static constexpr auto numNumberAdditions = 100;
+    static constexpr auto numberToAdd = 11.1234;
+    static constexpr auto numSubstractions = 2000;
+    static constexpr auto numNumberSubstractions = 300;
+    static constexpr auto numberToSubstract = 300.321;
     std::thread thread1([&] {
         for (int i = 0; i < numAdditions; ++i) {
             ++gauge;

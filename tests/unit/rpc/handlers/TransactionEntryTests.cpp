@@ -38,11 +38,11 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto INDEX = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr static auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto INDEX = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+static constexpr auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
 
 class RPCTransactionEntryHandlerTest : public HandlerBaseTest {};
 
@@ -177,7 +177,7 @@ TEST_F(RPCTransactionEntryHandlerTest, LedgerSeqNotMatch)
 
 TEST_F(RPCTransactionEntryHandlerTest, NormalPath)
 {
-    static auto constexpr OUTPUT = R"({
+    static constexpr auto OUTPUT = R"({
                                         "metadata":
                                         {
                                             "AffectedNodes":
@@ -254,7 +254,7 @@ TEST_F(RPCTransactionEntryHandlerTest, NormalPath)
 
 TEST_F(RPCTransactionEntryHandlerTest, NormalPathV2)
 {
-    static auto constexpr OUTPUT = R"({
+    static constexpr auto OUTPUT = R"({
                                         "meta":
                                         {
                                             "AffectedNodes":

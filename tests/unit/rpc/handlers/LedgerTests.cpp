@@ -45,15 +45,15 @@
 #include <unordered_map>
 #include <vector>
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr static auto INDEX2 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto INDEX2 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1";
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
 
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
+static constexpr auto RANGEMIN = 10;
+static constexpr auto RANGEMAX = 30;
 
 using namespace rpc;
 namespace json = boost::json;
@@ -254,7 +254,7 @@ TEST_F(RPCLedgerHandlerTest, LedgerNotExistViaHash)
 
 TEST_F(RPCLedgerHandlerTest, Default)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -350,7 +350,7 @@ TEST_F(RPCLedgerHandlerTest, QueryViaLedgerHash)
 
 TEST_F(RPCLedgerHandlerTest, BinaryTrue)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -382,7 +382,7 @@ TEST_F(RPCLedgerHandlerTest, BinaryTrue)
 
 TEST_F(RPCLedgerHandlerTest, TransactionsExpandBinary)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -434,7 +434,7 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandBinary)
 
 TEST_F(RPCLedgerHandlerTest, TransactionsExpandBinaryV2)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -486,7 +486,7 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandBinaryV2)
 
 TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinary)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -578,7 +578,7 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinary)
 
 TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinaryV2)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
@@ -754,7 +754,7 @@ TEST_F(RPCLedgerHandlerTest, TransactionsNotExpand)
 
 TEST_F(RPCLedgerHandlerTest, DiffNotBinary)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"([
             {
                 "object_id":"1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1",
@@ -810,7 +810,7 @@ TEST_F(RPCLedgerHandlerTest, DiffNotBinary)
 
 TEST_F(RPCLedgerHandlerTest, DiffBinary)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"([
             {
                 "object_id":"1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515B1",
@@ -856,7 +856,7 @@ TEST_F(RPCLedgerHandlerTest, DiffBinary)
 
 TEST_F(RPCLedgerHandlerTest, OwnerFundsEmtpy)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index":30,
@@ -949,7 +949,7 @@ TEST_F(RPCLedgerHandlerTest, OwnerFundsEmtpy)
 
 TEST_F(RPCLedgerHandlerTest, OwnerFundsTrueBinaryFalse)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger": {
                 "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1057,7 +1057,7 @@ TEST_F(RPCLedgerHandlerTest, OwnerFundsTrueBinaryFalse)
 
 TEST_F(RPCLedgerHandlerTest, OwnerFundsTrueBinaryTrue)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger": {
                 "closed": true,
@@ -1163,7 +1163,7 @@ TEST_F(RPCLedgerHandlerTest, OwnerFundsIssuerIsSelf)
 
 TEST_F(RPCLedgerHandlerTest, OwnerFundsNotEnoughForReserve)
 {
-    static auto constexpr expectedOut =
+    static constexpr auto expectedOut =
         R"({
             "ledger": {
                 "closed": true,

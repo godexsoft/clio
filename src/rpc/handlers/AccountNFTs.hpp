@@ -47,9 +47,9 @@ class AccountNFTsHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr limitMin = 20;
-    static auto constexpr limitMax = 400;
-    static auto constexpr limitDefault = 100;
+    static constexpr auto limitMin = 20;
+    static constexpr auto limitMax = 400;
+    static constexpr auto limitDefault = 100;
 
     /**
      * @brief A struct to hold the output data of the command

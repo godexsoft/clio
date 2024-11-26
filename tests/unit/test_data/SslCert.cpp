@@ -28,7 +28,7 @@ namespace tests {
 std::string_view
 sslCert()
 {
-    static auto constexpr CERT = R"(
+    static constexpr auto CERT = R"(
 -----BEGIN CERTIFICATE-----
 MIIDrjCCApagAwIBAgIJAOE4Hv/P8CO3MA0GCSqGSIb3DQEBCwUAMDkxEjAQBgNV
 BAMMCTEyNy4wLjAuMTELMAkGA1UEBhMCVVMxFjAUBgNVBAcMDVNhbiBGcmFuc2lz
@@ -64,7 +64,7 @@ sslCertFile()
 std::string_view
 sslKey()
 {
-    static auto constexpr KEY = R"(
+    static constexpr auto KEY = R"(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAqP3K4WDIhk63zbxSoN8tJqRZD3W0IWFMwCluZchUwsHPxEC4
 32sPk58YonynY5nGtTeSGhedSqHD0gFBLcU/su4dSsj+kgGgJwKmiPmoQiTpzEmd

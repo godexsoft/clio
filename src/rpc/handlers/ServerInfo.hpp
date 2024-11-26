@@ -67,7 +67,7 @@ namespace rpc {
  */
 template <typename LoadBalancerType, typename ETLServiceType, typename CountersType>
 class BaseServerInfoHandler {
-    constexpr static auto backendCountersKey = "backend_counters";
+    static constexpr auto backendCountersKey = "backend_counters";
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;

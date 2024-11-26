@@ -191,7 +191,7 @@ GetAggregatePriceHandler::tracebackOracleObject(
     std::function<bool(ripple::STObject const&)> const& callback
 ) const
 {
-    static auto constexpr HISTORY_MAX = 3;
+    static constexpr auto HISTORY_MAX = 3;
 
     std::optional<ripple::STObject> optOracleObject = oracleObject;
     std::optional<ripple::STObject> optCurrentObject = optOracleObject;

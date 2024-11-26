@@ -29,7 +29,7 @@
 #include <gtest/gtest.h>
 #include <xrpl/protocol/Fees.h>
 
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 using namespace feed::impl;
 namespace json = boost::json;
@@ -49,7 +49,7 @@ TEST_F(FeedLedgerTest, SubPub)
     // Information about the ledgers on hand and current fee schedule. This
     // includes the same fields as a ledger stream message, except that it omits
     // the type and txn_count fields
-    constexpr static auto LedgerResponse =
+    static constexpr auto LedgerResponse =
         R"({
             "validated_ledgers":"10-30",
             "ledger_index":30,
@@ -69,7 +69,7 @@ TEST_F(FeedLedgerTest, SubPub)
     ioContext.run();
     EXPECT_EQ(testFeedPtr->count(), 1);
 
-    constexpr static auto ledgerPub =
+    static constexpr auto ledgerPub =
         R"({
             "type":"ledgerClosed",
             "ledger_index":31,
@@ -104,7 +104,7 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
 
     auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
-    constexpr static auto LedgerResponse =
+    static constexpr auto LedgerResponse =
         R"({
             "validated_ledgers":"10-30",
             "ledger_index":30,

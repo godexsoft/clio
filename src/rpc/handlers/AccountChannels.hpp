@@ -51,9 +51,9 @@ class AccountChannelsHandler {
     std::shared_ptr<BackendInterface> const sharedPtrBackend_;
 
 public:
-    constexpr static auto limitMin = 10;
-    constexpr static auto limitMax = 400;
-    constexpr static auto limitDefault = 200;
+    static constexpr auto limitMin = 10;
+    static constexpr auto limitMax = 400;
+    static constexpr auto limitDefault = 200;
 
     /**
      * @brief A struct to hold data for one channel response

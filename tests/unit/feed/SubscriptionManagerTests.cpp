@@ -44,11 +44,11 @@
 #include <memory>
 #include <vector>
 
-constexpr static auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+static constexpr auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 namespace json = boost::json;
 using namespace feed;
@@ -79,8 +79,8 @@ TEST_F(SubscriptionManagerAsyncTest, MultipleThreadCtx)
     EXPECT_CALL(*sessionPtr, onDisconnect);
     subscriptionManagerPtr->subValidation(session);
 
-    constexpr static auto jsonManifest = R"({"manifest":"test"})";
-    constexpr static auto jsonValidation = R"({"validation":"test"})";
+    static constexpr auto jsonManifest = R"({"manifest":"test"})";
+    static constexpr auto jsonValidation = R"({"validation":"test"})";
 
     EXPECT_CALL(*sessionPtr, send(testing::_)).Times(testing::AtMost(2));
 
@@ -104,7 +104,7 @@ TEST_F(SubscriptionManagerAsyncTest, MultipleThreadCtxSessionDieEarly)
 
 TEST_F(SubscriptionManagerTest, ReportCurrentSubscriber)
 {
-    constexpr static auto ReportReturn =
+    static constexpr auto ReportReturn =
         R"({
             "ledger":0,
             "transactions":2,
@@ -187,7 +187,7 @@ TEST_F(SubscriptionManagerTest, ReportCurrentSubscriber)
 
 TEST_F(SubscriptionManagerTest, ManifestTest)
 {
-    constexpr static auto dummyManifest = R"({"manifest":"test"})";
+    static constexpr auto dummyManifest = R"({"manifest":"test"})";
     EXPECT_CALL(*sessionPtr, onDisconnect);
     EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummyManifest)));
     subscriptionManagerPtr->subManifest(session);
@@ -200,7 +200,7 @@ TEST_F(SubscriptionManagerTest, ManifestTest)
 
 TEST_F(SubscriptionManagerTest, ValidationTest)
 {
-    constexpr static auto dummy = R"({"validation":"test"})";
+    static constexpr auto dummy = R"({"validation":"test"})";
     EXPECT_CALL(*sessionPtr, onDisconnect);
     EXPECT_CALL(*sessionPtr, send(SharedStringJsonEq(dummy)));
     subscriptionManagerPtr->subValidation(session);
@@ -226,7 +226,7 @@ TEST_F(SubscriptionManagerTest, BookChangesTest)
     ripple::STObject const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 1, 3, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
-    constexpr static auto bookChangePublish =
+    static constexpr auto bookChangePublish =
         R"({
             "type":"bookChanges",
             "ledger_index":32,
@@ -266,7 +266,7 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
     // Information about the ledgers on hand and current fee schedule. This
     // includes the same fields as a ledger stream message, except that it omits
     // the type and txn_count fields
-    constexpr static auto LedgerResponse =
+    static constexpr auto LedgerResponse =
         R"({
             "validated_ledgers":"10-30",
             "ledger_index":30,
@@ -290,7 +290,7 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
     auto const ledgerHeader2 = CreateLedgerHeader(LEDGERHASH, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
-    constexpr static auto ledgerPub =
+    static constexpr auto ledgerPub =
         R"({
             "type":"ledgerClosed",
             "ledger_index":31,
@@ -331,7 +331,7 @@ TEST_F(SubscriptionManagerTest, TransactionTest)
 
     auto const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 3, 1, 1, 3);
     trans1.metadata = metaObj.getSerializer().peekData();
-    constexpr static auto OrderbookPublish =
+    static constexpr auto OrderbookPublish =
         R"({
             "transaction":
             {
@@ -412,7 +412,7 @@ TEST_F(SubscriptionManagerTest, ProposedTransactionTest)
     EXPECT_EQ(subscriptionManagerPtr->report()["accounts_proposed"], 1);
     EXPECT_EQ(subscriptionManagerPtr->report()["transactions_proposed"], 1);
 
-    constexpr static auto dummyTransaction =
+    static constexpr auto dummyTransaction =
         R"({
             "transaction":
             {
@@ -420,7 +420,7 @@ TEST_F(SubscriptionManagerTest, ProposedTransactionTest)
                 "Destination":"rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"
             }
         })";
-    constexpr static auto OrderbookPublish =
+    static constexpr auto OrderbookPublish =
         R"({
             "transaction":
             {

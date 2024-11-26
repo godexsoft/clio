@@ -42,7 +42,7 @@ namespace rpc {
 WarningInfo const&
 getWarningInfo(WarningCode code)
 {
-    constexpr static WarningInfo infos[]{
+    static constexpr WarningInfo infos[]{
         {WarnUnknown, "Unknown warning"},
         {WarnRpcClio,
          "This is a clio server. clio only serves validated data. If you want to talk to rippled, include "
@@ -74,7 +74,7 @@ makeWarning(WarningCode code)
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    constexpr static ClioErrorInfo infos[]{
+    static constexpr ClioErrorInfo infos[]{
         {ClioError::RpcMalformedCurrency, "malformedCurrency", "Malformed currency."},
         {ClioError::RpcMalformedRequest, "malformedRequest", "Malformed request."},
         {ClioError::RpcMalformedOwner, "malformedOwner", "Malformed owner."},

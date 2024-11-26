@@ -62,7 +62,7 @@ public:
     }
 
 private:
-    constexpr static auto configDescription = std::array{
+    static constexpr auto configDescription = std::array{
         KV{"database.type", "Type of database to use."},
         KV{"database.cassandra.contact_points", "Comma-separated list of contact points for Cassandra nodes."},
         KV{"database.cassandra.port", "Port number to connect to Cassandra."},

@@ -616,7 +616,7 @@ decodeCTID(T const ctid) noexcept
     auto const getCTID64 = [](T const ctid) noexcept -> std::optional<uint64_t> {
         if constexpr (std::is_convertible_v<T, std::string>) {
             std::string const ctidString(ctid);
-            static std::size_t constexpr CTID_STRING_LENGTH = 16;
+            static constexpr std::size_t CTID_STRING_LENGTH = 16;
             if (ctidString.length() != CTID_STRING_LENGTH)
                 return {};
 
@@ -634,8 +634,8 @@ decodeCTID(T const ctid) noexcept
 
     auto const ctidValue = getCTID64(ctid).value_or(0);
 
-    static uint64_t constexpr CTID_PREFIX = 0xC000'0000'0000'0000ULL;
-    static uint64_t constexpr CTID_PREFIX_MASK = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t CTID_PREFIX = 0xC000'0000'0000'0000ULL;
+    static constexpr uint64_t CTID_PREFIX_MASK = 0xF000'0000'0000'0000ULL;
 
     if ((ctidValue & CTID_PREFIX_MASK) != CTID_PREFIX)
         return {};
@@ -660,7 +660,7 @@ logDuration(web::Context const& ctx, T const& dur)
     using boost::json::serialize;
 
     static util::Logger const log{"RPC"};
-    static std::int64_t constexpr DURATION_ERROR_THRESHOLD_SECONDS = 10;
+    static constexpr std::int64_t DURATION_ERROR_THRESHOLD_SECONDS = 10;
 
     auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
     auto const seconds = std::chrono::duration_cast<std::chrono::seconds>(dur).count();

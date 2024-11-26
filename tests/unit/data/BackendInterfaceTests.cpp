@@ -38,8 +38,8 @@ using namespace data;
 using namespace util::prometheus;
 using namespace testing;
 
-constexpr static auto MAXSEQ = 30;
-constexpr static auto MINSEQ = 10;
+static constexpr auto MAXSEQ = 30;
+static constexpr auto MINSEQ = 10;
 
 struct BackendInterfaceTest : WithPrometheus, MockBackendTestNaggy, SyncAsioContextTest {};
 

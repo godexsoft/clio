@@ -101,7 +101,7 @@ generateConfig()
 */
 
 /* Used to test overwriting default values in ClioConfigDefinition Above */
-constexpr static auto JSONData = R"JSON(
+static constexpr auto JSONData = R"JSON(
     {
     "header": {
        "text1": "value",
@@ -194,7 +194,7 @@ constexpr static auto JSONData = R"JSON(
 */
 
 // Invalid Json key/values
-constexpr static auto invalidJSONData = R"JSON(
+static constexpr auto invalidJSONData = R"JSON(
 {
     "header": {
         "port": "999",

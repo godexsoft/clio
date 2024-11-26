@@ -30,7 +30,7 @@
 
 TEST(LedgerUtilsTests, LedgerObjectTypeList)
 {
-    auto constexpr types = util::LedgerTypes::GetLedgerEntryTypeStrList();
+    constexpr auto types = util::LedgerTypes::GetLedgerEntryTypeStrList();
     static constexpr char const* typesList[] = {
         JS(account),
         JS(amendments),
@@ -68,7 +68,7 @@ TEST(LedgerUtilsTests, LedgerObjectTypeList)
 
 TEST(LedgerUtilsTests, AccountOwnedTypeList)
 {
-    auto constexpr accountOwned = util::LedgerTypes::GetAccountOwnedLedgerTypeStrList();
+    constexpr auto accountOwned = util::LedgerTypes::GetAccountOwnedLedgerTypeStrList();
     static constexpr char const* correctTypes[] = {
         JS(account),
         JS(check),
@@ -109,7 +109,7 @@ TEST(LedgerUtilsTests, StrToType)
     EXPECT_EQ(util::LedgerTypes::GetLedgerEntryTypeFromStr("tomato"), ripple::ltANY);
     EXPECT_EQ(util::LedgerTypes::GetLedgerEntryTypeFromStr("account"), ripple::ltACCOUNT_ROOT);
 
-    auto constexpr types = util::LedgerTypes::GetLedgerEntryTypeStrList();
+    constexpr auto types = util::LedgerTypes::GetLedgerEntryTypeStrList();
     std::for_each(types.cbegin(), types.cend(), [](auto const& typeStr) {
         EXPECT_NE(util::LedgerTypes::GetLedgerEntryTypeFromStr(typeStr), ripple::ltANY);
     });
@@ -117,9 +117,9 @@ TEST(LedgerUtilsTests, StrToType)
 
 TEST(LedgerUtilsTests, DeletionBlockerTypes)
 {
-    auto constexpr testedTypes = util::LedgerTypes::GetDeletionBlockerLedgerTypes();
+    constexpr auto testedTypes = util::LedgerTypes::GetDeletionBlockerLedgerTypes();
 
-    static ripple::LedgerEntryType constexpr deletionBlockers[] = {
+    static constexpr ripple::LedgerEntryType deletionBlockers[] = {
         ripple::ltCHECK,
         ripple::ltESCROW,
         ripple::ltNFTOKEN_PAGE,

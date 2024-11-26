@@ -44,7 +44,7 @@ using namespace rpc;
 using namespace testing;
 namespace json = boost::json;
 
-constexpr static auto CLIENT_IP = "127.0.0.1";
+static constexpr auto CLIENT_IP = "127.0.0.1";
 
 class RPCForwardingProxyTest : public HandlerBaseTest {
 protected:

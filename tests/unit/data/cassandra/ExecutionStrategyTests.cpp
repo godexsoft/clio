@@ -94,7 +94,7 @@ protected:
 
     MockHandle handle{};
     MockBackendCounters::PtrType counters = MockBackendCounters::make();
-    constexpr static auto numStatements = 3u;
+    static constexpr auto numStatements = 3u;
 
     DefaultExecutionStrategy<MockHandle, MockBackendCounters>
     makeStrategy(Settings s = {})

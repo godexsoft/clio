@@ -28,9 +28,9 @@
 #include <fmt/core.h>
 #include <gtest/gtest.h>
 
-constexpr static auto DEFAULT_API_VERSION = 3u;
-constexpr static auto MIN_API_VERSION = 2u;
-constexpr static auto MAX_API_VERSION = 10u;
+static constexpr auto DEFAULT_API_VERSION = 3u;
+static constexpr auto MIN_API_VERSION = 2u;
+static constexpr auto MAX_API_VERSION = 10u;
 
 using namespace rpc;
 namespace json = boost::json;

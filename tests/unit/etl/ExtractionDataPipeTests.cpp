@@ -28,8 +28,8 @@
 #include <cstdint>
 #include <thread>
 
-constexpr static auto STRIDE = 4;
-constexpr static auto START_SEQ = 1234;
+static constexpr auto STRIDE = 4;
+static constexpr auto START_SEQ = 1234;
 
 class ETLExtractionDataPipeTest : public NoLoggerFixture {
 protected:

@@ -29,8 +29,8 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
+static constexpr auto RANGEMIN = 10;
+static constexpr auto RANGEMAX = 30;
 
 class RPCLedgerRangeTest : public HandlerBaseTest {};
 

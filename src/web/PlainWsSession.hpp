@@ -171,7 +171,7 @@ private:
     {
         parser_.emplace();
 
-        constexpr static auto maxBodySize = 10000;
+        static constexpr auto maxBodySize = 10000;
         parser_->body_limit(maxBodySize);
 
         boost::beast::get_lowest_layer(http_).expires_after(std::chrono::seconds(30));

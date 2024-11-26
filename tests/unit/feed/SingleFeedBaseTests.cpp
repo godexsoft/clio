@@ -31,7 +31,7 @@
 
 #include <memory>
 
-constexpr static auto FEED = R"({"test":"test"})";
+static constexpr auto FEED = R"({"test":"test"})";
 
 using namespace feed::impl;
 using namespace util::prometheus;

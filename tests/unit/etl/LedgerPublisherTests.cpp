@@ -45,11 +45,11 @@ using namespace etl;
 namespace json = boost::json;
 using namespace std::chrono;
 
-static auto constexpr ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-static auto constexpr ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-static auto constexpr LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-static auto constexpr SEQ = 30;
-static auto constexpr AGE = 800;
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto SEQ = 30;
+static constexpr auto AGE = 800;
 
 struct ETLLedgerPublisherTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
     void
@@ -220,7 +220,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqMaxAttampt)
     dummyState.isStopping = false;
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
 
-    static auto constexpr MAX_ATTEMPT = 2;
+    static constexpr auto MAX_ATTEMPT = 2;
 
     LedgerRange const range{.minSequence = SEQ - 1, .maxSequence = SEQ - 1};
     EXPECT_CALL(*backend, hardFetchLedgerRange).Times(MAX_ATTEMPT).WillRepeatedly(Return(range));

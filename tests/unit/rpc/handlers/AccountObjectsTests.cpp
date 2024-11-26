@@ -51,15 +51,15 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ISSUER = "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr static auto TXNID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
-constexpr static auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
-constexpr static auto MAXSEQ = 30;
-constexpr static auto MINSEQ = 10;
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ISSUER = "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+static constexpr auto TXNID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
+static constexpr auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
+static constexpr auto MAXSEQ = 30;
+static constexpr auto MINSEQ = 10;
 
 class RPCAccountObjectsHandlerTest : public HandlerBaseTest {};
 
@@ -291,7 +291,7 @@ TEST_F(RPCAccountObjectsHandlerTest, AccountNotExist)
 
 TEST_F(RPCAccountObjectsHandlerTest, DefaultParameterNoNFTFound)
 {
-    static auto constexpr expectedOut = R"({
+    static constexpr auto expectedOut = R"({
                                             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
                                             "ledger_index":30,
                                             "validated":true,
@@ -370,7 +370,7 @@ TEST_F(RPCAccountObjectsHandlerTest, Limit)
     auto const accountKk = ripple::keylet::account(account).key;
     EXPECT_CALL(*backend, doFetchLedgerObject(accountKk, MAXSEQ, _)).WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    static auto constexpr limit = 10;
+    static constexpr auto limit = 10;
     auto count = limit * 2;
     // put 20 items in owner dir, but only return 10
     auto const ownerDir = CreateOwnerDirLedgerObject(std::vector(count, ripple::uint256{INDEX1}), INDEX1);
@@ -415,8 +415,8 @@ TEST_F(RPCAccountObjectsHandlerTest, Marker)
     auto const accountKk = ripple::keylet::account(GetAccountIDWithString(ACCOUNT)).key;
     EXPECT_CALL(*backend, doFetchLedgerObject(accountKk, MAXSEQ, _)).WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    static auto constexpr limit = 20;
-    static auto constexpr page = 2;
+    static constexpr auto limit = 20;
+    static constexpr auto page = 2;
     auto count = limit;
     auto const ownerDir = CreateOwnerDirLedgerObject(std::vector(count, ripple::uint256{INDEX1}), INDEX1);
     auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(ACCOUNT)).key;
@@ -461,8 +461,8 @@ TEST_F(RPCAccountObjectsHandlerTest, MultipleDirNoNFT)
     auto const accountKk = ripple::keylet::account(account).key;
     EXPECT_CALL(*backend, doFetchLedgerObject(accountKk, MAXSEQ, _)).WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    static auto constexpr count = 10;
-    static auto constexpr nextpage = 1;
+    static constexpr auto count = 10;
+    static constexpr auto nextpage = 1;
     auto cc = count;
     auto ownerDir = CreateOwnerDirLedgerObject(std::vector(cc, ripple::uint256{INDEX1}), INDEX1);
     // set next page
@@ -879,7 +879,7 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilterWithIncompatibleT
 
 TEST_F(RPCAccountObjectsHandlerTest, NFTMixOtherObjects)
 {
-    static auto constexpr expectedOut = R"({
+    static constexpr auto expectedOut = R"({
                                             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
                                             "ledger_index":30,
                                             "validated":true,
@@ -1343,7 +1343,7 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTLimitAdjust)
 
 TEST_F(RPCAccountObjectsHandlerTest, FilterNFT)
 {
-    static auto constexpr expectedOut = R"({
+    static constexpr auto expectedOut = R"({
                                             "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
                                             "ledger_index":30,
                                             "validated":true,
@@ -1440,7 +1440,7 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTZeroMarkerNotAffectOtherMarker)
     auto const accountKk = ripple::keylet::account(account).key;
     EXPECT_CALL(*backend, doFetchLedgerObject(accountKk, MAXSEQ, _)).WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    static auto constexpr limit = 10;
+    static constexpr auto limit = 10;
     auto count = limit * 2;
     // put 20 items in owner dir, but only return 10
     auto const ownerDir = CreateOwnerDirLedgerObject(std::vector(count, ripple::uint256{INDEX1}), INDEX1);

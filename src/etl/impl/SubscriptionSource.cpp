@@ -222,9 +222,9 @@ SubscriptionSource::handleMessage(std::string const& message)
         auto const object = raw.as_object();
         uint32_t ledgerIndex = 0;
 
-        static constexpr char const* const JS_LedgerClosed = "ledgerClosed";
-        static constexpr char const* const JS_ValidationReceived = "validationReceived";
-        static constexpr char const* const JS_ManifestReceived = "manifestReceived";
+        static constexpr auto JS_LedgerClosed = "ledgerClosed";
+        static constexpr auto JS_ValidationReceived = "validationReceived";
+        static constexpr auto JS_ManifestReceived = "manifestReceived";
 
         if (object.contains(JS(result))) {
             auto const& result = object.at(JS(result)).as_object();

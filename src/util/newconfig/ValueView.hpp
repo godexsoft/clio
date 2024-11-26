@@ -123,8 +123,7 @@ public:
      *
      * @return true if exists, false otherwise
      */
-    [[nodiscard]] constexpr bool
-    hasValue() const
+    [[nodiscard]] bool constexpr hasValue() const
     {
         return configVal_.get().hasValue();
     }
@@ -134,8 +133,7 @@ public:
      *
      * @return true if optional, false otherwise
      */
-    [[nodiscard]] constexpr bool
-    isOptional() const
+    [[nodiscard]] bool constexpr isOptional() const
     {
         return configVal_.get().isOptional();
     }

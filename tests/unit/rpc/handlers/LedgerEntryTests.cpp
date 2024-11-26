@@ -62,17 +62,17 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto INDEX1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto ACCOUNT3 = "rhzcyub9SbyZ4YF1JYskN5rLrTDUuLZG6D";
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
-constexpr static auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
-constexpr static auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-constexpr static auto CREDENTIALTYPE = "4B5943";
+static constexpr auto INDEX1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto ACCOUNT3 = "rhzcyub9SbyZ4YF1JYskN5rLrTDUuLZG6D";
+static constexpr auto RANGEMIN = 10;
+static constexpr auto RANGEMAX = 30;
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
+static constexpr auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+static constexpr auto TXNID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+static constexpr auto CREDENTIALTYPE = "4B5943";
 
 class RPCLedgerEntryTest : public HandlerBaseTest {};
 
@@ -2900,7 +2900,7 @@ TEST_P(RPCLedgerEntryNormalPathTest, NormalPath)
 // this testcase will test the deserialization of ledger entry
 TEST_F(RPCLedgerEntryTest, BinaryFalse)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
         "validated":true,
@@ -3088,7 +3088,7 @@ TEST(RPCLedgerEntrySpecTest, DeprecatedFields)
 // Expected Result: same as BinaryFalse
 TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3138,7 +3138,7 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleted)
 // Expected Result: return the latest object that is not deleted
 TEST_F(RPCLedgerEntryTest, LedgerEntryDeleted)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3218,7 +3218,7 @@ TEST_F(RPCLedgerEntryTest, LedgerEntryNotExist)
 // Expected Result: same as BinaryFalse
 TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3268,7 +3268,7 @@ TEST_F(RPCLedgerEntryTest, BinaryFalseIncludeDeleteFalse)
 // Expected Result: return the latest object that is not deleted (latest object in this test)
 TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3329,7 +3329,7 @@ TEST_F(RPCLedgerEntryTest, ObjectUpdateIncludeDelete)
 // Expected Result: return the latest object that is not deleted
 TEST_F(RPCLedgerEntryTest, ObjectDeletedPreviously)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index": 30,
         "validated": true,
@@ -3405,7 +3405,7 @@ TEST_F(RPCLedgerEntryTest, ObjectSeqNotExist)
 // this testcase will test the if response includes synthetic mpt_issuance_id
 TEST_F(RPCLedgerEntryTest, SyntheticMPTIssuanceID)
 {
-    static auto constexpr OUT = R"({
+    static constexpr auto OUT = R"({
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
         "validated":true,

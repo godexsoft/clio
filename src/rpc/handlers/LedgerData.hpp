@@ -59,8 +59,8 @@ class LedgerDataHandler {
 
 public:
     // constants
-    static uint32_t constexpr limitBinary = 2048;
-    static uint32_t constexpr limitJSON = 256;
+    static constexpr uint32_t limitBinary = 2048;
+    static constexpr uint32_t limitJSON = 256;
 
     /**
      * @brief A struct to hold the output data of the command

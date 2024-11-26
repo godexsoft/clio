@@ -40,10 +40,10 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
-constexpr static auto NFTID2 = "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+static constexpr auto NFTID2 = "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022";
 
 class RPCNFTInfoHandlerTest : public HandlerBaseTest {};
 
@@ -296,7 +296,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistNFT)
 // normal case when only provide nft_id
 TEST_F(RPCNFTInfoHandlerTest, DefaultParameters)
 {
-    constexpr static auto currentOutput = R"({
+    static constexpr auto currentOutput = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -337,7 +337,7 @@ TEST_F(RPCNFTInfoHandlerTest, DefaultParameters)
 // nft is burned -> should not omit uri
 TEST_F(RPCNFTInfoHandlerTest, BurnedNFT)
 {
-    constexpr static auto currentOutput = R"({
+    static constexpr auto currentOutput = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -379,7 +379,7 @@ TEST_F(RPCNFTInfoHandlerTest, BurnedNFT)
 // uri is not available -> should specify an empty string
 TEST_F(RPCNFTInfoHandlerTest, NotBurnedNFTWithoutURI)
 {
-    constexpr static auto currentOutput = R"({
+    static constexpr auto currentOutput = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -420,7 +420,7 @@ TEST_F(RPCNFTInfoHandlerTest, NotBurnedNFTWithoutURI)
 // check taxon field, transfer fee and serial
 TEST_F(RPCNFTInfoHandlerTest, NFTWithExtraFieldsSet)
 {
-    constexpr static auto currentOutput = R"({
+    static constexpr auto currentOutput = R"({
         "nft_id": "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",

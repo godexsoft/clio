@@ -42,12 +42,12 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto MINSEQ = 10;
-constexpr static auto MAXSEQ = 30;
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+static constexpr auto MINSEQ = 10;
+static constexpr auto MAXSEQ = 30;
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto NFTID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
 
 class RPCNFTHistoryHandlerTest : public HandlerBaseTest {};
 
@@ -307,7 +307,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 {
-    auto constexpr OUTPUT = R"({
+    constexpr auto OUTPUT = R"({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,
@@ -447,7 +447,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 {
-    auto constexpr OUTPUT = R"({
+    constexpr auto OUTPUT = R"({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,

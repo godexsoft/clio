@@ -130,7 +130,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto constexpr ORACLES_MAX = 200;
+        static constexpr auto ORACLES_MAX = 200;
 
         static auto const oraclesValidator =
             modifiers::CustomModifier{[](boost::json::value& value, std::string_view) -> MaybeError {

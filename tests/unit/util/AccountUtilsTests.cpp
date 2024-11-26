@@ -24,7 +24,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/tokens.h>
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
 
 TEST(AccountUtils, parseBase58Wrapper)
 {

@@ -40,18 +40,18 @@
 #include <utility>
 #include <vector>
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
-constexpr static auto ISSUER = "raSsG8F6KePke7sqw2MXYZ3mu7p68GvFma";
-constexpr static auto SERIAL = 49386;
-constexpr static auto TAXON = 0;
-constexpr static auto FLAG = 8;
-constexpr static auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr static auto PAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr static auto INVALIDPAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FCAAA";
-constexpr static auto MAXSEQ = 30;
-constexpr static auto MINSEQ = 10;
+static constexpr auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+static constexpr auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+static constexpr auto TOKENID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
+static constexpr auto ISSUER = "raSsG8F6KePke7sqw2MXYZ3mu7p68GvFma";
+static constexpr auto SERIAL = 49386;
+static constexpr auto TAXON = 0;
+static constexpr auto FLAG = 8;
+static constexpr auto TXNID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+static constexpr auto PAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+static constexpr auto INVALIDPAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FCAAA";
+static constexpr auto MAXSEQ = 30;
+static constexpr auto MINSEQ = 10;
 
 using namespace rpc;
 namespace json = boost::json;
@@ -192,7 +192,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaHash)
 
 TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaStringIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(MINSEQ, MAXSEQ);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -219,7 +219,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaStringIndex)
 
 TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaIntIndex)
 {
-    auto constexpr seq = 12;
+    constexpr auto seq = 12;
 
     backend->setRange(MINSEQ, MAXSEQ);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
@@ -333,7 +333,7 @@ TEST_F(RPCAccountNFTsHandlerTest, NormalPath)
 
 TEST_F(RPCAccountNFTsHandlerTest, Limit)
 {
-    static auto constexpr limit = 20;
+    static constexpr auto limit = 20;
 
     backend->setRange(MINSEQ, MAXSEQ);
     auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, MAXSEQ);
