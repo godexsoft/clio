@@ -81,8 +81,10 @@ enum class Severity {
 };
 
 /** @cond */
+// NOLINTBEGIN(readability-identifier-naming)
 BOOST_LOG_ATTRIBUTE_KEYWORD(logSeverity, "Severity", Severity);
 BOOST_LOG_ATTRIBUTE_KEYWORD(logChannel, "Channel", std::string);
+// NOLINTEND(readability-identifier-naming)
 /** @endcond */
 
 /**
@@ -126,7 +128,7 @@ class Logger final {
         {
             if (rec_) {
                 pump_.emplace(boost::log::aux::make_record_pump(logger, rec_));
-                pump_->stream() << boost::log::add_value("SourceLocation", pretty_path(loc));
+                pump_->stream() << boost::log::add_value("SourceLocation", prettyPath(loc));
             }
         }
 
@@ -163,7 +165,7 @@ class Logger final {
 
     private:
         [[nodiscard]] static std::string
-        pretty_path(SourceLocationType const& loc, size_t max_depth = 3);
+        prettyPath(SourceLocationType const& loc, size_t maxDepth = 3);
 
         /**
          * @brief Custom JSON parser for @ref Severity.

@@ -212,16 +212,16 @@ Logger::fatal(SourceLocationType const& loc) const
 };
 
 std::string
-Logger::Pump::pretty_path(SourceLocationType const& loc, size_t max_depth)
+Logger::Pump::prettyPath(SourceLocationType const& loc, size_t maxDepth)
 {
-    auto const file_path = std::string{loc.file_name()};
-    auto idx = file_path.size();
-    while (max_depth-- > 0) {
-        idx = file_path.rfind('/', idx - 1);
+    auto const filePath = std::string{loc.file_name()};
+    auto idx = filePath.size();
+    while (maxDepth-- > 0) {
+        idx = filePath.rfind('/', idx - 1);
         if (idx == std::string::npos || idx == 0)
             break;
     }
-    return file_path.substr(idx == std::string::npos ? 0 : idx + 1) + ':' + std::to_string(loc.line());
+    return filePath.substr(idx == std::string::npos ? 0 : idx + 1) + ':' + std::to_string(loc.line());
 }
 
 }  // namespace util
