@@ -33,6 +33,7 @@
 using namespace web;
 
 struct SubscriptionContextTests : NoLoggerFixture {
+protected:
     util::TagDecoratorFactory tagFactory_{util::Config{}};
     ConnectionBaseStrictMockPtr connection_ =
         std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory_, "some ip");

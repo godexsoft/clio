@@ -915,14 +915,14 @@ TEST_F(RPCAccountChannelsHandlerTest, LimitLessThanMin)
             "limit": {}
         }})",
         ACCOUNT,
-        AccountChannelsHandler::LIMIT_MIN - 1
+        AccountChannelsHandler::limitMin - 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{AccountChannelsHandler{this->backend}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ((*output.result).as_object().at("channels").as_array().size(), 2);
-        EXPECT_EQ((*output.result).as_object().at("limit").as_uint64(), AccountChannelsHandler::LIMIT_MIN);
+        EXPECT_EQ((*output.result).as_object().at("limit").as_uint64(), AccountChannelsHandler::limitMin);
     });
 }
 
@@ -962,13 +962,13 @@ TEST_F(RPCAccountChannelsHandlerTest, LimitMoreThanMax)
             "limit": {}
         }})",
         ACCOUNT,
-        AccountChannelsHandler::LIMIT_MAX + 1
+        AccountChannelsHandler::limitMax + 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{AccountChannelsHandler{this->backend}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ((*output.result).as_object().at("channels").as_array().size(), 2);
-        EXPECT_EQ((*output.result).as_object().at("limit").as_uint64(), AccountChannelsHandler::LIMIT_MAX);
+        EXPECT_EQ((*output.result).as_object().at("limit").as_uint64(), AccountChannelsHandler::limitMax);
     });
 }

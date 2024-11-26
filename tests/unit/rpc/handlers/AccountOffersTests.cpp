@@ -499,7 +499,7 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
     ON_CALL(*backend, doFetchLedgerObject(accountKk, ledgerSeq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{AccountOffersHandler::LIMIT_MIN + 1, ripple::uint256{INDEX1}}, INDEX1);
+        CreateOwnerDirLedgerObject(std::vector{AccountOffersHandler::limitMin + 1, ripple::uint256{INDEX1}}, INDEX1);
     auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(ACCOUNT)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, ledgerSeq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -518,8 +518,8 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
     );
     offer.setFieldU32(ripple::sfExpiration, 123);
 
-    bbs.reserve(AccountOffersHandler::LIMIT_MIN + 1);
-    for (auto i = 0; i < AccountOffersHandler::LIMIT_MIN + 1; i++)
+    bbs.reserve(AccountOffersHandler::limitMin + 1);
+    for (auto i = 0; i < AccountOffersHandler::limitMin + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -531,13 +531,13 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
             "limit":{}
         }})",
         ACCOUNT,
-        AccountOffersHandler::LIMIT_MIN - 1
+        AccountOffersHandler::limitMin - 1
     ));
     auto const handler = AnyHandler{AccountOffersHandler{backend}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), AccountOffersHandler::LIMIT_MIN);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), AccountOffersHandler::limitMin);
     });
 }
 
@@ -554,7 +554,7 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
     ON_CALL(*backend, doFetchLedgerObject(accountKk, ledgerSeq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{AccountOffersHandler::LIMIT_MAX + 1, ripple::uint256{INDEX1}}, INDEX1);
+        CreateOwnerDirLedgerObject(std::vector{AccountOffersHandler::limitMax + 1, ripple::uint256{INDEX1}}, INDEX1);
 
     auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(ACCOUNT)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, ledgerSeq, _))
@@ -573,8 +573,8 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
         INDEX1
     );
     offer.setFieldU32(ripple::sfExpiration, 123);
-    bbs.reserve(AccountOffersHandler::LIMIT_MAX + 1);
-    for (auto i = 0; i < AccountOffersHandler::LIMIT_MAX + 1; i++)
+    bbs.reserve(AccountOffersHandler::limitMax + 1);
+    for (auto i = 0; i < AccountOffersHandler::limitMax + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -586,13 +586,13 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
             "limit":{}
         }})",
         ACCOUNT,
-        AccountOffersHandler::LIMIT_MAX + 1
+        AccountOffersHandler::limitMax + 1
     ));
     auto const handler = AnyHandler{AccountOffersHandler{backend}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), AccountOffersHandler::LIMIT_MAX);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), AccountOffersHandler::limitMax);
     });
 }
 
@@ -614,7 +614,7 @@ TEST(RPCAccountOffersHandlerSpecTest, DeprecatedFields)
     auto const& warning = warnings[0].as_object();
     ASSERT_TRUE(warning.contains("id"));
     ASSERT_TRUE(warning.contains("message"));
-    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::WarnRpcDeprecated));
     for (auto const& field : {"ledger", "strict"}) {
         EXPECT_NE(
             warning.at("message").as_string().find(fmt::format("Field '{}' is deprecated.", field)), std::string::npos

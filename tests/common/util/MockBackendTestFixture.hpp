@@ -19,35 +19,40 @@
 
 #pragma once
 
+#include "data/BackendInterface.hpp"
 #include "util/LoggerFixtures.hpp"
 #include "util/MockBackend.hpp"
+
+#include <gmock/gmock.h>
+
+#include <memory>
 
 template <template <typename> typename MockType = ::testing::NiceMock>
 struct MockBackendTestBase : virtual public NoLoggerFixture {
     class BackendProxy {
-        std::shared_ptr<MockType<MockBackend>> backend = std::make_shared<MockType<MockBackend>>(util::Config{});
+        std::shared_ptr<MockType<MockBackend>> backend_ = std::make_shared<MockType<MockBackend>>(util::Config{});
 
     public:
         auto
         operator->()
         {
-            return backend.get();
+            return backend_.get();
         }
 
         operator std::shared_ptr<BackendInterface>()
         {
-            return backend;
+            return backend_;
         }
 
         operator std::shared_ptr<BackendInterface const>() const
         {
-            return backend;
+            return backend_;
         }
 
         MockType<MockBackend>&
         operator*()
         {
-            return *backend;
+            return *backend_;
         }
     };
 

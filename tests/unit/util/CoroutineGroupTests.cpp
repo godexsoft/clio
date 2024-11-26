@@ -30,6 +30,7 @@
 using namespace util;
 
 struct CoroutineGroupTests : SyncAsioContextTest {
+protected:
     testing::StrictMock<testing::MockFunction<void()>> callback1_;
     testing::StrictMock<testing::MockFunction<void()>> callback2_;
     testing::StrictMock<testing::MockFunction<void()>> callback3_;

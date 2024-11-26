@@ -93,6 +93,7 @@ struct ConnectionHandlerTest : SyncAsioContextTest {
         return Request{std::forward<Args>(args)...};
     }
 
+protected:
     util::TagDecoratorFactory tagFactory_;
     ConnectionHandler connectionHandler_;
 

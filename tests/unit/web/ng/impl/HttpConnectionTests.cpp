@@ -51,11 +51,6 @@ using namespace web::ng;
 namespace http = boost::beast::http;
 
 struct HttpConnectionTests : SyncAsioContextTest {
-    util::TagDecoratorFactory tagDecoratorFactory_{util::Config{boost::json::object{{"log_tag_style", "int"}}}};
-    TestHttpServer httpServer_{ctx, "localhost"};
-    HttpAsyncClient httpClient_{ctx};
-    http::request<http::string_body> request_{http::verb::post, "/some_target", 11, "some data"};
-
     PlainHttpConnection
     acceptConnection(boost::asio::yield_context yield)
     {
@@ -66,6 +61,12 @@ struct HttpConnectionTests : SyncAsioContextTest {
             std::move(expectedSocket).value(), std::move(ip), boost::beast::flat_buffer{}, tagDecoratorFactory_
         };
     }
+
+protected:
+    util::TagDecoratorFactory tagDecoratorFactory_{util::Config{boost::json::object{{"log_tag_style", "int"}}}};
+    TestHttpServer httpServer_{ctx, "localhost"};
+    HttpAsyncClient httpClient_{ctx};
+    http::request<http::string_body> request_{http::verb::post, "/some_target", 11, "some data"};
 };
 
 TEST_F(HttpConnectionTests, wasUpgraded)

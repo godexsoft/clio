@@ -30,6 +30,7 @@
 using namespace util;
 
 struct RetryTests : virtual ::testing::Test {
+protected:
     std::chrono::milliseconds const delay_{1};
     std::chrono::milliseconds const maxDelay_{5};
 };
@@ -63,6 +64,7 @@ struct RetryWithExponentialBackoffStrategyTests : SyncAsioContextTest, RetryTest
         EXPECT_EQ(retry_.delayValue(), delay_);
     }
 
+protected:
     Retry retry_ = makeRetryExponentialBackoff(delay_, maxDelay_, boost::asio::make_strand(ctx));
     testing::MockFunction<void()> mockCallback_;
 };

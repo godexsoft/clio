@@ -129,7 +129,7 @@ TEST_P(AccountInfoParameterTest, InvalidParams)
 
 TEST_F(AccountInfoParameterTest, ApiV1SignerListIsNotBool)
 {
-    static constexpr auto reqJson = R"(
+    constexpr static auto reqJson = R"(
         {"ident":"rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun", "signer_lists":1}
     )";
 
@@ -791,7 +791,7 @@ TEST(RPCAccountInfoHandlerSpecTest, DeprecatedFields)
     auto const obj = warning.as_object();
     ASSERT_TRUE(obj.contains("id"));
     ASSERT_TRUE(obj.contains("message"));
-    EXPECT_EQ(obj.at("id").as_int64(), static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(obj.at("id").as_int64(), static_cast<int64_t>(WarningCode::WarnRpcDeprecated));
     auto const& message = obj.at("message").as_string();
     for (auto const& field : {"ident", "ledger", "strict"}) {
         EXPECT_NE(message.find(fmt::format("Field '{}' is deprecated", field)), std::string::npos) << message;

@@ -39,6 +39,7 @@ using namespace web::impl;
 using namespace web;
 
 struct ErrorHandlingTests : NoLoggerFixture {
+protected:
     util::TagDecoratorFactory tagFactory_{util::Config{}};
     std::string const clientIp_ = "some ip";
     ConnectionBaseStrictMockPtr connection_ =
@@ -152,35 +153,35 @@ INSTANTIATE_TEST_CASE_P(
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_InvalidApiVersion",
             false,
-            rpc::Status{rpc::ClioError::rpcINVALID_API_VERSION},
+            rpc::Status{rpc::ClioError::RpcInvalidApiVersion},
             "invalid_API_version",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandIsMissing",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_IS_MISSING},
+            rpc::Status{rpc::ClioError::RpcCommandIsMissing},
             "Null method",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandIsEmpty",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_IS_EMPTY},
+            rpc::Status{rpc::ClioError::RpcCommandIsEmpty},
             "method is empty",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandNotString",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_NOT_STRING},
+            rpc::Status{rpc::ClioError::RpcCommandNotString},
             "method is not string",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_ParamsUnparseable",
             false,
-            rpc::Status{rpc::ClioError::rpcPARAMS_UNPARSEABLE},
+            rpc::Status{rpc::ClioError::RpcParamsUnparseable},
             "params unparseable",
             boost::beast::http::status::bad_request
         },

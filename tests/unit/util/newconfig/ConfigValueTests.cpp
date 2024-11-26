@@ -158,7 +158,7 @@ TEST(ConfigValue, PositiveDoubleConstraint)
 
 struct ConstraintTestBundle {
     std::string name;
-    Constraint const& cons_;
+    Constraint const& constraint;
 };
 
 struct ConstraintDeathTest : public testing::Test, public testing::WithParamInterface<ConstraintTestBundle> {};
@@ -188,7 +188,7 @@ TEST_P(ConstraintDeathTest, TestEachConstraint)
     EXPECT_DEATH(
         {
             [[maybe_unused]] auto const a =
-                ConfigValue{ConfigType::Boolean}.defaultValue(true).withConstraint(GetParam().cons_);
+                ConfigValue{ConfigType::Boolean}.defaultValue(true).withConstraint(GetParam().constraint);
         },
         ".*"
     );

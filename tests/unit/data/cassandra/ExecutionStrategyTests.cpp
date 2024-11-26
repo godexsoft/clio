@@ -94,7 +94,7 @@ protected:
 
     MockHandle handle{};
     MockBackendCounters::PtrType counters = MockBackendCounters::make();
-    static constexpr auto NUM_STATEMENTS = 3u;
+    constexpr static auto numStatements = 3u;
 
     DefaultExecutionStrategy<MockHandle, MockBackendCounters>
     makeStrategy(Settings s = {})
@@ -182,7 +182,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineSuccessful)
 
     ON_CALL(handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>()))
         .WillByDefault([](auto const& statements, auto&& cb) {
-            EXPECT_EQ(statements.size(), NUM_STATEMENTS);
+            EXPECT_EQ(statements.size(), numStatements);
             cb({});  // pretend we got data
             return FakeFutureWithCallback{};
         });
@@ -190,11 +190,11 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineSuccessful)
         handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>())
     )
         .Times(1);
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
-    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, NUM_STATEMENTS));
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
+    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, numStatements));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         strat.read(yield, statements);
     });
 }
@@ -205,7 +205,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineThrowsOnTimeou
 
     ON_CALL(handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>()))
         .WillByDefault([](auto const& statements, auto&& cb) {
-            EXPECT_EQ(statements.size(), NUM_STATEMENTS);
+            EXPECT_EQ(statements.size(), numStatements);
             auto res = FakeResultOrError{CassandraError{"timeout", CASS_ERROR_LIB_REQUEST_TIMED_OUT}};
             cb(res);  // notify that item is ready
             return FakeFutureWithCallback{res};
@@ -214,11 +214,11 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineThrowsOnTimeou
         handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>())
     )
         .Times(1);
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
-    EXPECT_CALL(*counters, registerReadErrorImpl(NUM_STATEMENTS));
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
+    EXPECT_CALL(*counters, registerReadErrorImpl(numStatements));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         EXPECT_THROW(strat.read(yield, statements), data::DatabaseTimeout);
     });
 }
@@ -229,7 +229,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineThrowsOnInvali
 
     ON_CALL(handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>()))
         .WillByDefault([](auto const& statements, auto&& cb) {
-            EXPECT_EQ(statements.size(), NUM_STATEMENTS);
+            EXPECT_EQ(statements.size(), numStatements);
             auto res = FakeResultOrError{CassandraError{"invalid", CASS_ERROR_SERVER_INVALID_QUERY}};
             cb(res);  // notify that item is ready
             return FakeFutureWithCallback{res};
@@ -238,11 +238,11 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineThrowsOnInvali
         handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>())
     )
         .Times(1);
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
-    EXPECT_CALL(*counters, registerReadErrorImpl(NUM_STATEMENTS));
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
+    EXPECT_CALL(*counters, registerReadErrorImpl(numStatements));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         EXPECT_THROW(strat.read(yield, statements), std::runtime_error);
     });
 }
@@ -253,7 +253,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineMarksBusyIfReq
 
     ON_CALL(handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>()))
         .WillByDefault([this, &strat](auto const& statements, auto&& cb) {
-            EXPECT_EQ(statements.size(), NUM_STATEMENTS);
+            EXPECT_EQ(statements.size(), numStatements);
             EXPECT_CALL(*counters, registerTooBusy());
             EXPECT_TRUE(strat.isTooBusy());  // 2 was the limit, we sent 3
 
@@ -264,12 +264,12 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineMarksBusyIfReq
         handle, asyncExecute(A<std::vector<FakeStatement> const&>(), A<std::function<void(FakeResultOrError)>&&>())
     )
         .Times(1);
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
-    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, NUM_STATEMENTS));
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
+    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, numStatements));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
         EXPECT_FALSE(strat.isTooBusy());  // 2 was the limit, 0 atm
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         strat.read(yield, statements);
         EXPECT_FALSE(strat.isTooBusy());  // after read completes it's 0 again
     });
@@ -291,12 +291,12 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadEachInCoroutineSuccessful)
             A<std::function<void(FakeResultOrError)>&&>()
         )
     )
-        .Times(NUM_STATEMENTS);  // once per statement
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
-    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, NUM_STATEMENTS));
+        .Times(numStatements);  // once per statement
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
+    EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, numStatements));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         auto res = strat.readEach(yield, statements);
         EXPECT_EQ(res.size(), statements.size());
     });
@@ -324,13 +324,13 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadEachInCoroutineThrowsOnFailure
             A<std::function<void(FakeResultOrError)>&&>()
         )
     )
-        .Times(NUM_STATEMENTS);  // once per statement
-    EXPECT_CALL(*counters, registerReadStartedImpl(NUM_STATEMENTS));
+        .Times(numStatements);  // once per statement
+    EXPECT_CALL(*counters, registerReadStartedImpl(numStatements));
     EXPECT_CALL(*counters, registerReadErrorImpl(1));
     EXPECT_CALL(*counters, registerReadFinishedImpl(testing::_, 2));
 
     runSpawn([&strat](boost::asio::yield_context yield) {
-        auto statements = std::vector<FakeStatement>(NUM_STATEMENTS);
+        auto statements = std::vector<FakeStatement>(numStatements);
         EXPECT_THROW(strat.readEach(yield, statements), data::DatabaseTimeout);
     });
 }

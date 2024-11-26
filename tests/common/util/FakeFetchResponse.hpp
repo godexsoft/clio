@@ -122,13 +122,13 @@ public:
 };
 
 class FakeLedgerObjects {
-    std::vector<FakeLedgerObject> objects;
+    std::vector<FakeLedgerObject> objects_;
 
 public:
     std::vector<FakeLedgerObject>*
     mutable_objects()
     {
-        return &objects;
+        return &objects_;
     }
 };
 

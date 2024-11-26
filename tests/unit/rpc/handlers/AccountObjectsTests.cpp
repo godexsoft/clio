@@ -1509,7 +1509,7 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitLessThanMin)
                 }}
             ]
         }})",
-        AccountObjectsHandler::LIMIT_MIN
+        AccountObjectsHandler::limitMin
     );
 
     backend->setRange(MINSEQ, MAXSEQ);
@@ -1540,7 +1540,7 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitLessThanMin)
             "limit": {}
         }})",
         ACCOUNT,
-        AccountObjectsHandler::LIMIT_MIN - 1
+        AccountObjectsHandler::limitMin - 1
     ));
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend}};
@@ -1585,7 +1585,7 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitMoreThanMax)
                 }}
             ]
         }})",
-        AccountObjectsHandler::LIMIT_MAX
+        AccountObjectsHandler::limitMax
     );
 
     backend->setRange(MINSEQ, MAXSEQ);
@@ -1616,7 +1616,7 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitMoreThanMax)
             "limit": {}
         }})",
         ACCOUNT,
-        AccountObjectsHandler::LIMIT_MAX + 1
+        AccountObjectsHandler::limitMax + 1
     ));
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend}};

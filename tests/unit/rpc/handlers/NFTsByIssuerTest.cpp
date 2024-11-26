@@ -625,7 +625,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, LimitMoreThanMAx)
             account,
             testing::Eq(std::nullopt),
             Const(30),
-            Const(NFTsByIssuerHandler::LIMIT_MAX),
+            Const(NFTsByIssuerHandler::limitMax),
             testing::Eq(std::nullopt),
             testing::_
         )
@@ -638,7 +638,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, LimitMoreThanMAx)
             "limit": {}
         }})",
         ACCOUNT,
-        NFTsByIssuerHandler::LIMIT_MAX + 1
+        NFTsByIssuerHandler::limitMax + 1
     ));
     runSpawn([&, this](auto& yield) {
         auto handler = AnyHandler{NFTsByIssuerHandler{this->backend}};

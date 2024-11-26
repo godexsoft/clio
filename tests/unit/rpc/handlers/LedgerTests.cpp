@@ -1352,7 +1352,7 @@ struct RPCLedgerHandlerSpecCheckTestBundle {
 };
 
 struct RPCLedgerHandlerSpecCheckTest : ::testing::TestWithParam<RPCLedgerHandlerSpecCheckTestBundle> {
-    RpcSpec spec_ = LedgerHandler::spec(2);
+    RpcSpec spec = LedgerHandler::spec(2);
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -1363,27 +1363,27 @@ INSTANTIATE_TEST_SUITE_P(
         RPCLedgerHandlerSpecCheckTestBundle{
             "FullWarning",
             {{JS(full), false}},
-            {{static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED), {"Field 'full' is deprecated."}}},
+            {{static_cast<int64_t>(WarningCode::WarnRpcDeprecated), {"Field 'full' is deprecated."}}},
         },
         RPCLedgerHandlerSpecCheckTestBundle{
             "AccountsWarning",
             {{JS(accounts), false}},
-            {{static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED), {"Field 'accounts' is deprecated."}}},
+            {{static_cast<int64_t>(WarningCode::WarnRpcDeprecated), {"Field 'accounts' is deprecated."}}},
         },
         RPCLedgerHandlerSpecCheckTestBundle{
             "LedgerWarning",
             {{JS(ledger), false}},
-            {{static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED), {"Field 'ledger' is deprecated."}}},
+            {{static_cast<int64_t>(WarningCode::WarnRpcDeprecated), {"Field 'ledger' is deprecated."}}},
         },
         RPCLedgerHandlerSpecCheckTestBundle{
             "TypeWarning",
             {{JS(type), false}},
-            {{static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED), {"Field 'type' is deprecated."}}},
+            {{static_cast<int64_t>(WarningCode::WarnRpcDeprecated), {"Field 'type' is deprecated."}}},
         },
         RPCLedgerHandlerSpecCheckTestBundle{
             "MultipleWarnings",
             {{JS(full), false}, {JS(type), false}},
-            {{static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED),
+            {{static_cast<int64_t>(WarningCode::WarnRpcDeprecated),
               {"Field 'full' is deprecated.", "Field 'type' is deprecated."}}},
         }
     ),
@@ -1392,7 +1392,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(RPCLedgerHandlerSpecCheckTest, CheckSpec)
 {
-    auto const warnings = spec_.check(GetParam().json);
+    auto const warnings = spec.check(GetParam().json);
     ASSERT_EQ(warnings.size(), GetParam().expectedWarning.size());
     for (auto const& warn : warnings) {
         ASSERT_TRUE(warn.is_object());

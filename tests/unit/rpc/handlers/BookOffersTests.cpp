@@ -1350,7 +1350,7 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
         .WillByDefault(Return(ripple::uint256{PAYS20USDGETS10XRPBOOKDIR}));
 
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(5);
-    auto const indexes = std::vector<ripple::uint256>(BookOffersHandler::LIMIT_MAX + 1, ripple::uint256{INDEX2});
+    auto const indexes = std::vector<ripple::uint256>(BookOffersHandler::limitMax + 1, ripple::uint256{INDEX2});
 
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{PAYS20USDGETS10XRPBOOKDIR}, seq, _))
         .WillByDefault(Return(CreateOwnerDirLedgerObject(indexes, INDEX1).getSerializer().peekData()));
@@ -1376,7 +1376,7 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
         PAYS20USDGETS10XRPBOOKDIR
     );
 
-    std::vector<Blob> const bbs(BookOffersHandler::LIMIT_MAX + 1, gets10XRPPays20USDOffer.getSerializer().peekData());
+    std::vector<Blob> const bbs(BookOffersHandler::limitMax + 1, gets10XRPPays20USDOffer.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
 
@@ -1394,12 +1394,12 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
             "limit": {}
         }})",
         ACCOUNT,
-        BookOffersHandler::LIMIT_MAX + 1
+        BookOffersHandler::limitMax + 1
     ));
     auto const handler = AnyHandler{BookOffersHandler{backend}};
     runSpawn([&](boost::asio::yield_context yield) {
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result.value().as_object().at("offers").as_array().size(), BookOffersHandler::LIMIT_MAX);
+        EXPECT_EQ(output.result.value().as_object().at("offers").as_array().size(), BookOffersHandler::limitMax);
     });
 }

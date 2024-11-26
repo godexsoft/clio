@@ -260,7 +260,7 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
     EXPECT_CALL(
         *rawBalancerPtr, forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(CLIENT_IP), true, _)
     )
-        .WillOnce(Return(std::unexpected{rpc::ClioError::etlINVALID_RESPONSE}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
     EXPECT_CALL(*rawHandlerProviderPtr, contains(method)).WillOnce(Return(true));
 
@@ -275,6 +275,6 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
 
         auto const status = std::get_if<Status>(&res.response);
         EXPECT_TRUE(status != nullptr);
-        EXPECT_EQ(*status, rpc::ClioError::etlINVALID_RESPONSE);
+        EXPECT_EQ(*status, rpc::ClioError::EtlInvalidResponse);
     });
 }

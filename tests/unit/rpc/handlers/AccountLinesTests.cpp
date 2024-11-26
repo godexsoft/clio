@@ -971,7 +971,7 @@ TEST_F(RPCAccountLinesHandlerTest, LimitLessThanMin)
                 "limit": {}
             }})",
             ACCOUNT,
-            AccountLinesHandler::LIMIT_MIN - 1
+            AccountLinesHandler::limitMin - 1
         ));
         auto const correctOutput = fmt::format(
             R"({{
@@ -1005,7 +1005,7 @@ TEST_F(RPCAccountLinesHandlerTest, LimitLessThanMin)
                     }}
                 ]
             }})",
-            AccountLinesHandler::LIMIT_MIN
+            AccountLinesHandler::limitMin
         );
 
         auto handler = AnyHandler{AccountLinesHandler{this->backend}};
@@ -1053,7 +1053,7 @@ TEST_F(RPCAccountLinesHandlerTest, LimitMoreThanMax)
                 "limit": {}
             }})",
             ACCOUNT,
-            AccountLinesHandler::LIMIT_MAX + 1
+            AccountLinesHandler::limitMax + 1
         ));
         auto const correctOutput = fmt::format(
             R"({{
@@ -1087,7 +1087,7 @@ TEST_F(RPCAccountLinesHandlerTest, LimitMoreThanMax)
                     }}
                 ]
             }})",
-            AccountLinesHandler::LIMIT_MAX
+            AccountLinesHandler::limitMax
         );
 
         auto handler = AnyHandler{AccountLinesHandler{this->backend}};
@@ -1118,7 +1118,7 @@ TEST(RPCAccountLinesHandlerSpecTest, DeprecatedFields)
     auto const& warning = warnings[0].as_object();
     ASSERT_TRUE(warning.contains("id"));
     ASSERT_TRUE(warning.contains("message"));
-    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::WarnRpcDeprecated));
     for (auto const& field : {"ledger", "peer_index"}) {
         EXPECT_NE(
             warning.at("message").as_string().find(fmt::format("Field '{}' is deprecated.", field)), std::string::npos

@@ -523,7 +523,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitLessThanMin)
         ISSUER,
         TAXON,
         SERIAL,
-        AccountNFTsHandler::LIMIT_MIN
+        AccountNFTsHandler::limitMin
     );
 
     backend->setRange(MINSEQ, MAXSEQ);
@@ -549,7 +549,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitLessThanMin)
             "limit":{}
         }})",
         ACCOUNT,
-        AccountNFTsHandler::LIMIT_MIN - 1
+        AccountNFTsHandler::limitMin - 1
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend}};
     runSpawn([&](auto yield) {
@@ -587,7 +587,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitMoreThanMax)
         ISSUER,
         TAXON,
         SERIAL,
-        AccountNFTsHandler::LIMIT_MAX
+        AccountNFTsHandler::limitMax
     );
 
     backend->setRange(MINSEQ, MAXSEQ);
@@ -613,7 +613,7 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitMoreThanMax)
             "limit":{}
         }})",
         ACCOUNT,
-        AccountNFTsHandler::LIMIT_MAX + 1
+        AccountNFTsHandler::limitMax + 1
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend}};
     runSpawn([&](auto yield) {

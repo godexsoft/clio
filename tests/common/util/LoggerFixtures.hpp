@@ -73,9 +73,9 @@ public:
 
         core->remove_all_sinks();
         boost::log::add_console_log(stream_, keywords::format = "%Channel%:%Severity% %Message%");
-        auto min_severity = expr::channel_severity_filter(util::log_channel, util::log_severity);
+        auto min_severity = expr::channel_severity_filter(util::LogChannel, util::LogSeverity);
 
-        std::ranges::for_each(util::Logger::CHANNELS, [&min_severity](char const* channel) {
+        std::ranges::for_each(util::Logger::channels, [&min_severity](char const* channel) {
             min_severity[channel] = util::Severity::TRC;
         });
 

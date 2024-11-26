@@ -626,11 +626,7 @@ TEST_F(RPCMPTHoldersHandlerTest, LimitMoreThanMAx)
     EXPECT_CALL(
         *backend,
         fetchMPTHolders(
-            ripple::uint192(MPTID),
-            Const(MPTHoldersHandler::LIMIT_MAX),
-            testing::Eq(std::nullopt),
-            Const(30),
-            testing::_
+            ripple::uint192(MPTID), Const(MPTHoldersHandler::limitMax), testing::Eq(std::nullopt), Const(30), testing::_
         )
     )
         .Times(1);
@@ -641,7 +637,7 @@ TEST_F(RPCMPTHoldersHandlerTest, LimitMoreThanMAx)
             "limit": {}
         }})",
         MPTID,
-        MPTHoldersHandler::LIMIT_MAX + 1
+        MPTHoldersHandler::limitMax + 1
     ));
     runSpawn([&, this](auto& yield) {
         auto handler = AnyHandler{MPTHoldersHandler{this->backend}};

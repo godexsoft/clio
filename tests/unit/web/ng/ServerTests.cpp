@@ -62,6 +62,7 @@ struct MakeServerTestBundle {
 };
 
 struct MakeServerTest : NoLoggerFixture, testing::WithParamInterface<MakeServerTestBundle> {
+protected:
     boost::asio::io_context ioContext_;
 };
 
@@ -153,6 +154,7 @@ struct ServerTest : SyncAsioContextTest {
         server_->onWs(wsHandler_.AsStdFunction());
     }
 
+protected:
     uint32_t const serverPort_ = tests::util::generateFreePort();
 
     util::Config const config_{

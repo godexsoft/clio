@@ -42,19 +42,20 @@
 
 using namespace web::ng;
 
-struct ng_SubscriptionContextTests : SyncAsioContextTest {
-    util::TagDecoratorFactory tagFactory_{util::Config{}};
-    MockWsConnectionImpl connection_{"some ip", boost::beast::flat_buffer{}, tagFactory_};
-    testing::StrictMock<testing::MockFunction<bool(Error const&, Connection const&)>> errorHandler_;
-
+struct NgSubscriptionContextTests : SyncAsioContextTest {
     SubscriptionContext
     makeSubscriptionContext(boost::asio::yield_context yield, std::optional<size_t> maxSendQueueSize = std::nullopt)
     {
         return SubscriptionContext{tagFactory_, connection_, maxSendQueueSize, yield, errorHandler_.AsStdFunction()};
     }
+
+protected:
+    util::TagDecoratorFactory tagFactory_{util::Config{}};
+    MockWsConnectionImpl connection_{"some ip", boost::beast::flat_buffer{}, tagFactory_};
+    testing::StrictMock<testing::MockFunction<bool(Error const&, Connection const&)>> errorHandler_;
 };
 
-TEST_F(ng_SubscriptionContextTests, Send)
+TEST_F(NgSubscriptionContextTests, Send)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -69,7 +70,7 @@ TEST_F(ng_SubscriptionContextTests, Send)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendOrder)
+TEST_F(NgSubscriptionContextTests, SendOrder)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -96,7 +97,7 @@ TEST_F(ng_SubscriptionContextTests, SendOrder)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendFailed)
+TEST_F(NgSubscriptionContextTests, SendFailed)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -113,7 +114,7 @@ TEST_F(ng_SubscriptionContextTests, SendFailed)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendTooManySubscriptions)
+TEST_F(NgSubscriptionContextTests, SendTooManySubscriptions)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield, 1);
@@ -134,7 +135,7 @@ TEST_F(ng_SubscriptionContextTests, SendTooManySubscriptions)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendAfterDisconnect)
+TEST_F(NgSubscriptionContextTests, SendAfterDisconnect)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -144,7 +145,7 @@ TEST_F(ng_SubscriptionContextTests, SendAfterDisconnect)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, OnDisconnect)
+TEST_F(NgSubscriptionContextTests, OnDisconnect)
 {
     testing::StrictMock<testing::MockFunction<void(web::SubscriptionContextInterface*)>> onDisconnect;
 
@@ -156,7 +157,7 @@ TEST_F(ng_SubscriptionContextTests, OnDisconnect)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SetApiSubversion)
+TEST_F(NgSubscriptionContextTests, SetApiSubversion)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);

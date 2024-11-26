@@ -51,8 +51,6 @@ constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A
 constexpr static auto CLIENTIP = "1.1.1.1";
 
 struct RPCServerInfoHandlerTest : HandlerBaseTest, MockLoadBalancerTest, MockCountersTest {
-    StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr;
-
     void
     SetUp() override
     {
@@ -139,6 +137,9 @@ struct RPCServerInfoHandlerTest : HandlerBaseTest, MockLoadBalancerTest, MockCou
         EXPECT_TRUE(info.contains("network_id"));
         EXPECT_EQ(info.at("network_id").as_int64(), 2);
     }
+
+protected:
+    StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr_;
 };
 
 TEST_F(RPCServerInfoHandlerTest, NoLedgerHeaderErrorsOutWithInternal)
@@ -146,7 +147,7 @@ TEST_F(RPCServerInfoHandlerTest, NoLedgerHeaderErrorsOutWithInternal)
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -167,7 +168,7 @@ TEST_F(RPCServerInfoHandlerTest, NoFeesErrorsOutWithInternal)
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -194,14 +195,14 @@ TEST_F(RPCServerInfoHandlerTest, DefaultOutputIsPresent)
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(CLIENTIP), false, testing::_))
-        .WillOnce(Return(std::unexpected{rpc::ClioError::etlINVALID_RESPONSE}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(false));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -231,14 +232,14 @@ TEST_F(RPCServerInfoHandlerTest, AmendmentBlockedIsPresentIfSet)
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(CLIENTIP), false, testing::_))
-        .WillOnce(Return(std::unexpected{rpc::ClioError::etlINVALID_RESPONSE}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(true));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -266,14 +267,14 @@ TEST_F(RPCServerInfoHandlerTest, CorruptionDetectedIsPresentIfSet)
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(CLIENTIP), false, testing::_))
-        .WillOnce(Return(std::unexpected{rpc::ClioError::etlINVALID_RESPONSE}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
     EXPECT_CALL(*rawETLServicePtr, isCorruptionDetected).WillOnce(Return(true));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -301,12 +302,12 @@ TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(CLIENTIP), false, testing::_))
         .Times(2)
-        .WillRepeatedly(Return(std::unexpected{rpc::ClioError::etlINVALID_RESPONSE}));
+        .WillRepeatedly(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).Times(2).WillRepeatedly(Return(std::chrono::seconds{1234}));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -356,12 +357,12 @@ TEST_F(RPCServerInfoHandlerTest, AdminSectionPresentWhenAdminFlagIsSet)
     // admin calls
     EXPECT_CALL(*rawCountersPtr, report).WillOnce(Return(empty));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, report).WillOnce(Return(empty));
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, report).WillOnce(Return(empty));
 
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -395,14 +396,14 @@ TEST_F(RPCServerInfoHandlerTest, BackendCountersPresentWhenRequestWithParam)
     // admin calls
     EXPECT_CALL(*rawCountersPtr, report).WillOnce(Return(empty));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, report).WillOnce(Return(empty));
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, report).WillOnce(Return(empty));
 
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     EXPECT_CALL(*backend, stats).WillOnce(Return(boost::json::object{{"read_cout", 10}, {"write_count", 3}}));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -450,12 +451,12 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
     // admin calls
     EXPECT_CALL(*rawCountersPtr, report).WillOnce(Return(empty));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, report).WillOnce(Return(empty));
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, report).WillOnce(Return(empty));
 
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {
@@ -495,12 +496,12 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesMissingNoExceptionThrown)
     // admin calls
     EXPECT_CALL(*rawCountersPtr, report).WillOnce(Return(empty));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, report).WillOnce(Return(empty));
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, report).WillOnce(Return(empty));
 
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
     }};
 
     runSpawn([&](auto yield) {

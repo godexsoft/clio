@@ -56,14 +56,6 @@ struct ETLTransformerTest : util::prometheus::WithPrometheus, MockBackendTest {
     using TransformerType = etl::impl::
         Transformer<ExtractionDataPipeType, LedgerLoaderType, LedgerPublisherType, AmendmentBlockHandlerType>;
 
-    ExtractionDataPipeType dataPipe_;
-    LedgerLoaderType ledgerLoader_;
-    LedgerPublisherType ledgerPublisher_;
-    AmendmentBlockHandlerType amendmentBlockHandler_;
-    SystemState state_;
-
-    std::unique_ptr<TransformerType> transformer_;
-
     void
     SetUp() override
     {
@@ -78,6 +70,15 @@ struct ETLTransformerTest : util::prometheus::WithPrometheus, MockBackendTest {
     {
         transformer_.reset();
     }
+
+protected:
+    ExtractionDataPipeType dataPipe_;
+    LedgerLoaderType ledgerLoader_;
+    LedgerPublisherType ledgerPublisher_;
+    AmendmentBlockHandlerType amendmentBlockHandler_;
+    SystemState state_;
+
+    std::unique_ptr<TransformerType> transformer_;
 };
 
 TEST_F(ETLTransformerTest, StopsOnWriteConflict)

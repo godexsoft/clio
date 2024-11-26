@@ -57,7 +57,14 @@ using testing::StrictMock;
 
 namespace http = boost::beast::http;
 
-struct ng_RPCServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
+struct NgRpcServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
+    static Request
+    makeHttpRequest(std::string_view body)
+    {
+        return Request{http::request<http::string_body>{http::verb::post, "/", 11, body}};
+    }
+
+protected:
     std::shared_ptr<testing::StrictMock<MockRPCEngine>> rpcEngine_ =
         std::make_shared<testing::StrictMock<MockRPCEngine>>();
     std::shared_ptr<StrictMock<MockETLService>> etl_ = std::make_shared<StrictMock<MockETLService>>();
@@ -65,15 +72,9 @@ struct ng_RPCServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTe
 
     util::TagDecoratorFactory tagFactory_{util::Config{}};
     StrictMockConnectionMetadata connectionMetadata_{"some ip", tagFactory_};
-
-    static Request
-    makeHttpRequest(std::string_view body)
-    {
-        return Request{http::request<http::string_body>{http::verb::post, "/", 11, body}};
-    }
 };
 
-TEST_F(ng_RPCServerHandlerTest, PostToRpcEngineFailed)
+TEST_F(NgRpcServerHandlerTest, PostToRpcEngineFailed)
 {
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest("some message");
@@ -86,7 +87,7 @@ TEST_F(ng_RPCServerHandlerTest, PostToRpcEngineFailed)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, CoroutineSleepsUntilRpcEngineFinishes)
+TEST_F(NgRpcServerHandlerTest, CoroutineSleepsUntilRpcEngineFinishes)
 {
     StrictMock<testing::MockFunction<void()>> rpcServerHandlerDone;
     StrictMock<testing::MockFunction<void()>> rpcEngineDone;
@@ -115,7 +116,7 @@ TEST_F(ng_RPCServerHandlerTest, CoroutineSleepsUntilRpcEngineFinishes)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, JsonParseFailed)
+TEST_F(NgRpcServerHandlerTest, JsonParseFailed)
 {
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest("not a json");
@@ -130,7 +131,7 @@ TEST_F(ng_RPCServerHandlerTest, JsonParseFailed)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, GotNotJsonObject)
+TEST_F(NgRpcServerHandlerTest, GotNotJsonObject)
 {
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest("[]");
@@ -144,7 +145,7 @@ TEST_F(ng_RPCServerHandlerTest, GotNotJsonObject)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_NoRangeFromBackend)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_NoRangeFromBackend)
 {
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest("{}");
@@ -165,7 +166,7 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_NoRangeFromBackend)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_ContextCreationFailed)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_ContextCreationFailed)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -185,7 +186,7 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_ContextCreationFailed)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_BuildResponseFailed)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseFailed)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -194,7 +195,7 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_BuildResponseFailed)
         EXPECT_CALL(*rpcEngine_, post).WillOnce([&](auto&& fn, auto&&) {
             EXPECT_CALL(connectionMetadata_, wasUpgraded).WillRepeatedly(Return(not request.isHttp()));
             EXPECT_CALL(*rpcEngine_, buildResponse)
-                .WillOnce(Return(rpc::Result{rpc::Status{rpc::ClioError::rpcUNKNOWN_OPTION}}));
+                .WillOnce(Return(rpc::Result{rpc::Status{rpc::ClioError::RpcUnknownOption}}));
             EXPECT_CALL(*etl_, lastCloseAgeSeconds).WillOnce(Return(1));
             fn(yield);
             return true;
@@ -208,11 +209,11 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_BuildResponseFailed)
         EXPECT_EQ(jsonResponse.at("result").at("error").as_string(), "unknownOption");
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1);
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_BuildResponseThrewAnException)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseThrewAnException)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -234,7 +235,7 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_BuildResponseThrewAnException)
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -259,11 +260,11 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest)
         EXPECT_EQ(jsonResponse.at("result").at("status").as_string(), "success");
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1) << jsonResponse;
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_OutdatedWarning)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_OutdatedWarning)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -293,12 +294,12 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_OutdatedWarning)
         );
 
         EXPECT_EQ(warningCodes.size(), 2);
-        EXPECT_TRUE(warningCodes.contains(rpc::warnRPC_CLIO));
-        EXPECT_TRUE(warningCodes.contains(rpc::warnRPC_OUTDATED));
+        EXPECT_TRUE(warningCodes.contains(rpc::WarnRpcClio));
+        EXPECT_TRUE(warningCodes.contains(rpc::WarnRpcOutdated));
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest_Forwarded)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest_Forwarded)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -326,11 +327,11 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest_Forwarded)
         EXPECT_EQ(jsonResponse.at("forwarded").as_bool(), true);
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1) << jsonResponse;
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }
 
-TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest_HasError)
+TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest_HasError)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -357,11 +358,11 @@ TEST_F(ng_RPCServerHandlerTest, HandleRequest_Successful_HttpRequest_HasError)
         EXPECT_EQ(jsonResponse.at("result").at("error").as_string(), "some error");
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1) << jsonResponse;
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }
 
-struct ng_RPCServerHandlerWsTest : ng_RPCServerHandlerTest {
+struct NgRpcServerHandlerWsTest : NgRpcServerHandlerTest {
     struct MockSubscriptionContext : web::SubscriptionContextInterface {
         using web::SubscriptionContextInterface::SubscriptionContextInterface;
 
@@ -372,11 +373,12 @@ struct ng_RPCServerHandlerWsTest : ng_RPCServerHandlerTest {
     };
     using StrictMockSubscriptionContext = testing::StrictMock<MockSubscriptionContext>;
 
+protected:
     std::shared_ptr<StrictMockSubscriptionContext> subscriptionContext_ =
         std::make_shared<StrictMockSubscriptionContext>(tagFactory_);
 };
 
-TEST_F(ng_RPCServerHandlerWsTest, HandleRequest_Successful_WsRequest)
+TEST_F(NgRpcServerHandlerWsTest, HandleRequest_Successful_WsRequest)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -403,11 +405,11 @@ TEST_F(ng_RPCServerHandlerWsTest, HandleRequest_Successful_WsRequest)
         EXPECT_EQ(jsonResponse.at("api_version").as_int64(), 1);
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1) << jsonResponse;
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }
 
-TEST_F(ng_RPCServerHandlerWsTest, HandleRequest_Successful_WsRequest_HasError)
+TEST_F(NgRpcServerHandlerWsTest, HandleRequest_Successful_WsRequest_HasError)
 {
     backend->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
@@ -436,6 +438,6 @@ TEST_F(ng_RPCServerHandlerWsTest, HandleRequest_Successful_WsRequest_HasError)
         EXPECT_EQ(jsonResponse.at("api_version").as_int64(), 1);
 
         ASSERT_EQ(jsonResponse.at("warnings").as_array().size(), 1) << jsonResponse;
-        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::warnRPC_CLIO);
+        EXPECT_EQ(jsonResponse.at("warnings").as_array().at(0).as_object().at("id").as_int64(), rpc::WarnRpcClio);
     });
 }

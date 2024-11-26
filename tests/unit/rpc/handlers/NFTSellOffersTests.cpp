@@ -649,7 +649,7 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitLessThanMin)
     // return owner index containing 2 indexes
     auto const directory = ripple::keylet::nft_sells(ripple::uint256{NFTID});
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NFTSellOffersHandler::LIMIT_MIN + 1, ripple::uint256{INDEX1}}, INDEX1);
+        CreateOwnerDirLedgerObject(std::vector{NFTSellOffersHandler::limitMin + 1, ripple::uint256{INDEX1}}, INDEX1);
 
     ON_CALL(*backend, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -658,8 +658,8 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitLessThanMin)
     // return two nft buy offers
     std::vector<Blob> bbs;
     auto const offer = CreateNFTSellOffer(NFTID, ACCOUNT);
-    bbs.reserve(NFTSellOffersHandler::LIMIT_MIN + 1);
-    for (auto i = 0; i < NFTSellOffersHandler::LIMIT_MIN + 1; i++)
+    bbs.reserve(NFTSellOffersHandler::limitMin + 1);
+    for (auto i = 0; i < NFTSellOffersHandler::limitMin + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
@@ -670,15 +670,15 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitLessThanMin)
             "limit": {}
         }})",
         NFTID,
-        NFTSellOffersHandler::LIMIT_MIN - 1
+        NFTSellOffersHandler::limitMin - 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTSellOffersHandler{this->backend}};
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTSellOffersHandler::LIMIT_MIN);
-        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTSellOffersHandler::LIMIT_MIN);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTSellOffersHandler::limitMin);
+        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTSellOffersHandler::limitMin);
     });
 }
 
@@ -692,7 +692,7 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitMoreThanMax)
     // return owner index containing 2 indexes
     auto const directory = ripple::keylet::nft_sells(ripple::uint256{NFTID});
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NFTSellOffersHandler::LIMIT_MAX + 1, ripple::uint256{INDEX1}}, INDEX1);
+        CreateOwnerDirLedgerObject(std::vector{NFTSellOffersHandler::limitMax + 1, ripple::uint256{INDEX1}}, INDEX1);
 
     ON_CALL(*backend, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -701,8 +701,8 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitMoreThanMax)
     // return two nft buy offers
     std::vector<Blob> bbs;
     auto const offer = CreateNFTSellOffer(NFTID, ACCOUNT);
-    bbs.reserve(NFTSellOffersHandler::LIMIT_MAX + 1);
-    for (auto i = 0; i < NFTSellOffersHandler::LIMIT_MAX + 1; i++)
+    bbs.reserve(NFTSellOffersHandler::limitMax + 1);
+    for (auto i = 0; i < NFTSellOffersHandler::limitMax + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
@@ -713,14 +713,14 @@ TEST_F(RPCNFTSellOffersHandlerTest, LimitMoreThanMax)
             "limit": {}
         }})",
         NFTID,
-        NFTSellOffersHandler::LIMIT_MAX + 1
+        NFTSellOffersHandler::limitMax + 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTSellOffersHandler{this->backend}};
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTSellOffersHandler::LIMIT_MAX);
-        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTSellOffersHandler::LIMIT_MAX);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTSellOffersHandler::limitMax);
+        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTSellOffersHandler::limitMax);
     });
 }

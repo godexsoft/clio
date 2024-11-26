@@ -177,7 +177,7 @@ TEST_P(NoRippleCheckParameterTest, InvalidParams)
 
 TEST_F(NoRippleCheckParameterTest, V1ApiTransactionsIsNotBool)
 {
-    static constexpr auto reqJson = R"(
+    constexpr static auto reqJson = R"(
         {
             "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
             "role": "gateway",
@@ -769,7 +769,7 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
             CreateAccountRootObject(ACCOUNT, ripple::lsfDefaultRipple, 2, 200, 2, INDEX1, 2).getSerializer().peekData()
         ));
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NoRippleCheckHandler::LIMIT_MAX + 1, ripple::uint256{INDEX1}}, INDEX1);
+        CreateOwnerDirLedgerObject(std::vector{NoRippleCheckHandler::limitMax + 1, ripple::uint256{INDEX1}}, INDEX1);
     auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(ACCOUNT)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -780,8 +780,8 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
     );
 
     std::vector<Blob> bbs;
-    bbs.reserve(NoRippleCheckHandler::LIMIT_MAX + 1);
-    for (auto i = 0; i < NoRippleCheckHandler::LIMIT_MAX + 1; i++) {
+    bbs.reserve(NoRippleCheckHandler::limitMax + 1);
+    for (auto i = 0; i < NoRippleCheckHandler::limitMax + 1; i++) {
         bbs.push_back(line1.getSerializer().peekData());
     }
 
@@ -797,12 +797,12 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
         }})",
         ACCOUNT,
         LEDGERHASH,
-        NoRippleCheckHandler::LIMIT_MAX + 1
+        NoRippleCheckHandler::limitMax + 1
     ));
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->as_object().at("problems").as_array().size(), NoRippleCheckHandler::LIMIT_MAX);
+        EXPECT_EQ(output.result->as_object().at("problems").as_array().size(), NoRippleCheckHandler::limitMax);
     });
 }

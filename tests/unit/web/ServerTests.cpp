@@ -107,16 +107,16 @@ generateJSONDataOverload(std::string_view port)
 struct WebServerTest : NoLoggerFixture {
     ~WebServerTest() override
     {
-        work.reset();
+        work_.reset();
         ctx.stop();
-        if (runner->joinable())
-            runner->join();
+        if (runner_->joinable())
+            runner_->join();
     }
 
     WebServerTest()
     {
-        work.emplace(ctx);  // make sure ctx does not stop on its own
-        runner.emplace([this] { ctx.run(); });
+        work_.emplace(ctx);  // make sure ctx does not stop on its own
+        runner_.emplace([this] { ctx.run(); });
     }
 
     boost::json::value
@@ -146,8 +146,8 @@ struct WebServerTest : NoLoggerFixture {
     TmpFile sslKeyFile{tests::sslKeyFile()};
 
 private:
-    std::optional<boost::asio::io_service::work> work;
-    std::optional<std::thread> runner;
+    std::optional<boost::asio::io_service::work> work_;
+    std::optional<std::thread> runner_;
 };
 
 class EchoExecutor {

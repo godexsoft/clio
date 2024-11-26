@@ -37,10 +37,6 @@ using testing::MockFunction;
 using testing::StrictMock;
 
 struct SignalsHandlerTestsBase : NoLoggerFixture {
-    StrictMock<MockFunction<void()>> forceExitHandler_;
-    StrictMock<MockFunction<void()>> stopHandler_;
-    StrictMock<MockFunction<void()>> anotherStopHandler_;
-
     void
     allowTestToFinish()
     {
@@ -56,6 +52,11 @@ struct SignalsHandlerTestsBase : NoLoggerFixture {
         cv_.wait(lock, [this] { return testCanBeFinished_; });
     }
 
+protected:
+    StrictMock<MockFunction<void()>> forceExitHandler_;
+    StrictMock<MockFunction<void()>> stopHandler_;
+    StrictMock<MockFunction<void()>> anotherStopHandler_;
+
     std::mutex mutex_;
     std::condition_variable cv_;
     bool testCanBeFinished_{false};
@@ -69,6 +70,7 @@ TEST(SignalsHandlerDeathTest, CantCreateTwoSignalsHandlers)
 }
 
 struct SignalsHandlerTests : SignalsHandlerTestsBase {
+protected:
     SignalsHandler handler_{
         util::Config{boost::json::value{{"graceful_period", 3.0}}},
         forceExitHandler_.AsStdFunction()
@@ -93,6 +95,7 @@ TEST_F(SignalsHandlerTests, OneSignal)
 }
 
 struct SignalsHandlerTimeoutTests : SignalsHandlerTestsBase {
+protected:
     SignalsHandler handler_{
         util::Config{boost::json::value{{"graceful_period", 0.001}}},
         forceExitHandler_.AsStdFunction()

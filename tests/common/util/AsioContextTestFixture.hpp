@@ -38,24 +38,24 @@
 struct AsyncAsioContextTest : virtual public NoLoggerFixture {
     AsyncAsioContextTest()
     {
-        work.emplace(ctx);  // make sure ctx does not stop on its own
-        runner.emplace([&] { ctx.run(); });
+        work_.emplace(ctx);  // make sure ctx does not stop on its own
+        runner_.emplace([&] { ctx.run(); });
     }
 
     ~AsyncAsioContextTest() override
     {
-        work.reset();
-        if (runner->joinable())
-            runner->join();
+        work_.reset();
+        if (runner_->joinable())
+            runner_->join();
         ctx.stop();
     }
 
     void
     stop()
     {
-        work.reset();
-        if (runner->joinable())
-            runner->join();
+        work_.reset();
+        if (runner_->joinable())
+            runner_->join();
         ctx.stop();
     }
 
@@ -63,8 +63,8 @@ protected:
     boost::asio::io_context ctx;
 
 private:
-    std::optional<boost::asio::io_service::work> work;
-    std::optional<std::thread> runner;
+    std::optional<boost::asio::io_service::work> work_;
+    std::optional<std::thread> runner_;
 };
 
 /**

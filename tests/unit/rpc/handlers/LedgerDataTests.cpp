@@ -655,10 +655,10 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
     ON_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _))
         .WillByDefault(Return(CreateLedgerHeader(LEDGERHASH, RANGEMAX)));
 
-    auto limit = LedgerDataHandler::LIMITBINARY + 1;
+    auto limit = LedgerDataHandler::limitBinary + 1;
     std::vector<Blob> bbs;
 
-    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(LedgerDataHandler::LIMITBINARY);
+    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(LedgerDataHandler::limitBinary);
     ON_CALL(*backend, doFetchSuccessorKey(_, RANGEMAX, _)).WillByDefault(Return(ripple::uint256{INDEX2}));
 
     while ((limit--) != 0u) {
@@ -676,14 +676,14 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
                 "limit":{},
                 "binary": true
             }})",
-            LedgerDataHandler::LIMITBINARY + 1
+            LedgerDataHandler::limitBinary + 1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().contains("ledger_data"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().at("closed").as_bool());
-        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::LIMITBINARY);
+        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::limitBinary);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LEDGERHASH);
         EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RANGEMAX);
     });
@@ -697,10 +697,10 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
     ON_CALL(*backend, fetchLedgerBySequence(RANGEMAX, _))
         .WillByDefault(Return(CreateLedgerHeader(LEDGERHASH, RANGEMAX)));
 
-    auto limit = LedgerDataHandler::LIMITJSON + 1;
+    auto limit = LedgerDataHandler::limitJSON + 1;
     std::vector<Blob> bbs;
 
-    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(LedgerDataHandler::LIMITJSON);
+    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(LedgerDataHandler::limitJSON);
     ON_CALL(*backend, doFetchSuccessorKey(_, RANGEMAX, _)).WillByDefault(Return(ripple::uint256{INDEX2}));
 
     while ((limit--) != 0u) {
@@ -718,13 +718,13 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
                 "limit":{},
                 "binary": false
             }})",
-            LedgerDataHandler::LIMITJSON + 1
+            LedgerDataHandler::limitJSON + 1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().at("closed").as_bool());
-        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::LIMITJSON);
+        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::limitJSON);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LEDGERHASH);
         EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RANGEMAX);
     });
@@ -831,6 +831,6 @@ TEST(RPCLedgerDataHandlerSpecTest, DeprecatedFields)
     auto const& warning = warnings[0].as_object();
     ASSERT_TRUE(warning.contains("id"));
     ASSERT_TRUE(warning.contains("message"));
-    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::WarnRpcDeprecated));
     EXPECT_NE(warning.at("message").as_string().find("Field 'ledger' is deprecated."), std::string::npos) << warning;
 }

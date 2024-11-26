@@ -64,9 +64,10 @@ constexpr static auto INDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B2501
 constexpr static auto INDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
 
 struct RPCSubscribeHandlerTest : HandlerBaseTest {
+protected:
     web::SubscriptionContextPtr session_ = std::make_shared<MockSession>();
     MockSession* mockSession_ = dynamic_cast<MockSession*>(session_.get());
-    StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr;
+    StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr_;
 };
 
 struct SubscribeParamTestCaseBundle {
@@ -552,7 +553,7 @@ TEST_P(SubscribeParameterTest, InvalidParams)
 {
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -565,7 +566,7 @@ TEST_P(SubscribeParameterTest, InvalidParams)
 TEST_F(RPCSubscribeHandlerTest, EmptyResponse)
 {
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(json::parse(R"({})"), Context{yield, session_});
         ASSERT_TRUE(output);
@@ -582,12 +583,12 @@ TEST_F(RPCSubscribeHandlerTest, StreamsWithoutLedger)
         })"
     );
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subTransactions);
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subValidation);
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subManifest);
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subBookChanges);
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subProposedTransactions);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subTransactions);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subValidation);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subManifest);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subBookChanges);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedTransactions);
 
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
@@ -615,9 +616,9 @@ TEST_F(RPCSubscribeHandlerTest, StreamsLedger)
         })"
     );
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
 
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subLedger)
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subLedger)
             .WillOnce(testing::Return(boost::json::parse(expectedOutput).as_object()));
 
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
@@ -638,10 +639,10 @@ TEST_F(RPCSubscribeHandlerTest, Accounts)
         ACCOUNT2
     ));
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
 
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subAccount(GetAccountIDWithString(ACCOUNT), session_));
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subAccount(GetAccountIDWithString(ACCOUNT2), session_)).Times(2);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(GetAccountIDWithString(ACCOUNT), session_));
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(GetAccountIDWithString(ACCOUNT2), session_)).Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -660,10 +661,10 @@ TEST_F(RPCSubscribeHandlerTest, AccountsProposed)
         ACCOUNT2
     ));
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
 
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subProposedAccount(GetAccountIDWithString(ACCOUNT), session_));
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subProposedAccount(GetAccountIDWithString(ACCOUNT2), session_))
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(GetAccountIDWithString(ACCOUNT), session_));
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(GetAccountIDWithString(ACCOUNT2), session_))
             .Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
@@ -694,8 +695,8 @@ TEST_F(RPCSubscribeHandlerTest, JustBooks)
         ACCOUNT
     ));
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subBook);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subBook);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -726,8 +727,8 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSet)
         ACCOUNT
     ));
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subBook).Times(2);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subBook).Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -891,8 +892,8 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
         ACCOUNT
     );
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subBook).Times(2);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subBook).Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -1032,8 +1033,8 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
     );
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subBook);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subBook);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -1051,8 +1052,8 @@ TEST_F(RPCSubscribeHandlerTest, APIVersion)
     );
     auto const apiVersion = 2;
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr}};
-        EXPECT_CALL(*mockSubscriptionManagerPtr, subProposedTransactions);
+        auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedTransactions);
         EXPECT_CALL(*mockSession_, setApiSubversion(apiVersion));
         auto const output =
             handler.process(input, Context{.yield = yield, .session = session_, .apiVersion = apiVersion});
@@ -1080,7 +1081,7 @@ TEST(RPCSubscribeHandlerSpecTest, DeprecatedFields)
     auto const obj = warning.as_object();
     ASSERT_TRUE(obj.contains("id"));
     ASSERT_TRUE(obj.contains("message"));
-    EXPECT_EQ(obj.at("id").as_int64(), static_cast<int64_t>(WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(obj.at("id").as_int64(), static_cast<int64_t>(WarningCode::WarnRpcDeprecated));
     auto const& message = obj.at("message").as_string();
     for (auto const& field : {"user", "password", "rt_accounts"}) {
         EXPECT_NE(message.find(fmt::format("Field '{}' is deprecated", field)), std::string::npos) << message;

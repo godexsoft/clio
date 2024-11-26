@@ -32,7 +32,7 @@ using namespace web::dosguard;
 
 struct IntervalSweepHandlerTest : SyncAsioContextTest {
 protected:
-    constexpr static auto JSONData = R"JSON(
+    constexpr static auto jsonData = R"JSON(
     {
         "dos_guard": {
             "sweep_interval": 0
@@ -45,7 +45,7 @@ protected:
     };
     testing::StrictMock<DosGuardMock> guardMock;
 
-    util::Config cfg{boost::json::parse(JSONData)};
+    util::Config cfg{boost::json::parse(jsonData)};
     IntervalSweepHandler sweepHandler{cfg, ctx, guardMock};
 };
 

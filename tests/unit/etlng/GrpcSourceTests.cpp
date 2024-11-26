@@ -124,11 +124,13 @@ struct GrpcSourceNgTests : NoLoggerFixture, tests::util::WithMockXrpLedgerAPISer
         };
     };
 
+protected:
     testing::StrictMock<MockLoadObserver> observer_;
     etlng::impl::GrpcSource grpcSource_;
 };
 
 struct GrpcSourceNgLoadInitialLedgerTests : GrpcSourceNgTests {
+protected:
     uint32_t const sequence_ = 123u;
     uint32_t const numMarkers_ = 4u;
     bool const cacheOnly_ = false;

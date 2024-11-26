@@ -179,6 +179,7 @@ INSTANTIATE_TEST_SUITE_P(
 );
 
 struct RequestHttpHeadersTest : RequestTest {
+protected:
     http::field const headerName_ = http::field::user_agent;
     std::string const headerValue_ = "clio";
 };

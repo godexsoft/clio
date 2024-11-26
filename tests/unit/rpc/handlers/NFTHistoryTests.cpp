@@ -1094,7 +1094,7 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
             NFTID,
             MINSEQ + 1,
             MAXSEQ - 1,
-            NFTHistoryHandler::LIMIT_MAX + 1
+            NFTHistoryHandler::limitMax + 1
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
@@ -1103,6 +1103,6 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MAXSEQ - 1);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
-        EXPECT_EQ(output.result->as_object().at("limit").as_uint64(), NFTHistoryHandler::LIMIT_MAX);
+        EXPECT_EQ(output.result->as_object().at("limit").as_uint64(), NFTHistoryHandler::limitMax);
     });
 }
