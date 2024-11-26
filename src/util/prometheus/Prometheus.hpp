@@ -393,10 +393,10 @@ public:
      *
      * @note Be careful with this method because there could be hanging references to counters
      *
-     * @param impl The new prometheus object
+     * @param inst The new prometheus object
      */
     static void
-    replaceInstance(std::unique_ptr<util::prometheus::PrometheusInterface> impl);
+    replaceInstance(std::unique_ptr<util::prometheus::PrometheusInterface> inst);
 
     /**
      * @brief Get the prometheus object stored in the singleton

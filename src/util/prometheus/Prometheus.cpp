@@ -263,9 +263,9 @@ PrometheusService::compressReplyEnabled()
 }
 
 void
-PrometheusService::replaceInstance(std::unique_ptr<util::prometheus::PrometheusInterface> impl)
+PrometheusService::replaceInstance(std::unique_ptr<util::prometheus::PrometheusInterface> inst)
 {
-    PrometheusService::impl = std::move(impl);
+    PrometheusService::impl = std::move(inst);
 }
 
 util::prometheus::PrometheusInterface&
