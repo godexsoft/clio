@@ -21,7 +21,6 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include "util/AccountUtils.hpp"
 #include "util/Assert.hpp"
 
 #include <boost/asio/spawn.hpp>
@@ -84,7 +83,7 @@ parseAuthorizeCredentials(boost::json::array const& jv)
             "issuer must be string, should already be checked in AuthorizeCredentialValidator"
         );
         auto const issuer =
-            util::parseBase58Wrapper<ripple::AccountID>(static_cast<std::string>(jo.at(JS(issuer)).as_string()));
+            ripple::parseBase58<ripple::AccountID>(static_cast<std::string>(jo.at(JS(issuer)).as_string()));
         ASSERT(
             issuer.has_value(), "issuer must be present, should already be checked in AuthorizeCredentialValidator."
         );
