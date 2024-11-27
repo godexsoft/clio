@@ -25,6 +25,9 @@
 #include <utility>
 #include <vector>
 
+// Note: we don't control gRPC models so let's keep the fakes compatible
+// NOLINTBEGIN(readability-identifier-naming)
+
 class FakeBook {
     std::string base_;
     std::string first_;
@@ -219,3 +222,5 @@ struct FakeFetchResponse {
         return &bookSuccessors;
     }
 };
+
+// NOLINTEND(readability-identifier-naming)
