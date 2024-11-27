@@ -20,7 +20,6 @@
 #include "rpc/CredentialHelpers.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
-#include "util/AccountUtils.hpp"
 #include "util/AsioContextTestFixture.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
@@ -97,7 +96,7 @@ TEST(ParseAuthorizeCredentialsTest, ValidCredentialsArray)
     ASSERT_TRUE(cred.isFieldPresent(ripple::sfCredentialType));
 
     auto const expectedIssuer =
-        *util::parseBase58Wrapper<ripple::AccountID>(static_cast<std::string>(credential1[JS(issuer)].as_string()));
+        *ripple::parseBase58<ripple::AccountID>(static_cast<std::string>(credential1[JS(issuer)].as_string()));
     auto const expectedCredentialType =
         ripple::strUnHex(static_cast<std::string>(credential1[JS(credential_type)].as_string())).value();
 
