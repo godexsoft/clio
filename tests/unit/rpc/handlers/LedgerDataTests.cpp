@@ -202,7 +202,7 @@ TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _)).WillByDefault(Return(std::nullopt));
@@ -242,7 +242,7 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
 
     backend->setRange(RangeMin, RangeMax);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     // when 'type' not specified, default to all the types
     auto limitLine = 5;
@@ -253,12 +253,12 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limitLine--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = CreateTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(Account, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -301,7 +301,7 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
 
     backend->setRange(RangeMin, RangeMax);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     // When 'type' not specified, default to all the types
     auto limitLine = 5;
@@ -312,12 +312,12 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limitLine--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = CreateTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(Account, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -358,7 +358,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limitLine = 5;
     auto limitTicket = 5;
@@ -368,12 +368,12 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limitLine--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = CreateTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(Account, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -423,7 +423,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limitLine = 5;
 
@@ -432,11 +432,11 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limitLine--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
-    auto const amm = CreateAMMObject(Account, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", Account2);
+    auto const amm = createAmmObject(Account, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", Account2);
     bbs.push_back(amm.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -485,7 +485,7 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     // page end
     // marker return seq
@@ -494,7 +494,7 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
     ON_CALL(*backend, doFetchSuccessorKey(firstKey, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
     ON_CALL(*backend, doFetchSuccessorKey(ripple::uint256{Index2}, RangeMax, _)).WillByDefault(Return(std::nullopt));
 
-    auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+    auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
     bbs.push_back(line.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -521,12 +521,12 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
         .WillByDefault(
-            Return(CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123)
+            Return(createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123)
                        .getSerializer()
                        .peekData())
         );
@@ -540,7 +540,7 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
         .WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limit--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -572,7 +572,7 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limit = 10;
     std::vector<LedgerObject> los;
@@ -581,7 +581,7 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
     EXPECT_CALL(*backend, fetchLedgerDiff).Times(1);
 
     while ((limit--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
         los.emplace_back(LedgerObject{ripple::uint256{Index2}, Blob{}});  // NOLINT(modernize-use-emplace)
     }
@@ -616,7 +616,7 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limit = 10;
     std::vector<Blob> bbs;
@@ -625,7 +625,7 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limit--) != 0) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -657,7 +657,7 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limit = LedgerDataHandler::limitBinary + 1;
     std::vector<Blob> bbs;
@@ -666,7 +666,7 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limit--) != 0u) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -699,7 +699,7 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     auto limit = LedgerDataHandler::limitJSON + 1;
     std::vector<Blob> bbs;
@@ -708,7 +708,7 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
     while ((limit--) != 0u) {
-        auto const line = CreateRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -740,13 +740,13 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend, doFetchSuccessorKey).Times(1);
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
-    auto const issuance = CreateMPTIssuanceObject(Account, 2, "metadata");
+    auto const issuance = createMptIssuanceObject(Account, 2, "metadata");
     bbs.push_back(issuance.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -773,7 +773,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
         // make sure mptID is synethetically parsed if object is mptIssuance
         EXPECT_EQ(
             objects.front().at("mpt_issuance_id").as_string(),
-            ripple::to_string(ripple::makeMptID(2, GetAccountIDWithString(Account)))
+            ripple::to_string(ripple::makeMptID(2, getAccountIdWithString(Account)))
         );
     });
 }
@@ -784,13 +784,13 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
 
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend, doFetchSuccessorKey).Times(1);
     ON_CALL(*backend, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
 
-    auto const mptoken = CreateMPTokenObject(Account, ripple::makeMptID(2, GetAccountIDWithString(Account)));
+    auto const mptoken = createMpTokenObject(Account, ripple::makeMptID(2, getAccountIdWithString(Account)));
     bbs.push_back(mptoken.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));

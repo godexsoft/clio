@@ -177,7 +177,7 @@ using PlainWsConnection = WsConnection<boost::beast::tcp_stream>;
 using SslWsConnection = WsConnection<boost::asio::ssl::stream<boost::beast::tcp_stream>>;
 
 std::expected<std::unique_ptr<PlainWsConnection>, Error>
-make_PlainWsConnection(
+makePlainWsConnection(
     boost::asio::ip::tcp::socket socket,
     std::string ip,
     boost::beast::flat_buffer buffer,
@@ -187,7 +187,7 @@ make_PlainWsConnection(
 );
 
 std::expected<std::unique_ptr<SslWsConnection>, Error>
-make_SslWsConnection(
+makeSslWsConnection(
     boost::asio::ip::tcp::socket socket,
     std::string ip,
     boost::beast::flat_buffer buffer,

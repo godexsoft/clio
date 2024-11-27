@@ -56,7 +56,7 @@ using namespace util;
 namespace etl {
 
 std::shared_ptr<LoadBalancer>
-LoadBalancer::make_LoadBalancer(
+LoadBalancer::makeLoadBalancer(
     Config const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,

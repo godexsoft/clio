@@ -287,7 +287,7 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaStringIndex)
 TEST_F(RPCNoRippleCheckTest, AccountNotExist)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return emtpy
@@ -327,26 +327,26 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRipple
         })";
 
     backend->setRange(10, Seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, Seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, Seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
         .WillByDefault(Return(
-            CreateAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
+            createAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
         ));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, Seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject(
+    auto const line1 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
-    auto const line2 = CreateRippleStateLedgerObject(
+    auto const line2 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
@@ -389,22 +389,22 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleUnsetTrustLineNoRipp
         })";
 
     backend->setRange(10, Seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, Seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, Seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
-        .WillByDefault(Return(CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+        .WillByDefault(Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, Seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
 
-    auto const line2 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line2 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
 
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
@@ -446,26 +446,26 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRip
         })";
 
     backend->setRange(10, Seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, Seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, Seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
         .WillByDefault(Return(
-            CreateAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
+            createAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
         ));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, Seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject(
+    auto const line1 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
-    auto const line2 = CreateRippleStateLedgerObject(
+    auto const line2 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
@@ -508,22 +508,22 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
         })";
 
     backend->setRange(10, Seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, Seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, Seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
-        .WillByDefault(Return(CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+        .WillByDefault(Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, Seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
 
-    auto const line2 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line2 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
 
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
@@ -554,24 +554,24 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
     static constexpr auto Seq = 30;
 
     backend->setRange(10, Seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, Seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, Seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
-        .WillByDefault(Return(CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+        .WillByDefault(Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, Seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, Seq, _))
-        .WillByDefault(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(3);
 
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
 
-    auto const line2 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
+    auto const line2 = createRippleStateLedgerObject("USD", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
 
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
@@ -604,26 +604,26 @@ TEST_F(RPCNoRippleCheckTest, NormalPathLimit)
     constexpr auto seq = 30;
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
         .WillByDefault(Return(
-            CreateAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
+            createAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
         ));
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject(
+    auto const line1 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
-    auto const line2 = CreateRippleStateLedgerObject(
+    auto const line2 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
@@ -708,28 +708,28 @@ TEST_F(RPCNoRippleCheckTest, NormalPathTransactions)
     );
 
     backend->setRange(10, seq);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
         .WillByDefault(
-            Return(CreateAccountRootObject(Account, 0, transactionSeq, 200, 2, Index1, 2).getSerializer().peekData())
+            Return(createAccountRootObject(Account, 0, transactionSeq, 200, 2, Index1, 2).getSerializer().peekData())
         );
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, seq, _))
-        .WillByDefault(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(3);
 
-    auto const line1 = CreateRippleStateLedgerObject(
+    auto const line1 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
-    auto const line2 = CreateRippleStateLedgerObject(
+    auto const line2 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 
@@ -763,23 +763,23 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
     constexpr auto seq = 30;
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     // fetch account object return valid account with DefaultRippleSet flag
 
     ON_CALL(*backend, doFetchLedgerObject)
         .WillByDefault(Return(
-            CreateAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
+            createAccountRootObject(Account, ripple::lsfDefaultRipple, 2, 200, 2, Index1, 2).getSerializer().peekData()
         ));
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NoRippleCheckHandler::limitMax + 1, ripple::uint256{Index1}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+        createOwnerDirLedgerObject(std::vector{NoRippleCheckHandler::limitMax + 1, ripple::uint256{Index1}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
-    auto const line1 = CreateRippleStateLedgerObject(
+    auto const line1 = createRippleStateLedgerObject(
         "USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, ripple::lsfLowNoRipple
     );
 

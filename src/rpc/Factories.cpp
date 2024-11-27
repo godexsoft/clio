@@ -44,7 +44,7 @@ using namespace util;
 namespace rpc {
 
 std::expected<web::Context, Status>
-make_WsContext(
+makeWsContext(
     boost::asio::yield_context yc,
     boost::json::object const& request,
     web::SubscriptionContextPtr session,
@@ -74,7 +74,7 @@ make_WsContext(
 }
 
 std::expected<web::Context, Status>
-make_HttpContext(
+makeHttpContext(
     boost::asio::yield_context yc,
     boost::json::object const& request,
     util::TagDecoratorFactory const& tagFactory,

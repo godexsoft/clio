@@ -177,7 +177,7 @@ public:
 
         if constexpr (IsSslTcpStream<StreamType>) {
             ASSERT(sslContext.has_value(), "SSL context must be present to upgrade the connection");
-            return make_SslWsConnection(
+            return makeSslWsConnection(
                 boost::beast::get_lowest_layer(stream_).release_socket(),
                 std::move(ip_),
                 std::move(buffer_),
@@ -187,7 +187,7 @@ public:
                 yield
             );
         } else {
-            return make_PlainWsConnection(
+            return makePlainWsConnection(
                 stream_.release_socket(),
                 std::move(ip_),
                 std::move(buffer_),

@@ -107,7 +107,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        auto const& accountOwnedTypes = util::LedgerTypes::GetAccountOwnedLedgerTypeStrList();
+        auto const& accountOwnedTypes = util::LedgerTypes::getAccountOwnedLedgerTypeStrList();
         static auto const rpcSpec = RpcSpec{
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},

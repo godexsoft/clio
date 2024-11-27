@@ -46,7 +46,7 @@ constexpr auto JSONConfig = R"JSON({
 
 struct WorkQueueTestBase : NoLoggerFixture {
     Config cfg = Config{boost::json::parse(JSONConfig)};
-    WorkQueue queue = WorkQueue::make_WorkQueue(cfg);
+    WorkQueue queue = WorkQueue::makeWorkQueue(cfg);
 };
 
 struct WorkQueueTest : WithPrometheus, WorkQueueTestBase {};

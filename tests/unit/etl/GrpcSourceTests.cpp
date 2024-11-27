@@ -124,7 +124,7 @@ TEST_F(GrpcSourceLoadInitialLedgerTests, worksFine)
 {
     auto const key = ripple::uint256{4};
     std::string const keyStr{reinterpret_cast<char const*>(key.data()), ripple::uint256::size()};
-    auto const object = CreateTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
+    auto const object = createTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
     auto const objectData = object.getSerializer().peekData();
 
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)

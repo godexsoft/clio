@@ -60,10 +60,10 @@ TEST_F(ExtractionTests, OneTransaction)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
+    auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
     auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-    auto [metaRaw, txRaw] = util::CreateNftTxAndMetaBlobs();
+    auto [metaRaw, txRaw] = util::createNftTxAndMetaBlobs();
     original.set_transaction_blob(txRaw);
     original.set_metadata_blob(metaRaw);
 
@@ -78,10 +78,10 @@ TEST_F(ExtractionTests, MultipleTransactions)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
+    auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
     auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-    auto [metaRaw, txRaw] = util::CreateNftTxAndMetaBlobs();
+    auto [metaRaw, txRaw] = util::createNftTxAndMetaBlobs();
     original.set_transaction_blob(txRaw);
     original.set_metadata_blob(metaRaw);
 
@@ -106,7 +106,7 @@ TEST_F(ExtractionTests, OneObject)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateObject();
+    auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
     original.set_data(expected.dataRaw);
     original.set_key(expected.keyRaw);
@@ -123,7 +123,7 @@ TEST_F(ExtractionTests, OneObjectWithSuccessorAndPredecessor)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateObject();
+    auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
     original.set_data(expected.dataRaw);
     original.set_key(expected.keyRaw);
@@ -142,7 +142,7 @@ TEST_F(ExtractionTests, MultipleObjects)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateObject();
+    auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
     original.set_data(expected.dataRaw);
     original.set_key(expected.keyRaw);
@@ -169,7 +169,7 @@ TEST_F(ExtractionTests, OneSuccessor)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateSuccessor();
+    auto expected = util::createSuccessor();
     auto original = org::xrpl::rpc::v1::BookSuccessor();
     original.set_first_book(expected.firstBook);
     original.set_book_base(expected.bookBase);
@@ -183,7 +183,7 @@ TEST_F(ExtractionTests, MultipleSuccessors)
 {
     using namespace etlng::impl;
 
-    auto expected = util::CreateSuccessor();
+    auto expected = util::createSuccessor();
     auto original = org::xrpl::rpc::v1::BookSuccessor();
     original.set_first_book(expected.firstBook);
     original.set_book_base(expected.bookBase);
@@ -259,7 +259,7 @@ TEST_F(ExtractorTests, ExtractLedgerOnlyNoResult)
 
 TEST_F(ExtractorTests, ExtractLedgerWithDiffWithResult)
 {
-    auto original = util::CreateDataAndDiff();
+    auto original = util::createDataAndDiff();
 
     EXPECT_CALL(*fetcher, fetchDataAndDiff(Seq)).WillOnce(testing::Return(original));
     auto res = extractor.extractLedgerWithDiff(Seq);
@@ -274,7 +274,7 @@ TEST_F(ExtractorTests, ExtractLedgerWithDiffWithResult)
 
 TEST_F(ExtractorTests, ExtractLedgerOnlyWithResult)
 {
-    auto original = util::CreateData();
+    auto original = util::createData();
 
     EXPECT_CALL(*fetcher, fetchData(Seq)).WillOnce(testing::Return(original));
     auto res = extractor.extractLedgerOnly(Seq);

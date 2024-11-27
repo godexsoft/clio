@@ -296,7 +296,7 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerHash2)
 {
     backend->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
-    auto ledgerinfo = CreateLedgerHeader(LedgerHash, 31);
+    auto ledgerinfo = createLedgerHeader(LedgerHash, 31);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerinfo));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     auto const input = json::parse(fmt::format(
@@ -345,7 +345,7 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerIndex2)
 TEST_F(RPCMPTHoldersHandlerTest, MPTNotFound)
 {
     backend->setRange(10, 30);
-    auto ledgerinfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerinfo = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerinfo));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
@@ -385,12 +385,12 @@ TEST_F(RPCMPTHoldersHandlerTest, DefaultParameters)
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken = CreateMPTokenObject(HoldeR1Account, ripple::uint192(MptID));
+    auto const mptoken = createMpTokenObject(HoldeR1Account, ripple::uint192(MptID));
     std::vector<Blob> const mpts = {mptoken.getSerializer().peekData()};
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, {}}));
     EXPECT_CALL(
@@ -433,12 +433,12 @@ TEST_F(RPCMPTHoldersHandlerTest, CustomAmounts)
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken = CreateMPTokenObject(HoldeR1Account, ripple::uint192(MptID), 0);
+    auto const mptoken = createMpTokenObject(HoldeR1Account, ripple::uint192(MptID), 0);
     std::vector<Blob> const mpts = {mptoken.getSerializer().peekData()};
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, {}}));
     EXPECT_CALL(
@@ -477,14 +477,14 @@ TEST_F(RPCMPTHoldersHandlerTest, SpecificLedgerIndex)
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, specificLedger);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, specificLedger);
     ON_CALL(*backend, fetchLedgerBySequence(specificLedger, _)).WillByDefault(Return(ledgerInfo));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, specificLedger, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken = CreateMPTokenObject(HoldeR1Account, ripple::uint192(MptID));
+    auto const mptoken = createMpTokenObject(HoldeR1Account, ripple::uint192(MptID));
     std::vector<Blob> const mpts = {mptoken.getSerializer().peekData()};
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, {}}));
     EXPECT_CALL(
@@ -524,25 +524,25 @@ TEST_F(RPCMPTHoldersHandlerTest, MarkerParameter)
     }})",
         MptID,
         MptOut2,
-        ripple::strHex(GetAccountIDWithString(HoldeR1Account))
+        ripple::strHex(getAccountIdWithString(HoldeR1Account))
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken = CreateMPTokenObject(HoldeR2Account, ripple::uint192(MptID));
+    auto const mptoken = createMpTokenObject(HoldeR2Account, ripple::uint192(MptID));
     std::vector<Blob> const mpts = {mptoken.getSerializer().peekData()};
-    auto const marker = GetAccountIDWithString(HoldeR1Account);
+    auto const marker = getAccountIdWithString(HoldeR1Account);
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, marker}));
     EXPECT_CALL(
         *backend, fetchMPTHolders(ripple::uint192(MptID), testing::_, testing::Eq(marker), Const(30), testing::_)
     )
         .Times(1);
 
-    auto const HOLDER1_ACCOUNTID = ripple::strHex(GetAccountIDWithString(HoldeR1Account));
+    auto const HOLDER1_ACCOUNTID = ripple::strHex(getAccountIdWithString(HoldeR1Account));
     auto const input = json::parse(fmt::format(
         R"({{
             "mpt_issuance_id": "{}",
@@ -575,13 +575,13 @@ TEST_F(RPCMPTHoldersHandlerTest, MultipleMPTs)
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken1 = CreateMPTokenObject(HoldeR1Account, ripple::uint192(MptID));
-    auto const mptoken2 = CreateMPTokenObject(HoldeR2Account, ripple::uint192(MptID));
+    auto const mptoken1 = createMpTokenObject(HoldeR1Account, ripple::uint192(MptID));
+    auto const mptoken2 = createMpTokenObject(HoldeR2Account, ripple::uint192(MptID));
     std::vector<Blob> const mpts = {mptoken1.getSerializer().peekData(), mptoken2.getSerializer().peekData()};
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, {}}));
     EXPECT_CALL(
@@ -618,12 +618,12 @@ TEST_F(RPCMPTHoldersHandlerTest, LimitMoreThanMAx)
     );
 
     backend->setRange(10, 30);
-    auto ledgerInfo = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerInfo = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(MptID)).key;
     ON_CALL(*backend, doFetchLedgerObject(issuanceKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const mptoken = CreateMPTokenObject(HoldeR1Account, ripple::uint192(MptID));
+    auto const mptoken = createMpTokenObject(HoldeR1Account, ripple::uint192(MptID));
     std::vector<Blob> const mpts = {mptoken.getSerializer().peekData()};
     ON_CALL(*backend, fetchMPTHolders).WillByDefault(Return(MPTHoldersAndCursor{mpts, {}}));
     EXPECT_CALL(

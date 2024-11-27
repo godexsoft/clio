@@ -77,7 +77,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingFalseAndCacheDisabled
 {
     SystemState dummyState;
     dummyState.isWriting = false;
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, Age);
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, Age);
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
     EXPECT_CALL(mockCache, isDisabled).WillOnce(Return(true));
@@ -97,7 +97,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingFalseAndCacheEnabled)
 {
     SystemState dummyState;
     dummyState.isWriting = false;
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, Age);
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, Age);
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
     EXPECT_CALL(mockCache, isDisabled).WillOnce(Return(false));
@@ -119,7 +119,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingTrue)
 {
     SystemState dummyState;
     dummyState.isWriting = true;
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, Age);
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, Age);
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
 
@@ -136,7 +136,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
     SystemState dummyState;
     dummyState.isWriting = true;
 
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, 0);  // age is 0
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, 0);  // age is 0
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
     backend->setRange(Seq - 1, Seq);
 
@@ -144,11 +144,11 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
 
     // mock fetch fee
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, Seq, _))
-        .WillOnce(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     TransactionAndMetadata t1;
-    t1.transaction = CreatePaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
-    t1.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    t1.transaction = createPaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     t1.ledgerSequence = Seq;
 
     // mock fetch transactions
@@ -173,7 +173,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
     SystemState dummyState;
     dummyState.isWriting = true;
 
-    ripple::LedgerHeader dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, 0);
+    ripple::LedgerHeader dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, 0);
     auto const nowPlus10 = system_clock::now() + seconds(10);
     auto const closeTime = duration_cast<seconds>(nowPlus10.time_since_epoch()).count() - rippleEpochStart;
     dummyLedgerHeader.closeTime = ripple::NetClock::time_point{seconds{closeTime}};
@@ -185,11 +185,11 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
 
     // mock fetch fee
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, Seq, _))
-        .WillOnce(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     TransactionAndMetadata t1;
-    t1.transaction = CreatePaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
-    t1.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    t1.transaction = createPaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     t1.ledgerSequence = Seq;
 
     // mock fetch transactions
@@ -241,7 +241,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsFalse)
     LedgerRange const range{.minSequence = Seq, .maxSequence = Seq};
     EXPECT_CALL(*backend, hardFetchLedgerRange).WillOnce(Return(range));
 
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, Age);
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, Age);
     EXPECT_CALL(*backend, fetchLedgerBySequence(Seq, _)).WillOnce(Return(dummyLedgerHeader));
     EXPECT_CALL(mockCache, isDisabled).WillOnce(Return(false));
     EXPECT_CALL(*backend, fetchLedgerDiff(Seq, _)).WillOnce(Return(std::vector<LedgerObject>{}));
@@ -256,7 +256,7 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
     SystemState dummyState;
     dummyState.isWriting = true;
 
-    auto const dummyLedgerHeader = CreateLedgerHeader(LedgerHash, Seq, 0);  // age is 0
+    auto const dummyLedgerHeader = createLedgerHeader(LedgerHash, Seq, 0);  // age is 0
     impl::LedgerPublisher publisher(ctx, backend, mockCache, mockSubscriptionManagerPtr, dummyState);
     backend->setRange(Seq - 1, Seq);
 
@@ -264,17 +264,17 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
 
     // mock fetch fee
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, Seq, _))
-        .WillOnce(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     // t1 index > t2 index
     TransactionAndMetadata t1;
-    t1.transaction = CreatePaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
-    t1.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30, 2).getSerializer().peekData();
+    t1.transaction = createPaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30, 2).getSerializer().peekData();
     t1.ledgerSequence = Seq;
     t1.date = 1;
     TransactionAndMetadata t2;
-    t2.transaction = CreatePaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
-    t2.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30, 1).getSerializer().peekData();
+    t2.transaction = createPaymentTransactionObject(Account, Account2, 100, 3, Seq).getSerializer().peekData();
+    t2.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30, 1).getSerializer().peekData();
     t2.ledgerSequence = Seq;
     t2.date = 2;
 

@@ -77,7 +77,7 @@ TEST_F(AmendmentCenterTest, IsEnabled)
     EXPECT_TRUE(amendmentCenter.isSupported("fixUniversalNumber"));
     EXPECT_FALSE(amendmentCenter.isSupported("unknown"));
 
-    auto const amendments = CreateAmendmentsObject({Amendments::fixUniversalNumber});
+    auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillRepeatedly(testing::Return(amendments.getSerializer().peekData()));
 
@@ -88,7 +88,7 @@ TEST_F(AmendmentCenterTest, IsEnabled)
 
 TEST_F(AmendmentCenterTest, IsMultipleEnabled)
 {
-    auto const amendments = CreateAmendmentsObject({Amendments::fixUniversalNumber});
+    auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
@@ -118,7 +118,7 @@ TEST_F(AmendmentCenterTest, IsEnabledThrowsWhenUnavailable)
 
 TEST_F(AmendmentCenterTest, IsEnabledReturnsFalseWhenNoAmendments)
 {
-    auto const amendments = CreateBrokenAmendmentsObject();
+    auto const amendments = createBrokenAmendmentsObject();
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
@@ -127,7 +127,7 @@ TEST_F(AmendmentCenterTest, IsEnabledReturnsFalseWhenNoAmendments)
 
 TEST_F(AmendmentCenterTest, IsEnabledReturnsVectorOfFalseWhenNoAmendments)
 {
-    auto const amendments = CreateBrokenAmendmentsObject();
+    auto const amendments = createBrokenAmendmentsObject();
     EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
@@ -145,7 +145,7 @@ TEST(AmendmentTest, GenerateAmendmentId)
     // https://xrpl.org/known-amendments.html#disallowincoming refer to the published id
     EXPECT_EQ(
         ripple::uint256("47C3002ABA31628447E8E9A8B315FAA935CE30183F9A9B86845E469CA2CDC3DF"),
-        Amendment::GetAmendmentId("DisallowIncoming")
+        Amendment::getAmendmentId("DisallowIncoming")
     );
 }
 

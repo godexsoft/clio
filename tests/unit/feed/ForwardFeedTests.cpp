@@ -54,7 +54,7 @@ TEST_F(FeedForwardTest, Pub)
     EXPECT_EQ(testFeedPtr->count(), 1);
 
     auto const json = json::parse(Feed).as_object();
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed))).Times(1);
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(Feed))).Times(1);
     testFeedPtr->pub(json);
 
     testFeedPtr->unsub(sessionPtr);
@@ -70,7 +70,7 @@ TEST_F(FeedForwardTest, AutoDisconnect)
     EXPECT_EQ(testFeedPtr->count(), 1);
 
     auto const json = json::parse(Feed).as_object();
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(Feed)));
     testFeedPtr->pub(json);
 
     slot(sessionPtr.get());

@@ -239,13 +239,13 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixUniversalNumber),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
             .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         }
@@ -256,7 +256,7 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
     EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
@@ -291,13 +291,13 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixUniversalNumber),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
             .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         }
@@ -308,7 +308,7 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
     EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
@@ -345,14 +345,14 @@ TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
 
     auto const all = std::vector<data::Amendment>{{
         .name = Amendments::fixUniversalNumber,
-        .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+        .feature = data::Amendment::getAmendmentId(Amendments::fixUniversalNumber),
         .isSupportedByXRPL = true,
         .isSupportedByClio = true,
     }};
     auto const keys = std::vector<data::AmendmentKey>{"nonexistent"};
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     runSpawn([this](auto yield) {
@@ -374,13 +374,13 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixUniversalNumber),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
             .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .feature = data::Amendment::getAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
             .isSupportedByXRPL = true,
             .isSupportedByClio = false,
         }
@@ -392,11 +392,11 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
     EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
     EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, Seq)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const amendments =
-        CreateAmendmentsObject({Amendments::fixUniversalNumber, Amendments::fixRemoveNFTokenAutoTrustLine});
+        createAmendmentsObject({Amendments::fixUniversalNumber, Amendments::fixRemoveNFTokenAutoTrustLine});
 
     auto const expectedOutput = fmt::format(
         R"({{

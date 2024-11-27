@@ -49,7 +49,7 @@ struct NFTHelpersTests : public NoLoggerFixture {};
 
 TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTx)
 {
-    auto const tx = CreateCancelNFTOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID});
+    auto const tx = createCancelNftOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID});
     ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, tx.metadata);
     auto const [nftTxs, nftDatas] =
         etl::getNFTDataFromTx(txMeta, ripple::STTx(ripple::SerialIter{tx.transaction.data(), tx.transaction.size()}));
@@ -61,7 +61,7 @@ TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTx)
 TEST_F(NFTHelpersTests, ConvertDataFromNFTCancelOfferTxContainingDuplicateNFT)
 {
     auto const tx =
-        CreateCancelNFTOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID, NftID2, NftID});
+        createCancelNftOffersTxWithMetadata(Account, 1, 2, std::vector<std::string>{NftID2, NftID, NftID2, NftID});
     ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, tx.metadata);
     auto const [nftTxs, nftDatas] =
         etl::getNFTDataFromTx(txMeta, ripple::STTx(ripple::SerialIter{tx.transaction.data(), tx.transaction.size()}));
@@ -75,13 +75,13 @@ TEST_F(NFTHelpersTests, UniqueNFTDatas)
     std::vector<NFTsData> nftDatas;
 
     auto const generateNFTsData = [](char const* nftID, std::uint32_t txIndex) {
-        auto const tx = CreateCreateNFTOfferTxWithMetadata(Account, 1, 50, nftID, 123, Offer1);
+        auto const tx = createCreateNftOfferTxWithMetadata(Account, 1, 50, nftID, 123, Offer1);
         ripple::SerialIter s{tx.metadata.data(), tx.metadata.size()};
         ripple::STObject meta{s, ripple::sfMetadata};
         meta.setFieldU32(ripple::sfTransactionIndex, txIndex);
         ripple::TxMeta const txMeta(ripple::uint256(Tx), 1, meta.getSerializer().peekData());
 
-        auto const account = GetAccountIDWithString(Account);
+        auto const account = getAccountIdWithString(Account);
         return NFTsData{ripple::uint256(nftID), account, ripple::Blob{}, txMeta};
     };
 

@@ -30,7 +30,7 @@
 
 TEST(LedgerUtilsTests, LedgerObjectTypeList)
 {
-    constexpr auto types = util::LedgerTypes::GetLedgerEntryTypeStrList();
+    constexpr auto types = util::LedgerTypes::getLedgerEntryTypeStrList();
     static constexpr char const* TypesList[] = {
         JS(account),
         JS(amendments),
@@ -68,7 +68,7 @@ TEST(LedgerUtilsTests, LedgerObjectTypeList)
 
 TEST(LedgerUtilsTests, AccountOwnedTypeList)
 {
-    constexpr auto accountOwned = util::LedgerTypes::GetAccountOwnedLedgerTypeStrList();
+    constexpr auto accountOwned = util::LedgerTypes::getAccountOwnedLedgerTypeStrList();
     static constexpr char const* CorrectTypes[] = {
         JS(account),
         JS(check),
@@ -105,19 +105,19 @@ TEST(LedgerUtilsTests, AccountOwnedTypeList)
 
 TEST(LedgerUtilsTests, StrToType)
 {
-    EXPECT_EQ(util::LedgerTypes::GetLedgerEntryTypeFromStr("mess"), ripple::ltANY);
-    EXPECT_EQ(util::LedgerTypes::GetLedgerEntryTypeFromStr("tomato"), ripple::ltANY);
-    EXPECT_EQ(util::LedgerTypes::GetLedgerEntryTypeFromStr("account"), ripple::ltACCOUNT_ROOT);
+    EXPECT_EQ(util::LedgerTypes::getLedgerEntryTypeFromStr("mess"), ripple::ltANY);
+    EXPECT_EQ(util::LedgerTypes::getLedgerEntryTypeFromStr("tomato"), ripple::ltANY);
+    EXPECT_EQ(util::LedgerTypes::getLedgerEntryTypeFromStr("account"), ripple::ltACCOUNT_ROOT);
 
-    constexpr auto types = util::LedgerTypes::GetLedgerEntryTypeStrList();
+    constexpr auto types = util::LedgerTypes::getLedgerEntryTypeStrList();
     std::for_each(types.cbegin(), types.cend(), [](auto const& typeStr) {
-        EXPECT_NE(util::LedgerTypes::GetLedgerEntryTypeFromStr(typeStr), ripple::ltANY);
+        EXPECT_NE(util::LedgerTypes::getLedgerEntryTypeFromStr(typeStr), ripple::ltANY);
     });
 }
 
 TEST(LedgerUtilsTests, DeletionBlockerTypes)
 {
-    constexpr auto testedTypes = util::LedgerTypes::GetDeletionBlockerLedgerTypes();
+    constexpr auto testedTypes = util::LedgerTypes::getDeletionBlockerLedgerTypes();
 
     static constexpr ripple::LedgerEntryType DeletionBlockers[] = {
         ripple::ltCHECK,

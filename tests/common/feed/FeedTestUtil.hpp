@@ -74,7 +74,7 @@ public:
 }  // namespace impl
 
 inline ::testing::Matcher<std::shared_ptr<std::string>>
-SharedStringJsonEq(std::string const& expected)
+sharedStringJsonEq(std::string const& expected)
 {
     return impl::SharedStringJsonEqMatcher(expected);
 }

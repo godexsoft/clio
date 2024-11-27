@@ -108,7 +108,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
-        SourceFactory sourceFactory = make_Source
+        SourceFactory sourceFactory = makeSource
     );
 
     /**
@@ -123,13 +123,13 @@ public:
      * @return A shared pointer to a new instance of LoadBalancer
      */
     static std::shared_ptr<LoadBalancer>
-    make_LoadBalancer(
+    makeLoadBalancer(
         util::Config const& config,
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
-        SourceFactory sourceFactory = make_Source
+        SourceFactory sourceFactory = makeSource
     );
 
     ~LoadBalancer();

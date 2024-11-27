@@ -195,7 +195,7 @@ makeServerSync(
     std::condition_variable cv;
     bool ready = false;
     boost::asio::dispatch(ioc.get_executor(), [&]() mutable {
-        server = web::make_HttpServer(config, ioc, dosGuard, handler);
+        server = web::makeHttpServer(config, ioc, dosGuard, handler);
         {
             std::lock_guard const lk(m);
             ready = true;
@@ -423,7 +423,7 @@ TEST_F(WebServerTest, GetOtherThanHealthCheck)
 namespace {
 
 std::string
-JSONServerConfigWithAdminPassword(uint32_t const port)
+jsonServerConfigWithAdminPassword(uint32_t const port)
 {
     return fmt::format(
         R"JSON({{
@@ -438,7 +438,7 @@ JSONServerConfigWithAdminPassword(uint32_t const port)
 }
 
 std::string
-JSONServerConfigWithLocalAdmin(uint32_t const port)
+jsonServerConfigWithLocalAdmin(uint32_t const port)
 {
     return fmt::format(
         R"JSON({{
@@ -453,7 +453,7 @@ JSONServerConfigWithLocalAdmin(uint32_t const port)
 }
 
 std::string
-JSONServerConfigWithBothAdminPasswordAndLocalAdminFalse(uint32_t const port)
+jsonServerConfigWithBothAdminPasswordAndLocalAdminFalse(uint32_t const port)
 {
     return fmt::format(
         R"JSON({{
@@ -469,7 +469,7 @@ JSONServerConfigWithBothAdminPasswordAndLocalAdminFalse(uint32_t const port)
 }
 
 std::string
-JSONServerConfigWithNoSpecifiedAdmin(uint32_t const port)
+jsonServerConfigWithNoSpecifiedAdmin(uint32_t const port)
 {
     return fmt::format(
         R"JSON({{
@@ -543,27 +543,27 @@ INSTANTIATE_TEST_CASE_P(
     WebServerAdminTest,
     ::testing::Values(
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {},
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {WebHeader(http::field::authorization, "")},
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {WebHeader(http::field::authorization, "s")},
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {WebHeader(http::field::authorization, SecretSha256)},
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {WebHeader(
                 http::field::authorization,
                 fmt::format("{}{}", PasswordAdminVerificationStrategy::passwordPrefix, SecretSha256)
@@ -571,12 +571,12 @@ INSTANTIATE_TEST_CASE_P(
             .expectedResponse = "admin"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithBothAdminPasswordAndLocalAdminFalse(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithBothAdminPasswordAndLocalAdminFalse(tests::util::generateFreePort()),
             .headers = {WebHeader(http::field::authorization, SecretSha256)},
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithBothAdminPasswordAndLocalAdminFalse(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithBothAdminPasswordAndLocalAdminFalse(tests::util::generateFreePort()),
             .headers = {WebHeader(
                 http::field::authorization,
                 fmt::format("{}{}", PasswordAdminVerificationStrategy::passwordPrefix, SecretSha256)
@@ -584,7 +584,7 @@ INSTANTIATE_TEST_CASE_P(
             .expectedResponse = "admin"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithAdminPassword(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithAdminPassword(tests::util::generateFreePort()),
             .headers = {WebHeader(
                 http::field::authentication_info,
                 fmt::format("{}{}", PasswordAdminVerificationStrategy::passwordPrefix, SecretSha256)
@@ -592,12 +592,12 @@ INSTANTIATE_TEST_CASE_P(
             .expectedResponse = "user"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithLocalAdmin(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithLocalAdmin(tests::util::generateFreePort()),
             .headers = {},
             .expectedResponse = "admin"
         },
         WebServerAdminTestParams{
-            .config = JSONServerConfigWithNoSpecifiedAdmin(tests::util::generateFreePort()),
+            .config = jsonServerConfigWithNoSpecifiedAdmin(tests::util::generateFreePort()),
             .headers = {},
             .expectedResponse = "admin"
         }
@@ -622,7 +622,7 @@ TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminSet)
 
     auto e = std::make_shared<AdminCheckExecutor>();
     Config const serverConfig{boost::json::parse(JSONServerConfigWithBothAdminPasswordAndLocalAdmin)};
-    EXPECT_THROW(web::make_HttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
+    EXPECT_THROW(web::makeHttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
 }
 
 TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminFalse)
@@ -641,7 +641,7 @@ TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminFalse)
 
     auto e = std::make_shared<AdminCheckExecutor>();
     Config const serverConfig{boost::json::parse(JSONServerConfigWithNoAdminPasswordAndLocalAdminFalse)};
-    EXPECT_THROW(web::make_HttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
+    EXPECT_THROW(web::makeHttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
 }
 
 struct WebServerPrometheusTest : util::prometheus::WithPrometheus, WebServerTest {};
@@ -650,7 +650,7 @@ TEST_F(WebServerPrometheusTest, rejectedWithoutAdminPassword)
 {
     auto e = std::make_shared<EchoExecutor>();
     uint32_t const webServerPort = tests::util::generateFreePort();
-    Config const serverConfig{boost::json::parse(JSONServerConfigWithAdminPassword(webServerPort))};
+    Config const serverConfig{boost::json::parse(jsonServerConfigWithAdminPassword(webServerPort))};
     auto server = makeServerSync(serverConfig, ctx, dosGuard, e);
     auto const [status, res] = HttpSyncClient::get("localhost", std::to_string(webServerPort), "", "/metrics");
 
@@ -697,7 +697,7 @@ TEST_F(WebServerPrometheusTest, validResponse)
     auto& testCounter = PrometheusService::counterInt("test_counter", util::prometheus::Labels());
     ++testCounter;
     auto e = std::make_shared<EchoExecutor>();
-    Config const serverConfig{boost::json::parse(JSONServerConfigWithAdminPassword(webServerPort))};
+    Config const serverConfig{boost::json::parse(jsonServerConfigWithAdminPassword(webServerPort))};
     auto server = makeServerSync(serverConfig, ctx, dosGuard, e);
     auto const [status, res] = HttpSyncClient::get(
         "localhost",

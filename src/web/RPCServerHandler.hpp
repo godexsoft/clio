@@ -158,7 +158,7 @@ private:
 
             auto const context = [&] {
                 if (connection->upgraded) {
-                    return rpc::make_WsContext(
+                    return rpc::makeWsContext(
                         yield,
                         request,
                         connection->makeSubscriptionContext(tagFactory_),
@@ -169,7 +169,7 @@ private:
                         connection->isAdmin()
                     );
                 }
-                return rpc::make_HttpContext(
+                return rpc::makeHttpContext(
                     yield,
                     request,
                     tagFactory_.with(connection->tag()),

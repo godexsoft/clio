@@ -70,7 +70,7 @@ TEST_F(FeedProposedTransactionTest, ProposedTransaction)
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 1);
 
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction)));
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
     testFeedPtr->unsub(sessionPtr);
@@ -81,20 +81,20 @@ TEST_F(FeedProposedTransactionTest, ProposedTransaction)
 
 TEST_F(FeedProposedTransactionTest, AccountProposedTransaction)
 {
-    auto const account = GetAccountIDWithString(Account1);
+    auto const account = getAccountIdWithString(Account1);
 
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
     testFeedPtr->sub(account, sessionPtr);
     EXPECT_EQ(testFeedPtr->accountSubCount(), 1);
 
     web::SubscriptionContextPtr const sessionIdle = std::make_shared<MockSession>();
-    auto const accountIdle = GetAccountIDWithString(Account3);
+    auto const accountIdle = getAccountIdWithString(Account3);
 
     EXPECT_CALL(*dynamic_cast<MockSession*>(sessionIdle.get()), onDisconnect);
     testFeedPtr->sub(accountIdle, sessionIdle);
     EXPECT_EQ(testFeedPtr->accountSubCount(), 2);
 
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction)));
 
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
@@ -107,7 +107,7 @@ TEST_F(FeedProposedTransactionTest, AccountProposedTransaction)
 
 TEST_F(FeedProposedTransactionTest, SubStreamAndAccount)
 {
-    auto const account = GetAccountIDWithString(Account1);
+    auto const account = getAccountIdWithString(Account1);
 
     EXPECT_CALL(*mockSessionPtr, onDisconnect).Times(2);
     testFeedPtr->sub(account, sessionPtr);
@@ -115,14 +115,14 @@ TEST_F(FeedProposedTransactionTest, SubStreamAndAccount)
 
     EXPECT_EQ(testFeedPtr->accountSubCount(), 1);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 1);
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction))).Times(2);
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction))).Times(2);
 
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
     // unsub
     testFeedPtr->unsub(account, sessionPtr);
     EXPECT_EQ(testFeedPtr->accountSubCount(), 0);
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction)));
 
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
@@ -135,21 +135,21 @@ TEST_F(FeedProposedTransactionTest, SubStreamAndAccount)
 
 TEST_F(FeedProposedTransactionTest, AccountProposedTransactionDuplicate)
 {
-    auto const account = GetAccountIDWithString(Account1);
-    auto const account2 = GetAccountIDWithString(Account2);
+    auto const account = getAccountIdWithString(Account1);
+    auto const account2 = getAccountIdWithString(Account2);
 
     EXPECT_CALL(*mockSessionPtr, onDisconnect).Times(2);
     testFeedPtr->sub(account, sessionPtr);
     testFeedPtr->sub(account2, sessionPtr);
     EXPECT_EQ(testFeedPtr->accountSubCount(), 2);
 
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction)));
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
     // unsub account1
     testFeedPtr->unsub(account, sessionPtr);
     EXPECT_EQ(testFeedPtr->accountSubCount(), 1);
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(DummyTransaction)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(DummyTransaction)));
     testFeedPtr->pub(json::parse(DummyTransaction).get_object());
 
     // unsub account2
@@ -167,7 +167,7 @@ TEST_F(FeedProposedTransactionTest, Count)
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 1);
 
-    auto const account1 = GetAccountIDWithString(Account1);
+    auto const account1 = getAccountIdWithString(Account1);
 
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
     testFeedPtr->sub(account1, sessionPtr);
@@ -181,7 +181,7 @@ TEST_F(FeedProposedTransactionTest, Count)
     testFeedPtr->sub(sessionPtr2);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 2);
 
-    auto const account2 = GetAccountIDWithString(Account2);
+    auto const account2 = getAccountIdWithString(Account2);
 
     EXPECT_CALL(*dynamic_cast<MockSession*>(sessionPtr2.get()), onDisconnect);
     testFeedPtr->sub(account2, sessionPtr2);
@@ -218,7 +218,7 @@ TEST_F(FeedProposedTransactionTest, AutoDisconnect)
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 1);
 
-    auto const account1 = GetAccountIDWithString(Account1);
+    auto const account1 = getAccountIdWithString(Account1);
 
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
     testFeedPtr->sub(account1, sessionPtr);
@@ -237,7 +237,7 @@ TEST_F(FeedProposedTransactionTest, AutoDisconnect)
     testFeedPtr->sub(sessionPtr2);
     EXPECT_EQ(testFeedPtr->transactionSubcount(), 2);
 
-    auto const account2 = GetAccountIDWithString(Account2);
+    auto const account2 = getAccountIdWithString(Account2);
 
     EXPECT_CALL(*mockSessionPtr2, onDisconnect);
     testFeedPtr->sub(account2, sessionPtr2);
@@ -279,7 +279,7 @@ TEST_F(ProposedTransactionFeedMockPrometheusTest, subUnsub)
     testFeedPtr->sub(sessionPtr);
     testFeedPtr->unsub(sessionPtr);
 
-    auto const account = GetAccountIDWithString(Account1);
+    auto const account = getAccountIdWithString(Account1);
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
     testFeedPtr->sub(account, sessionPtr);
     testFeedPtr->unsub(account, sessionPtr);
@@ -302,7 +302,7 @@ TEST_F(ProposedTransactionFeedMockPrometheusTest, AutoDisconnect)
     });
     testFeedPtr->sub(sessionPtr);
 
-    auto const account = GetAccountIDWithString(Account1);
+    auto const account = getAccountIdWithString(Account1);
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce([&sessionOnDisconnectSlots](auto slot) {
         sessionOnDisconnectSlots.push_back(slot);
     });

@@ -92,7 +92,7 @@ WorkQueue::stop(std::function<void()> onQueueEmpty)
 }
 
 WorkQueue
-WorkQueue::make_WorkQueue(util::Config const& config)
+WorkQueue::makeWorkQueue(util::Config const& config)
 {
     static util::Logger const log{"RPC"};
     auto const serverConfig = config.section("server");

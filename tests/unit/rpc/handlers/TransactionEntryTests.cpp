@@ -126,7 +126,7 @@ TEST_F(RPCTransactionEntryHandlerTest, NonExistLedgerViaLedgerIndex)
 TEST_F(RPCTransactionEntryHandlerTest, TXNotFound)
 {
     backend->setRange(10, 30);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(CreateLedgerHeader(Index, 30)));
+    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(Index, 30)));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _))
         .WillByDefault(Return(std::optional<TransactionAndMetadata>{}));
@@ -150,16 +150,16 @@ TEST_F(RPCTransactionEntryHandlerTest, TXNotFound)
 TEST_F(RPCTransactionEntryHandlerTest, LedgerSeqNotMatch)
 {
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 10;
     ON_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillByDefault(Return(tx));
     EXPECT_CALL(*backend, fetchTransaction).Times(1);
 
     backend->setRange(10, 30);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(CreateLedgerHeader(Index, 30)));
+    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(Index, 30)));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     runSpawn([this](auto yield) {
@@ -228,16 +228,16 @@ TEST_F(RPCTransactionEntryHandlerTest, NormalPath)
                                     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 30;
     ON_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillByDefault(Return(tx));
     EXPECT_CALL(*backend, fetchTransaction).Times(1);
 
     backend->setRange(10, tx.ledgerSequence);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(CreateLedgerHeader(Index, tx.ledgerSequence)));
+    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(Index, tx.ledgerSequence)));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     runSpawn([&, this](auto yield) {
@@ -306,15 +306,15 @@ TEST_F(RPCTransactionEntryHandlerTest, NormalPathV2)
                                     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 30;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
 
     backend->setRange(10, tx.ledgerSequence);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(CreateLedgerHeader(Index, tx.ledgerSequence)));
+    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(Index, tx.ledgerSequence)));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{TransactionEntryHandler{backend}};

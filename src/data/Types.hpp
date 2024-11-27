@@ -266,7 +266,7 @@ struct Amendment {
      * @return The amendment Id as uint256
      */
     static ripple::uint256
-    GetAmendmentId(std::string_view const name);
+    getAmendmentId(std::string_view const name);
 
     /**
      * @brief Equality comparison operator

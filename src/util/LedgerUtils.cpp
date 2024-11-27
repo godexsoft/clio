@@ -28,7 +28,7 @@
 namespace util {
 
 ripple::LedgerEntryType
-LedgerTypes::GetLedgerEntryTypeFromStr(std::string const& entryName)
+LedgerTypes::getLedgerEntryTypeFromStr(std::string const& entryName)
 {
     static std::unordered_map<std::string, ripple::LedgerEntryType> typeMap = []() {
         std::unordered_map<std::string, ripple::LedgerEntryType> map;

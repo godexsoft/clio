@@ -41,7 +41,7 @@ namespace data {
  * @return A shared_ptr<BackendInterface> with the selected implementation
  */
 inline std::shared_ptr<BackendInterface>
-make_Backend(util::Config const& config)
+makeBackend(util::Config const& config)
 {
     static util::Logger const log{"Backend"};
     LOG(log.info()) << "Constructing BackendInterface";

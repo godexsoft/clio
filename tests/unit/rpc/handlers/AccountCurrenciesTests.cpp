@@ -60,7 +60,7 @@ class RPCAccountCurrenciesHandlerTest : public HandlerBaseTest {};
 TEST_F(RPCAccountCurrenciesHandlerTest, AccountNotExist)
 {
     backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
@@ -177,29 +177,29 @@ TEST_F(RPCAccountCurrenciesHandlerTest, DefaultParameter)
 
     backend->setRange(10, 30);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(30, _)).WillByDefault(Return(ledgerHeader));
     // return valid account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     auto const ownerDir =
-        CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+        createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, 30, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     // Account can receive USD 10 from Account2 and send USD 20 to Account2, now
     // the balance is 100, Account can only send USD to Account2
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
     // Account2 can receive JPY 10 from Account and send JPY 20 to Account, now
     // the balance is 100, Account2 can only send JPY to Account
-    auto const line2 = CreateRippleStateLedgerObject("JPY", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
+    auto const line2 = createRippleStateLedgerObject("JPY", Issuer, 100, Account2, 10, Account, 20, TxnID, 123, 0);
     // Account can receive EUR 10 from Account and send EUR 20 to Account2, now
     // the balance is 8, Account can receive/send EUR to/from Account2
-    auto const line3 = CreateRippleStateLedgerObject("EUR", Issuer, 8, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line3 = createRippleStateLedgerObject("EUR", Issuer, 8, Account, 10, Account2, 20, TxnID, 123, 0);
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
     bbs.push_back(line2.getSerializer().peekData());
@@ -225,20 +225,20 @@ TEST_F(RPCAccountCurrenciesHandlerTest, RequestViaLegderHash)
 {
     backend->setRange(10, 30);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     // return valid account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, 30, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
     std::vector<Blob> bbs;
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
     bbs.push_back(line1.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -263,20 +263,20 @@ TEST_F(RPCAccountCurrenciesHandlerTest, RequestViaLegderSeq)
     backend->setRange(10, 30);
     auto const ledgerSeq = 29;
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, ledgerSeq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, ledgerSeq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(ledgerSeq, _)).WillByDefault(Return(ledgerHeader));
     // return valid account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, ledgerSeq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, ledgerSeq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
     std::vector<Blob> bbs;
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 100, Account, 10, Account2, 20, TxnID, 123, 0);
     bbs.push_back(line1.getSerializer().peekData());
 
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));

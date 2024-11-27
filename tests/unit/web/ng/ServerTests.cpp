@@ -69,7 +69,7 @@ protected:
 TEST_P(MakeServerTest, Make)
 {
     util::Config const config{boost::json::parse(GetParam().configJson)};
-    auto const expectedServer = make_Server(config, ioContext_);
+    auto const expectedServer = makeServer(config, ioContext_);
     EXPECT_EQ(expectedServer.has_value(), GetParam().expectSuccess);
 }
 
@@ -161,7 +161,7 @@ protected:
         boost::json::object{{"server", boost::json::object{{"ip", "127.0.0.1"}, {"port", serverPort_}}}}
     };
 
-    std::expected<Server, std::string> server_ = make_Server(config_, ctx);
+    std::expected<Server, std::string> server_ = makeServer(config_, ctx);
 
     std::string requestMessage_ = "some request";
     std::string const headerName_ = "Some-header";

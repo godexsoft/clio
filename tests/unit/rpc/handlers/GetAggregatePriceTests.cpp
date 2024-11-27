@@ -66,7 +66,7 @@ mockLedgerObject(
     std::uint32_t time = 4321u
 )
 {
-    auto oracleObject = CreateOracleObject(
+    auto oracleObject = createOracleObject(
         account,
         "70726F7669646572",
         64u,
@@ -75,12 +75,12 @@ mockLedgerObject(
         ripple::Blob(8, 'a'),
         RangeMax - 4,
         ripple::uint256{tx},
-        CreatePriceDataSeries(
-            {CreateOraclePriceData(price, ripple::to_currency("USD"), ripple::to_currency("XRP"), scale)}
+        createPriceDataSeries(
+            {createOraclePriceData(price, ripple::to_currency("USD"), ripple::to_currency("XRP"), scale)}
         )
     );
 
-    auto const oracleIndex = ripple::keylet::oracle(GetAccountIDWithString(account), docId).key;
+    auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(account), docId).key;
     EXPECT_CALL(backend, doFetchLedgerObject(oracleIndex, RangeMax, _))
         .WillOnce(Return(oracleObject.getSerializer().peekData()));
 }
@@ -477,7 +477,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, LedgerNotFound)
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
@@ -526,7 +526,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
@@ -575,7 +575,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
 TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
@@ -626,19 +626,19 @@ TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
 TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
 
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
-        .WillRepeatedly(Return(CreateOracleSetTxWithMetadata(
+        .WillRepeatedly(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
             123,
             1,
             4321u,
-            CreatePriceDataSeries({CreateOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
+            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
             }),
             Index,
             true,
@@ -692,7 +692,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -758,7 +758,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -831,7 +831,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     // prepare 4 prices, when trim is 25, the lowest(documentId1) and highest(documentId3) price will be removed
     constexpr auto documentId1 = 1;
@@ -913,10 +913,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
 TEST_F(RPCGetAggregatePriceHandlerTest, NoOracleEntryFound)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    auto const oracleIndex = ripple::keylet::oracle(GetAccountIDWithString(Account), documentId).key;
+    auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
     EXPECT_CALL(*backend, doFetchLedgerObject(oracleIndex, RangeMax, _)).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
@@ -948,7 +948,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoOracleEntryFound)
 TEST_F(RPCGetAggregatePriceHandlerTest, NoMatchAssetPair)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
@@ -982,7 +982,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoMatchAssetPair)
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -1062,7 +1062,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
 TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -1142,7 +1142,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -1221,7 +1221,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
@@ -1301,20 +1301,20 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
 TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    auto const oracleIndex = ripple::keylet::oracle(GetAccountIDWithString(Account), documentId).key;
+    auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
     // return a tx which contains NewFields
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
-        .WillOnce(Return(CreateOracleSetTxWithMetadata(
+        .WillOnce(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
             123,
             1,
             4321u,
-            CreatePriceDataSeries({CreateOraclePriceData(1e3, ripple::to_currency("JPY"), ripple::to_currency("XRP"), 2)
+            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("JPY"), ripple::to_currency("XRP"), 2)
             }),
             ripple::to_string(oracleIndex),
             false,
@@ -1364,20 +1364,20 @@ TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
 TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
 {
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
-        .WillOnce(Return(CreateLedgerHeader(LedgerHash, RangeMax)));
+        .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    auto const oracleIndex = ripple::keylet::oracle(GetAccountIDWithString(Account), documentId).key;
+    auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
     mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
 
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
-        .WillOnce(Return(CreateOracleSetTxWithMetadata(
+        .WillOnce(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
             123,
             1,
             4321u,
-            CreatePriceDataSeries({CreateOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
+            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
             }),
             ripple::to_string(oracleIndex),
             false,
@@ -1385,13 +1385,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
         )));
 
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx2), _))
-        .WillRepeatedly(Return(CreateOracleSetTxWithMetadata(
+        .WillRepeatedly(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
             123,
             1,
             4321u,
-            CreatePriceDataSeries({CreateOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
+            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
             }),
             ripple::to_string(oracleIndex),
             false,

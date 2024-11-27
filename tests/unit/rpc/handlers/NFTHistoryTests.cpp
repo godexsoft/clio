@@ -251,19 +251,19 @@ genTransactions(uint32_t seq1, uint32_t seq2)
 {
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = seq1;
-    ripple::STObject const metaObj = CreatePaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
     trans1.metadata = metaObj.getSerializer().peekData();
     trans1.date = 1;
     transactions.push_back(trans1);
 
     auto trans2 = TransactionAndMetadata();
-    ripple::STObject const obj2 = CreatePaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj2 = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
     trans2.transaction = obj.getSerializer().peekData();
     trans2.ledgerSequence = seq2;
-    ripple::STObject const metaObj2 = CreatePaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj2 = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
     trans2.metadata = metaObj2.getSerializer().peekData();
     trans2.date = 2;
     transactions.push_back(trans2);
@@ -581,7 +581,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
     )
         .WillOnce(Return(transCursor));
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(2);
 
@@ -860,7 +860,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(ledgerHeader));
 
@@ -955,7 +955,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
 

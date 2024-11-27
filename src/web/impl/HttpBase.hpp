@@ -207,7 +207,7 @@ public:
     }
 
     void
-    onRead(boost::beast::error_code ec, [[maybe_unused]] std::size_t bytes_transferred)
+    onRead(boost::beast::error_code ec, [[maybe_unused]] std::size_t bytesTransferred)
     {
         if (ec == http::error::end_of_stream)
             return derived().doClose();
@@ -296,9 +296,9 @@ public:
     }
 
     void
-    onWrite(bool close, boost::beast::error_code ec, std::size_t bytes_transferred)
+    onWrite(bool close, boost::beast::error_code ec, std::size_t bytesTransferred)
     {
-        boost::ignore_unused(bytes_transferred);
+        boost::ignore_unused(bytesTransferred);
 
         if (ec)
             return httpFail(ec, "write");
@@ -314,11 +314,11 @@ public:
 
 private:
     http::response<http::string_body>
-    httpResponse(http::status status, std::string content_type, std::string message) const
+    httpResponse(http::status status, std::string contentType, std::string message) const
     {
         http::response<http::string_body> res{status, req_.version()};
         res.set(http::field::server, "clio-server-" + util::build::getClioVersionString());
-        res.set(http::field::content_type, content_type);
+        res.set(http::field::content_type, contentType);
         res.keep_alive(req_.keep_alive());
         res.body() = std::move(message);
         res.prepare_payload();

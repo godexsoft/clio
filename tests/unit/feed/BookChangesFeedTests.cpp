@@ -49,13 +49,13 @@ TEST_F(FeedBookChangeTest, Pub)
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 32);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 32);
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
-    ripple::STObject const metaObj = CreateMetaDataForBookChange(Currency, Issuer, 22, 1, 3, 3, 1);
+    ripple::STObject const metaObj = createMetaDataForBookChange(Currency, Issuer, 22, 1, 3, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
@@ -80,7 +80,7 @@ TEST_F(FeedBookChangeTest, Pub)
             ]
         })";
 
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(BookChangePublish))).Times(1);
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(BookChangePublish))).Times(1);
     testFeedPtr->pub(ledgerHeader, transactions);
 
     testFeedPtr->unsub(sessionPtr);

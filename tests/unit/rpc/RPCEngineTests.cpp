@@ -76,7 +76,7 @@ struct RPCEngineTest : util::prometheus::WithPrometheus,
         "workers": 4
     })JSON")};
     util::TagDecoratorFactory tagFactory{cfg};
-    WorkQueue queue = WorkQueue::make_WorkQueue(cfg);
+    WorkQueue queue = WorkQueue::makeWorkQueue(cfg);
     web::dosguard::WhitelistHandler whitelistHandler{cfg};
     web::dosguard::DOSGuard dosGuard{cfg, whitelistHandler};
     std::shared_ptr<MockHandlerProvider> handlerProvider = std::make_shared<MockHandlerProvider>();
@@ -178,7 +178,7 @@ TEST_P(RPCEngineFlowParameterTest, Test)
     auto const& testBundle = GetParam();
 
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
-        RPCEngine<MockLoadBalancer, MockCounters>::make_RPCEngine(
+        RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
             Config{}, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
         );
 
@@ -244,7 +244,7 @@ TEST_F(RPCEngineTest, ThrowDatabaseError)
 {
     auto const method = "subscribe";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
-        RPCEngine<MockLoadBalancer, MockCounters>::make_RPCEngine(
+        RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
             cfg, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
         );
     EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(false));
@@ -277,7 +277,7 @@ TEST_F(RPCEngineTest, ThrowException)
 {
     auto const method = "subscribe";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
-        RPCEngine<MockLoadBalancer, MockCounters>::make_RPCEngine(
+        RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
             cfg, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
         );
     EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(false));
@@ -393,7 +393,7 @@ TEST_P(RPCEngineCacheParameterTest, Test)
     auto const admin = testParam.isAdmin;
     auto const method = testParam.method;
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
-        RPCEngine<MockLoadBalancer, MockCounters>::make_RPCEngine(
+        RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
             cfgCache, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
         );
     int callTime = 2;
@@ -441,7 +441,7 @@ TEST_F(RPCEngineTest, NotCacheIfErrorHappen)
     auto const notAdmin = false;
     auto const method = "server_info";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
-        RPCEngine<MockLoadBalancer, MockCounters>::make_RPCEngine(
+        RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
             cfgCache, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
         );
 

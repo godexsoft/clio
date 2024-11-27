@@ -65,7 +65,7 @@ TEST_F(RPCLedgerIndexTest, DateStrNotValid)
 TEST_F(RPCLedgerIndexTest, NoDateGiven)
 {
     backend->setRange(RangeMin, RangeMax);
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, RangeMax, 5);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, RangeMax, 5);
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillOnce(Return(ledgerHeader));
 
     auto const handler = AnyHandler{LedgerIndexHandler{backend}};
@@ -85,7 +85,7 @@ TEST_F(RPCLedgerIndexTest, EarlierThanMinLedger)
     auto const handler = AnyHandler{LedgerIndexHandler{backend}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
-        CreateLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
+        createLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -102,7 +102,7 @@ TEST_F(RPCLedgerIndexTest, ChangeTimeZone)
     auto const handler = AnyHandler{LedgerIndexHandler{backend}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
-        CreateLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
+        createLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
     EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -153,7 +153,7 @@ TEST_P(LedgerIndexTests, SearchFromLedgerRange)
     // start from 1719318190 , which is the unix time for 2024-06-25T12:23:10Z to 2024-06-25T12:23:50Z with
     // step 2
     for (uint32_t i = RangeMin; i <= RangeMax; i++) {
-        auto const ledgerHeader = CreateLedgerHeaderWithUnixTime(LedgerHash, i, 1719318190 + 2 * (i - RangeMin));
+        auto const ledgerHeader = createLedgerHeaderWithUnixTime(LedgerHash, i, 1719318190 + 2 * (i - RangeMin));
         auto const exactNumberOfCalls = i == RangeMin ? Exactly(3) : Exactly(2);
         EXPECT_CALL(*backend, fetchLedgerBySequence(i, _))
             .Times(i == testBundle.expectedLedgerIndex ? exactNumberOfCalls : AtMost(1))

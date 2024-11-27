@@ -38,7 +38,7 @@
 namespace etl {
 
 SourcePtr
-make_Source(
+makeSource(
     util::Config const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,

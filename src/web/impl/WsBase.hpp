@@ -270,9 +270,9 @@ public:
     }
 
     void
-    onRead(boost::beast::error_code ec, std::size_t bytes_transferred)
+    onRead(boost::beast::error_code ec, std::size_t bytesTransferred)
     {
-        boost::ignore_unused(bytes_transferred);
+        boost::ignore_unused(bytesTransferred);
 
         if (ec)
             return wsFail(ec, "read");

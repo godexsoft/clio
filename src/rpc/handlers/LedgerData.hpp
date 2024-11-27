@@ -113,7 +113,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        auto const& ledgerTypeStrs = util::LedgerTypes::GetLedgerEntryTypeStrList();
+        auto const& ledgerTypeStrs = util::LedgerTypes::getLedgerEntryTypeStrList();
         static auto const rpcSpec = RpcSpec{
             {JS(binary), validation::Type<bool>{}},
             {"out_of_order", validation::Type<bool>{}},

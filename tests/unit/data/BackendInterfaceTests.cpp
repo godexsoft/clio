@@ -54,7 +54,7 @@ TEST_F(BackendInterfaceTest, FetchFeesSuccessPath)
 
     // New fee setting (after XRPFees amendment)
     EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MaxSeq, _))
-        .WillRepeatedly(Return(CreateFeeSettingBlob(XRPAmount(1), XRPAmount(2), XRPAmount(3), 0)));
+        .WillRepeatedly(Return(createFeeSettingBlob(XRPAmount(1), XRPAmount(2), XRPAmount(3), 0)));
 
     runSpawn([this](auto yield) {
         auto fees = backend->fetchFees(MaxSeq, yield);
@@ -73,7 +73,7 @@ TEST_F(BackendInterfaceTest, FetchFeesLegacySuccessPath)
 
     // Legacy fee setting (before XRPFees amendment)
     EXPECT_CALL(*backend, doFetchLedgerObject(keylet::fees().key, MaxSeq, _))
-        .WillRepeatedly(Return(CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
+        .WillRepeatedly(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     runSpawn([this](auto yield) {
         auto fees = backend->fetchFees(MaxSeq, yield);

@@ -435,19 +435,19 @@ genTransactions(uint32_t seq1, uint32_t seq2)
 {
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = seq1;
-    ripple::STObject const metaObj = CreatePaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
     trans1.metadata = metaObj.getSerializer().peekData();
     trans1.date = 1;
     transactions.push_back(trans1);
 
     auto trans2 = TransactionAndMetadata();
-    ripple::STObject const obj2 = CreatePaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj2 = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
     trans2.transaction = obj.getSerializer().peekData();
     trans2.ledgerSequence = seq2;
-    ripple::STObject const metaObj2 = CreatePaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj2 = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
     trans2.metadata = metaObj2.getSerializer().peekData();
     trans2.date = 2;
     transactions.push_back(trans2);
@@ -459,22 +459,22 @@ genNFTTransactions(uint32_t seq)
 {
     auto transactions = std::vector<TransactionAndMetadata>{};
 
-    auto trans1 = CreateMintNFTTxWithMetadata(Account, 1, 50, 123, NftID);
+    auto trans1 = createMintNftTxWithMetadata(Account, 1, 50, 123, NftID);
     trans1.ledgerSequence = seq;
     trans1.date = 1;
     transactions.push_back(trans1);
 
-    auto trans2 = CreateAcceptNFTOfferTxWithMetadata(Account, 1, 50, NftID2);
+    auto trans2 = createAcceptNftOfferTxWithMetadata(Account, 1, 50, NftID2);
     trans2.ledgerSequence = seq;
     trans2.date = 2;
     transactions.push_back(trans2);
 
-    auto trans3 = CreateCancelNFTOffersTxWithMetadata(Account, 1, 50, std::vector<std::string>{NftID2, NftID3});
+    auto trans3 = createCancelNftOffersTxWithMetadata(Account, 1, 50, std::vector<std::string>{NftID2, NftID3});
     trans3.ledgerSequence = seq;
     trans3.date = 3;
     transactions.push_back(trans3);
 
-    auto trans4 = CreateCreateNFTOfferTxWithMetadata(Account, 1, 50, NftID, 123, NftID2);
+    auto trans4 = createCreateNftOfferTxWithMetadata(Account, 1, 50, NftID, 123, NftID2);
     trans4.ledgerSequence = seq;
     trans4.date = 4;
     transactions.push_back(trans4);
@@ -828,7 +828,7 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndex)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(ledgerHeader));
 
@@ -923,7 +923,7 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerHash)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
 
@@ -968,7 +968,7 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndexValidated)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(ledgerHeader));
 
@@ -1528,7 +1528,7 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v2)
     )
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 11);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 11);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(transactions.size()).WillRepeatedly(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
@@ -2048,7 +2048,7 @@ TEST_P(AccountTxTransactionTypeTest, SpecificTransactionType)
     EXPECT_CALL(*backend, fetchAccountTransactions(_, _, false, Optional(Eq(TransactionsCursor{MaxSeq, INT32_MAX})), _))
         .Times(1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, MaxSeq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
     ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).Times(Between(1, 2));
 

@@ -81,7 +81,7 @@ using SingleFeedBaseTest = FeedBaseTest<NamedSingleFeedTest>;
 TEST_F(SingleFeedBaseTest, Test)
 {
     EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(Feed)));
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 1);
     testFeedPtr->pub(Feed);
@@ -95,7 +95,7 @@ TEST_F(SingleFeedBaseTest, TestAutoDisconnect)
 {
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(Feed)));
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(Feed)));
     testFeedPtr->sub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 1);
     testFeedPtr->pub(Feed);

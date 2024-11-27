@@ -200,7 +200,7 @@ private:
             auto const context = [&] {
                 if (connectionMetadata.wasUpgraded()) {
                     ASSERT(subscriptionContext != nullptr, "Subscription context must exist for a WS connecton");
-                    return rpc::make_WsContext(
+                    return rpc::makeWsContext(
                         yield,
                         request,
                         std::move(subscriptionContext),
@@ -211,7 +211,7 @@ private:
                         connectionMetadata.isAdmin()
                     );
                 }
-                return rpc::make_HttpContext(
+                return rpc::makeHttpContext(
                     yield,
                     request,
                     tagFactory_.with(connectionMetadata.tag()),

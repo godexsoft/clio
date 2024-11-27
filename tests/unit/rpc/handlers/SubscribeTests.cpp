@@ -645,8 +645,8 @@ TEST_F(RPCSubscribeHandlerTest, Accounts)
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
 
-        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(GetAccountIDWithString(Account), session_));
-        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(GetAccountIDWithString(Account2), session_)).Times(2);
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(getAccountIdWithString(Account), session_));
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subAccount(getAccountIdWithString(Account2), session_)).Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
         ASSERT_TRUE(output);
@@ -667,8 +667,8 @@ TEST_F(RPCSubscribeHandlerTest, AccountsProposed)
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{SubscribeHandler{backend, mockSubscriptionManagerPtr_}};
 
-        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(GetAccountIDWithString(Account), session_));
-        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(GetAccountIDWithString(Account2), session_))
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(getAccountIdWithString(Account), session_));
+        EXPECT_CALL(*mockSubscriptionManagerPtr_, subProposedAccount(getAccountIdWithString(Account2), session_))
             .Times(2);
         EXPECT_CALL(*mockSession_, setApiSubversion(0));
         auto const output = handler.process(input, Context{yield, session_});
@@ -765,7 +765,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
     ));
     backend->setRange(MinSeq, MaxSeq);
 
-    auto const issuer = GetAccountIDWithString(Account);
+    auto const issuer = getAccountIdWithString(Account);
 
     auto const getsXRPPaysUSDBook = getBookBase(std::get<ripple::Book>(
         rpc::parseBook(ripple::to_currency("USD"), issuer, ripple::xrpCurrency(), ripple::xrpAccount())
@@ -791,26 +791,26 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
 
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{Index2});
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, MaxSeq, _))
-        .WillByDefault(Return(CreateOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
+        .WillByDefault(Return(createOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
 
     // for reverse
     auto const indexes2 = std::vector<ripple::uint256>(10, ripple::uint256{Index1});
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20XRPGets10USDBookDir}, MaxSeq, _))
-        .WillByDefault(Return(CreateOwnerDirLedgerObject(indexes2, Index2).getSerializer().peekData()));
+        .WillByDefault(Return(createOwnerDirLedgerObject(indexes2, Index2).getSerializer().peekData()));
 
     // offer owner account root
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(GetAccountIDWithString(Account2)).key, MaxSeq, _))
-        .WillByDefault(Return(CreateAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, MaxSeq, _))
+        .WillByDefault(Return(createAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
     // issuer account root
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(GetAccountIDWithString(Account)).key, MaxSeq, _))
-        .WillByDefault(Return(CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account)).key, MaxSeq, _))
+        .WillByDefault(Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
     // fee
-    auto feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    auto feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, MaxSeq, _)).WillByDefault(Return(feeBlob));
 
-    auto const gets10XRPPays20USDOffer = CreateOfferLedgerObject(
+    auto const gets10XRPPays20USDOffer = createOfferLedgerObject(
         Account2,
         10,
         20,
@@ -823,7 +823,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
 
     // for reverse
     // offer owner is USD issuer
-    auto const gets10USDPays20XRPOffer = CreateOfferLedgerObject(
+    auto const gets10USDPays20XRPOffer = createOfferLedgerObject(
         Account,
         10,
         20,
@@ -932,7 +932,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
     ));
     backend->setRange(MinSeq, MaxSeq);
 
-    auto const issuer = GetAccountIDWithString(Account);
+    auto const issuer = getAccountIdWithString(Account);
 
     auto const getsXRPPaysUSDBook = getBookBase(std::get<ripple::Book>(
         rpc::parseBook(ripple::to_currency("USD"), issuer, ripple::xrpCurrency(), ripple::xrpAccount())
@@ -957,26 +957,26 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
 
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{Index2});
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, MaxSeq, _))
-        .WillByDefault(Return(CreateOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
+        .WillByDefault(Return(createOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
 
     // for reverse
     auto const indexes2 = std::vector<ripple::uint256>(10, ripple::uint256{Index1});
     ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20XRPGets10USDBookDir}, MaxSeq, _))
-        .WillByDefault(Return(CreateOwnerDirLedgerObject(indexes2, Index2).getSerializer().peekData()));
+        .WillByDefault(Return(createOwnerDirLedgerObject(indexes2, Index2).getSerializer().peekData()));
 
     // offer owner account root
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(GetAccountIDWithString(Account2)).key, MaxSeq, _))
-        .WillByDefault(Return(CreateAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, MaxSeq, _))
+        .WillByDefault(Return(createAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
     // issuer account root
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(GetAccountIDWithString(Account)).key, MaxSeq, _))
-        .WillByDefault(Return(CreateAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
+    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account)).key, MaxSeq, _))
+        .WillByDefault(Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
     // fee
-    auto feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    auto feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, MaxSeq, _)).WillByDefault(Return(feeBlob));
 
-    auto const gets10XRPPays20USDOffer = CreateOfferLedgerObject(
+    auto const gets10XRPPays20USDOffer = createOfferLedgerObject(
         Account2,
         10,
         20,
@@ -989,7 +989,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
 
     // for reverse
     // offer owner is USD issuer
-    auto const gets10USDPays20XRPOffer = CreateOfferLedgerObject(
+    auto const gets10USDPays20XRPOffer = createOfferLedgerObject(
         Account,
         10,
         20,

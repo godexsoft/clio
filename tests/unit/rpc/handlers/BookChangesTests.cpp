@@ -189,14 +189,14 @@ TEST_F(RPCBookChangesHandlerTest, NormalPath)
 
     backend->setRange(MinSeq, MaxSeq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(CreateLedgerHeader(LedgerHash, MaxSeq)));
+    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(createLedgerHeader(LedgerHash, MaxSeq)));
 
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(Account1, Account2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(Account1, Account2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
-    ripple::STObject const metaObj = CreateMetaDataForBookChange(Currency, Issuer, 22, 1, 3, 3, 1);
+    ripple::STObject const metaObj = createMetaDataForBookChange(Currency, Issuer, 22, 1, 3, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 

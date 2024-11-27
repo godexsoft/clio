@@ -183,9 +183,9 @@ struct RegistryTest : NoLoggerFixture {};
 TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
 {
     auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
     };
 
     auto extBurn = MockExtNftBurn{};
@@ -194,7 +194,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
     EXPECT_CALL(extBurn, onInitialTransaction(testing::_, testing::_)).Times(2);  // 2 burn txs
     EXPECT_CALL(extOffer, onInitialTransaction(testing::_, testing::_));          // 1 create offer
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtNftBurn&, MockExtNftOffer&>(extBurn, extOffer);
     reg.dispatchInitialData(etlng::model::LedgerData{
         .transactions = transactions,
@@ -210,9 +210,9 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
 TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
 {
     auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
     };
 
     auto extBurn = MockExtTransactionNftBurn{};
@@ -221,7 +221,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
     EXPECT_CALL(extBurn, onTransaction(testing::_, testing::_)).Times(2);  // 2 burn txs
     EXPECT_CALL(extOffer, onTransaction(testing::_, testing::_));          // 1 create offer
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtTransactionNftBurn&, MockExtTransactionNftOffer&>(extBurn, extOffer);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -255,7 +255,7 @@ TEST_F(RegistryTest, InitialObjectsDispatched)
     EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_, testing::_));  // 1 vector passed as is
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(Seq, {util::CreateObject(), util::CreateObject(), util::CreateObject()}, {});
+    reg.dispatchInitialObjects(Seq, {util::createObject(), util::createObject(), util::createObject()}, {});
 }
 
 TEST_F(RegistryTest, ObjectsDispatched)
@@ -264,11 +264,11 @@ TEST_F(RegistryTest, ObjectsDispatched)
 
     EXPECT_CALL(extObj, onObject(testing::_, testing::_)).Times(3);  // 3 objects sent
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtOnObject&>(extObj);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = {},
-        .objects = {util::CreateObject(), util::CreateObject(), util::CreateObject()},
+        .objects = {util::createObject(), util::createObject(), util::createObject()},
         .successors = {},
         .edgeKeys = {},
         .header = header,
@@ -280,16 +280,16 @@ TEST_F(RegistryTest, ObjectsDispatched)
 TEST_F(RegistryTest, OnLedgerDataForBatch)
 {
     auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
     };
 
     auto ext = MockExtLedgerData{};
 
     EXPECT_CALL(ext, onLedgerData(testing::_));  // 1 batch (dispatch call)
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtLedgerData&>(ext);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -312,7 +312,7 @@ TEST_F(RegistryTest, InitialObjectsCorrectOrderOfHookCalls)
     EXPECT_CALL(extObj, onInitialObject).Times(3);
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(Seq, {util::CreateObject(), util::CreateObject(), util::CreateObject()}, {});
+    reg.dispatchInitialObjects(Seq, {util::createObject(), util::createObject(), util::createObject()}, {});
 }
 
 TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
@@ -321,16 +321,16 @@ TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
     auto extInitialTransaction = MockExtNftBurn{};
 
     auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
     };
 
     testing::InSequence const seqGuard;
     EXPECT_CALL(extInitialData, onInitialData);
     EXPECT_CALL(extInitialTransaction, onInitialTransaction).Times(2);
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtNftBurn&, MockExtInitialData&>(extInitialTransaction, extInitialData);
     reg.dispatchInitialData(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -350,14 +350,14 @@ TEST_F(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
     auto extOnObject = MockExtOnObject{};
 
     auto transactions = std::vector{
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_BURN),
-        util::CreateTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+        util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER),
     };
     auto objects = std::vector{
-        util::CreateObject(),
-        util::CreateObject(),
-        util::CreateObject(),
+        util::createObject(),
+        util::createObject(),
+        util::createObject(),
     };
 
     // testing::Sequence seq;
@@ -366,7 +366,7 @@ TEST_F(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
     EXPECT_CALL(extOnTransaction, onTransaction).Times(2);
     EXPECT_CALL(extOnObject, onObject).Times(3);
 
-    auto const header = CreateLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(LedgerHash, Seq);
     auto reg = Registry<MockExtOnObject&, MockExtTransactionNftBurn&, MockExtLedgerData&>(
         extOnObject, extOnTransaction, extLedgerData
     );

@@ -159,27 +159,27 @@ constinit auto const RawHeader =
 namespace util {
 
 std::pair<std::string, std::string>
-CreateNftTxAndMetaBlobs()
+createNftTxAndMetaBlobs()
 {
     return {hexStringToBinaryString(TxnMeta), hexStringToBinaryString(TxnHex)};
 }
 
 std::pair<ripple::STTx, ripple::TxMeta>
-CreateNftTxAndMeta()
+createNftTxAndMeta()
 {
     ripple::uint256 hash;
     EXPECT_TRUE(hash.parseHex("6C7F69A6D25A13AC4A2E9145999F45D4674F939900017A96885FDC2757E9284E"));
 
-    auto const [metaBlob, txnBlob] = CreateNftTxAndMetaBlobs();
+    auto const [metaBlob, txnBlob] = createNftTxAndMetaBlobs();
 
     ripple::SerialIter it{txnBlob.data(), txnBlob.size()};
     return {ripple::STTx{it}, ripple::TxMeta{hash, Seq, metaBlob}};
 }
 
 etlng::model::Transaction
-CreateTransaction(ripple::TxType type)
+createTransaction(ripple::TxType type)
 {
-    auto const [sttx, meta] = CreateNftTxAndMeta();
+    auto const [sttx, meta] = createNftTxAndMeta();
     return {
         .raw = "",
         .metaRaw = "",
@@ -192,7 +192,7 @@ CreateTransaction(ripple::TxType type)
 }
 
 etlng::model::Object
-CreateObject()
+createObject()
 {
     // random object taken from initial ledger load
     static constinit auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
@@ -216,7 +216,7 @@ CreateObject()
 }
 
 etlng::model::BookSuccessor
-CreateSuccessor()
+createSuccessor()
 {
     return {
         .firstBook = "A000000000000000000000000000000000000000000000000000000000000000",
@@ -225,7 +225,7 @@ CreateSuccessor()
 }
 
 etlng::impl::PBLedgerResponseType
-CreateDataAndDiff()
+createDataAndDiff()
 {
     auto const rawHeaderBlob = hexStringToBinaryString(RawHeader);
 
@@ -236,7 +236,7 @@ CreateDataAndDiff()
 
     {
         auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-        auto const [metaRaw, txRaw] = CreateNftTxAndMetaBlobs();
+        auto const [metaRaw, txRaw] = createNftTxAndMetaBlobs();
         original.set_transaction_blob(txRaw);
         original.set_metadata_blob(metaRaw);
         for (int i = 0; i < 10; ++i) {
@@ -245,7 +245,7 @@ CreateDataAndDiff()
         }
     }
     {
-        auto expected = CreateObject();
+        auto expected = createObject();
         auto original = org::xrpl::rpc::v1::RawLedgerObject();
         original.set_data(expected.dataRaw);
         original.set_key(expected.keyRaw);
@@ -255,7 +255,7 @@ CreateDataAndDiff()
         }
     }
     {
-        auto expected = CreateSuccessor();
+        auto expected = createSuccessor();
         auto original = org::xrpl::rpc::v1::BookSuccessor();
         original.set_first_book(expected.firstBook);
         original.set_book_base(expected.bookBase);
@@ -271,7 +271,7 @@ CreateDataAndDiff()
 }
 
 etlng::impl::PBLedgerResponseType
-CreateData()
+createData()
 {
     auto const rawHeaderBlob = hexStringToBinaryString(RawHeader);
 
@@ -282,7 +282,7 @@ CreateData()
 
     {
         auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-        auto const [metaRaw, txRaw] = CreateNftTxAndMetaBlobs();
+        auto const [metaRaw, txRaw] = createNftTxAndMetaBlobs();
         original.set_transaction_blob(txRaw);
         original.set_metadata_blob(metaRaw);
         for (int i = 0; i < 10; ++i) {

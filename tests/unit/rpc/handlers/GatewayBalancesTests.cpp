@@ -300,11 +300,11 @@ TEST_F(RPCGatewayBalancesHandlerTest, AccountNotFound)
     backend->setRange(10, seq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return empty account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
 
@@ -333,22 +333,22 @@ TEST_F(RPCGatewayBalancesHandlerTest, InvalidHotWallet)
     backend->setRange(10, seq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     // create a valid line, balance is 0
-    auto const line1 = CreateRippleStateLedgerObject("USD", Issuer, 0, Account, 10, Account2, 20, TxnID, 123);
+    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 0, Account, 10, Account2, 20, TxnID, 123);
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -392,16 +392,16 @@ TEST_P(NormalPathTest, CheckOutput)
     backend->setRange(10, seq);
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
     ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(GetAccountIDWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(bundle.mockedDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
@@ -437,16 +437,16 @@ TEST_P(NormalPathTest, CheckOutput)
 auto
 generateNormalPathTestBundles()
 {
-    auto frozenState = CreateRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123);
+    auto frozenState = createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123);
     frozenState.setFieldU32(ripple::sfFlags, ripple::lsfLowFreeze);
 
-    auto overflowState = CreateRippleStateLedgerObject("JPY", Issuer, 50, Account, 10, Account3, 20, TxnID, 123);
+    auto overflowState = createRippleStateLedgerObject("JPY", Issuer, 50, Account, 10, Account3, 20, TxnID, 123);
     int64_t const min64 = -9922966390934554;
-    overflowState.setFieldAmount(ripple::sfBalance, ripple::STAmount(GetIssue("JPY", Issuer), min64, 80));
+    overflowState.setFieldAmount(ripple::sfBalance, ripple::STAmount(getIssue("JPY", Issuer), min64, 80));
     return std::vector<NormalTestBundle>{
         NormalTestBundle{
             "AllBranches",
-            CreateOwnerDirLedgerObject(
+            createOwnerDirLedgerObject(
                 {ripple::uint256{Index2},
                  ripple::uint256{Index2},
                  ripple::uint256{Index2},
@@ -456,15 +456,15 @@ generateNormalPathTestBundles()
                 Index1
             ),
             std::vector{// hotwallet
-                        CreateRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
+                        createRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
                         // hotwallet
-                        CreateRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
+                        createRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
                         // positive balance -> asset
-                        CreateRippleStateLedgerObject("EUR", Issuer, 30, Account, 100, Account3, 200, TxnID, 123),
+                        createRippleStateLedgerObject("EUR", Issuer, 30, Account, 100, Account3, 200, TxnID, 123),
                         // positive balance -> asset
-                        CreateRippleStateLedgerObject("JPY", Issuer, 40, Account, 100, Account3, 200, TxnID, 123),
+                        createRippleStateLedgerObject("JPY", Issuer, 40, Account, 100, Account3, 200, TxnID, 123),
                         // obligation
-                        CreateRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123),
+                        createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123),
                         frozenState
 
             },
@@ -518,8 +518,8 @@ generateNormalPathTestBundles()
         },
         NormalTestBundle{
             "NoHotwallet",
-            CreateOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1),
-            std::vector{CreateRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123)},
+            createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1),
+            std::vector{createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123)},
             fmt::format(
                 R"({{
                     "obligations":{{
@@ -535,7 +535,7 @@ generateNormalPathTestBundles()
         },
         NormalTestBundle{
             "ObligationOverflow",
-            CreateOwnerDirLedgerObject({ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1),
+            createOwnerDirLedgerObject({ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1),
             std::vector{overflowState, overflowState},
             fmt::format(
                 R"({{
@@ -552,16 +552,16 @@ generateNormalPathTestBundles()
         },
         NormalTestBundle{
             "HighID",
-            CreateOwnerDirLedgerObject(
+            createOwnerDirLedgerObject(
                 {ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}},
                 Index1
             ),
             std::vector{// hotwallet
-                        CreateRippleStateLedgerObject("USD", Issuer, 10, Account2, 100, Account, 200, TxnID, 123),
+                        createRippleStateLedgerObject("USD", Issuer, 10, Account2, 100, Account, 200, TxnID, 123),
                         // hotwallet
-                        CreateRippleStateLedgerObject("CNY", Issuer, 20, Account2, 100, Account, 200, TxnID, 123),
-                        CreateRippleStateLedgerObject("EUR", Issuer, 30, Account3, 100, Account, 200, TxnID, 123),
-                        CreateRippleStateLedgerObject("JPY", Issuer, -50, Account3, 10, Account, 20, TxnID, 123)
+                        createRippleStateLedgerObject("CNY", Issuer, 20, Account2, 100, Account, 200, TxnID, 123),
+                        createRippleStateLedgerObject("EUR", Issuer, 30, Account3, 100, Account, 200, TxnID, 123),
+                        createRippleStateLedgerObject("JPY", Issuer, -50, Account3, 10, Account, 20, TxnID, 123)
             },
             fmt::format(
                 R"({{
@@ -600,13 +600,13 @@ generateNormalPathTestBundles()
         },
         NormalTestBundle{
             "HotWalletArray",
-            CreateOwnerDirLedgerObject(
+            createOwnerDirLedgerObject(
                 {ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1
             ),
             std::vector{
-                CreateRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
-                CreateRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
-                CreateRippleStateLedgerObject("EUR", Issuer, -30, Account, 100, Account3, 200, TxnID, 123)
+                createRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
+                createRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
+                createRippleStateLedgerObject("EUR", Issuer, -30, Account, 100, Account3, 200, TxnID, 123)
 
             },
             fmt::format(

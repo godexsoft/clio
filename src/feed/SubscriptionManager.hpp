@@ -77,7 +77,7 @@ public:
      * @return A shared pointer to a new instance of SubscriptionManager
      */
     static std::shared_ptr<SubscriptionManager>
-    make_SubscriptionManager(util::Config const& config, std::shared_ptr<data::BackendInterface const> const& backend)
+    makeSubscriptionManager(util::Config const& config, std::shared_ptr<data::BackendInterface const> const& backend)
     {
         auto const workersNum = config.valueOr<std::uint64_t>("subscription_workers", 1);
 

@@ -166,9 +166,9 @@ TEST_F(RPCTxTest, ExcessiveLgrRange)
 TEST_F(RPCTxTest, InvalidBinaryV1)
 {
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
@@ -358,9 +358,9 @@ TEST_F(RPCTxTest, CtidNotFoundSearchAllFalse)
 TEST_F(RPCTxTest, DefaultParameter_API_v1)
 {
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
 
@@ -389,8 +389,8 @@ TEST_F(RPCTxTest, DefaultParameter_API_v1)
 TEST_F(RPCTxTest, PaymentTx_API_v1)
 {
     TransactionAndMetadata tx;
-    tx.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
-    tx.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    tx.transaction = createPaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
+    tx.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
 
@@ -419,8 +419,8 @@ TEST_F(RPCTxTest, PaymentTx_API_v1)
 TEST_F(RPCTxTest, PaymentTx_API_v2)
 {
     TransactionAndMetadata tx;
-    tx.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
-    tx.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    tx.transaction = createPaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
+    tx.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
 
@@ -451,14 +451,14 @@ TEST_F(RPCTxTest, PaymentTx_API_v2)
 TEST_F(RPCTxTest, DefaultParameter_API_v2)
 {
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
 
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, tx.ledgerSequence);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, tx.ledgerSequence);
     EXPECT_CALL(*backend, fetchLedgerBySequence(tx.ledgerSequence, _)).WillOnce(Return(ledgerHeader));
 
     auto const rawETLPtr = dynamic_cast<MockETLService*>(mockETLServicePtr.get());
@@ -494,9 +494,9 @@ TEST_F(RPCTxTest, ReturnBinary)
     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
@@ -537,9 +537,9 @@ TEST_F(RPCTxTest, ReturnBinaryWithCTID)
     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
@@ -625,7 +625,7 @@ TEST_F(RPCTxTest, MintNFT)
         NftID,
         NftID
     );
-    TransactionAndMetadata tx = CreateMintNFTTxWithMetadata(Account, 1, 50, 123, NftID);
+    TransactionAndMetadata tx = createMintNftTxWithMetadata(Account, 1, 50, 123, NftID);
 
     tx.date = 123456;
     tx.ledgerSequence = 100;
@@ -652,7 +652,7 @@ TEST_F(RPCTxTest, MintNFT)
 
 TEST_F(RPCTxTest, NFTAcceptOffer)
 {
-    TransactionAndMetadata tx = CreateAcceptNFTOfferTxWithMetadata(Account, 1, 50, NftID);
+    TransactionAndMetadata tx = createAcceptNftOfferTxWithMetadata(Account, 1, 50, NftID);
 
     tx.date = 123456;
     tx.ledgerSequence = 100;
@@ -680,7 +680,7 @@ TEST_F(RPCTxTest, NFTAcceptOffer)
 TEST_F(RPCTxTest, NFTCancelOffer)
 {
     std::vector<std::string> ids{NftID, NftID2};
-    TransactionAndMetadata tx = CreateCancelNFTOffersTxWithMetadata(Account, 1, 50, ids);
+    TransactionAndMetadata tx = createCancelNftOffersTxWithMetadata(Account, 1, 50, ids);
 
     tx.date = 123456;
     tx.ledgerSequence = 100;
@@ -715,7 +715,7 @@ TEST_F(RPCTxTest, NFTCancelOffer)
 
 TEST_F(RPCTxTest, NFTCreateOffer)
 {
-    TransactionAndMetadata tx = CreateCreateNFTOfferTxWithMetadata(Account, 1, 50, NftID, 123, NftID2);
+    TransactionAndMetadata tx = createCreateNftOfferTxWithMetadata(Account, 1, 50, NftID, 123, NftID2);
 
     tx.date = 123456;
     tx.ledgerSequence = 100;
@@ -883,9 +883,9 @@ TEST_F(RPCTxTest, ReturnCTIDForTxInput)
     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
@@ -956,9 +956,9 @@ TEST_F(RPCTxTest, NotReturnCTIDIfETLNotAvaiable)
     })";
 
     TransactionAndMetadata tx;
-    tx.metadata = CreateMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
+    tx.metadata = createMetaDataForCreateOffer(Currency, Account, 100, 200, 300).getSerializer().peekData();
     tx.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx.date = 123456;
     tx.ledgerSequence = 100;
     EXPECT_CALL(*backend, fetchTransaction(ripple::uint256{TxnID}, _)).WillOnce(Return(tx));
@@ -1035,15 +1035,15 @@ TEST_F(RPCTxTest, ViaCTID)
     );
 
     TransactionAndMetadata tx1;
-    tx1.metadata = CreateMetaDataForCreateOffer(Currency, Account, 1, 200, 300).getSerializer().peekData();
+    tx1.metadata = createMetaDataForCreateOffer(Currency, Account, 1, 200, 300).getSerializer().peekData();
     tx1.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx1.date = 123456;
     tx1.ledgerSequence = SeqFromCtID;
 
     TransactionAndMetadata tx2;
-    tx2.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
-    tx2.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    tx2.transaction = createPaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
+    tx2.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     tx2.ledgerSequence = SeqFromCtID;
 
     EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtID, _)).WillOnce(Return(std::vector{tx1, tx2}));
@@ -1070,15 +1070,15 @@ TEST_F(RPCTxTest, ViaCTID)
 TEST_F(RPCTxTest, ViaLowercaseCTID)
 {
     TransactionAndMetadata tx1;
-    tx1.metadata = CreateMetaDataForCreateOffer(Currency, Account, 1, 200, 300).getSerializer().peekData();
+    tx1.metadata = createMetaDataForCreateOffer(Currency, Account, 1, 200, 300).getSerializer().peekData();
     tx1.transaction =
-        CreateCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
+        createCreateOfferTransactionObject(Account, 2, 100, Currency, Account2, 200, 300).getSerializer().peekData();
     tx1.date = 123456;
     tx1.ledgerSequence = SeqFromCtID;
 
     TransactionAndMetadata tx2;
-    tx2.transaction = CreatePaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
-    tx2.metadata = CreatePaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
+    tx2.transaction = createPaymentTransactionObject(Account, Account2, 2, 3, 300).getSerializer().peekData();
+    tx2.metadata = createPaymentTransactionMetaObject(Account, Account2, 110, 30).getSerializer().peekData();
     tx2.ledgerSequence = SeqFromCtID;
 
     EXPECT_CALL(*backend, fetchAllTransactionsInLedger(SeqFromCtID, _)).WillOnce(Return(std::vector{tx1, tx2}));

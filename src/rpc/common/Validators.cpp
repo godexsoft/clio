@@ -66,7 +66,7 @@ TimeFormatValidator::verify(boost::json::value const& value, std::string_view ke
     if (not value.as_object().at(key).is_string())
         return Error{Status{RippledError::rpcINVALID_PARAMS}};
 
-    auto const ret = util::SystemTpFromUTCStr(value_to<std::string>(value.as_object().at(key)), format_);
+    auto const ret = util::systemTpFromUtcStr(value_to<std::string>(value.as_object().at(key)), format_);
     if (!ret)
         return Error{Status{RippledError::rpcINVALID_PARAMS}};
 

@@ -59,19 +59,19 @@ class LedgerTypeAttribute {
 
 public:
     static constexpr LedgerTypeAttribute
-    ChainLedgerType(char const* name, ripple::LedgerEntryType type)
+    chainLedgerType(char const* name, ripple::LedgerEntryType type)
     {
         return LedgerTypeAttribute(name, type, LedgerCategory::Chain);
     }
 
     static constexpr LedgerTypeAttribute
-    AccountOwnedLedgerType(char const* name, ripple::LedgerEntryType type)
+    accountOwnedLedgerType(char const* name, ripple::LedgerEntryType type)
     {
         return LedgerTypeAttribute(name, type, LedgerCategory::AccountOwned);
     }
 
     static constexpr LedgerTypeAttribute
-    DeletionBlockerLedgerType(char const* name, ripple::LedgerEntryType type)
+    deletionBlockerLedgerType(char const* name, ripple::LedgerEntryType type)
     {
         return LedgerTypeAttribute(name, type, LedgerCategory::DeletionBlocker);
     }
@@ -88,35 +88,35 @@ class LedgerTypes {
     using LedgerTypeAttributeList = LedgerTypeAttribute[];
 
     static constexpr LedgerTypeAttributeList const ledgerTypes{
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(account), ripple::ltACCOUNT_ROOT),
-        LedgerTypeAttribute::ChainLedgerType(JS(amendments), ripple::ltAMENDMENTS),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(check), ripple::ltCHECK),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(deposit_preauth), ripple::ltDEPOSIT_PREAUTH),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(account), ripple::ltACCOUNT_ROOT),
+        LedgerTypeAttribute::chainLedgerType(JS(amendments), ripple::ltAMENDMENTS),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(check), ripple::ltCHECK),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(deposit_preauth), ripple::ltDEPOSIT_PREAUTH),
         // dir node belongs to account, but can not be filtered from account_objects
-        LedgerTypeAttribute::ChainLedgerType(JS(directory), ripple::ltDIR_NODE),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(escrow), ripple::ltESCROW),
-        LedgerTypeAttribute::ChainLedgerType(JS(fee), ripple::ltFEE_SETTINGS),
-        LedgerTypeAttribute::ChainLedgerType(JS(hashes), ripple::ltLEDGER_HASHES),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(offer), ripple::ltOFFER),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(payment_channel), ripple::ltPAYCHAN),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(signer_list), ripple::ltSIGNER_LIST),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(state), ripple::ltRIPPLE_STATE),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(ticket), ripple::ltTICKET),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(nft_offer), ripple::ltNFTOKEN_OFFER),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(nft_page), ripple::ltNFTOKEN_PAGE),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(amm), ripple::ltAMM),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(bridge), ripple::ltBRIDGE),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(xchain_owned_claim_id), ripple::ltXCHAIN_OWNED_CLAIM_ID),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(
+        LedgerTypeAttribute::chainLedgerType(JS(directory), ripple::ltDIR_NODE),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(escrow), ripple::ltESCROW),
+        LedgerTypeAttribute::chainLedgerType(JS(fee), ripple::ltFEE_SETTINGS),
+        LedgerTypeAttribute::chainLedgerType(JS(hashes), ripple::ltLEDGER_HASHES),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(offer), ripple::ltOFFER),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(payment_channel), ripple::ltPAYCHAN),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(signer_list), ripple::ltSIGNER_LIST),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(state), ripple::ltRIPPLE_STATE),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(ticket), ripple::ltTICKET),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(nft_offer), ripple::ltNFTOKEN_OFFER),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(nft_page), ripple::ltNFTOKEN_PAGE),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(amm), ripple::ltAMM),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(bridge), ripple::ltBRIDGE),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(xchain_owned_claim_id), ripple::ltXCHAIN_OWNED_CLAIM_ID),
+        LedgerTypeAttribute::deletionBlockerLedgerType(
             JS(xchain_owned_create_account_claim_id),
             ripple::ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID
         ),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(did), ripple::ltDID),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(oracle), ripple::ltORACLE),
-        LedgerTypeAttribute::AccountOwnedLedgerType(JS(credential), ripple::ltCREDENTIAL),
-        LedgerTypeAttribute::ChainLedgerType(JS(nunl), ripple::ltNEGATIVE_UNL),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(mpt_issuance), ripple::ltMPTOKEN_ISSUANCE),
-        LedgerTypeAttribute::DeletionBlockerLedgerType(JS(mptoken), ripple::ltMPTOKEN),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(did), ripple::ltDID),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(oracle), ripple::ltORACLE),
+        LedgerTypeAttribute::accountOwnedLedgerType(JS(credential), ripple::ltCREDENTIAL),
+        LedgerTypeAttribute::chainLedgerType(JS(nunl), ripple::ltNEGATIVE_UNL),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(mpt_issuance), ripple::ltMPTOKEN_ISSUANCE),
+        LedgerTypeAttribute::deletionBlockerLedgerType(JS(mptoken), ripple::ltMPTOKEN),
     };
 
 public:
@@ -125,7 +125,7 @@ public:
      * @return A list of all ledger entry type as string.
      */
     static constexpr auto
-    GetLedgerEntryTypeStrList()
+    getLedgerEntryTypeStrList()
     {
         std::array<char const*, std::size(ledgerTypes)> res{};
         std::transform(std::begin(ledgerTypes), std::end(ledgerTypes), std::begin(res), [](auto const& item) {
@@ -140,7 +140,7 @@ public:
      * @return A list of all account owned ledger entry type as string.
      */
     static constexpr auto
-    GetAccountOwnedLedgerTypeStrList()
+    getAccountOwnedLedgerTypeStrList()
     {
         constexpr auto filter = [](auto const& item) {
             return item.category_ != LedgerTypeAttribute::LedgerCategory::Chain;
@@ -164,7 +164,7 @@ public:
      * @return A list of all account deletion blocker's type as string.
      */
     static constexpr auto
-    GetDeletionBlockerLedgerTypes()
+    getDeletionBlockerLedgerTypes()
     {
         constexpr auto filter = [](auto const& item) {
             return item.category_ == LedgerTypeAttribute::LedgerCategory::DeletionBlocker;
@@ -189,7 +189,7 @@ public:
      * @return The ripple::LedgerEntryType of the given string, returns ltANY if not found.
      */
     static ripple::LedgerEntryType
-    GetLedgerEntryTypeFromStr(std::string const& entryName);
+    getLedgerEntryTypeFromStr(std::string const& entryName);
 };
 
 /**

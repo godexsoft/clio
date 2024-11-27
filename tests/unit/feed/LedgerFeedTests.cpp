@@ -42,10 +42,10 @@ using FeedLedgerTest = FeedBaseTest<LedgerFeed>;
 TEST_F(FeedLedgerTest, SubPub)
 {
     backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
-    auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
     // check the function response
     // Information about the ledgers on hand and current fee schedule. This
@@ -85,8 +85,8 @@ TEST_F(FeedLedgerTest, SubPub)
         })";
 
     // test publish
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(LedgerPub))).Times(1);
-    auto const ledgerHeader2 = CreateLedgerHeader(LedgerHash, 31);
+    EXPECT_CALL(*mockSessionPtr, send(sharedStringJsonEq(LedgerPub))).Times(1);
+    auto const ledgerHeader2 = createLedgerHeader(LedgerHash, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
     testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
@@ -101,10 +101,10 @@ TEST_F(FeedLedgerTest, SubPub)
 TEST_F(FeedLedgerTest, AutoDisconnect)
 {
     backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
-    auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
     EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
     static constexpr auto LedgerResponse =
         R"({
@@ -134,7 +134,7 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
 
     EXPECT_EQ(testFeedPtr->count(), 0);
 
-    auto const ledgerHeader2 = CreateLedgerHeader(LedgerHash, 31);
+    auto const ledgerHeader2 = createLedgerHeader(LedgerHash, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
     // no error

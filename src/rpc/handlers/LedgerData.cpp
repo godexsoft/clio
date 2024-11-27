@@ -215,7 +215,7 @@ tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::val
     }
 
     if (jsonObject.contains(JS(type)))
-        input.type = util::LedgerTypes::GetLedgerEntryTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
+        input.type = util::LedgerTypes::getLedgerEntryTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
 
     return input;
 }

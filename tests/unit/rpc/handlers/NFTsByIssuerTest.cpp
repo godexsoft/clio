@@ -280,7 +280,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NonExistLedgerViaLedgerHash2)
 {
     backend->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 31);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 31);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     auto const input = json::parse(fmt::format(
@@ -329,7 +329,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NonExistLedgerViaLedgerIndex2)
 TEST_F(RPCNFTsByIssuerHandlerTest, AccountNotFound)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
@@ -369,13 +369,13 @@ TEST_F(RPCNFTsByIssuerHandlerTest, DefaultParameters)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    std::vector<NFT> const nfts = {CreateNFT(NftID1, Account, 29)};
-    auto const account = GetAccountIDWithString(Account);
+    std::vector<NFT> const nfts = {createNft(NftID1, Account, 29)};
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, {}}));
     EXPECT_CALL(*backend, fetchNFTsByIssuer(account, Eq(std::nullopt), Const(30), _, Eq(std::nullopt), _)).Times(1);
 
@@ -420,15 +420,15 @@ TEST_F(RPCNFTsByIssuerHandlerTest, SpecificLedgerIndex)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, specificLedger);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, specificLedger);
     ON_CALL(*backend, fetchLedgerBySequence(specificLedger, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, specificLedger, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    std::vector<NFT> const nfts = {CreateNFT(NftID1, Account, specificLedger)};
-    auto const account = GetAccountIDWithString(Account);
+    std::vector<NFT> const nfts = {createNft(NftID1, Account, specificLedger)};
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, {}}));
     EXPECT_CALL(*backend, fetchNFTsByIssuer(account, Eq(std::nullopt), Const(specificLedger), _, Eq(std::nullopt), _))
         .Times(1);
@@ -465,13 +465,13 @@ TEST_F(RPCNFTsByIssuerHandlerTest, TaxonParameter)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    std::vector<NFT> const nfts = {CreateNFT(NftID1, Account, 29)};
-    auto const account = GetAccountIDWithString(Account);
+    std::vector<NFT> const nfts = {createNft(NftID1, Account, 29)};
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, {}}));
     EXPECT_CALL(*backend, fetchNFTsByIssuer(account, Optional(0), Const(30), _, Eq(std::nullopt), _)).Times(1);
 
@@ -506,13 +506,13 @@ TEST_F(RPCNFTsByIssuerHandlerTest, MarkerParameter)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    std::vector<NFT> const nfts = {CreateNFT(NftID3, Account, 29)};
-    auto const account = GetAccountIDWithString(Account);
+    std::vector<NFT> const nfts = {createNft(NftID3, Account, 29)};
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, ripple::uint256{NftID3}}));
     EXPECT_CALL(*backend, fetchNFTsByIssuer(account, _, Const(30), _, Eq(ripple::uint256{NftID1}), _)).Times(1);
 
@@ -549,15 +549,15 @@ TEST_F(RPCNFTsByIssuerHandlerTest, MultipleNFTs)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     std::vector<NFT> const nfts = {
-        CreateNFT(NftID1, Account, 29), CreateNFT(NftID2, Account, 29), CreateNFT(NftID3, Account, 29)
+        createNft(NftID1, Account, 29), createNft(NftID2, Account, 29), createNft(NftID3, Account, 29)
     };
-    auto const account = GetAccountIDWithString(Account);
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, {}}));
     EXPECT_CALL(*backend, fetchNFTsByIssuer(account, Eq(std::nullopt), Const(30), _, Eq(std::nullopt), _)).Times(1);
 
@@ -590,13 +590,13 @@ TEST_F(RPCNFTsByIssuerHandlerTest, LimitMoreThanMax)
     );
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    auto const accountKk = ripple::keylet::account(GetAccountIDWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
     ON_CALL(*backend, doFetchLedgerObject(accountKk, 30, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    std::vector<NFT> const nfts = {CreateNFT(NftID1, Account, 29)};
-    auto const account = GetAccountIDWithString(Account);
+    std::vector<NFT> const nfts = {createNft(NftID1, Account, 29)};
+    auto const account = getAccountIdWithString(Account);
     ON_CALL(*backend, fetchNFTsByIssuer).WillByDefault(Return(NFTsAndCursor{nfts, {}}));
     EXPECT_CALL(
         *backend,

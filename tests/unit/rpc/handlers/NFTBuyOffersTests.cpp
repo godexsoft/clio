@@ -263,7 +263,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerHash2)
 {
     backend->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 31);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 31);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     auto const input = json::parse(fmt::format(
@@ -312,7 +312,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerIndex2)
 TEST_F(RPCNFTBuyOffersHandlerTest, NoNFT)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
     ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(std::nullopt));
@@ -415,13 +415,13 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
     })";
 
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
     auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
-    auto const ownerDir = CreateOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
 
     ON_CALL(*backend, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -429,7 +429,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     bbs.push_back(offer.getSerializer().peekData());
     bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -454,7 +454,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
 TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
@@ -462,13 +462,13 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 500;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     auto idx = ripple::uint256{Index1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
 
     ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
@@ -501,7 +501,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
 TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
@@ -509,14 +509,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 500;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     auto idx = ripple::uint256{Index1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
-    auto const cursorBuyOffer = CreateNFTBuyOffer(NftID, Account);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
+    auto const cursorBuyOffer = createNftBuyOffer(NftID, Account);
 
     // first is nft offer object
     auto const cursor = ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353"};
@@ -563,7 +563,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
 TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimit)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(3);
 
@@ -571,14 +571,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 100;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     auto idx = ripple::uint256{Index1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = CreateOwnerDirLedgerObject(indexes, Index1);
-    auto const cursorBuyOffer = CreateNFTBuyOffer(NftID, Account);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
+    auto const cursorBuyOffer = createNftBuyOffer(NftID, Account);
 
     // first is nft offer object
     auto const cursor = ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353"};
@@ -646,14 +646,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
 TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
     auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMin + 1, ripple::uint256{Index1}}, Index1);
+        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMin + 1, ripple::uint256{Index1}}, Index1);
 
     ON_CALL(*backend, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -661,7 +661,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     bbs.reserve(NFTBuyOffersHandler::limitMin + 1);
     for (auto i = 0; i < NFTBuyOffersHandler::limitMin + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
@@ -689,14 +689,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
 TEST_F(RPCNFTBuyOffersHandlerTest, LimitMoreThanMax)
 {
     backend->setRange(10, 30);
-    auto ledgerHeader = CreateLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
     ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
     auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
     auto const ownerDir =
-        CreateOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMax + 1, ripple::uint256{Index1}}, Index1);
+        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMax + 1, ripple::uint256{Index1}}, Index1);
 
     ON_CALL(*backend, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -704,7 +704,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitMoreThanMax)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = CreateNFTBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(NftID, Account);
     bbs.reserve(NFTBuyOffersHandler::limitMax + 1);
     for (auto i = 0; i < NFTBuyOffersHandler::limitMax + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());

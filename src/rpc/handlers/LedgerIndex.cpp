@@ -58,7 +58,7 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input input, Context const& ctx)
         return fillOutputByIndex(maxIndex);
 
     auto const convertISOTimeStrToTicks = [](std::string const& isoTimeStr) {
-        auto const systemTime = util::SystemTpFromUTCStr(isoTimeStr, dateFormat);
+        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, dateFormat);
         // systemTime must be valid after validation passed
         return systemTime->time_since_epoch().count();
     };
@@ -67,7 +67,7 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input input, Context const& ctx)
 
     auto const earlierThan = [&](std::uint32_t ledgerIndex) {
         auto const header = sharedPtrBackend_->fetchLedgerBySequence(ledgerIndex, ctx.yield);
-        auto const ledgerTime = util::SystemTpFromLedgerCloseTime(header->closeTime);
+        auto const ledgerTime = util::systemTpFromLedgerCloseTime(header->closeTime);
         return ticks < ledgerTime.time_since_epoch().count();
     };
 
