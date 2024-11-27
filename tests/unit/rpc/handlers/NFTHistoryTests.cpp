@@ -311,7 +311,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 {
-    constexpr auto OUTPUT = R"({
+    constexpr auto Output = R"({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,
@@ -445,13 +445,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
         ));
         auto const output = handler.process(Input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result.value(), boost::json::parse(OUTPUT));
+        EXPECT_EQ(output.result.value(), boost::json::parse(Output));
     });
 }
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 {
-    constexpr auto OUTPUT = R"({
+    constexpr auto Output = R"({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,
@@ -600,7 +600,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
         ));
         auto const output = handler.process(Input, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result.value(), boost::json::parse(OUTPUT));
+        EXPECT_EQ(output.result.value(), boost::json::parse(Output));
     });
 }
 

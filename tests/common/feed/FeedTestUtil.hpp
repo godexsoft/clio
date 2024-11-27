@@ -34,6 +34,9 @@
 #include <utility>
 
 // Base class for feed tests, providing easy way to access the received feed
+// The interface for matchers is from gtest so we don't want to change the casing
+// NOLINTBEGIN(readability-identifier-naming)
+
 template <typename TestedFeed>
 struct FeedBaseTest : util::prometheus::WithPrometheus, MockBackendTest, SyncExecutionCtxFixture {
 protected:
@@ -72,6 +75,8 @@ public:
     }
 };
 }  // namespace impl
+
+// NOLINTEND(readability-identifier-naming)
 
 inline ::testing::Matcher<std::shared_ptr<std::string>>
 sharedStringJsonEq(std::string const& expected)

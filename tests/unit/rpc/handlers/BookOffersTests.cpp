@@ -66,7 +66,7 @@ constexpr auto Pays20USDGets10XRPBookDir = "43B83ADC452B85FCBADA6CAEAC5181C255A2
 constexpr auto Pays20XRPGets10USDBookDir = "7B1767D41DBCE79D9585CF9D0262A5FEC45E5206FF524F8B55071AFD498D0000";
 
 // transfer rate x2
-constexpr auto TRANSFERRATEX2 = 2000000000;
+constexpr auto TransferRateX2 = 2000000000;
 
 }  // namespace
 
@@ -838,7 +838,7 @@ generateNormalPathBookOffersTestBundles()
                  createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1).getSerializer().peekData()},
                 // gets issuer account object
                 {ripple::keylet::account(account).key,
-                 createAccountRootObject(Account, ripple::lsfGlobalFreeze, 2, 200, 2, Index1, 2, TRANSFERRATEX2)
+                 createAccountRootObject(Account, ripple::lsfGlobalFreeze, 2, 200, 2, Index1, 2, TransferRateX2)
                      .getSerializer()
                      .peekData()}
             },
@@ -899,7 +899,7 @@ generateNormalPathBookOffersTestBundles()
                  createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1).getSerializer().peekData()},
                 // gets issuer account object, rate is 1/2
                 {ripple::keylet::account(account).key,
-                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData()},
+                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData()},
                 // trust line between gets issuer and owner,owner has 8 USD
                 {ripple::keylet::line(account2, account, ripple::to_currency("USD")).key,
                  trustline8Balance.getSerializer().peekData()},
@@ -963,7 +963,7 @@ generateNormalPathBookOffersTestBundles()
                      .peekData()},
                 // gets issuer account object
                 {ripple::keylet::account(account).key,
-                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData()},
+                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData()},
                 // trust line between gets issuer and owner,owner has 30 USD
                 {ripple::keylet::line(account2, account, ripple::to_currency("USD")).key,
                  trustline30Balance.getSerializer().peekData()},
@@ -1052,7 +1052,7 @@ generateNormalPathBookOffersTestBundles()
                  createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1).getSerializer().peekData()},
                 // gets issuer account object, rate is 1/2
                 {ripple::keylet::account(account).key,
-                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData()},
+                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData()},
             },
             3,
             std::vector<ripple::STObject>{gets10USDPays20XRPOwnerOffer},
@@ -1105,7 +1105,7 @@ generateNormalPathBookOffersTestBundles()
                  createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1).getSerializer().peekData()},
                 // gets issuer account object, rate is 1/2
                 {ripple::keylet::account(account).key,
-                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData()},
+                 createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData()},
                 // trust line between gets issuer and owner,owner has 8 USD
                 {ripple::keylet::line(account2, account, ripple::to_currency("USD")).key,
                  frozenTrustLine.getSerializer().peekData()},
@@ -1295,7 +1295,7 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
 
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
         .WillByDefault(
-            Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData())
+            Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData())
         );
 
     auto const gets10XRPPays20USDOffer = createOfferLedgerObject(
@@ -1369,7 +1369,7 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
 
     ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
         .WillByDefault(
-            Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TRANSFERRATEX2).getSerializer().peekData())
+            Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData())
         );
 
     auto const gets10XRPPays20USDOffer = createOfferLedgerObject(

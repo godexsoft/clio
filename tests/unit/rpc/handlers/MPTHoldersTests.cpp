@@ -542,14 +542,14 @@ TEST_F(RPCMPTHoldersHandlerTest, MarkerParameter)
     )
         .Times(1);
 
-    auto const HOLDER1_ACCOUNTID = ripple::strHex(getAccountIdWithString(HoldeR1Account));
+    auto const Holder1AccountID = ripple::strHex(getAccountIdWithString(HoldeR1Account));
     auto const input = json::parse(fmt::format(
         R"({{
             "mpt_issuance_id": "{}",
             "marker": "{}"
         }})",
         MptID,
-        HOLDER1_ACCOUNTID
+        Holder1AccountID
     ));
     runSpawn([&, this](auto& yield) {
         auto handler = AnyHandler{MPTHoldersHandler{this->backend}};
