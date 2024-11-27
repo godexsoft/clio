@@ -659,7 +659,7 @@ logDuration(web::Context const& ctx, T const& dur)
 {
     using boost::json::serialize;
 
-    static util::Logger const log{"RPC"};
+    static util::Logger const log{"RPC"};  // NOLINT(readability-identifier-naming)
     static constexpr std::int64_t durationErrorThresholdSeconds = 10;
 
     auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();

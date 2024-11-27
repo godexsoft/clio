@@ -78,7 +78,7 @@ template <typename FnType>
 auto
 retryOnTimeout(FnType func, size_t waitMs = defaultWaitBetweenRetry)
 {
-    static util::Logger const log{"Backend"};
+    static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 
     while (true) {
         try {

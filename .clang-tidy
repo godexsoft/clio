@@ -149,18 +149,24 @@ CheckOptions:
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
   readability-identifier-naming.ClassMemberCase: camelBack
-  readability-identifier-naming.ClassConstantCase: camelBack
+  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantPrefix: 'k'
   readability-identifier-naming.ClassMethodCase: camelBack
   readability-identifier-naming.ConstexprFunctionCase: camelBack
   readability-identifier-naming.ConstexprMethodCase: camelBack
-  readability-identifier-naming.GlobalConstantCase: aNy_CasE
-  readability-identifier-naming.GlobalVariableCase: aNy_CasE
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantPrefix: 'g'
+  readability-identifier-naming.GlobalVariableCase: CamelCase
+  readability-identifier-naming.GlobalVariablePrefix: 'g'
   readability-identifier-naming.StaticVariableCase: aNy_CasE
-  readability-identifier-naming.StaticConstantCase: aNy_CasE
+  readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantPrefix: 'k'
   readability-identifier-naming.ConstexprVariableCase: aNy_CasE
   readability-identifier-naming.LocalConstantCase: aNy_CasE
+  readability-identifier-naming.LocalVariableCase: camelBack
   readability-identifier-naming.ParameterCase: camelBack
   readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
   readability-identifier-naming.PrivateMemberSuffix: _
   readability-identifier-naming.PublicMemberSuffix: ''
   readability-identifier-naming.FunctionIgnoredRegexp: '.*tag_invoke.*'

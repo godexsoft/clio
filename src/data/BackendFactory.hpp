@@ -43,7 +43,7 @@ namespace data {
 inline std::shared_ptr<BackendInterface>
 makeBackend(util::Config const& config)
 {
-    static util::Logger const log{"Backend"};
+    static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
     LOG(log.info()) << "Constructing BackendInterface";
 
     auto const readOnly = config.valueOr("read_only", false);

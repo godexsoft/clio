@@ -94,7 +94,7 @@ WorkQueue::stop(std::function<void()> onQueueEmpty)
 WorkQueue
 WorkQueue::makeWorkQueue(util::Config const& config)
 {
-    static util::Logger const log{"RPC"};
+    static util::Logger const log{"RPC"};  // NOLINT(readability-identifier-naming)
     auto const serverConfig = config.section("server");
     auto const numThreads = config.valueOr<uint32_t>("workers", std::thread::hardware_concurrency());
     auto const maxQueueSize = serverConfig.valueOr<uint32_t>("max_queue_size", 0);  // 0 is no limit

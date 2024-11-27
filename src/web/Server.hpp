@@ -342,7 +342,7 @@ makeHttpServer(
     std::shared_ptr<HandlerType> const& handler
 )
 {
-    static util::Logger const log{"WebServer"};
+    static util::Logger const log{"WebServer"};  // NOLINT(readability-identifier-naming)
 
     auto expectedSslContext = ng::impl::makeServerSslContext(config);
     if (not expectedSslContext) {
