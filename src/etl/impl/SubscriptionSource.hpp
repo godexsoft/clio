@@ -108,8 +108,8 @@ public:
      * @param onConnect The onConnect hook. Called when the connection is established
      * @param onDisconnect The onDisconnect hook. Called when the connection is lost
      * @param onLedgerClosed The onLedgerClosed hook. Called when the ledger is closed if the source is forwarding
-     * @param wsTimeout A timeout for websocket operations. Defaults to 30 seconds
-     * @param retryDelay The retry delay. Defaults to 1 second
+     * @param timeout A timeout for websocket operations. Defaults to 30 seconds
+     * @param delay The retry delay. Defaults to 1 second
      */
     SubscriptionSource(
         boost::asio::io_context& ioContext,
@@ -120,8 +120,8 @@ public:
         OnConnectHook onConnect,
         OnDisconnectHook onDisconnect,
         OnLedgerClosedHook onLedgerClosed,
-        std::chrono::steady_clock::duration const wsTimeout = SubscriptionSource::wsTimeout,
-        std::chrono::steady_clock::duration const retryDelay = SubscriptionSource::retryDelay
+        std::chrono::steady_clock::duration const timeout = SubscriptionSource::wsTimeout,
+        std::chrono::steady_clock::duration const delay = SubscriptionSource::retryDelay
     );
 
     /**

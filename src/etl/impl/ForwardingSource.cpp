@@ -44,13 +44,13 @@ ForwardingSource::ForwardingSource(
     std::string ip,
     std::string wsPort,
     std::chrono::steady_clock::duration forwardingTimeout,
-    std::chrono::steady_clock::duration connectionTimeout
+    std::chrono::steady_clock::duration connTimeout
 )
     : log_(fmt::format("ForwardingSource[{}:{}]", ip, wsPort))
     , connectionBuilder_(std::move(ip), std::move(wsPort))
     , forwardingTimeout_{forwardingTimeout}
 {
-    connectionBuilder_.setConnectionTimeout(connectionTimeout)
+    connectionBuilder_.setConnectionTimeout(connTimeout)
         .addHeader(
             {boost::beast::http::field::user_agent, fmt::format("{} websocket-client-coro", BOOST_BEAST_VERSION_STRING)}
         );

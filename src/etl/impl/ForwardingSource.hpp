@@ -46,7 +46,7 @@ public:
         std::string ip,
         std::string wsPort,
         std::chrono::steady_clock::duration forwardingTimeout,
-        std::chrono::steady_clock::duration connectionTimeout = ForwardingSource::connectionTimeout
+        std::chrono::steady_clock::duration connTimeout = ForwardingSource::connectionTimeout
     );
 
     /**

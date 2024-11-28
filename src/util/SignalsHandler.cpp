@@ -25,7 +25,6 @@
 
 #include <chrono>
 #include <csignal>
-#include <cstddef>
 #include <functional>
 #include <optional>
 #include <utility>
@@ -35,38 +34,38 @@ namespace util {
 namespace impl {
 
 class SignalsHandlerStatic {
-    static SignalsHandler* handler;
+    static SignalsHandler* installedHandler;
 
 public:
     static void
     registerHandler(SignalsHandler& handler)
     {
-        ASSERT(SignalsHandlerStatic::handler == nullptr, "There could be only one instance of SignalsHandler");
-        SignalsHandlerStatic::handler = &handler;
+        ASSERT(installedHandler == nullptr, "There could be only one instance of SignalsHandler");
+        installedHandler = &handler;
     }
 
     static void
     resetHandler()
     {
-        handler = nullptr;
+        installedHandler = nullptr;
     }
 
     static void
     handleSignal(int signal)
     {
-        ASSERT(handler != nullptr, "SignalsHandler is not initialized");
-        handler->stopHandler_(signal);
+        ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
+        installedHandler->stopHandler_(signal);
     }
 
     static void
     handleSecondSignal(int signal)
     {
-        ASSERT(handler != nullptr, "SignalsHandler is not initialized");
-        handler->secondSignalHandler_(signal);
+        ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
+        installedHandler->secondSignalHandler_(signal);
     }
 };
 
-SignalsHandler* SignalsHandlerStatic::handler = nullptr;
+SignalsHandler* SignalsHandlerStatic::installedHandler = nullptr;
 
 }  // namespace impl
 

@@ -68,16 +68,16 @@ SubscriptionSource::SubscriptionSource(
     OnConnectHook onConnect,
     OnDisconnectHook onDisconnect,
     OnLedgerClosedHook onLedgerClosed,
-    std::chrono::steady_clock::duration const wsTimeout,
-    std::chrono::steady_clock::duration const retryDelay
+    std::chrono::steady_clock::duration const timeout,
+    std::chrono::steady_clock::duration const delay
 )
     : log_(fmt::format("SubscriptionSource[{}:{}]", ip, wsPort))
     , wsConnectionBuilder_(ip, wsPort)
     , validatedLedgers_(std::move(validatedLedgers))
     , subscriptions_(std::move(subscriptions))
     , strand_(boost::asio::make_strand(ioContext))
-    , wsTimeout_(wsTimeout)
-    , retry_(util::makeRetryExponentialBackoff(retryDelay, retryMaxDelay, strand_))
+    , wsTimeout_(timeout)
+    , retry_(util::makeRetryExponentialBackoff(delay, retryMaxDelay, strand_))
     , onConnect_(std::move(onConnect))
     , onDisconnect_(std::move(onDisconnect))
     , onLedgerClosed_(std::move(onLedgerClosed))
