@@ -41,9 +41,9 @@ class RPCLedgerRangeTest : public HandlerBaseTest {};
 TEST_F(RPCLedgerRangeTest, LedgerRangeMinMaxSame)
 {
     runSpawn([this](auto yield) {
-        backend->updateRange(RangeMin);
+        backend_->updateRange(RangeMin);
 
-        auto const handler = AnyHandler{LedgerRangeHandler{backend}};
+        auto const handler = AnyHandler{LedgerRangeHandler{backend_}};
         auto const req = json::parse("{}");
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -56,9 +56,9 @@ TEST_F(RPCLedgerRangeTest, LedgerRangeMinMaxSame)
 TEST_F(RPCLedgerRangeTest, LedgerRangeFullySet)
 {
     runSpawn([this](auto yield) {
-        backend->setRange(RangeMin, RangeMax);
+        backend_->setRange(RangeMin, RangeMax);
 
-        auto const handler = AnyHandler{LedgerRangeHandler{backend}};
+        auto const handler = AnyHandler{LedgerRangeHandler{backend_}};
         auto const req = json::parse("{}");
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);

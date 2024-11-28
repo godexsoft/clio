@@ -92,7 +92,7 @@ protected:
     SetUp() override
     {
         HandlerBaseTest::SetUp();
-        backend->setRange(RangeMin, RangeMax);
+        backend_->setRange(RangeMin, RangeMax);
     }
 };
 
@@ -402,14 +402,14 @@ INSTANTIATE_TEST_CASE_P(
     RPCGetAggregatePriceGroup1,
     GetAggregatePriceParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(GetAggregatePriceParameterTest, InvalidParams)
 {
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+        auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -435,7 +435,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OverOraclesMax)
             json::object{{"account", "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD"}, {"oracle_document_id", 2}}
         );
     }
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -447,7 +447,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OverOraclesMax)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, LedgerNotFound)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _)).WillOnce(Return(std::nullopt));
     constexpr auto documentId = 1;
     auto const req = json::parse(fmt::format(
         R"({{
@@ -464,7 +464,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, LedgerNotFound)
         Account,
         documentId
     ));
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -476,13 +476,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, LedgerNotFound)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -525,13 +525,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -574,13 +574,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "JPY",
@@ -625,13 +625,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
+    EXPECT_CALL(*backend_, fetchTransaction(ripple::uint256(Tx1), _))
         .WillRepeatedly(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
@@ -645,7 +645,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
             Tx2
         )));
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "JPY",
@@ -691,17 +691,17 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
 // median is the middle value of a set of numbers when there are odd number of price
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
     constexpr auto documentId3 = 3;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2);  // 20
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2);  // 20
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -757,19 +757,19 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
 // median is the middle value of a set of numbers when there are odd number of price
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
     constexpr auto documentId2 = 2;
     constexpr auto documentId3 = 3;
     constexpr auto documentId4 = 4;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -830,7 +830,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     // prepare 4 prices, when trim is 25, the lowest(documentId1) and highest(documentId3) price will be removed
@@ -838,12 +838,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
     constexpr auto documentId2 = 2;
     constexpr auto documentId3 = 3;
     constexpr auto documentId4 = 4;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -912,14 +912,14 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, NoOracleEntryFound)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
-    EXPECT_CALL(*backend, doFetchLedgerObject(oracleIndex, RangeMax, _)).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(*backend_, doFetchLedgerObject(oracleIndex, RangeMax, _)).WillOnce(Return(std::nullopt));
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -947,13 +947,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoOracleEntryFound)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, NoMatchAssetPair)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "JPY",
@@ -981,7 +981,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoMatchAssetPair)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
@@ -992,12 +992,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
     constexpr auto timestamp2 = 1711461383u;
     constexpr auto timestamp3 = 1711461382u;
     constexpr auto timestamp4 = 1711461381u;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -1061,7 +1061,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
@@ -1072,12 +1072,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
     constexpr auto timestamp2 = 1711461383u;
     constexpr auto timestamp3 = 1711461382u;
     constexpr auto timestamp4 = 1711461381u;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -1141,7 +1141,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
@@ -1152,12 +1152,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
     constexpr auto timestamp2 = 1711461383u;
     constexpr auto timestamp3 = 1711461382u;
     constexpr auto timestamp4 = 1711461381u;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -1220,7 +1220,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
 
 TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId1 = 1;
@@ -1231,12 +1231,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
     constexpr auto timestamp2 = 1711461383u;
     constexpr auto timestamp3 = 1711461382u;
     constexpr auto timestamp4 = 1711461381u;
-    mockLedgerObject(*backend, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
-    mockLedgerObject(*backend, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
-    mockLedgerObject(*backend, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
-    mockLedgerObject(*backend, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
+    mockLedgerObject(*backend_, Account, documentId1, Tx1, 1e3, 2, timestamp1);  // 10
+    mockLedgerObject(*backend_, Account, documentId2, Tx1, 2e3, 2, timestamp2);  // 20
+    mockLedgerObject(*backend_, Account, documentId4, Tx1, 4e2, 1, timestamp3);  // 40
+    mockLedgerObject(*backend_, Account, documentId3, Tx1, 3e3, 1, timestamp4);  // 300
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "USD",
@@ -1300,14 +1300,14 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
 // When the price pair is not available in the current oracle, trace back to previous transactions
 TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
     // return a tx which contains NewFields
-    EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
+    EXPECT_CALL(*backend_, fetchTransaction(ripple::uint256(Tx1), _))
         .WillOnce(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
@@ -1321,7 +1321,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
             Tx1
         )));
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "JPY",
@@ -1363,14 +1363,14 @@ TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
 }
 TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _))
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
         .WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
 
     constexpr auto documentId = 1;
     auto const oracleIndex = ripple::keylet::oracle(getAccountIdWithString(Account), documentId).key;
-    mockLedgerObject(*backend, Account, documentId, Tx1, 1e3, 2);  // 10
+    mockLedgerObject(*backend_, Account, documentId, Tx1, 1e3, 2);  // 10
 
-    EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx1), _))
+    EXPECT_CALL(*backend_, fetchTransaction(ripple::uint256(Tx1), _))
         .WillOnce(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
@@ -1384,7 +1384,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
             Tx2
         )));
 
-    EXPECT_CALL(*backend, fetchTransaction(ripple::uint256(Tx2), _))
+    EXPECT_CALL(*backend_, fetchTransaction(ripple::uint256(Tx2), _))
         .WillRepeatedly(Return(createOracleSetTxWithMetadata(
             Account,
             RangeMax,
@@ -1398,7 +1398,7 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
             Tx2
         )));
 
-    auto const handler = AnyHandler{GetAggregatePriceHandler{backend}};
+    auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     auto const req = json::parse(fmt::format(
         R"({{
                 "base_asset": "JPY",

@@ -68,7 +68,7 @@ protected:
     std::shared_ptr<testing::StrictMock<MockRPCEngine>> rpcEngine_ =
         std::make_shared<testing::StrictMock<MockRPCEngine>>();
     std::shared_ptr<StrictMock<MockETLService>> etl_ = std::make_shared<StrictMock<MockETLService>>();
-    RPCServerHandler<MockRPCEngine, MockETLService> rpcServerHandler_{util::Config{}, backend, rpcEngine_, etl_};
+    RPCServerHandler<MockRPCEngine, MockETLService> rpcServerHandler_{util::Config{}, backend_, rpcEngine_, etl_};
 
     util::TagDecoratorFactory tagFactory_{util::Config{}};
     StrictMockConnectionMetadata connectionMetadata_{"some ip", tagFactory_};
@@ -99,7 +99,7 @@ TEST_F(NgRpcServerHandlerTest, CoroutineSleepsUntilRpcEngineFinishes)
 
         EXPECT_CALL(*rpcEngine_, post).WillOnce([&](auto&& fn, auto&&) {
             boost::asio::spawn(
-                ctx,
+                ctx_,
                 [this, &rpcEngineDone, fn = std::forward<decltype(fn)>(fn)](boost::asio::yield_context yield) {
                     EXPECT_CALL(*rpcEngine_, notifyBadSyntax);
                     fn(yield);
@@ -168,7 +168,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_NoRangeFromBackend)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_ContextCreationFailed)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest("{}");
 
@@ -188,7 +188,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_ContextCreationFailed)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseFailed)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -215,7 +215,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseFailed)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseThrewAnException)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -237,7 +237,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_BuildResponseThrewAnException)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -266,7 +266,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_OutdatedWarning)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -301,7 +301,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_OutdatedWarning)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest_Forwarded)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -333,7 +333,7 @@ TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest_Forwarded)
 
 TEST_F(NgRpcServerHandlerTest, HandleRequest_Successful_HttpRequest_HasError)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         auto const request = makeHttpRequest(R"json({"method":"some_method"})json");
 
@@ -380,7 +380,7 @@ protected:
 
 TEST_F(NgRpcServerHandlerWsTest, HandleRequest_Successful_WsRequest)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         Request::HttpHeaders const headers;
         auto const request = Request(R"json({"method":"some_method", "id": 1234, "api_version": 1})json", headers);
@@ -411,7 +411,7 @@ TEST_F(NgRpcServerHandlerWsTest, HandleRequest_Successful_WsRequest)
 
 TEST_F(NgRpcServerHandlerWsTest, HandleRequest_Successful_WsRequest_HasError)
 {
-    backend->setRange(0, 1);
+    backend_->setRange(0, 1);
     runSpawn([&](boost::asio::yield_context yield) {
         Request::HttpHeaders const headers;
         auto const request = Request(R"json({"method":"some_method", "id": 1234, "api_version": 1})json", headers);

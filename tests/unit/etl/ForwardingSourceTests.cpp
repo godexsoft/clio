@@ -39,7 +39,7 @@ using namespace etl::impl;
 
 struct ForwardingSourceTests : SyncAsioContextTest {
 protected:
-    TestWsServer server_{ctx, "0.0.0.0"};
+    TestWsServer server_{ctx_, "0.0.0.0"};
     ForwardingSource forwardingSource_{
         "127.0.0.1",
         server_.port(),
@@ -78,7 +78,7 @@ protected:
 TEST_F(ForwardingSourceOperationsTests, XUserHeader)
 {
     std::string const xUserValue = "some_user";
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
         auto headers = connection.headers();
         ASSERT_FALSE(headers.empty());
@@ -101,7 +101,7 @@ TEST_F(ForwardingSourceOperationsTests, XUserHeader)
 
 TEST_F(ForwardingSourceOperationsTests, ReadFailed)
 {
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
         connection.close(yield);
     });
@@ -116,7 +116,7 @@ TEST_F(ForwardingSourceOperationsTests, ReadFailed)
 TEST_F(ForwardingSourceOperationsTests, ReadTimeout)
 {
     TestWsConnectionPtr connection;
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         connection = std::make_unique<TestWsConnection>(serverConnection(yield));
     });
 
@@ -129,7 +129,7 @@ TEST_F(ForwardingSourceOperationsTests, ReadTimeout)
 
 TEST_F(ForwardingSourceOperationsTests, ParseFailed)
 {
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
 
         auto receivedMessage = connection.receive(yield);
@@ -151,7 +151,7 @@ TEST_F(ForwardingSourceOperationsTests, ParseFailed)
 
 TEST_F(ForwardingSourceOperationsTests, GotNotAnObject)
 {
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
 
         auto receivedMessage = connection.receive(yield);
@@ -174,7 +174,7 @@ TEST_F(ForwardingSourceOperationsTests, GotNotAnObject)
 
 TEST_F(ForwardingSourceOperationsTests, Success)
 {
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
 
         auto receivedMessage = connection.receive(yield);

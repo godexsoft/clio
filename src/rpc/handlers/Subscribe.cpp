@@ -63,7 +63,7 @@ SubscribeHandler::SubscribeHandler(
 RpcSpecConstRef
 SubscribeHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    static auto const booksValidator =
+    static auto const kBOOKS_VALIDATOR =
         validation::CustomValidator{[](boost::json::value const& value, std::string_view key) -> MaybeError {
             if (!value.is_array())
                 return Error{Status{RippledError::rpcINVALID_PARAMS, std::string(key) + "NotArray"}};
@@ -96,17 +96,17 @@ SubscribeHandler::spec([[maybe_unused]] uint32_t apiVersion)
             return MaybeError{};
         }};
 
-    static auto const rpcSpec = RpcSpec{
+    static auto const kRPC_SPEC = RpcSpec{
         {JS(streams), validation::CustomValidators::subscribeStreamValidator},
         {JS(accounts), validation::CustomValidators::subscribeAccountsValidator},
         {JS(accounts_proposed), validation::CustomValidators::subscribeAccountsValidator},
-        {JS(books), booksValidator},
+        {JS(books), kBOOKS_VALIDATOR},
         {"user", check::Deprecated{}},
         {JS(password), check::Deprecated{}},
         {JS(rt_accounts), check::Deprecated{}}
     };
 
-    return rpcSpec;
+    return kRPC_SPEC;
 }
 
 SubscribeHandler::Result

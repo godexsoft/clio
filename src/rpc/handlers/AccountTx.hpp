@@ -124,7 +124,7 @@ public:
     spec([[maybe_unused]] uint32_t apiVersion)
     {
         auto const& typesKeysInLowercase = util::getTxTypesInLowercase();
-        static auto const rpcSpecForV1 = RpcSpec{
+        static auto const kRPC_SPEC_FOR_V1 = RpcSpec{
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
@@ -151,15 +151,15 @@ public:
             },
         };
 
-        static auto const rpcSpec = RpcSpec{
-            rpcSpecForV1,
+        static auto const kRPC_SPEC = RpcSpec{
+            kRPC_SPEC_FOR_V1,
             {
                 {JS(binary), validation::Type<bool>{}},
                 {JS(forward), validation::Type<bool>{}},
             }
         };
 
-        return apiVersion == 1 ? rpcSpecForV1 : rpcSpec;
+        return apiVersion == 1 ? kRPC_SPEC_FOR_V1 : kRPC_SPEC;
     }
 
     /**

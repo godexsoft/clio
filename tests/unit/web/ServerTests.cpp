@@ -608,7 +608,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminSet)
 {
     uint32_t webServerPort = tests::util::generateFreePort();
-    std::string const JSONServerConfigWithBothAdminPasswordAndLocalAdmin = fmt::format(
+    std::string const jsonServerConfigWithBothAdminPasswordAndLocalAdmin = fmt::format(
         R"JSON({{
         "server":{{
                 "ip": "0.0.0.0",
@@ -621,14 +621,14 @@ TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminSet)
     );
 
     auto e = std::make_shared<AdminCheckExecutor>();
-    Config const serverConfig{boost::json::parse(JSONServerConfigWithBothAdminPasswordAndLocalAdmin)};
+    Config const serverConfig{boost::json::parse(jsonServerConfigWithBothAdminPasswordAndLocalAdmin)};
     EXPECT_THROW(web::makeHttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
 }
 
 TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminFalse)
 {
     uint32_t webServerPort = tests::util::generateFreePort();
-    std::string const JSONServerConfigWithNoAdminPasswordAndLocalAdminFalse = fmt::format(
+    std::string const jsonServerConfigWithNoAdminPasswordAndLocalAdminFalse = fmt::format(
         R"JSON({{
         "server": {{
             "ip": "0.0.0.0",
@@ -640,7 +640,7 @@ TEST_F(WebServerTest, AdminErrorCfgTestBothAdminPasswordAndLocalAdminFalse)
     );
 
     auto e = std::make_shared<AdminCheckExecutor>();
-    Config const serverConfig{boost::json::parse(JSONServerConfigWithNoAdminPasswordAndLocalAdminFalse)};
+    Config const serverConfig{boost::json::parse(jsonServerConfigWithNoAdminPasswordAndLocalAdminFalse)};
     EXPECT_THROW(web::makeHttpServer(serverConfig, ctx, dosGuardOverload, e), std::logic_error);
 }
 
@@ -661,7 +661,7 @@ TEST_F(WebServerPrometheusTest, rejectedWithoutAdminPassword)
 TEST_F(WebServerPrometheusTest, rejectedIfPrometheusIsDisabled)
 {
     uint32_t webServerPort = tests::util::generateFreePort();
-    std::string const JSONServerConfigWithDisabledPrometheus = fmt::format(
+    std::string const jsonServerConfigWithDisabledPrometheus = fmt::format(
         R"JSON({{
         "server":{{
                 "ip": "0.0.0.0",
@@ -674,7 +674,7 @@ TEST_F(WebServerPrometheusTest, rejectedIfPrometheusIsDisabled)
     );
 
     auto e = std::make_shared<EchoExecutor>();
-    Config const serverConfig{boost::json::parse(JSONServerConfigWithDisabledPrometheus)};
+    Config const serverConfig{boost::json::parse(jsonServerConfigWithDisabledPrometheus)};
     PrometheusService::init(serverConfig);
     auto server = makeServerSync(serverConfig, ctx, dosGuard, e);
     auto const [status, res] = HttpSyncClient::get(

@@ -125,7 +125,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(account),
              validation::Required{},
              meta::WithCustomError{
@@ -145,7 +145,7 @@ public:
             {"peer_index", check::Deprecated{}},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

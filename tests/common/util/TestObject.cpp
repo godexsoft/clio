@@ -694,25 +694,25 @@ createMintNftTxWithMetadata(
     node.setFieldU16(ripple::sfLedgerEntryType, ripple::ltNFTOKEN_PAGE);
 
     ripple::STObject finalFields(ripple::sfFinalFields);
-    ripple::STArray NFTArray1{2};
+    ripple::STArray nftArray1{2};
 
     // finalFields contain new NFT while previousFields does not
     auto entry = ripple::STObject(ripple::sfNFToken);
     entry.setFieldH256(ripple::sfNFTokenID, ripple::uint256{nftID});
     char const* url = "testurl";
     entry.setFieldVL(ripple::sfURI, ripple::Slice(url, 7));
-    NFTArray1.push_back(entry);
+    nftArray1.push_back(entry);
 
     auto entry2 = ripple::STObject(ripple::sfNFToken);
     entry2.setFieldH256(ripple::sfNFTokenID, ripple::uint256{Index1});
     entry2.setFieldVL(ripple::sfURI, ripple::Slice(url, 7));
-    NFTArray1.push_back(entry2);
+    nftArray1.push_back(entry2);
 
-    finalFields.setFieldArray(ripple::sfNFTokens, NFTArray1);
+    finalFields.setFieldArray(ripple::sfNFTokens, nftArray1);
 
-    NFTArray1.erase(NFTArray1.begin());
+    nftArray1.erase(nftArray1.begin());
     ripple::STObject previousFields(ripple::sfPreviousFields);
-    previousFields.setFieldArray(ripple::sfNFTokens, NFTArray1);
+    previousFields.setFieldArray(ripple::sfNFTokens, nftArray1);
 
     node.emplace_back(std::move(finalFields));
     node.emplace_back(std::move(previousFields));

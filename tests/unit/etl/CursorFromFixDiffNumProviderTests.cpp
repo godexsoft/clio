@@ -58,10 +58,10 @@ TEST_P(ParametrizedCursorProviderTest, GetCursorsWithDifferentProviderSettings)
 {
     auto const numDiffs = GetParam();
     auto const diffs = diffProvider.getLatestDiff();
-    auto const provider = etl::impl::CursorFromFixDiffNumProvider{backend, numDiffs};
+    auto const provider = etl::impl::CursorFromFixDiffNumProvider{backend_, numDiffs};
 
-    ON_CALL(*backend, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
-    EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(numDiffs);
+    ON_CALL(*backend_, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
+    EXPECT_CALL(*backend_, fetchLedgerDiff(_, _)).Times(numDiffs);
 
     auto const cursors = provider.getCursors(Seq);
     ASSERT_EQ(cursors.size(), diffs.size() + 1);
@@ -73,10 +73,10 @@ TEST_P(ParametrizedCursorProviderTest, GetCursorsWithDifferentProviderSettings)
 TEST_F(CursorProviderTest, EmptyCursorIsHandledCorrectly)
 {
     auto const diffs = diffProvider.getLatestDiff();
-    auto const provider = etl::impl::CursorFromFixDiffNumProvider{backend, 0};
+    auto const provider = etl::impl::CursorFromFixDiffNumProvider{backend_, 0};
 
-    ON_CALL(*backend, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
-    EXPECT_CALL(*backend, fetchLedgerDiff(_, _)).Times(0);
+    ON_CALL(*backend_, fetchLedgerDiff(_, _)).WillByDefault(Return(diffs));
+    EXPECT_CALL(*backend_, fetchLedgerDiff(_, _)).Times(0);
 
     auto const cursors = provider.getCursors(Seq);
 

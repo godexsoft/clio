@@ -108,7 +108,7 @@ public:
     spec([[maybe_unused]] uint32_t apiVersion)
     {
         auto const& accountOwnedTypes = util::LedgerTypes::getAccountOwnedLedgerTypeStrList();
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
@@ -121,7 +121,7 @@ public:
             {JS(deletion_blockers_only), validation::Type<bool>{}},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

@@ -260,9 +260,9 @@ TEST_F(FeedProposedTransactionTest, AutoDisconnect)
 
 struct ProposedTransactionFeedMockPrometheusTest : WithMockPrometheus, SyncExecutionCtxFixture {
 protected:
-    web::SubscriptionContextPtr sessionPtr = std::make_shared<MockSession>();
-    std::shared_ptr<ProposedTransactionFeed> testFeedPtr = std::make_shared<ProposedTransactionFeed>(ctx);
-    MockSession* mockSessionPtr = dynamic_cast<MockSession*>(sessionPtr.get());
+    web::SubscriptionContextPtr sessionPtr_ = std::make_shared<MockSession>();
+    std::shared_ptr<ProposedTransactionFeed> testFeedPtr_ = std::make_shared<ProposedTransactionFeed>(ctx_);
+    MockSession* mockSessionPtr_ = dynamic_cast<MockSession*>(sessionPtr_.get());
 };
 
 TEST_F(ProposedTransactionFeedMockPrometheusTest, subUnsub)
@@ -275,14 +275,14 @@ TEST_F(ProposedTransactionFeedMockPrometheusTest, subUnsub)
     EXPECT_CALL(counterAccount, add(1));
     EXPECT_CALL(counterAccount, add(-1));
 
-    EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    testFeedPtr->sub(sessionPtr);
-    testFeedPtr->unsub(sessionPtr);
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect);
+    testFeedPtr_->sub(sessionPtr_);
+    testFeedPtr_->unsub(sessionPtr_);
 
     auto const account = getAccountIdWithString(Account1);
-    EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    testFeedPtr->sub(account, sessionPtr);
-    testFeedPtr->unsub(account, sessionPtr);
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect);
+    testFeedPtr_->sub(account, sessionPtr_);
+    testFeedPtr_->unsub(account, sessionPtr_);
 }
 
 TEST_F(ProposedTransactionFeedMockPrometheusTest, AutoDisconnect)
@@ -297,17 +297,17 @@ TEST_F(ProposedTransactionFeedMockPrometheusTest, AutoDisconnect)
     EXPECT_CALL(counterAccount, add(1));
     EXPECT_CALL(counterAccount, add(-1));
 
-    EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce([&sessionOnDisconnectSlots](auto slot) {
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect).WillOnce([&sessionOnDisconnectSlots](auto slot) {
         sessionOnDisconnectSlots.push_back(slot);
     });
-    testFeedPtr->sub(sessionPtr);
+    testFeedPtr_->sub(sessionPtr_);
 
     auto const account = getAccountIdWithString(Account1);
-    EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce([&sessionOnDisconnectSlots](auto slot) {
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect).WillOnce([&sessionOnDisconnectSlots](auto slot) {
         sessionOnDisconnectSlots.push_back(slot);
     });
-    testFeedPtr->sub(account, sessionPtr);
+    testFeedPtr_->sub(account, sessionPtr_);
 
-    std::ranges::for_each(sessionOnDisconnectSlots, [this](auto& slot) { slot(sessionPtr.get()); });
-    sessionPtr.reset();
+    std::ranges::for_each(sessionOnDisconnectSlots, [this](auto& slot) { slot(sessionPtr_.get()); });
+    sessionPtr_.reset();
 }

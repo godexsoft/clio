@@ -104,7 +104,7 @@ public:
     bool
     isProxied(std::string const& method) const
     {
-        static std::unordered_set<std::string> const proxiedCommands{
+        static std::unordered_set<std::string> const kPROXIED_COMMANDS{
             "server_definitions",
             "server_state",
             "submit",
@@ -118,7 +118,7 @@ public:
             "channel_verify",
         };
 
-        return proxiedCommands.contains(method);
+        return kPROXIED_COMMANDS.contains(method);
     }
 
 private:

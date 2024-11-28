@@ -41,7 +41,7 @@ using namespace data;
 constexpr auto Seq = 30u;
 
 struct AmendmentCenterTest : util::prometheus::WithPrometheus, MockBackendTest, SyncAsioContextTest {
-    AmendmentCenter amendmentCenter{backend};
+    AmendmentCenter amendmentCenter{backend_};
 };
 
 // This is a safety net test that will fail anytime we built Clio against a new libXRPL that added some Amendment that
@@ -78,7 +78,7 @@ TEST_F(AmendmentCenterTest, IsEnabled)
     EXPECT_FALSE(amendmentCenter.isSupported("unknown"));
 
     auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillRepeatedly(testing::Return(amendments.getSerializer().peekData()));
 
     EXPECT_TRUE(amendmentCenter.isEnabled("fixUniversalNumber", Seq));
@@ -89,7 +89,7 @@ TEST_F(AmendmentCenterTest, IsEnabled)
 TEST_F(AmendmentCenterTest, IsMultipleEnabled)
 {
     auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
     runSpawn([this](auto yield) {
@@ -105,7 +105,7 @@ TEST_F(AmendmentCenterTest, IsMultipleEnabled)
 
 TEST_F(AmendmentCenterTest, IsEnabledThrowsWhenUnavailable)
 {
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(std::nullopt));
 
     runSpawn([this](auto yield) {
@@ -119,7 +119,7 @@ TEST_F(AmendmentCenterTest, IsEnabledThrowsWhenUnavailable)
 TEST_F(AmendmentCenterTest, IsEnabledReturnsFalseWhenNoAmendments)
 {
     auto const amendments = createBrokenAmendmentsObject();
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
     runSpawn([this](auto yield) { EXPECT_FALSE(amendmentCenter.isEnabled(yield, "irrelevant", Seq)); });
@@ -128,7 +128,7 @@ TEST_F(AmendmentCenterTest, IsEnabledReturnsFalseWhenNoAmendments)
 TEST_F(AmendmentCenterTest, IsEnabledReturnsVectorOfFalseWhenNoAmendments)
 {
     auto const amendments = createBrokenAmendmentsObject();
-    EXPECT_CALL(*backend, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
     runSpawn([this](auto yield) {

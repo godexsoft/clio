@@ -171,11 +171,11 @@ GetAggregatePriceHandler::process(GetAggregatePriceHandler::Input input, Context
     auto const median = [&, size = out.extireStats.size]() {
         auto const middle = size / 2;
         if ((size % 2) == 0) {
-            static ripple::STAmount const two{ripple::noIssue(), 2, 0};
+            static ripple::STAmount const kTWO{ripple::noIssue(), 2, 0};
             auto it = itAdvance(timestampPricesBiMap.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;
-            return divide(a1 + a2, two, ripple::noIssue());
+            return divide(a1 + a2, kTWO, ripple::noIssue());
         }
         return itAdvance(timestampPricesBiMap.right.begin(), middle)->first;
     }();

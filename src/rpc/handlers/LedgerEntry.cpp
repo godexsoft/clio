@@ -297,7 +297,7 @@ tag_invoke(boost::json::value_to_tag<LedgerEntryHandler::Input>, boost::json::va
         input.binary = jv.at(JS(binary)).as_bool();
 
     // check all the protential index
-    static auto const indexFieldTypeMap = std::unordered_map<std::string, ripple::LedgerEntryType>{
+    static auto const kINDEX_FIELD_TYPE_MAP = std::unordered_map<std::string, ripple::LedgerEntryType>{
         {JS(index), ripple::ltANY},
         {JS(directory), ripple::ltDIR_NODE},
         {JS(offer), ripple::ltOFFER},
@@ -349,12 +349,12 @@ tag_invoke(boost::json::value_to_tag<LedgerEntryHandler::Input>, boost::json::va
     };
 
     auto const indexFieldType =
-        std::find_if(indexFieldTypeMap.begin(), indexFieldTypeMap.end(), [&jsonObject](auto const& pair) {
+        std::find_if(kINDEX_FIELD_TYPE_MAP.begin(), kINDEX_FIELD_TYPE_MAP.end(), [&jsonObject](auto const& pair) {
             auto const& [field, _] = pair;
             return jsonObject.contains(field) && jsonObject.at(field).is_string();
         });
 
-    if (indexFieldType != indexFieldTypeMap.end()) {
+    if (indexFieldType != kINDEX_FIELD_TYPE_MAP.end()) {
         input.index = boost::json::value_to<std::string>(jv.at(indexFieldType->first));
         input.expectedType = indexFieldType->second;
     }

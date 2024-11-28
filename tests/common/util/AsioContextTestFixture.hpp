@@ -38,8 +38,8 @@
 struct AsyncAsioContextTest : virtual public NoLoggerFixture {
     AsyncAsioContextTest()
     {
-        work_.emplace(ctx);  // make sure ctx does not stop on its own
-        runner_.emplace([&] { ctx.run(); });
+        work_.emplace(ctx_);  // make sure ctx does not stop on its own
+        runner_.emplace([&] { ctx_.run(); });
     }
 
     ~AsyncAsioContextTest() override
@@ -47,7 +47,7 @@ struct AsyncAsioContextTest : virtual public NoLoggerFixture {
         work_.reset();
         if (runner_->joinable())
             runner_->join();
-        ctx.stop();
+        ctx_.stop();
     }
 
     void
@@ -56,11 +56,11 @@ struct AsyncAsioContextTest : virtual public NoLoggerFixture {
         work_.reset();
         if (runner_->joinable())
             runner_->join();
-        ctx.stop();
+        ctx_.stop();
     }
 
 protected:
-    boost::asio::io_context ctx;
+    boost::asio::io_context ctx_;
 
 private:
     std::optional<boost::asio::io_service::work> work_;
@@ -82,7 +82,7 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
         using namespace boost::asio;
 
         testing::MockFunction<void()> call;
-        spawn(ctx, [&, _ = make_work_guard(ctx)](yield_context yield) {
+        spawn(ctx_, [&, _ = make_work_guard(ctx_)](yield_context yield) {
             f(yield);
             call.Call();
         });
@@ -94,17 +94,17 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
     void
     runContext()
     {
-        ctx.run();
-        ctx.reset();
+        ctx_.run();
+        ctx_.reset();
     }
 
     void
     runContextFor(std::chrono::milliseconds duration)
     {
-        ctx.run_for(duration);
-        ctx.reset();
+        ctx_.run_for(duration);
+        ctx_.reset();
     }
 
 protected:
-    boost::asio::io_context ctx;
+    boost::asio::io_context ctx_;
 };

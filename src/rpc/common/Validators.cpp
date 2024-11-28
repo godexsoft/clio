@@ -201,19 +201,19 @@ CustomValidator CustomValidators::subscribeStreamValidator =
         if (!value.is_array())
             return Error{Status{RippledError::rpcINVALID_PARAMS, std::string(key) + "NotArray"}};
 
-        static std::unordered_set<std::string> const validStreams = {
+        static std::unordered_set<std::string> const kVALID_STREAMS = {
             "ledger", "transactions", "transactions_proposed", "book_changes", "manifests", "validations"
         };
 
-        static std::unordered_set<std::string> const notSupportStreams = {"peer_status", "consensus", "server"};
+        static std::unordered_set<std::string> const kNOT_SUPPORT_STREAMS = {"peer_status", "consensus", "server"};
         for (auto const& v : value.as_array()) {
             if (!v.is_string())
                 return Error{Status{RippledError::rpcINVALID_PARAMS, "streamNotString"}};
 
-            if (notSupportStreams.contains(boost::json::value_to<std::string>(v)))
+            if (kNOT_SUPPORT_STREAMS.contains(boost::json::value_to<std::string>(v)))
                 return Error{Status{RippledError::rpcNOT_SUPPORTED}};
 
-            if (not validStreams.contains(boost::json::value_to<std::string>(v)))
+            if (not kVALID_STREAMS.contains(boost::json::value_to<std::string>(v)))
                 return Error{Status{RippledError::rpcSTREAM_MALFORMED}};
         }
 

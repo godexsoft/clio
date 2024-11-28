@@ -76,7 +76,7 @@ struct ParameterTest : public RPCGatewayBalancesHandlerTest, public WithParamInt
 TEST_P(ParameterTest, CheckError)
 {
     auto bundle = GetParam();
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(json::parse(bundle.testJson), Context{yield});
         ASSERT_FALSE(output);
@@ -204,19 +204,19 @@ INSTANTIATE_TEST_SUITE_P(
     RPCGatewayBalancesHandler,
     ParameterTest,
     testing::ValuesIn(generateParameterTestBundles()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaStringIndex)
 {
     auto const seq = 123;
 
-    backend->setRange(10, 300);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, 300);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -240,12 +240,12 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaIntIndex)
 {
     auto const seq = 123;
 
-    backend->setRange(10, 300);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, 300);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -267,13 +267,13 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaIntIndex)
 
 TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaHash)
 {
-    backend->setRange(10, 300);
-    EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
+    backend_->setRange(10, 300);
+    EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -297,18 +297,18 @@ TEST_F(RPCGatewayBalancesHandlerTest, AccountNotFound)
 {
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return empty account
     auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
-    ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(std::optional<Blob>{}));
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(std::optional<Blob>{}));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -330,31 +330,31 @@ TEST_F(RPCGatewayBalancesHandlerTest, InvalidHotWallet)
 {
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
     auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
-    ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
+    ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
     auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
     auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
-    ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     // create a valid line, balance is 0
     auto const line1 = createRippleStateLedgerObject("USD", Issuer, 0, Account, 10, Account2, 20, TxnID, 123);
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -389,22 +389,22 @@ TEST_P(NormalPathTest, CheckOutput)
     auto const& bundle = GetParam();
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
     auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
-    ON_CALL(*backend, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
+    ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
     auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
     auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
-    ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(bundle.mockedDir.getSerializer().peekData()));
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
     std::transform(
@@ -413,10 +413,10 @@ TEST_P(NormalPathTest, CheckOutput)
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const handler = AnyHandler{GatewayBalancesHandler{backend}};
+    auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(
             json::parse(fmt::format(
@@ -646,5 +646,5 @@ INSTANTIATE_TEST_SUITE_P(
     RPCGatewayBalancesHandler,
     NormalPathTest,
     testing::ValuesIn(generateNormalPathTestBundles()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );

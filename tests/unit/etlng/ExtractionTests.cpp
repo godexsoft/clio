@@ -40,7 +40,7 @@
 #include <optional>
 
 namespace {
-constinit auto const Seq = 30;
+constinit auto const kSEQ = 30;
 }  // namespace
 
 struct ExtractionTests : NoLoggerFixture {};
@@ -67,8 +67,8 @@ TEST_F(ExtractionTests, OneTransaction)
     original.set_transaction_blob(txRaw);
     original.set_metadata_blob(metaRaw);
 
-    auto res = extractTx(original, Seq);
-    EXPECT_EQ(res.meta.getLgrSeq(), Seq);
+    auto res = extractTx(original, kSEQ);
+    EXPECT_EQ(res.meta.getLgrSeq(), kSEQ);
     EXPECT_EQ(res.meta.getLgrSeq(), expected.meta.getLgrSeq());
     EXPECT_EQ(res.meta.getTxID(), expected.meta.getTxID());
     EXPECT_EQ(res.sttx.getTxnType(), expected.sttx.getTxnType());
@@ -91,11 +91,11 @@ TEST_F(ExtractionTests, MultipleTransactions)
         *p = original;
     }
 
-    auto res = extractTxs(list.transactions(), Seq);
+    auto res = extractTxs(list.transactions(), kSEQ);
     EXPECT_EQ(res.size(), 10);
 
     for (auto const& tx : res) {
-        EXPECT_EQ(tx.meta.getLgrSeq(), Seq);
+        EXPECT_EQ(tx.meta.getLgrSeq(), kSEQ);
         EXPECT_EQ(tx.meta.getLgrSeq(), expected.meta.getLgrSeq());
         EXPECT_EQ(tx.meta.getTxID(), expected.meta.getTxID());
         EXPECT_EQ(tx.sttx.getTxnType(), expected.sttx.getTxnType());
@@ -245,15 +245,15 @@ struct ExtractorTests : ExtractionTests {
 
 TEST_F(ExtractorTests, ExtractLedgerWithDiffNoResult)
 {
-    EXPECT_CALL(*fetcher, fetchDataAndDiff(Seq)).WillOnce(testing::Return(std::nullopt));
-    auto res = extractor.extractLedgerWithDiff(Seq);
+    EXPECT_CALL(*fetcher, fetchDataAndDiff(kSEQ)).WillOnce(testing::Return(std::nullopt));
+    auto res = extractor.extractLedgerWithDiff(kSEQ);
     EXPECT_FALSE(res.has_value());
 }
 
 TEST_F(ExtractorTests, ExtractLedgerOnlyNoResult)
 {
-    EXPECT_CALL(*fetcher, fetchData(Seq)).WillOnce(testing::Return(std::nullopt));
-    auto res = extractor.extractLedgerOnly(Seq);
+    EXPECT_CALL(*fetcher, fetchData(kSEQ)).WillOnce(testing::Return(std::nullopt));
+    auto res = extractor.extractLedgerOnly(kSEQ);
     EXPECT_FALSE(res.has_value());
 }
 
@@ -261,8 +261,8 @@ TEST_F(ExtractorTests, ExtractLedgerWithDiffWithResult)
 {
     auto original = util::createDataAndDiff();
 
-    EXPECT_CALL(*fetcher, fetchDataAndDiff(Seq)).WillOnce(testing::Return(original));
-    auto res = extractor.extractLedgerWithDiff(Seq);
+    EXPECT_CALL(*fetcher, fetchDataAndDiff(kSEQ)).WillOnce(testing::Return(original));
+    auto res = extractor.extractLedgerWithDiff(kSEQ);
 
     EXPECT_TRUE(res.has_value());
     EXPECT_EQ(res->objects.size(), 10);
@@ -276,8 +276,8 @@ TEST_F(ExtractorTests, ExtractLedgerOnlyWithResult)
 {
     auto original = util::createData();
 
-    EXPECT_CALL(*fetcher, fetchData(Seq)).WillOnce(testing::Return(original));
-    auto res = extractor.extractLedgerOnly(Seq);
+    EXPECT_CALL(*fetcher, fetchData(kSEQ)).WillOnce(testing::Return(original));
+    auto res = extractor.extractLedgerOnly(kSEQ);
 
     EXPECT_TRUE(res.has_value());
     EXPECT_TRUE(res->objects.empty());

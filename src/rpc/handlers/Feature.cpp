@@ -109,7 +109,7 @@ FeatureHandler::process(FeatureHandler::Input input, Context const& ctx) const
 RpcSpecConstRef
 FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    static RpcSpec const rpcSpec = {
+    static RpcSpec const kRPC_SPEC = {
         {JS(feature), validation::Type<std::string>{}},
         {JS(vetoed),
          meta::WithCustomError{
@@ -119,7 +119,7 @@ FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
         {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
         {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
     };
-    return rpcSpec;
+    return kRPC_SPEC;
 }
 
 void

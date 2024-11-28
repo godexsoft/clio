@@ -132,7 +132,7 @@ public:
     {
         static constexpr auto oraclesMax = 200;
 
-        static auto const oraclesValidator =
+        static auto const kORACLES_VALIDATOR =
             modifiers::CustomModifier{[](boost::json::value& value, std::string_view) -> MaybeError {
                 if (!value.is_array() or value.as_array().empty() or value.as_array().size() > oraclesMax)
                     return Error{Status{RippledError::rpcORACLE_MALFORMED}};
@@ -161,7 +161,7 @@ public:
                 return MaybeError{};
             }};
 
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             // validate quoteAsset and base_asset in accordance to the currency code found in XRPL doc:
@@ -177,7 +177,7 @@ public:
              meta::WithCustomError{
                  validation::CustomValidators::currencyValidator, Status(RippledError::rpcINVALID_PARAMS)
              }},
-            {JS(oracles), validation::Required{}, oraclesValidator},
+            {JS(oracles), validation::Required{}, kORACLES_VALIDATOR},
             // note: Unlike `rippled`, Clio only supports UInt as input, no string, no `null`, etc.
             {JS(time_threshold), validation::Type<std::uint32_t>{}},
             {
@@ -187,7 +187,7 @@ public:
             }
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

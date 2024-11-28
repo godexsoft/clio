@@ -51,7 +51,7 @@ class RPCLedgerIndexTest : public HandlerBaseTestStrict {};
 
 TEST_F(RPCLedgerIndexTest, DateStrNotValid)
 {
-    auto const handler = AnyHandler{LedgerIndexHandler{backend}};
+    auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({"date": "not_a_number"})");
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -64,11 +64,11 @@ TEST_F(RPCLedgerIndexTest, DateStrNotValid)
 
 TEST_F(RPCLedgerIndexTest, NoDateGiven)
 {
-    backend->setRange(RangeMin, RangeMax);
+    backend_->setRange(RangeMin, RangeMax);
     auto const ledgerHeader = createLedgerHeader(LedgerHash, RangeMax, 5);
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMax, _)).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMax, _)).WillOnce(Return(ledgerHeader));
 
-    auto const handler = AnyHandler{LedgerIndexHandler{backend}};
+    auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({})");
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -81,12 +81,12 @@ TEST_F(RPCLedgerIndexTest, NoDateGiven)
 
 TEST_F(RPCLedgerIndexTest, EarlierThanMinLedger)
 {
-    backend->setRange(RangeMin, RangeMax);
-    auto const handler = AnyHandler{LedgerIndexHandler{backend}};
+    backend_->setRange(RangeMin, RangeMax);
+    auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
         createLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -98,12 +98,12 @@ TEST_F(RPCLedgerIndexTest, EarlierThanMinLedger)
 TEST_F(RPCLedgerIndexTest, ChangeTimeZone)
 {
     setenv("TZ", "EST+5", 1);
-    backend->setRange(RangeMin, RangeMax);
-    auto const handler = AnyHandler{LedgerIndexHandler{backend}};
+    backend_->setRange(RangeMin, RangeMax);
+    auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
         createLedgerHeaderWithUnixTime(LedgerHash, RangeMin, 1719318190);  //"2024-06-25T12:23:10Z"
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(RangeMin, _)).WillOnce(Return(ledgerHeader));
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -141,26 +141,26 @@ INSTANTIATE_TEST_CASE_P(
     RPCLedgerIndexTestsGroup,
     LedgerIndexTests,
     ValuesIn(LedgerIndexTests::generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(LedgerIndexTests, SearchFromLedgerRange)
 {
     auto const testBundle = GetParam();
     auto const jv = json::parse(testBundle.json).as_object();
-    backend->setRange(RangeMin, RangeMax);
+    backend_->setRange(RangeMin, RangeMax);
 
     // start from 1719318190 , which is the unix time for 2024-06-25T12:23:10Z to 2024-06-25T12:23:50Z with
     // step 2
     for (uint32_t i = RangeMin; i <= RangeMax; i++) {
         auto const ledgerHeader = createLedgerHeaderWithUnixTime(LedgerHash, i, 1719318190 + 2 * (i - RangeMin));
         auto const exactNumberOfCalls = i == RangeMin ? Exactly(3) : Exactly(2);
-        EXPECT_CALL(*backend, fetchLedgerBySequence(i, _))
+        EXPECT_CALL(*backend_, fetchLedgerBySequence(i, _))
             .Times(i == testBundle.expectedLedgerIndex ? exactNumberOfCalls : AtMost(1))
             .WillRepeatedly(Return(ledgerHeader));
     }
 
-    auto const handler = AnyHandler{LedgerIndexHandler{backend}};
+    auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(testBundle.json);
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});

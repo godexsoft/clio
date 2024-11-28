@@ -142,7 +142,7 @@ INSTANTIATE_TEST_CASE_P(
             true
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct ServerTest : SyncAsioContextTest {
@@ -161,7 +161,7 @@ protected:
         boost::json::object{{"server", boost::json::object{{"ip", "127.0.0.1"}, {"port", serverPort_}}}}
     };
 
-    std::expected<Server, std::string> server_ = makeServer(config_, ctx);
+    std::expected<Server, std::string> server_ = makeServer(config_, ctx_);
 
     std::string requestMessage_ = "some request";
     std::string const headerName_ = "Some-header";
@@ -183,7 +183,7 @@ TEST_F(ServerTest, BadEndpoint)
     boost::asio::ip::tcp::endpoint const endpoint{boost::asio::ip::address_v4::from_string("1.2.3.4"), 0};
     util::TagDecoratorFactory const tagDecoratorFactory{util::Config{boost::json::value{}}};
     Server server{
-        ctx, endpoint, std::nullopt, ProcessingPolicy::Sequential, std::nullopt, tagDecoratorFactory, std::nullopt
+        ctx_, endpoint, std::nullopt, ProcessingPolicy::Sequential, std::nullopt, tagDecoratorFactory, std::nullopt
     };
     auto maybeError = server.run();
     ASSERT_TRUE(maybeError.has_value());
@@ -212,14 +212,14 @@ struct ServerHttpTest : ServerTest, testing::WithParamInterface<ServerHttpTestBu
 
 TEST_F(ServerHttpTest, ClientDisconnects)
 {
-    HttpAsyncClient client{ctx};
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    HttpAsyncClient client{ctx_};
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
             client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
         client.disconnect();
-        ctx.stop();
+        ctx_.stop();
     });
 
     server_->run();
@@ -228,19 +228,19 @@ TEST_F(ServerHttpTest, ClientDisconnects)
 
 TEST_P(ServerHttpTest, RequestResponse)
 {
-    HttpAsyncClient client{ctx};
+    HttpAsyncClient client{ctx_};
 
     http::request<http::string_body> request{GetParam().method, "/", 11, requestMessage_};
     request.set(headerName_, headerValue_);
 
     Response const response{http::status::ok, "some response", Request{request}};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
             client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             maybeError = client.send(request, yield, std::chrono::milliseconds{100});
             EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
@@ -251,7 +251,7 @@ TEST_P(ServerHttpTest, RequestResponse)
         }
 
         client.gracefulShutdown();
-        ctx.stop();
+        ctx_.stop();
     });
 
     auto& handler = GetParam().method == http::verb::get ? getHandler_ : postHandler_;
@@ -277,20 +277,20 @@ INSTANTIATE_TEST_SUITE_P(
     ServerHttpTests,
     ServerHttpTest,
     testing::Values(ServerHttpTestBundle{"GET", http::verb::get}, ServerHttpTestBundle{"POST", http::verb::post}),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_F(ServerTest, WsClientDisconnects)
 {
-    WebSocketAsyncClient client{ctx};
+    WebSocketAsyncClient client{ctx_};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
             client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
         client.close();
-        ctx.stop();
+        ctx_.stop();
     });
 
     server_->run();
@@ -300,16 +300,16 @@ TEST_F(ServerTest, WsClientDisconnects)
 
 TEST_F(ServerTest, WsRequestResponse)
 {
-    WebSocketAsyncClient client{ctx};
+    WebSocketAsyncClient client{ctx_};
 
     Response const response{http::status::ok, "some response", Request{requestMessage_, Request::HttpHeaders{}}};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
             client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             maybeError = client.send(yield, requestMessage_, std::chrono::milliseconds{100});
             EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
@@ -319,7 +319,7 @@ TEST_F(ServerTest, WsRequestResponse)
         }
 
         client.gracefulClose(yield, std::chrono::milliseconds{100});
-        ctx.stop();
+        ctx_.stop();
     });
 
     EXPECT_CALL(wsHandler_, Call)

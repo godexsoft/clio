@@ -178,8 +178,8 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static RpcSpec const rpcSpec = {};
-        return rpcSpec;
+        static RpcSpec const kRPC_SPEC = {};
+        return kRPC_SPEC;
     }
 
     /**

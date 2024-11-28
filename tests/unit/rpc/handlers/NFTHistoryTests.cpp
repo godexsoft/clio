@@ -227,15 +227,15 @@ INSTANTIATE_TEST_CASE_P(
     RPCNFTHistoryGroup1,
     NFTHistoryParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(NFTHistoryParameterTest, InvalidParams)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -272,13 +272,13 @@ genTransactions(uint32_t seq1, uint32_t seq2)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_, testing::_, true, testing::Optional(testing::Eq(TransactionsCursor{MinSeq + 1, 0})), testing::_
         )
@@ -286,8 +286,8 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -298,7 +298,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
             MinSeq + 1,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);
@@ -413,13 +413,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
                                     "seq": 34
                                 }
                                 })";
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -431,8 +431,8 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -443,7 +443,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
             MinSeq + 1,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), boost::json::parse(Output));
     });
@@ -565,12 +565,12 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
                                     "seq": 34
                                 }
                                 })";
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -582,12 +582,12 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
         .WillOnce(Return(transCursor));
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(2);
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(2);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -598,7 +598,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
             MinSeq + 1,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{.yield = yield, .apiVersion = 2u});
+        auto const output = handler.process(kINPUT, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), boost::json::parse(Output));
     });
@@ -606,13 +606,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_, testing::_, true, testing::Optional(testing::Eq(TransactionsCursor{MinSeq, 0})), testing::_
         )
@@ -620,8 +620,8 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -632,7 +632,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
             -1,
             -1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
@@ -645,13 +645,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -663,8 +663,8 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -675,7 +675,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
             -1,
             -1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
@@ -688,13 +688,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
 
 TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -706,8 +706,8 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -718,7 +718,7 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
             -1,
             -1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
@@ -745,12 +745,12 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
 
 TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -762,8 +762,8 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
         .WillOnce(Return(transCursor));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -774,7 +774,7 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
             -1,
             -1
         ));
-        auto const output = handler.process(Input, Context{.yield = yield, .apiVersion = 2u});
+        auto const output = handler.process(kINPUT, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
@@ -801,13 +801,13 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
 
 TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_, testing::_, false, testing::Optional(testing::Eq(TransactionsCursor{10, 11})), testing::_
         )
@@ -815,8 +815,8 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -829,7 +829,7 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
             -1,
             -1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
@@ -842,14 +842,14 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // adjust the order for forward->false
     auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -861,12 +861,12 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
         .Times(1);
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index":{}
@@ -874,7 +874,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
             NftID,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MaxSeq - 1);
@@ -887,14 +887,14 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index":{}
@@ -902,7 +902,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
             NftID,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -912,14 +912,14 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index":"{}"
@@ -927,7 +927,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
             NftID,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -937,14 +937,14 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // adjust the order for forward->false
     auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -956,12 +956,12 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
         .Times(1);
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
-    EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
-    ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_hash":"{}"
@@ -969,7 +969,7 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
             NftID,
             LedgerHash
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MaxSeq - 1);
@@ -982,13 +982,13 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
 
 TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -1000,8 +1000,8 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -1012,7 +1012,7 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
             MinSeq + 2,
             MaxSeq - 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 2);
@@ -1025,13 +1025,13 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
 
 TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -1043,8 +1043,8 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -1055,7 +1055,7 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
             MinSeq + 1,
             MaxSeq - 2
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);
@@ -1068,13 +1068,13 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
 
 TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
 {
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
-    ON_CALL(*backend, fetchNFTTransactions).WillByDefault(Return(transCursor));
+    ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend,
+        *backend_,
         fetchNFTTransactions(
             testing::_,
             testing::_,
@@ -1086,8 +1086,8 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
         .Times(1);
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{NFTHistoryHandler{backend}};
-        auto static const Input = json::parse(fmt::format(
+        auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
+        auto static const kINPUT = json::parse(fmt::format(
             R"({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
@@ -1100,7 +1100,7 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
             MaxSeq - 1,
             NFTHistoryHandler::limitMax + 1
         ));
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("nft_id").as_string(), NftID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);

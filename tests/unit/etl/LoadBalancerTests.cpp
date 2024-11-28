@@ -61,7 +61,7 @@ struct LoadBalancerConstructorTests : util::prometheus::WithPrometheus, MockBack
         return std::make_unique<LoadBalancer>(
             util::Config{configJson_},
             ioContext_,
-            backend,
+            backend_,
             subscriptionManager_,
             networkManager_,
             [this](auto&&... args) -> SourcePtr { return sourceFactory_(std::forward<decltype(args)>(args)...); }
@@ -630,7 +630,7 @@ INSTANTIATE_TEST_SUITE_P(
             rpc::ClioError::EtlInvalidResponse
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(LoadBalancerForwardToRippledErrorTests, bothSourcesFail)

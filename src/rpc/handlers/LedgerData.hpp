@@ -114,7 +114,7 @@ public:
     spec([[maybe_unused]] uint32_t apiVersion)
     {
         auto const& ledgerTypeStrs = util::LedgerTypes::getLedgerEntryTypeStrList();
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(binary), validation::Type<bool>{}},
             {"out_of_order", validation::Type<bool>{}},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
@@ -130,7 +130,7 @@ public:
              validation::OneOf<std::string>(ledgerTypeStrs.cbegin(), ledgerTypeStrs.cend())},
             {JS(ledger), check::Deprecated{}},
         };
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

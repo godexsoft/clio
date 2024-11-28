@@ -71,14 +71,14 @@ ValidIPConstraint::checkValueImpl(Value const& ip) const
     if (std::get<std::string>(ip) == "localhost")
         return std::nullopt;
 
-    static std::regex const ipv4(
+    static std::regex const kIPV4(
         R"(^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$)"
     );
 
-    static std::regex const ipUrl(
+    static std::regex const kIP_URL(
         R"(^((http|https):\/\/)?((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6})|(((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])))(:\d{1,5})?(\/[^\s]*)?$)"
     );
-    if (std::regex_match(std::get<std::string>(ip), ipv4) || std::regex_match(std::get<std::string>(ip), ipUrl))
+    if (std::regex_match(std::get<std::string>(ip), kIPV4) || std::regex_match(std::get<std::string>(ip), kIP_URL))
         return std::nullopt;
 
     return Error{"Ip is not a valid ip address"};

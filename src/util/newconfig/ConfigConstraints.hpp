@@ -111,9 +111,9 @@ protected:
      * @param arr The array with hard-coded values to add to error message
      * @return The error message specifying what the value of key must be
      */
-    template <std::size_t arrSize>
+    template <std::size_t ArrSize>
     constexpr std::string
-    makeErrorMsg(std::string_view key, Value const& value, std::array<char const*, arrSize> arr) const
+    makeErrorMsg(std::string_view key, Value const& value, std::array<char const*, ArrSize> arr) const
     {
         // Extract the value from the variant
         auto const valueStr = std::visit([](auto const& v) { return fmt::format("{}", v); }, value);
@@ -208,7 +208,7 @@ private:
  *
  * @tparam arrSize The size of the array containing the valid values for the constraint
  */
-template <std::size_t arrSize>
+template <std::size_t ArrSize>
 class OneOf final : public Constraint {
 public:
     /**
@@ -217,7 +217,7 @@ public:
      * @param key The key of the ConfigValue that has this constraint
      * @param arr The value that has this constraint must be of the values in arr
      */
-    constexpr OneOf(std::string_view key, std::array<char const*, arrSize> arr) : key_{key}, arr_{arr}
+    constexpr OneOf(std::string_view key, std::array<char const*, ArrSize> arr) : key_{key}, arr_{arr}
     {
     }
 
@@ -256,13 +256,13 @@ private:
     }
 
     std::string_view key_;
-    std::array<char const*, arrSize> arr_;
+    std::array<char const*, ArrSize> arr_;
 };
 
 /**
  * @brief A constraint class to ensure an integer value is between two numbers (inclusive)
  */
-template <typename numType>
+template <typename NumType>
 class NumberValueConstraint final : public Constraint {
 public:
     /**
@@ -271,7 +271,7 @@ public:
      * @param min the minimum number it can be to satisfy this constraint
      * @param max the maximum number it can be to satisfy this constraint
      */
-    constexpr NumberValueConstraint(numType min, numType max) : min_{min}, max_{max}
+    constexpr NumberValueConstraint(NumType min, NumType max) : min_{min}, max_{max}
     {
     }
 
@@ -307,8 +307,8 @@ private:
         return Error{fmt::format("Number must be between {} and {}", min_, max_)};
     }
 
-    numType min_;
-    numType max_;
+    NumType min_;
+    NumType max_;
 };
 
 /**
@@ -338,25 +338,25 @@ private:
     checkValueImpl(Value const& num) const override;
 };
 
-static constinit PortConstraint validatePort{};
-static constinit ValidIPConstraint validateIP{};
+static constinit PortConstraint gValidatePort{};
+static constinit ValidIPConstraint gValidateIp{};
 
-static constinit OneOf validateChannelName{"channel", Logger::channels};
-static constinit OneOf validateLogLevelName{"log_level", logLevels};
-static constinit OneOf validateCassandraName{"database.type", databaseType};
-static constinit OneOf validateLoadMode{"cache.load", loadCacheMode};
-static constinit OneOf validateLogTag{"log_tag_style", logTags};
+static constinit OneOf gValidateChannelName{"channel", Logger::channels};
+static constinit OneOf gValidateLogLevelName{"log_level", logLevels};
+static constinit OneOf gValidateCassandraName{"database.type", databaseType};
+static constinit OneOf gValidateLoadMode{"cache.load", loadCacheMode};
+static constinit OneOf gValidateLogTag{"log_tag_style", logTags};
 
-static constinit PositiveDouble validatePositiveDouble{};
+static constinit PositiveDouble gValidatePositiveDouble{};
 
-static constinit NumberValueConstraint<uint16_t> validateUint16{
+static constinit NumberValueConstraint<uint16_t> gValidateUint16{
     std::numeric_limits<uint16_t>::min(),
     std::numeric_limits<uint16_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> validateUint32{
+static constinit NumberValueConstraint<uint32_t> gValidateUint32{
     std::numeric_limits<uint32_t>::min(),
     std::numeric_limits<uint32_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> validateApiVersion{rpc::apiVersionMin, rpc::apiVersionMax};
+static constinit NumberValueConstraint<uint32_t> gValidateApiVersion{rpc::apiVersionMin, rpc::apiVersionMax};
 
 }  // namespace util::config

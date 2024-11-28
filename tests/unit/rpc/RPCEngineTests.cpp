@@ -170,7 +170,7 @@ INSTANTIATE_TEST_CASE_P(
     RPCEngineFlow,
     RPCEngineFlowParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(RPCEngineFlowParameterTest, Test)
@@ -179,21 +179,21 @@ TEST_P(RPCEngineFlowParameterTest, Test)
 
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
         RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
-            Config{}, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
+            Config{}, backend_, mockLoadBalancerPtr_, dosGuard, queue, *mockCountersPtr_, handlerProvider
         );
 
     if (testBundle.forwarded) {
-        EXPECT_CALL(*mockLoadBalancerPtr, forwardToRippled)
+        EXPECT_CALL(*mockLoadBalancerPtr_, forwardToRippled)
             .WillOnce(Return(std::expected<boost::json::object, rpc::ClioError>(json::parse(ForwardReply).as_object()))
             );
         EXPECT_CALL(*handlerProvider, contains).WillOnce(Return(true));
-        EXPECT_CALL(*mockCountersPtr, rpcForwarded(testBundle.method));
+        EXPECT_CALL(*mockCountersPtr_, rpcForwarded(testBundle.method));
     }
 
     if (testBundle.isTooBusy.has_value()) {
-        EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(*testBundle.isTooBusy));
+        EXPECT_CALL(*backend_, isTooBusy).WillOnce(Return(*testBundle.isTooBusy));
         if (testBundle.isTooBusy.value())
-            EXPECT_CALL(*mockCountersPtr, onTooBusy);
+            EXPECT_CALL(*mockCountersPtr_, onTooBusy);
     }
 
     EXPECT_CALL(*handlerProvider, isClioOnly).WillOnce(Return(false));
@@ -201,12 +201,12 @@ TEST_P(RPCEngineFlowParameterTest, Test)
     if (testBundle.isUnknownCmd.has_value()) {
         if (testBundle.isUnknownCmd.value()) {
             EXPECT_CALL(*handlerProvider, getHandler).WillOnce(Return(std::nullopt));
-            EXPECT_CALL(*mockCountersPtr, onUnknownCommand);
+            EXPECT_CALL(*mockCountersPtr_, onUnknownCommand);
         } else {
             if (testBundle.handlerReturnError) {
                 EXPECT_CALL(*handlerProvider, getHandler)
                     .WillOnce(Return(AnyHandler{tests::common::FailingHandlerFake{}}));
-                EXPECT_CALL(*mockCountersPtr, rpcErrored(testBundle.method));
+                EXPECT_CALL(*mockCountersPtr_, rpcErrored(testBundle.method));
                 EXPECT_CALL(*handlerProvider, contains(testBundle.method)).WillOnce(Return(true));
             } else {
                 EXPECT_CALL(*handlerProvider, getHandler(testBundle.method))
@@ -245,13 +245,13 @@ TEST_F(RPCEngineTest, ThrowDatabaseError)
     auto const method = "subscribe";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
         RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
-            cfg, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
+            cfg, backend_, mockLoadBalancerPtr_, dosGuard, queue, *mockCountersPtr_, handlerProvider
         );
-    EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(false));
+    EXPECT_CALL(*backend_, isTooBusy).WillOnce(Return(false));
     EXPECT_CALL(*handlerProvider, getHandler(method)).WillOnce(Return(AnyHandler{tests::common::FailingHandlerFake{}}));
-    EXPECT_CALL(*mockCountersPtr, rpcErrored(method)).WillOnce(Throw(data::DatabaseTimeout{}));
+    EXPECT_CALL(*mockCountersPtr_, rpcErrored(method)).WillOnce(Throw(data::DatabaseTimeout{}));
     EXPECT_CALL(*handlerProvider, contains(method)).WillOnce(Return(true));
-    EXPECT_CALL(*mockCountersPtr, onTooBusy());
+    EXPECT_CALL(*mockCountersPtr_, onTooBusy());
 
     runSpawn([&](auto yield) {
         auto const ctx = web::Context(
@@ -278,13 +278,13 @@ TEST_F(RPCEngineTest, ThrowException)
     auto const method = "subscribe";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
         RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
-            cfg, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
+            cfg, backend_, mockLoadBalancerPtr_, dosGuard, queue, *mockCountersPtr_, handlerProvider
         );
-    EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(false));
+    EXPECT_CALL(*backend_, isTooBusy).WillOnce(Return(false));
     EXPECT_CALL(*handlerProvider, getHandler(method)).WillOnce(Return(AnyHandler{tests::common::FailingHandlerFake{}}));
-    EXPECT_CALL(*mockCountersPtr, rpcErrored(method)).WillOnce(Throw(std::exception{}));
+    EXPECT_CALL(*mockCountersPtr_, rpcErrored(method)).WillOnce(Throw(std::exception{}));
     EXPECT_CALL(*handlerProvider, contains(method)).WillOnce(Return(true));
-    EXPECT_CALL(*mockCountersPtr, onInternalError());
+    EXPECT_CALL(*mockCountersPtr_, onInternalError());
 
     runSpawn([&](auto yield) {
         auto const ctx = web::Context(
@@ -382,7 +382,7 @@ INSTANTIATE_TEST_CASE_P(
     RPCEngineCache,
     RPCEngineCacheParameterTest,
     ValuesIn(generateCacheTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(RPCEngineCacheParameterTest, Test)
@@ -394,16 +394,16 @@ TEST_P(RPCEngineCacheParameterTest, Test)
     auto const method = testParam.method;
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
         RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
-            cfgCache, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
+            cfgCache, backend_, mockLoadBalancerPtr_, dosGuard, queue, *mockCountersPtr_, handlerProvider
         );
     int callTime = 2;
     EXPECT_CALL(*handlerProvider, isClioOnly).Times(callTime).WillRepeatedly(Return(false));
     if (testParam.expectedCacheEnabled) {
-        EXPECT_CALL(*backend, isTooBusy).WillOnce(Return(false));
+        EXPECT_CALL(*backend_, isTooBusy).WillOnce(Return(false));
         EXPECT_CALL(*handlerProvider, getHandler).WillOnce(Return(AnyHandler{tests::common::HandlerFake{}}));
 
     } else {
-        EXPECT_CALL(*backend, isTooBusy).Times(callTime).WillRepeatedly(Return(false));
+        EXPECT_CALL(*backend_, isTooBusy).Times(callTime).WillRepeatedly(Return(false));
         EXPECT_CALL(*handlerProvider, getHandler)
             .Times(callTime)
             .WillRepeatedly(Return(AnyHandler{tests::common::HandlerFake{}}));
@@ -442,15 +442,15 @@ TEST_F(RPCEngineTest, NotCacheIfErrorHappen)
     auto const method = "server_info";
     std::shared_ptr<RPCEngine<MockLoadBalancer, MockCounters>> engine =
         RPCEngine<MockLoadBalancer, MockCounters>::makeRpcEngine(
-            cfgCache, backend, mockLoadBalancerPtr, dosGuard, queue, *mockCountersPtr, handlerProvider
+            cfgCache, backend_, mockLoadBalancerPtr_, dosGuard, queue, *mockCountersPtr_, handlerProvider
         );
 
     int callTime = 2;
-    EXPECT_CALL(*backend, isTooBusy).Times(callTime).WillRepeatedly(Return(false));
+    EXPECT_CALL(*backend_, isTooBusy).Times(callTime).WillRepeatedly(Return(false));
     EXPECT_CALL(*handlerProvider, getHandler)
         .Times(callTime)
         .WillRepeatedly(Return(AnyHandler{tests::common::FailingHandlerFake{}}));
-    EXPECT_CALL(*mockCountersPtr, rpcErrored(method)).Times(callTime);
+    EXPECT_CALL(*mockCountersPtr_, rpcErrored(method)).Times(callTime);
     EXPECT_CALL(*handlerProvider, isClioOnly).Times(callTime).WillRepeatedly(Return(false));
     EXPECT_CALL(*handlerProvider, contains).Times(callTime).WillRepeatedly(Return(true));
 

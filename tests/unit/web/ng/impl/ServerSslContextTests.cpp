@@ -102,7 +102,7 @@ INSTANTIATE_TEST_SUITE_P(
              .expectContext = false
          }}
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct MakeServerSslContextFromConfigRealFilesTest : testing::Test {};
@@ -174,5 +174,5 @@ INSTANTIATE_TEST_SUITE_P(
              .expectedSuccess = true
          }}
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );

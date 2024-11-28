@@ -127,8 +127,8 @@ static_assert(ContainsSpec<ValidSpec>);
 
 namespace {
 
-constinit auto const LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constinit auto const Seq = 30;
+constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constinit auto const kSEQ = 30;
 
 struct MockExtLedgerData {
     MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
@@ -194,7 +194,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
     EXPECT_CALL(extBurn, onInitialTransaction(testing::_, testing::_)).Times(2);  // 2 burn txs
     EXPECT_CALL(extOffer, onInitialTransaction(testing::_, testing::_));          // 1 create offer
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtNftBurn&, MockExtNftOffer&>(extBurn, extOffer);
     reg.dispatchInitialData(etlng::model::LedgerData{
         .transactions = transactions,
@@ -203,7 +203,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq,
+        .seq = kSEQ,
     });
 }
 
@@ -221,7 +221,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
     EXPECT_CALL(extBurn, onTransaction(testing::_, testing::_)).Times(2);  // 2 burn txs
     EXPECT_CALL(extOffer, onTransaction(testing::_, testing::_));          // 1 create offer
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtTransactionNftBurn&, MockExtTransactionNftOffer&>(extBurn, extOffer);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -230,7 +230,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq
+        .seq = kSEQ
     });
 }
 
@@ -243,7 +243,7 @@ TEST_F(RegistryTest, InitialObjectsEmpty)
     EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_, testing::_));  // 1 vector passed as is
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(Seq, {}, {});
+    reg.dispatchInitialObjects(kSEQ, {}, {});
 }
 
 TEST_F(RegistryTest, InitialObjectsDispatched)
@@ -255,7 +255,7 @@ TEST_F(RegistryTest, InitialObjectsDispatched)
     EXPECT_CALL(extObjs, onInitialObjects(testing::_, testing::_, testing::_));  // 1 vector passed as is
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(Seq, {util::createObject(), util::createObject(), util::createObject()}, {});
+    reg.dispatchInitialObjects(kSEQ, {util::createObject(), util::createObject(), util::createObject()}, {});
 }
 
 TEST_F(RegistryTest, ObjectsDispatched)
@@ -264,7 +264,7 @@ TEST_F(RegistryTest, ObjectsDispatched)
 
     EXPECT_CALL(extObj, onObject(testing::_, testing::_)).Times(3);  // 3 objects sent
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtOnObject&>(extObj);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = {},
@@ -273,7 +273,7 @@ TEST_F(RegistryTest, ObjectsDispatched)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq
+        .seq = kSEQ
     });
 }
 
@@ -289,7 +289,7 @@ TEST_F(RegistryTest, OnLedgerDataForBatch)
 
     EXPECT_CALL(ext, onLedgerData(testing::_));  // 1 batch (dispatch call)
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtLedgerData&>(ext);
     reg.dispatch(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -298,7 +298,7 @@ TEST_F(RegistryTest, OnLedgerDataForBatch)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq
+        .seq = kSEQ
     });
 }
 
@@ -312,7 +312,7 @@ TEST_F(RegistryTest, InitialObjectsCorrectOrderOfHookCalls)
     EXPECT_CALL(extObj, onInitialObject).Times(3);
 
     auto reg = Registry<MockExtInitialObject&, MockExtInitialObjects&>(extObj, extObjs);
-    reg.dispatchInitialObjects(Seq, {util::createObject(), util::createObject(), util::createObject()}, {});
+    reg.dispatchInitialObjects(kSEQ, {util::createObject(), util::createObject(), util::createObject()}, {});
 }
 
 TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
@@ -330,7 +330,7 @@ TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
     EXPECT_CALL(extInitialData, onInitialData);
     EXPECT_CALL(extInitialTransaction, onInitialTransaction).Times(2);
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtNftBurn&, MockExtInitialData&>(extInitialTransaction, extInitialData);
     reg.dispatchInitialData(etlng::model::LedgerData{
         .transactions = std::move(transactions),
@@ -339,7 +339,7 @@ TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq
+        .seq = kSEQ
     });
 }
 
@@ -366,7 +366,7 @@ TEST_F(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
     EXPECT_CALL(extOnTransaction, onTransaction).Times(2);
     EXPECT_CALL(extOnObject, onObject).Times(3);
 
-    auto const header = createLedgerHeader(LedgerHash, Seq);
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtOnObject&, MockExtTransactionNftBurn&, MockExtLedgerData&>(
         extOnObject, extOnTransaction, extLedgerData
     );
@@ -377,6 +377,6 @@ TEST_F(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
         .edgeKeys = {},
         .header = header,
         .rawHeader = {},
-        .seq = Seq
+        .seq = kSEQ
     });
 }

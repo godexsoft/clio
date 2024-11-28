@@ -74,13 +74,13 @@ TEST(CreateAuthCredentialsTest, UniqueCredentials)
     auto const cred1Type = cred1.getFieldVL(ripple::sfCredentialType);
     auto const cred2Type = cred2.getFieldVL(ripple::sfCredentialType);
 
-    auto const expected_cred1 =
+    auto const expectedCred1 =
         std::make_pair(cred1.getAccountID(ripple::sfIssuer), ripple::Slice{cred1Type.data(), cred1Type.size()});
-    auto const expected_cred2 =
+    auto const expectedCred2 =
         std::make_pair(cred2.getAccountID(ripple::sfIssuer), ripple::Slice{cred2Type.data(), cred2Type.size()});
 
-    EXPECT_TRUE(result.count(expected_cred1));
-    EXPECT_TRUE(result.count(expected_cred2));
+    EXPECT_TRUE(result.count(expectedCred1));
+    EXPECT_TRUE(result.count(expectedCred2));
 }
 
 TEST(ParseAuthorizeCredentialsTest, ValidCredentialsArray)
@@ -117,26 +117,27 @@ TEST_F(CredentialHelperTest, GetInvalidCredentialArray)
     boost::json::array credentialsArray = {CredentialID};
     auto const info = createLedgerHeader(Index1, 30);
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
-        auto const ret =
-            credentials::fetchCredentialArray(credentialsArray, getAccountIdWithString(Account), *backend, info, yield);
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto const ret = credentials::fetchCredentialArray(
+            credentialsArray, getAccountIdWithString(Account), *backend_, info, yield
+        );
         ASSERT_FALSE(ret.has_value());
         auto const status = ret.error();
         EXPECT_EQ(status, RippledError::rpcBAD_CREDENTIALS);
         EXPECT_EQ(status.message, "credentials don't exist.");
     });
-    ctx.run();
+    ctx_.run();
 }
 
 TEST_F(CredentialHelperTest, GetValidCredentialArray)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto ledgerHeader = createLedgerHeader(Index1, 30);
     auto const credLedgerObject = createCredentialObject(Account, Account2, CredentialType, true);
 
-    ON_CALL(*backend, doFetchLedgerObject(_, _, _)).WillByDefault(Return(credLedgerObject.getSerializer().peekData()));
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObject(_, _, _)).WillByDefault(Return(credLedgerObject.getSerializer().peekData()));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
     boost::json::array credentialsArray = {CredentialID};
 
@@ -146,12 +147,12 @@ TEST_F(CredentialHelperTest, GetValidCredentialArray)
     credential.setFieldVL(ripple::sfCredentialType, ripple::Blob{std::begin(CredentialType), std::end(CredentialType)});
     expectedAuthCreds.push_back(std::move(credential));
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto const result = credentials::fetchCredentialArray(
-            credentialsArray, getAccountIdWithString(Account), *backend, ledgerHeader, yield
+            credentialsArray, getAccountIdWithString(Account), *backend_, ledgerHeader, yield
         );
         ASSERT_TRUE(result.has_value());
         EXPECT_EQ(result.value(), expectedAuthCreds);
     });
-    ctx.run();
+    ctx_.run();
 }

@@ -37,7 +37,7 @@ namespace {
 
 constexpr auto Seq = 30;
 
-std::vector<ripple::uint256> const AccountRoots = {
+std::vector<ripple::uint256> const kACCOUNT_ROOTS = {
     ripple::uint256{"05E1EAC2574BE082B00B16F907CE32E6058DEB8F9E81CF34A00E80A5D71FA4FE"},
     ripple::uint256{"110872C7196EE6EF7032952F1852B11BB461A96FF2D7E06A8003B4BB30FD130B"},
     ripple::uint256{"3B3A84E850C724E914293271785A31D0BFC8B9DD1B6332E527B149AD72E80E18"},
@@ -56,10 +56,10 @@ TEST_F(CursorFromAccountProviderTests, EnoughAccountRoots)
 {
     auto const numCursors = 9;
     auto const pageSize = 100;
-    auto const provider = etl::impl::CursorFromAccountProvider{backend, numCursors, pageSize};
+    auto const provider = etl::impl::CursorFromAccountProvider{backend_, numCursors, pageSize};
 
-    ON_CALL(*backend, fetchAccountRoots(numCursors, _, Seq, _)).WillByDefault(Return(AccountRoots));
-    EXPECT_CALL(*backend, fetchAccountRoots(_, _, _, _)).Times(1);
+    ON_CALL(*backend_, fetchAccountRoots(numCursors, _, Seq, _)).WillByDefault(Return(kACCOUNT_ROOTS));
+    EXPECT_CALL(*backend_, fetchAccountRoots(_, _, _, _)).Times(1);
 
     auto const cursors = provider.getCursors(Seq);
     ASSERT_EQ(cursors.size(), numCursors + 1);

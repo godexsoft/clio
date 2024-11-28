@@ -105,7 +105,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(taker_gets),
              validation::Required{},
              validation::Type<boost::json::object>{},
@@ -146,7 +146,7 @@ public:
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

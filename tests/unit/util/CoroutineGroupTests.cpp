@@ -183,7 +183,7 @@ TEST_F(CoroutineGroupTests, SpawnForeign)
 
         [&]() { ASSERT_FALSE(group.registerForeign().has_value()); }();
 
-        boost::asio::spawn(ctx, [this, &onForeignComplete](boost::asio::yield_context innerYield) {
+        boost::asio::spawn(ctx_, [this, &onForeignComplete](boost::asio::yield_context innerYield) {
             boost::asio::steady_timer timer{innerYield.get_executor(), std::chrono::milliseconds{2}};
             timer.async_wait(innerYield);
             callback1_.Call();

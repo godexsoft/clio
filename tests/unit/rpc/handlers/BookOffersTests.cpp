@@ -88,7 +88,7 @@ struct RPCBookOffersParameterTest : public RPCBookOffersHandlerTest, public With
 TEST_P(RPCBookOffersParameterTest, CheckError)
 {
     auto bundle = GetParam();
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
         auto const output = handler.process(json::parse(bundle.testJson), Context{yield});
         ASSERT_FALSE(output);
@@ -495,7 +495,7 @@ INSTANTIATE_TEST_SUITE_P(
     RPCBookOffersHandler,
     RPCBookOffersParameterTest,
     testing::ValuesIn(generateParameterBookOffersTestBundles()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct BookOffersNormalTestBundle {
@@ -516,22 +516,22 @@ TEST_P(RPCBookOffersNormalPathTest, CheckOutput)
     auto const& bundle = GetParam();
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid book dir
-    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(bundle.mockedSuccessors.size());
+    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(bundle.mockedSuccessors.size());
     for (auto const& [key, value] : bundle.mockedSuccessors) {
-        ON_CALL(*backend, doFetchSuccessorKey(key, seq, _)).WillByDefault(Return(value));
+        ON_CALL(*backend_, doFetchSuccessorKey(key, seq, _)).WillByDefault(Return(value));
     }
 
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(bundle.ledgerObjectCalls);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(bundle.ledgerObjectCalls);
 
     for (auto const& [key, value] : bundle.mockedLedgerObjects) {
-        ON_CALL(*backend, doFetchLedgerObject(key, seq, _)).WillByDefault(Return(value));
+        ON_CALL(*backend_, doFetchLedgerObject(key, seq, _)).WillByDefault(Return(value));
     }
 
     std::vector<Blob> bbs;
@@ -541,10 +541,10 @@ TEST_P(RPCBookOffersNormalPathTest, CheckOutput)
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
         auto const output = handler.process(json::parse(bundle.inputJson), Context{yield});
         ASSERT_TRUE(output);
@@ -1160,18 +1160,18 @@ INSTANTIATE_TEST_SUITE_P(
     RPCBookOffersHandler,
     RPCBookOffersNormalPathTest,
     testing::ValuesIn(generateNormalPathBookOffersTestBundles()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 // ledger not exist
 TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaIntSequence)
 {
-    backend->setRange(10, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "ledger_index": 30,
             "taker_gets": 
@@ -1186,9 +1186,9 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaIntSequence)
         }})",
         Account
     ));
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -1198,12 +1198,12 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaIntSequence)
 
 TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaSequence)
 {
-    backend->setRange(10, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "ledger_index": "30",
             "taker_gets": 
@@ -1218,9 +1218,9 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaSequence)
         }})",
         Account
     ));
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -1230,13 +1230,13 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaSequence)
 
 TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaHash)
 {
-    backend->setRange(10, 30);
-    EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
+    backend_->setRange(10, 30);
+    EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "ledger_hash": "{}",
             "taker_gets": 
@@ -1252,9 +1252,9 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaHash)
         LedgerHash,
         Account
     ));
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -1266,34 +1266,34 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
 {
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     auto const issuer = getAccountIdWithString(Account);
     // return valid book dir
-    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(1);
+    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
 
     auto const getsXRPPaysUSDBook = getBookBase(std::get<ripple::Book>(
         rpc::parseBook(ripple::to_currency("USD"), issuer, ripple::xrpCurrency(), ripple::xrpAccount())
     ));
-    ON_CALL(*backend, doFetchSuccessorKey(getsXRPPaysUSDBook, seq, _))
+    ON_CALL(*backend_, doFetchSuccessorKey(getsXRPPaysUSDBook, seq, _))
         .WillByDefault(Return(ripple::uint256{Pays20USDGets10XRPBookDir}));
 
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(5);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(5);
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{Index2});
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, seq, _))
         .WillByDefault(Return(createOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, seq, _))
         .WillByDefault(Return(createAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, seq, _))
         .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
         .WillByDefault(
             Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData())
         );
@@ -1310,10 +1310,10 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
     );
 
     std::vector<Blob> const bbs(10, gets10XRPPays20USDOffer.getSerializer().peekData());
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "taker_gets": 
             {{
@@ -1328,9 +1328,9 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
         }})",
         Account
     ));
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value().as_object().at("offers").as_array().size(), 5);
     });
@@ -1340,34 +1340,34 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
 {
     auto const seq = 300;
 
-    backend->setRange(10, seq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(10, seq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
-    ON_CALL(*backend, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     auto const issuer = getAccountIdWithString(Account);
     // return valid book dir
-    EXPECT_CALL(*backend, doFetchSuccessorKey).Times(1);
+    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
 
     auto const getsXRPPaysUSDBook = getBookBase(std::get<ripple::Book>(
         rpc::parseBook(ripple::to_currency("USD"), issuer, ripple::xrpCurrency(), ripple::xrpAccount())
     ));
-    ON_CALL(*backend, doFetchSuccessorKey(getsXRPPaysUSDBook, seq, _))
+    ON_CALL(*backend_, doFetchSuccessorKey(getsXRPPaysUSDBook, seq, _))
         .WillByDefault(Return(ripple::uint256{Pays20USDGets10XRPBookDir}));
 
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(5);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(5);
     auto const indexes = std::vector<ripple::uint256>(BookOffersHandler::limitMax + 1, ripple::uint256{Index2});
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Pays20USDGets10XRPBookDir}, seq, _))
         .WillByDefault(Return(createOwnerDirLedgerObject(indexes, Index1).getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(getAccountIdWithString(Account2)).key, seq, _))
         .WillByDefault(Return(createAccountRootObject(Account2, 0, 2, 200, 2, Index1, 2).getSerializer().peekData()));
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::fees().key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, seq, _))
         .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
-    ON_CALL(*backend, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(issuer).key, seq, _))
         .WillByDefault(
             Return(createAccountRootObject(Account, 0, 2, 200, 2, Index1, 2, TransferRateX2).getSerializer().peekData())
         );
@@ -1384,10 +1384,10 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
     );
 
     std::vector<Blob> const bbs(BookOffersHandler::limitMax + 1, gets10XRPPays20USDOffer.getSerializer().peekData());
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "taker_gets": 
             {{
@@ -1403,9 +1403,9 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
         Account,
         BookOffersHandler::limitMax + 1
     ));
-    auto const handler = AnyHandler{BookOffersHandler{backend}};
+    auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value().as_object().at("offers").as_array().size(), BookOffersHandler::limitMax);
     });

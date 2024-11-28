@@ -43,14 +43,14 @@ protected:
     struct DosGuardMock : BaseDOSGuard {
         MOCK_METHOD(void, clear, (), (noexcept, override));
     };
-    testing::StrictMock<DosGuardMock> guardMock;
+    testing::StrictMock<DosGuardMock> guardMock_;
 
-    util::Config cfg{boost::json::parse(jsonData)};
-    IntervalSweepHandler sweepHandler{cfg, ctx, guardMock};
+    util::Config cfg_{boost::json::parse(jsonData)};
+    IntervalSweepHandler sweepHandler_{cfg_, ctx_, guardMock_};
 };
 
 TEST_F(IntervalSweepHandlerTest, SweepAfterInterval)
 {
-    EXPECT_CALL(guardMock, clear()).Times(testing::AtLeast(10));
+    EXPECT_CALL(guardMock_, clear()).Times(testing::AtLeast(10));
     runContextFor(std::chrono::milliseconds{20});
 }

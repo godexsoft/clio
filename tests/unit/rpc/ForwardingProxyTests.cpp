@@ -50,17 +50,17 @@ constexpr auto ClientIp = "127.0.0.1";
 
 class RPCForwardingProxyTest : public HandlerBaseTest {
 protected:
-    std::shared_ptr<MockLoadBalancer> loadBalancer = std::make_shared<MockLoadBalancer>();
-    std::shared_ptr<MockHandlerProvider> handlerProvider = std::make_shared<MockHandlerProvider>();
-    MockCounters counters;
+    std::shared_ptr<MockLoadBalancer> loadBalancer_ = std::make_shared<MockLoadBalancer>();
+    std::shared_ptr<MockHandlerProvider> handlerProvider_ = std::make_shared<MockHandlerProvider>();
+    MockCounters counters_;
 
-    util::Config config;
-    util::TagDecoratorFactory tagFactory{config};
+    util::Config config_;
+    util::TagDecoratorFactory tagFactory_{config_};
 
-    rpc::impl::ForwardingProxy<MockLoadBalancer, MockCounters, MockHandlerProvider> proxy{
-        loadBalancer,
-        counters,
-        handlerProvider
+    rpc::impl::ForwardingProxy<MockLoadBalancer, MockCounters, MockHandlerProvider> proxy_{
+        loadBalancer_,
+        counters_,
+        handlerProvider_
     };
 };
 
@@ -195,13 +195,13 @@ INSTANTIATE_TEST_CASE_P(
     ShouldForwardTest,
     ShouldForwardParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(ShouldForwardParameterTest, Test)
 {
     auto const testBundle = GetParam();
-    auto const rawHandlerProviderPtr = handlerProvider.get();
+    auto const rawHandlerProviderPtr = handlerProvider_.get();
     auto const apiVersion = testBundle.apiVersion;
     auto const method = testBundle.method;
     auto const params = json::parse(testBundle.testJson);
@@ -210,20 +210,20 @@ TEST_P(ShouldForwardParameterTest, Test)
     EXPECT_CALL(*rawHandlerProviderPtr, isClioOnly(method)).Times(testBundle.called);
 
     runSpawn([&](auto yield) {
-        auto const range = backend->fetchLedgerRange();
+        auto const range = backend_->fetchLedgerRange();
         auto const ctx = web::Context(
-            yield, method, apiVersion, params.as_object(), nullptr, tagFactory, *range, ClientIp, testBundle.isAdmin
+            yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, testBundle.isAdmin
         );
 
-        auto const res = proxy.shouldForward(ctx);
+        auto const res = proxy_.shouldForward(ctx);
         ASSERT_EQ(res, testBundle.expected);
     });
 }
 
 TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
 {
-    auto const rawHandlerProviderPtr = handlerProvider.get();
-    auto const rawBalancerPtr = loadBalancer.get();
+    auto const rawHandlerProviderPtr = handlerProvider_.get();
+    auto const rawBalancerPtr = loadBalancer_.get();
     auto const apiVersion = 2u;
     auto const method = "submit";
     auto const params = json::parse(R"({"test": true})");
@@ -236,14 +236,14 @@ TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
 
     EXPECT_CALL(*rawHandlerProviderPtr, contains(method)).WillOnce(Return(true));
 
-    EXPECT_CALL(counters, rpcForwarded(method));
+    EXPECT_CALL(counters_, rpcForwarded(method));
 
     runSpawn([&](auto yield) {
-        auto const range = backend->fetchLedgerRange();
+        auto const range = backend_->fetchLedgerRange();
         auto const ctx =
-            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory, *range, ClientIp, true);
+            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, true);
 
-        auto const res = proxy.forward(ctx);
+        auto const res = proxy_.forward(ctx);
 
         auto const data = std::get_if<json::object>(&res.response);
         EXPECT_TRUE(data != nullptr);
@@ -252,8 +252,8 @@ TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
 
 TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
 {
-    auto const rawHandlerProviderPtr = handlerProvider.get();
-    auto const rawBalancerPtr = loadBalancer.get();
+    auto const rawHandlerProviderPtr = handlerProvider_.get();
+    auto const rawBalancerPtr = loadBalancer_.get();
     auto const apiVersion = 2u;
     auto const method = "submit";
     auto const params = json::parse(R"({"test": true})");
@@ -266,14 +266,14 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
 
     EXPECT_CALL(*rawHandlerProviderPtr, contains(method)).WillOnce(Return(true));
 
-    EXPECT_CALL(counters, rpcFailedToForward(method));
+    EXPECT_CALL(counters_, rpcFailedToForward(method));
 
     runSpawn([&](auto yield) {
-        auto const range = backend->fetchLedgerRange();
+        auto const range = backend_->fetchLedgerRange();
         auto const ctx =
-            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory, *range, ClientIp, true);
+            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, true);
 
-        auto const res = proxy.forward(ctx);
+        auto const res = proxy_.forward(ctx);
 
         auto const status = std::get_if<Status>(&res.response);
         EXPECT_TRUE(status != nullptr);

@@ -193,8 +193,8 @@ isOffer(T const& object)
     static constexpr short offerOffset = 0x006f;
     static constexpr short shift = 8;
 
-    short offer_bytes = (object[1] << shift) | object[2];
-    return offer_bytes == offerOffset;
+    short offerBytes = (object[1] << shift) | object[2];
+    return offerBytes == offerOffset;
 }
 
 /**

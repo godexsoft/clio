@@ -264,7 +264,7 @@ public:
 };
 
 /** @brief A globally available @ref rpc::Status that represents a successful state. */
-static Status ok;
+static Status gOk;
 
 /**
  * @brief Get the warning info object from a warning code.

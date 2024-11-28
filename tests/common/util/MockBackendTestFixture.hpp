@@ -57,7 +57,7 @@ struct MockBackendTestBase : virtual public NoLoggerFixture {
     };
 
 protected:
-    BackendProxy backend;
+    BackendProxy backend_;
 };
 
 /**

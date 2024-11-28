@@ -104,7 +104,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpecV1 = RpcSpec{
+        static auto const kRPC_SPEC_V1 = RpcSpec{
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(role),
              validation::Required{},
@@ -117,14 +117,14 @@ public:
             }
         };
 
-        static auto const rpcSpec = RpcSpec{
-            rpcSpecV1,
+        static auto const kRPC_SPEC = RpcSpec{
+            kRPC_SPEC_V1,
             {
                 {JS(transactions), validation::Type<bool>()},
             }
         };
 
-        return apiVersion == 1 ? rpcSpecV1 : rpcSpec;
+        return apiVersion == 1 ? kRPC_SPEC_V1 : kRPC_SPEC;
     }
 
     /**

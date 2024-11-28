@@ -74,7 +74,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedMethod = Request::Method::Unsupported,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestIsHttpTestBundle {
@@ -105,7 +105,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedIsHttp = false,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestAsHttpRequestTest : RequestTest {};
@@ -175,7 +175,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedTarget = std::nullopt,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestHttpHeadersTest : RequestTest {

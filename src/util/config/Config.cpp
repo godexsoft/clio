@@ -104,9 +104,9 @@ std::optional<Config::ArrayType>
 Config::maybeArray(KeyType key) const
 {
     try {
-        auto maybe_arr = lookup(key);
-        if (maybe_arr && maybe_arr->is_array()) {
-            auto& arr = maybe_arr->as_array();
+        auto maybeArr = lookup(key);
+        if (maybeArr && maybeArr->is_array()) {
+            auto& arr = maybeArr->as_array();
             ArrayType out;
             out.reserve(arr.size());
 
@@ -125,16 +125,16 @@ Config::maybeArray(KeyType key) const
 Config::ArrayType
 Config::array(KeyType key) const
 {
-    if (auto maybe_arr = maybeArray(key); maybe_arr)
-        return maybe_arr.value();
+    if (auto maybeArr = maybeArray(key); maybeArr)
+        return maybeArr.value();
     throw std::logic_error("No array found at '" + key + "'");
 }
 
 Config::ArrayType
 Config::arrayOr(KeyType key, ArrayType fallback) const
 {
-    if (auto maybe_arr = maybeArray(key); maybe_arr)
-        return maybe_arr.value();
+    if (auto maybeArr = maybeArray(key); maybeArr)
+        return maybeArr.value();
     return fallback;
 }
 
@@ -151,18 +151,18 @@ Config::arrayOrThrow(KeyType key, std::string_view err) const
 Config
 Config::section(KeyType key) const
 {
-    auto maybe_element = lookup(key);
-    if (maybe_element && maybe_element->is_object())
-        return Config{std::move(*maybe_element)};
+    auto maybeElement = lookup(key);
+    if (maybeElement && maybeElement->is_object())
+        return Config{std::move(*maybeElement)};
     throw std::logic_error("No section found at '" + key + "'");
 }
 
 Config
 Config::sectionOr(KeyType key, boost::json::object fallback) const
 {
-    auto maybe_element = lookup(key);
-    if (maybe_element && maybe_element->is_object())
-        return Config{std::move(*maybe_element)};
+    auto maybeElement = lookup(key);
+    if (maybeElement && maybeElement->is_object())
+        return Config{std::move(*maybeElement)};
     return Config{std::move(fallback)};
 }
 

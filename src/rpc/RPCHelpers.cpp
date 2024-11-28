@@ -1212,94 +1212,94 @@ parseBook(boost::json::object const& request)
     if (!request.at("taker_gets").is_object())
         return Status{RippledError::rpcINVALID_PARAMS, "Field 'taker_gets' is not an object"};
 
-    auto taker_pays = request.at("taker_pays").as_object();
-    if (!taker_pays.contains("currency"))
+    auto takerPays = request.at("taker_pays").as_object();
+    if (!takerPays.contains("currency"))
         return Status{RippledError::rpcSRC_CUR_MALFORMED};
 
-    if (!taker_pays.at("currency").is_string())
+    if (!takerPays.at("currency").is_string())
         return Status{RippledError::rpcSRC_CUR_MALFORMED};
 
-    auto taker_gets = request.at("taker_gets").as_object();
-    if (!taker_gets.contains("currency"))
+    auto takerGets = request.at("taker_gets").as_object();
+    if (!takerGets.contains("currency"))
         return Status{RippledError::rpcDST_AMT_MALFORMED};
 
-    if (!taker_gets.at("currency").is_string()) {
+    if (!takerGets.at("currency").is_string()) {
         return Status{
             RippledError::rpcDST_AMT_MALFORMED,
         };
     }
 
-    ripple::Currency pay_currency;
-    if (!ripple::to_currency(pay_currency, boost::json::value_to<std::string>(taker_pays.at("currency"))))
+    ripple::Currency payCurrency;
+    if (!ripple::to_currency(payCurrency, boost::json::value_to<std::string>(takerPays.at("currency"))))
         return Status{RippledError::rpcSRC_CUR_MALFORMED};
 
-    ripple::Currency get_currency;
-    if (!ripple::to_currency(get_currency, boost::json::value_to<std::string>(taker_gets["currency"])))
+    ripple::Currency getCurrency;
+    if (!ripple::to_currency(getCurrency, boost::json::value_to<std::string>(takerGets["currency"])))
         return Status{RippledError::rpcDST_AMT_MALFORMED};
 
-    ripple::AccountID pay_issuer;
-    if (taker_pays.contains("issuer")) {
-        if (!taker_pays.at("issuer").is_string())
+    ripple::AccountID payIssuer;
+    if (takerPays.contains("issuer")) {
+        if (!takerPays.at("issuer").is_string())
             return Status{RippledError::rpcINVALID_PARAMS, "takerPaysIssuerNotString"};
 
-        if (!ripple::to_issuer(pay_issuer, boost::json::value_to<std::string>(taker_pays.at("issuer"))))
+        if (!ripple::to_issuer(payIssuer, boost::json::value_to<std::string>(takerPays.at("issuer"))))
             return Status{RippledError::rpcSRC_ISR_MALFORMED};
 
-        if (pay_issuer == ripple::noAccount())
+        if (payIssuer == ripple::noAccount())
             return Status{RippledError::rpcSRC_ISR_MALFORMED};
     } else {
-        pay_issuer = ripple::xrpAccount();
+        payIssuer = ripple::xrpAccount();
     }
 
-    if (isXRP(pay_currency) && !isXRP(pay_issuer)) {
+    if (isXRP(payCurrency) && !isXRP(payIssuer)) {
         return Status{
             RippledError::rpcSRC_ISR_MALFORMED, "Unneeded field 'taker_pays.issuer' for XRP currency specification."
         };
     }
 
-    if (!isXRP(pay_currency) && isXRP(pay_issuer)) {
+    if (!isXRP(payCurrency) && isXRP(payIssuer)) {
         return Status{
             RippledError::rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', expected non-XRP issuer."
         };
     }
 
-    if ((!isXRP(pay_currency)) && (!taker_pays.contains("issuer")))
+    if ((!isXRP(payCurrency)) && (!takerPays.contains("issuer")))
         return Status{RippledError::rpcSRC_ISR_MALFORMED, "Missing non-XRP issuer."};
 
-    ripple::AccountID get_issuer;
+    ripple::AccountID getIssuer;
 
-    if (taker_gets.contains("issuer")) {
-        if (!taker_gets["issuer"].is_string())
+    if (takerGets.contains("issuer")) {
+        if (!takerGets["issuer"].is_string())
             return Status{RippledError::rpcINVALID_PARAMS, "taker_gets.issuer should be string"};
 
-        if (!ripple::to_issuer(get_issuer, boost::json::value_to<std::string>(taker_gets.at("issuer"))))
+        if (!ripple::to_issuer(getIssuer, boost::json::value_to<std::string>(takerGets.at("issuer"))))
             return Status{RippledError::rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer."};
 
-        if (get_issuer == ripple::noAccount()) {
+        if (getIssuer == ripple::noAccount()) {
             return Status{
                 RippledError::rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer account one."
             };
         }
     } else {
-        get_issuer = ripple::xrpAccount();
+        getIssuer = ripple::xrpAccount();
     }
 
-    if (ripple::isXRP(get_currency) && !ripple::isXRP(get_issuer)) {
+    if (ripple::isXRP(getCurrency) && !ripple::isXRP(getIssuer)) {
         return Status{
             RippledError::rpcDST_ISR_MALFORMED, "Unneeded field 'taker_gets.issuer' for XRP currency specification."
         };
     }
 
-    if (!ripple::isXRP(get_currency) && ripple::isXRP(get_issuer)) {
+    if (!ripple::isXRP(getCurrency) && ripple::isXRP(getIssuer)) {
         return Status{
             RippledError::rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', expected non-XRP issuer."
         };
     }
 
-    if (pay_currency == get_currency && pay_issuer == get_issuer)
+    if (payCurrency == getCurrency && payIssuer == getIssuer)
         return Status{RippledError::rpcBAD_MARKET, "badMarket"};
 
-    return ripple::Book{{pay_currency, pay_issuer}, {get_currency, get_issuer}};
+    return ripple::Book{{payCurrency, payIssuer}, {getCurrency, getIssuer}};
 }
 
 std::variant<Status, ripple::AccountID>

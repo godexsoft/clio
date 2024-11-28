@@ -87,14 +87,14 @@ INSTANTIATE_TEST_CASE_P(
     RPCBookChangesGroup1,
     BookChangesParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(BookChangesParameterTest, InvalidParams)
 {
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{BookChangesHandler{backend}};
+        auto const handler = AnyHandler{BookChangesHandler{backend_}};
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -106,15 +106,15 @@ TEST_P(BookChangesParameterTest, InvalidParams)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaIntSequence)
 {
-    backend->setRange(MinSeq, MaxSeq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(MinSeq, MaxSeq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const Input = json::parse(R"({"ledger_index":30})");
-    auto const handler = AnyHandler{BookChangesHandler{backend}};
+    auto static const kINPUT = json::parse(R"({"ledger_index":30})");
+    auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -124,15 +124,15 @@ TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaIntSequence)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaStringSequence)
 {
-    backend->setRange(MinSeq, MaxSeq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
+    backend_->setRange(MinSeq, MaxSeq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(std::nullopt));
 
-    auto static const Input = json::parse(R"({"ledger_index":"30"})");
-    auto const handler = AnyHandler{BookChangesHandler{backend}};
+    auto static const kINPUT = json::parse(R"({"ledger_index":"30"})");
+    auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -142,21 +142,21 @@ TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaStringSequence)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaHash)
 {
-    backend->setRange(MinSeq, MaxSeq);
-    EXPECT_CALL(*backend, fetchLedgerByHash).Times(1);
+    backend_->setRange(MinSeq, MaxSeq);
+    EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "ledger_hash":"{}"
         }})",
         LedgerHash
     ));
-    auto const handler = AnyHandler{BookChangesHandler{backend}};
+    auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
@@ -187,9 +187,9 @@ TEST_F(RPCBookChangesHandlerTest, NormalPath)
             ]
         })";
 
-    backend->setRange(MinSeq, MaxSeq);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(createLedgerHeader(LedgerHash, MaxSeq)));
+    backend_->setRange(MinSeq, MaxSeq);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
+    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(createLedgerHeader(LedgerHash, MaxSeq)));
 
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
@@ -200,10 +200,10 @@ TEST_F(RPCBookChangesHandlerTest, NormalPath)
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
-    EXPECT_CALL(*backend, fetchAllTransactionsInLedger).Times(1);
-    ON_CALL(*backend, fetchAllTransactionsInLedger(MaxSeq, _)).WillByDefault(Return(transactions));
+    EXPECT_CALL(*backend_, fetchAllTransactionsInLedger).Times(1);
+    ON_CALL(*backend_, fetchAllTransactionsInLedger(MaxSeq, _)).WillByDefault(Return(transactions));
 
-    auto const handler = AnyHandler{BookChangesHandler{backend}};
+    auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(json::parse("{}"), Context{yield});
         ASSERT_TRUE(output);

@@ -94,16 +94,16 @@ class HttpBase : public ConnectionBase {
         {
         }
 
-        template <bool isRequest, typename Body, typename Fields>
+        template <bool IsRequest, typename Body, typename Fields>
         void
-        operator()(http::message<isRequest, Body, Fields>&& msg) const
+        operator()(http::message<IsRequest, Body, Fields>&& msg) const
         {
             if (self.dead())
                 return;
 
             // The lifetime of the message has to extend for the duration of the async operation so we use a shared_ptr
             // to manage it.
-            auto sp = std::make_shared<http::message<isRequest, Body, Fields>>(std::move(msg));
+            auto sp = std::make_shared<http::message<IsRequest, Body, Fields>>(std::move(msg));
 
             // Store a type-erased version of the shared pointer in the class to keep it alive.
             self.res_ = sp;

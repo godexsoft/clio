@@ -176,5 +176,5 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedError = false
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );

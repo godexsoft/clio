@@ -41,7 +41,7 @@ template <typename TestedFeed>
 struct FeedBaseTest : util::prometheus::WithPrometheus, MockBackendTest, SyncExecutionCtxFixture {
 protected:
     web::SubscriptionContextPtr sessionPtr = std::make_shared<MockSession>();
-    std::shared_ptr<TestedFeed> testFeedPtr = std::make_shared<TestedFeed>(ctx);
+    std::shared_ptr<TestedFeed> testFeedPtr = std::make_shared<TestedFeed>(ctx_);
     MockSession* mockSessionPtr = dynamic_cast<MockSession*>(sessionPtr.get());
 };
 

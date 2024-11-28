@@ -62,7 +62,7 @@ struct RPCServerInfoHandlerTest : HandlerBaseTest, MockLoadBalancerTest, MockCou
         MockLoadBalancerTest::SetUp();
         MockCountersTest::SetUp();
 
-        backend->setRange(10, 30);
+        backend_->setRange(10, 30);
     }
 
     void
@@ -148,10 +148,10 @@ protected:
 
 TEST_F(RPCServerInfoHandlerTest, NoLedgerHeaderErrorsOutWithInternal)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -168,11 +168,11 @@ TEST_F(RPCServerInfoHandlerTest, NoLedgerHeaderErrorsOutWithInternal)
 TEST_F(RPCServerInfoHandlerTest, NoFeesErrorsOutWithInternal)
 {
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -188,15 +188,15 @@ TEST_F(RPCServerInfoHandlerTest, NoFeesErrorsOutWithInternal)
 
 TEST_F(RPCServerInfoHandlerTest, DefaultOutputIsPresent)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(ClientIP), false, testing::_))
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
@@ -206,7 +206,7 @@ TEST_F(RPCServerInfoHandlerTest, DefaultOutputIsPresent)
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(false));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -225,15 +225,15 @@ TEST_F(RPCServerInfoHandlerTest, DefaultOutputIsPresent)
 
 TEST_F(RPCServerInfoHandlerTest, AmendmentBlockedIsPresentIfSet)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(ClientIP), false, testing::_))
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
@@ -243,7 +243,7 @@ TEST_F(RPCServerInfoHandlerTest, AmendmentBlockedIsPresentIfSet)
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(true));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -260,15 +260,15 @@ TEST_F(RPCServerInfoHandlerTest, AmendmentBlockedIsPresentIfSet)
 
 TEST_F(RPCServerInfoHandlerTest, CorruptionDetectedIsPresentIfSet)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(ClientIP), false, testing::_))
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
@@ -278,7 +278,7 @@ TEST_F(RPCServerInfoHandlerTest, CorruptionDetectedIsPresentIfSet)
     EXPECT_CALL(*rawETLServicePtr, isCorruptionDetected).WillOnce(Return(true));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -295,14 +295,14 @@ TEST_F(RPCServerInfoHandlerTest, CorruptionDetectedIsPresentIfSet)
 
 TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
 
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).Times(2).WillRepeatedly(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(2).WillRepeatedly(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(2).WillRepeatedly(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2).WillRepeatedly(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(ClientIP), false, testing::_))
         .Times(2)
@@ -311,7 +311,7 @@ TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
     EXPECT_CALL(*rawCountersPtr, uptime).Times(2).WillRepeatedly(Return(std::chrono::seconds{1234}));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -325,7 +325,7 @@ TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
         EXPECT_EQ(cache.at("is_enabled").as_bool(), true);
     });
 
-    backend->cache().setDisabled();
+    backend_->cache().setDisabled();
 
     runSpawn([&](auto yield) {
         auto const req = json::parse("{}");
@@ -341,16 +341,16 @@ TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
 
 TEST_F(RPCServerInfoHandlerTest, AdminSectionPresentWhenAdminFlagIsSet)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const empty = json::object{};
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled).WillOnce(Return(empty));
 
@@ -366,7 +366,7 @@ TEST_F(RPCServerInfoHandlerTest, AdminSectionPresentWhenAdminFlagIsSet)
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -380,16 +380,16 @@ TEST_F(RPCServerInfoHandlerTest, AdminSectionPresentWhenAdminFlagIsSet)
 
 TEST_F(RPCServerInfoHandlerTest, BackendCountersPresentWhenRequestWithParam)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const empty = json::object{};
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled).WillOnce(Return(empty));
 
@@ -404,10 +404,10 @@ TEST_F(RPCServerInfoHandlerTest, BackendCountersPresentWhenRequestWithParam)
 
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
-    EXPECT_CALL(*backend, stats).WillOnce(Return(boost::json::object{{"read_cout", 10}, {"write_count", 3}}));
+    EXPECT_CALL(*backend_, stats).WillOnce(Return(boost::json::object{{"read_cout", 10}, {"write_count", 3}}));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -425,16 +425,16 @@ TEST_F(RPCServerInfoHandlerTest, BackendCountersPresentWhenRequestWithParam)
 
 TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const empty = json::object{};
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
@@ -460,7 +460,7 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {
@@ -475,16 +475,16 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
 
 TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesMissingNoExceptionThrown)
 {
-    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr.get();
-    MockCounters* rawCountersPtr = mockCountersPtr.get();
-    MockETLService* rawETLServicePtr = mockETLServicePtr.get();
+    MockLoadBalancer* rawBalancerPtr = mockLoadBalancerPtr_.get();
+    MockCounters* rawCountersPtr = mockCountersPtr_.get();
+    MockETLService* rawETLServicePtr = mockETLServicePtr_.get();
 
     auto const empty = json::object{};
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30, 3);  // 3 seconds old
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(feeBlob));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
@@ -505,7 +505,7 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesMissingNoExceptionThrown)
     EXPECT_CALL(*rawETLServicePtr, getInfo).WillOnce(Return(empty));
 
     auto const handler = AnyHandler{TestServerInfoHandler{
-        backend, mockSubscriptionManagerPtr_, mockLoadBalancerPtr, mockETLServicePtr, *mockCountersPtr
+        backend_, mockSubscriptionManagerPtr_, mockLoadBalancerPtr_, mockETLServicePtr_, *mockCountersPtr_
     }};
 
     runSpawn([&](auto yield) {

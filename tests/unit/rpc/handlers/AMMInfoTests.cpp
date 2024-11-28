@@ -103,14 +103,14 @@ INSTANTIATE_TEST_CASE_P(
     RPCAMMInfoGroup1,
     AMMInfoParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(AMMInfoParameterTest, InvalidParams)
 {
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{AMMInfoHandler{backend}};
+        auto const handler = AnyHandler{AMMInfoHandler{backend_}};
         auto const req = json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -123,20 +123,20 @@ TEST_P(AMMInfoParameterTest, InvalidParams)
 
 TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
     auto const missingAccountKey = getAccountKey(NotfoundAccount);
     auto const accountRoot = createAccountRootObject(AmmAccount, 0, 2, 200, 2, Index1, 2);
     auto const accountKey = getAccountKey(AmmAccount);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(missingAccountKey, testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(missingAccountKey, testing::_, testing::_))
         .WillByDefault(Return(std::optional<Blob>{}));
-    ON_CALL(*backend, doFetchLedgerObject(accountKey, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(accountKey, testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}",
             "account": "{}"
@@ -145,9 +145,9 @@ TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
         NotfoundAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -158,22 +158,22 @@ TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotExist)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         WrongAmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "actMalformed");
@@ -183,22 +183,22 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotExist)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotInDBIsMalformed)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -209,24 +209,24 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotInDBIsMalformed)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotFoundMissingAmmField)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
     auto const accountRoot = createAccountRootObject(AmmAccount, 0, 2, 200, 2, Index1, 2);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject).WillByDefault(Return(accountRoot.getSerializer().peekData()));
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(accountRoot.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -237,7 +237,7 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotFoundMissingAmmField)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
     auto const accountKey = getAccountKey(AmmAccount);
@@ -248,22 +248,22 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
     auto ammObj = createAmmObject(AmmAccount2, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", AmmAccount2);
     accountRoot.setFieldH256(ripple::sfAMMID, ripple::uint256{AmmID});
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(accountKey, testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(accountKey, testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -274,7 +274,7 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, 30);
     auto const accountKey = getAccountKey(AmmAccount);
@@ -286,24 +286,24 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
     auto const ammObj = createAmmObject(AmmAccount2, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", AmmAccount2);
     accountRoot.setFieldH256(ripple::sfAMMID, ammId);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(accountKey, testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(accountKey, testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(account2Key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(account2Key, testing::_, testing::_))
         .WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -314,7 +314,7 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -330,26 +330,26 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -387,7 +387,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -408,19 +408,19 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
     auto const trustline =
         createRippleStateLedgerObject(LpIssueCurrency, AmmAccount, 12, AmmAccount2, 1000, AmmAccount, 2000, Index1, 2);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(account2Root.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
-    ON_CALL(*backend, doFetchLedgerObject(accountHoldsKeylet.key, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, doFetchLedgerObject(accountHoldsKeylet.key, Seq, _))
         .WillByDefault(Return(trustline.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}",
             "account": "{}"
@@ -429,9 +429,9 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
         AmmAccount2
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto const expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -469,7 +469,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -485,26 +485,26 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto const expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -542,7 +542,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -557,26 +557,26 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto const expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -621,7 +621,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -645,29 +645,29 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
         "JPY", AmmAccount, 12, AmmAccount2, 1000, AmmAccount, 2000, Index1, 2, ripple::lsfGlobalFreeze
     );
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue1LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue1LineKey, Seq, _))
         .WillByDefault(Return(trustline1BalanceFrozen.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _))
         .WillByDefault(Return(trustline2BalanceFrozen.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto const expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -712,7 +712,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -737,29 +737,29 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
         "JPY", AmmAccount, 12, AmmAccount2, 1000, AmmAccount, 2000, Index1, 2, ripple::lsfGlobalFreeze
     );
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue1LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue1LineKey, Seq, _))
         .WillByDefault(Return(trustline1BalanceFrozen.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _))
         .WillByDefault(Return(trustline2BalanceFrozen.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto const expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -804,7 +804,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -822,27 +822,27 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
     auto const trustlineBalance =
         createRippleStateLedgerObject("JPY", AmmAccount2, -8, AmmAccount, 1000, AmmAccount2, 2000, Index2, 2, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -880,7 +880,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -900,27 +900,27 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
     auto const trustlineBalance =
         createRippleStateLedgerObject("JPY", AmmAccount2, -8, AmmAccount, 1000, AmmAccount2, 2000, Index2, 2, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -972,7 +972,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const account1 = getAccountIdWithString(AmmAccount);
     auto const account2 = getAccountIdWithString(AmmAccount2);
@@ -994,27 +994,27 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
     auto const trustlineBalance =
         createRippleStateLedgerObject("JPY", AmmAccount2, -8, AmmAccount, 1000, AmmAccount2, 2000, Index2, 2, 0);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
-    ON_CALL(*backend, doFetchLedgerObject(issue2LineKey, Seq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(feesKey, Seq, _)).WillByDefault(Return(feesObj));
+    ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, Seq, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "amm_account": "{}"
         }})",
         AmmAccount
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -1070,7 +1070,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, Seq);
     auto const account1 = getAccountIdWithString(AmmAccount);
@@ -1087,15 +1087,15 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
     );
     accountRoot.setFieldH256(ripple::sfAMMID, ammKeylet.key);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "asset": {{
                 "currency": "JPY", 
@@ -1110,9 +1110,9 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
         AmmAccount2
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{
@@ -1181,7 +1181,7 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
 
     auto const lgrInfo = createLedgerHeader(LedgerHash, Seq);
     auto const account1 = getAccountIdWithString(AmmAccount);
@@ -1199,15 +1199,15 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
     );
     accountRoot.setFieldH256(ripple::sfAMMID, ammKeylet.key);
 
-    ON_CALL(*backend, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
+    ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account1), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(getAccountKey(account2), testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    ON_CALL(*backend, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
 
-    auto static const Input = json::parse(fmt::format(
+    auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "asset": {{
                 "currency": "USD",
@@ -1222,9 +1222,9 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
         AmmAccount2
     ));
 
-    auto const handler = AnyHandler{AMMInfoHandler{backend}};
+    auto const handler = AnyHandler{AMMInfoHandler{backend_}};
     runSpawn([&](auto yield) {
-        auto const output = handler.process(Input, Context{yield});
+        auto const output = handler.process(kINPUT, Context{yield});
         auto expectedResult = json::parse(fmt::format(
             R"({{
                 "amm": {{

@@ -92,7 +92,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(mpt_issuance_id), validation::Required{}, validation::CustomValidators::uint192HexStringValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
@@ -101,7 +101,7 @@ public:
             {JS(marker), validation::CustomValidators::uint160HexStringValidator},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

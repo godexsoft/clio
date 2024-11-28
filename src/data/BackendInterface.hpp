@@ -138,7 +138,7 @@ synchronousAndRetryOnTimeout(FnType&& func)
 class BackendInterface {
 protected:
     mutable std::shared_mutex rngMtx_;
-    std::optional<LedgerRange> range;
+    std::optional<LedgerRange> range_;
     LedgerCache cache_;
     std::optional<etl::CorruptionDetector<LedgerCache>> corruptionDetector_;
 

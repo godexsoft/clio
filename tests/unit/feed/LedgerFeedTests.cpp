@@ -41,12 +41,12 @@ using FeedLedgerTest = FeedBaseTest<LedgerFeed>;
 
 TEST_F(FeedLedgerTest, SubPub)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
     // check the function response
     // Information about the ledgers on hand and current fee schedule. This
     // includes the same fields as a ledger stream message, except that it omits
@@ -64,7 +64,7 @@ TEST_F(FeedLedgerTest, SubPub)
     boost::asio::io_context ioContext;
     boost::asio::spawn(ioContext, [this](boost::asio::yield_context yield) {
         EXPECT_CALL(*mockSessionPtr, onDisconnect);
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
         // check the response
         EXPECT_EQ(res, json::parse(LedgerResponse));
     });
@@ -100,12 +100,12 @@ TEST_F(FeedLedgerTest, SubPub)
 
 TEST_F(FeedLedgerTest, AutoDisconnect)
 {
-    backend->setRange(10, 30);
+    backend_->setRange(10, 30);
     auto const ledgerHeader = createLedgerHeader(LedgerHash, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
     static constexpr auto LedgerResponse =
         R"({
             "validated_ledgers":"10-30",
@@ -120,8 +120,8 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
 
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
         // check the response
         EXPECT_EQ(res, json::parse(LedgerResponse));
     });

@@ -80,10 +80,10 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(date), validation::Type<std::string>{}, validation::TimeFormatValidator{dateFormat}},
         };
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

@@ -216,7 +216,7 @@ AMMInfoHandler::process(AMMInfoHandler::Input input, Context const& ctx) const
 RpcSpecConstRef
 AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    static auto const stringIssueValidator =
+    static auto const kSTRING_ISSUE_VALIDATOR =
         validation::CustomValidator{[](boost::json::value const& value, std::string_view key) -> MaybeError {
             if (not value.is_string())
                 return Error{Status{RippledError::rpcINVALID_PARAMS, std::string(key) + "NotString"}};
@@ -230,14 +230,14 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
             return MaybeError{};
         }};
 
-    static auto const rpcSpec = RpcSpec{
+    static auto const kRPC_SPEC = RpcSpec{
         {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
         {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
         {JS(asset),
          meta::WithCustomError{
              validation::Type<std::string, boost::json::object>{}, Status(RippledError::rpcISSUE_MALFORMED)
          },
-         meta::IfType<std::string>{stringIssueValidator},
+         meta::IfType<std::string>{kSTRING_ISSUE_VALIDATOR},
          meta::IfType<boost::json::object>{
              meta::WithCustomError{
                  validation::CustomValidators::currencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
@@ -247,7 +247,7 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
          meta::WithCustomError{
              validation::Type<std::string, boost::json::object>{}, Status(RippledError::rpcISSUE_MALFORMED)
          },
-         meta::IfType<std::string>{stringIssueValidator},
+         meta::IfType<std::string>{kSTRING_ISSUE_VALIDATOR},
          meta::IfType<boost::json::object>{
              meta::WithCustomError{
                  validation::CustomValidators::currencyIssueValidator, Status(RippledError::rpcISSUE_MALFORMED)
@@ -259,7 +259,7 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
          meta::WithCustomError{validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)}},
     };
 
-    return rpcSpec;
+    return kRPC_SPEC;
 }
 
 void

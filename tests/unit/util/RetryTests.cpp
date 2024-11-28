@@ -65,7 +65,7 @@ struct RetryWithExponentialBackoffStrategyTests : SyncAsioContextTest, RetryTest
     }
 
 protected:
-    Retry retry_ = makeRetryExponentialBackoff(delay_, maxDelay_, boost::asio::make_strand(ctx));
+    Retry retry_ = makeRetryExponentialBackoff(delay_, maxDelay_, boost::asio::make_strand(ctx_));
     testing::MockFunction<void()> mockCallback_;
 };
 

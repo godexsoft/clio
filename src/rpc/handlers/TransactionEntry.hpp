@@ -92,7 +92,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(tx_hash),
              meta::WithCustomError{validation::Required{}, Status(ClioError::RpcFieldNotFoundTransaction)},
              validation::CustomValidators::uint256HexStringValidator},
@@ -100,7 +100,7 @@ public:
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

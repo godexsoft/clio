@@ -83,7 +83,7 @@ struct WebRPCServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTe
     std::shared_ptr<MockETLService> etl = std::make_shared<MockETLService>();
     std::shared_ptr<util::TagDecoratorFactory> tagFactory = std::make_shared<util::TagDecoratorFactory>(cfg);
     std::shared_ptr<RPCServerHandler<MockAsyncRPCEngine, MockETLService>> handler =
-        std::make_shared<RPCServerHandler<MockAsyncRPCEngine, MockETLService>>(cfg, backend, rpcEngine, etl);
+        std::make_shared<RPCServerHandler<MockAsyncRPCEngine, MockETLService>>(cfg, backend_, rpcEngine, etl);
     std::shared_ptr<MockWsBase> session = std::make_shared<MockWsBase>(*tagFactory);
 };
 
@@ -94,7 +94,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPDefaultPath)
                                         "params": [{}]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Result = "{}";
     static constexpr auto Response = R"({
@@ -127,7 +127,7 @@ TEST_F(WebRPCServerHandlerTest, WsNormalPath)
                                         "api_version": 2
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Result = "{}";
     static constexpr auto Response = R"({
@@ -160,7 +160,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
                                         "params": [{}]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // Note: forwarding always goes thru WS API
     static constexpr auto Result = R"({
@@ -199,7 +199,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
                                         "params": [{}]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // Note: forwarding always goes thru WS API
     static constexpr auto Result = R"({
@@ -244,7 +244,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
                                         "id": 99
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // Note: forwarding always goes thru WS API
     static constexpr auto Result = R"({
@@ -286,7 +286,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
                                         "id": 99
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     // Note: forwarding always goes thru WS API
     static constexpr auto Result = R"({
@@ -350,7 +350,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
                                         ]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "method": "ledger",
@@ -395,7 +395,7 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
                                         ]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "command": "ledger",
@@ -477,7 +477,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPInvalidAPIVersion)
                                         }]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = "invalid_API_version";
 
@@ -496,7 +496,7 @@ TEST_F(WebRPCServerHandlerTest, WSInvalidAPIVersion)
                                         "api_version": null
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = R"({
                                         "error": "invalid_API_version",
@@ -520,7 +520,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPBadSyntaxWhenRequestSubscribe)
 {
     static constexpr auto Request = R"({"method": "subscribe"})";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = R"({
                                         "result": {
@@ -546,7 +546,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPMissingCommand)
 {
     static constexpr auto Request = R"({"method2": "server_info"})";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = "Null method";
 
@@ -561,7 +561,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPCommandNotString)
 {
     static constexpr auto Request = R"({"method": 1})";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = "method is not string";
 
@@ -576,7 +576,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPCommandIsEmpty)
 {
     static constexpr auto Request = R"({"method": ""})";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = "method is empty";
 
@@ -595,7 +595,7 @@ TEST_F(WebRPCServerHandlerTest, WsMissingCommand)
                                         "id": 99
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response = R"({
                                         "error": "missingCommand",
@@ -620,7 +620,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableNotArray)
 {
     static constexpr auto Response = "params unparseable";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "method": "ledger",
@@ -638,7 +638,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableArrayWithDigit)
 {
     static constexpr auto Response = "params unparseable";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "method": "ledger",
@@ -668,7 +668,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
                                         }
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "method": "ledger",
@@ -699,7 +699,7 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
                                         }
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto RequestJson = R"({
                                             "command": "ledger",
@@ -720,7 +720,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPOutDated)
                                         "params": [{}]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Result = "{}";
     static constexpr auto Response = R"({
@@ -757,7 +757,7 @@ TEST_F(WebRPCServerHandlerTest, WsOutdated)
                                         "id": 99
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Result = "{}";
     static constexpr auto Response = R"({
@@ -792,13 +792,13 @@ TEST_F(WebRPCServerHandlerTest, WsTooBusy)
 
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
-        std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend, localRpcEngine, etl);
+        std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend_, localRpcEngine, etl);
     static constexpr auto Request = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response =
         R"({
@@ -820,13 +820,13 @@ TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
 {
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
-        std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend, localRpcEngine, etl);
+        std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend_, localRpcEngine, etl);
     static constexpr auto Request = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend->setRange(MinSeq, MaxSeq);
+    backend_->setRange(MinSeq, MaxSeq);
 
     static constexpr auto Response =
         R"({

@@ -94,7 +94,7 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(issuer), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(nft_taxon), validation::Type<uint32_t>{}},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
@@ -104,7 +104,7 @@ public:
             {JS(marker), validation::CustomValidators::uint256HexStringValidator},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

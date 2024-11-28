@@ -81,9 +81,9 @@ class RPCHelpersTest : public util::prometheus::WithPrometheus, public MockBacke
 
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
         auto account = getAccountIdWithString(Account);
-        auto ret = traverseOwnedNodes(*backend, account, 9, 10, "nothex,10", yield, [](auto) {
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,10", yield, [](auto) {
 
         });
         auto status = std::get_if<Status>(&ret);
@@ -91,14 +91,14 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
         EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
         EXPECT_EQ(status->message, "Malformed cursor.");
     });
-    ctx.run();
+    ctx_.run();
 }
 
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
         auto account = getAccountIdWithString(Account);
-        auto ret = traverseOwnedNodes(*backend, account, 9, 10, "nothex,abc", yield, [](auto) {
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,abc", yield, [](auto) {
 
         });
         auto status = std::get_if<Status>(&ret);
@@ -106,7 +106,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
         EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
         EXPECT_EQ(status->message, "Malformed cursor.");
     });
-    ctx.run();
+    ctx_.run();
 }
 
 // limit = 10, return 2 objects
@@ -114,12 +114,12 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
 {
     auto account = getAccountIdWithString(Account);
     auto owneDirKk = ripple::keylet::ownerDir(account).key;
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
     // return owner index
     ripple::STObject const ownerDir =
         createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
-    ON_CALL(*backend, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
     // return two payment channel objects
@@ -127,11 +127,11 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
     ripple::STObject const channel1 = createPaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
     bbs.push_back(channel1.getSerializer().peekData());
     bbs.push_back(channel1.getSerializer().peekData());
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(ctx, [this, &account](boost::asio::yield_context yield) {
-        auto ret = traverseOwnedNodes(*backend, account, 9, 10, {}, yield, [](auto) {
+    boost::asio::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [](auto) {
 
         });
         auto cursor = std::get_if<AccountCursor>(&ret);
@@ -142,7 +142,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
             "0"
         );
     });
-    ctx.run();
+    ctx_.run();
 }
 
 // limit = 10, return 10 objects and marker
@@ -150,7 +150,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
 {
     auto account = getAccountIdWithString(Account);
     auto owneDirKk = ripple::keylet::ownerDir(account).key;
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
     std::vector<Blob> bbs;
 
@@ -166,21 +166,21 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
 
     ripple::STObject ownerDir = createOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 99);
-    ON_CALL(*backend, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(owneDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(ctx, [this, &account](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
         auto count = 0;
-        auto ret = traverseOwnedNodes(*backend, account, 9, 10, {}, yield, [&](auto) { count++; });
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [&](auto) { count++; });
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
         EXPECT_EQ(count, 10);
         EXPECT_EQ(cursor->toString(), fmt::format("{},0", Index1));
     });
-    ctx.run();
+    ctx_.run();
 }
 
 // 10 objects per page, limit is 15, return the second page as marker
@@ -192,7 +192,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
     static constexpr auto Limit = 15;
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), NextPage).key;
 
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
 
@@ -213,26 +213,26 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
     ripple::STObject ownerDir = createOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, NextPage);
     // first page 's next page is 99
-    ON_CALL(*backend, doFetchLedgerObject(ownerDirKk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     ripple::STObject ownerDir2 = createOwnerDirLedgerObject(indexes, Index1);
     // second page's next page is 0
     ownerDir2.setFieldU64(ripple::sfIndexNext, 0);
-    ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir2.getSerializer().peekData()));
 
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
-        auto ret = traverseOwnedNodes(*backend, account, 9, Limit, {}, yield, [&](auto) { count++; });
+        auto ret = traverseOwnedNodes(*backend_, account, 9, Limit, {}, yield, [&](auto) { count++; });
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
         EXPECT_EQ(count, Limit);
         EXPECT_EQ(cursor->toString(), fmt::format("{},{}", Index1, NextPage));
     });
-    ctx.run();
+    ctx_.run();
 }
 
 // Send a valid marker
@@ -242,7 +242,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
     static constexpr auto Limit = 8;
     static constexpr auto PageNum = 99;
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
 
@@ -263,23 +263,23 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
     ripple::STObject ownerDir = createOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 0);
     // return ownerdir when search by marker
-    ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
-    ON_CALL(*backend, doFetchLedgerObjects).WillByDefault(Return(bbs));
-    EXPECT_CALL(*backend, doFetchLedgerObjects).Times(1);
+    ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(
-            *backend, account, 9, Limit, fmt::format("{},{}", Index1, PageNum), yield, [&](auto) { count++; }
+            *backend_, account, 9, Limit, fmt::format("{},{}", Index1, PageNum), yield, [&](auto) { count++; }
         );
         auto cursor = std::get_if<AccountCursor>(&ret);
         EXPECT_TRUE(cursor != nullptr);
         EXPECT_EQ(count, Limit);
         EXPECT_EQ(cursor->toString(), fmt::format("{},{}", Index1, PageNum));
     });
-    ctx.run();
+    ctx_.run();
 }
 
 // Send a valid marker, but marker contain an unexisting index
@@ -290,7 +290,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
     auto ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), 99).key;
     static constexpr auto Limit = 8;
     static constexpr auto PageNum = 99;
-    EXPECT_CALL(*backend, doFetchLedgerObject).Times(1);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
     int objectsCount = 10;
     ripple::STObject const channel1 = createPaymentChannelLedgerObject(Account, Account2, 100, 10, 32, TxnID, 28);
@@ -303,20 +303,20 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
     ripple::STObject ownerDir = createOwnerDirLedgerObject(indexes, Index1);
     ownerDir.setFieldU64(ripple::sfIndexNext, 0);
     // return ownerdir when search by marker
-    ON_CALL(*backend, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
-    boost::asio::spawn(ctx, [&, this](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(
-            *backend, account, 9, Limit, fmt::format("{},{}", Index2, PageNum), yield, [&](auto) { count++; }
+            *backend_, account, 9, Limit, fmt::format("{},{}", Index2, PageNum), yield, [&](auto) { count++; }
         );
         auto status = std::get_if<Status>(&ret);
         EXPECT_TRUE(status != nullptr);
         EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
         EXPECT_EQ(status->message, "Invalid marker.");
     });
-    ctx.run();
+    ctx_.run();
 }
 
 TEST_F(RPCHelpersTest, EncodeCTID)
@@ -444,7 +444,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
                                 })";
     EXPECT_EQ(binJson, boost::json::parse(ExpectBin));
 
-    auto const ExpectJSON = fmt::format(
+    auto const expectJson = fmt::format(
         R"({{
             "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "close_flags": 0,
@@ -465,14 +465,14 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
     auto json = toJson(ledgerHeader, false, 1u);
     // remove platform-related close_time_human field
     json.erase(JS(close_time_human));
-    EXPECT_EQ(json, boost::json::parse(ExpectJSON));
+    EXPECT_EQ(json, boost::json::parse(expectJson));
 }
 
 TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
 {
     auto const ledgerHeader = createLedgerHeader(Index1, 30);
 
-    auto const ExpectJSON = fmt::format(
+    auto const expectJson = fmt::format(
         R"({{
             "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "close_flags": 0,
@@ -493,7 +493,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
     auto json = toJson(ledgerHeader, false, 2u);
     // remove platform-related close_time_human field
     json.erase(JS(close_time_human));
-    EXPECT_EQ(json, boost::json::parse(ExpectJSON));
+    EXPECT_EQ(json, boost::json::parse(expectJson));
 }
 
 TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV1)
@@ -602,7 +602,7 @@ INSTANTIATE_TEST_CASE_P(
     IsAdminCmdTest,
     IsAdminCmdParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(IsAdminCmdParameterTest, Test)

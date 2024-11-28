@@ -363,12 +363,12 @@ SubscriptionSource::setValidatedRange(std::string range)
 std::string const&
 SubscriptionSource::getSubscribeCommandJson()
 {
-    static boost::json::object const jsonValue{
+    static boost::json::object const kJSON_VALUE{
         {"command", "subscribe"},
         {"streams", {"ledger", "manifests", "validations", "transactions_proposed"}},
     };
-    static std::string const jsonString = boost::json::serialize(jsonValue);
-    return jsonString;
+    static std::string const kJSON_STRING = boost::json::serialize(kJSON_VALUE);
+    return kJSON_STRING;
 }
 
 }  // namespace etl::impl
