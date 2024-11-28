@@ -148,26 +148,28 @@ CheckOptions:
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantPrefix: 'k'
+  readability-identifier-naming.GlobalVariableCase: CamelCase
+  readability-identifier-naming.GlobalVariablePrefix: 'g'
+  readability-identifier-naming.ConstexprFunctionCase: camelBack
+  readability-identifier-naming.ConstexprMethodCase: camelBack
+  readability-identifier-naming.ClassMethodCase: camelBack
   readability-identifier-naming.ClassMemberCase: camelBack
   readability-identifier-naming.ClassConstantCase: UPPER_CASE
   readability-identifier-naming.ClassConstantPrefix: 'k'
-  readability-identifier-naming.ClassMethodCase: camelBack
-  readability-identifier-naming.ConstexprFunctionCase: camelBack
-  readability-identifier-naming.ConstexprMethodCase: camelBack
-  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
-  readability-identifier-naming.GlobalConstantPrefix: 'g'
-  readability-identifier-naming.GlobalVariableCase: CamelCase
-  readability-identifier-naming.GlobalVariablePrefix: 'g'
-  readability-identifier-naming.StaticVariableCase: aNy_CasE
   readability-identifier-naming.StaticConstantCase: UPPER_CASE
   readability-identifier-naming.StaticConstantPrefix: 'k'
+  readability-identifier-naming.StaticVariableCase: aNy_CasE
   readability-identifier-naming.ConstexprVariableCase: aNy_CasE
-  readability-identifier-naming.LocalConstantCase: aNy_CasE
+  readability-identifier-naming.LocalConstantCase: camelBack
   readability-identifier-naming.LocalVariableCase: camelBack
+  readability-identifier-naming.TemplateParameterCase: CamelCase
   readability-identifier-naming.ParameterCase: camelBack
   readability-identifier-naming.FunctionCase: camelBack
   readability-identifier-naming.MemberCase: camelBack
   readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberSuffix: _
   readability-identifier-naming.PublicMemberSuffix: ''
   readability-identifier-naming.FunctionIgnoredRegexp: '.*tag_invoke.*'
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
