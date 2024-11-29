@@ -28,6 +28,7 @@
 #include "util/prometheus/MetricBase.hpp"
 #include "util/prometheus/MetricsFamily.hpp"
 
+#include <concepts>
 #include <cstdint>
 #include <memory>
 #include <optional>

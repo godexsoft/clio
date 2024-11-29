@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
+#include "data/cassandra/Concepts.hpp"
 #include "data/cassandra/Handle.hpp"
 #include "data/cassandra/Schema.hpp"
 #include "data/cassandra/SettingsProvider.hpp"
