@@ -25,7 +25,6 @@
 #include "util/NameGenerator.hpp"
 #include "util/TestObject.hpp"
 
-#include <_stdlib.h>
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
 #include <gmock/gmock.h>
