@@ -51,14 +51,14 @@ using namespace testing;
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr auto Account3 = "raHGBERMka3KZsfpTQUAtumxmvpqhFLyrk";
-constexpr auto Issuer = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto Index1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
-constexpr auto Index2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr auto TxnID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto kACCOUNT3 = "raHGBERMka3KZsfpTQUAtumxmvpqhFLyrk";
+constexpr auto kISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kINDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+constexpr auto kINDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto kTXN_ID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879";
 
 }  // namespace
 
@@ -120,7 +120,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "ledger_index": "meh"
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "ledgerIndexMalformed"
@@ -132,7 +132,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "ledger_hash": "meh"
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "ledger_hashMalformed"
@@ -144,7 +144,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "ledger_hash": 12
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "ledger_hashNotString"
@@ -156,7 +156,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "hotwallet": 12
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "hotwalletNotStringOrArray"
@@ -168,7 +168,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "hotwallet": [12]
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "hotwalletMalformed"
@@ -180,7 +180,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "hotwallet": ["12"]
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "hotwalletMalformed"
@@ -192,7 +192,7 @@ generateParameterTestBundles()
                     "account": "{}",
                     "hotwallet": "12"
                 }})",
-                Account
+                kACCOUNT
             ),
             "invalidParams",
             "hotwalletMalformed"
@@ -224,7 +224,7 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaStringIndex)
                     "account": "{}",
                     "ledger_index": "{}"
                 }})",
-                Account,
+                kACCOUNT,
                 seq
             )),
             Context{yield}
@@ -253,7 +253,7 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaIntIndex)
                     "account": "{}",
                     "ledger_index": {}
                 }})",
-                Account,
+                kACCOUNT,
                 seq
             )),
             Context{yield}
@@ -270,7 +270,7 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaHash)
     backend_->setRange(10, 300);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
     auto const handler = AnyHandler{GatewayBalancesHandler{backend_}};
@@ -281,8 +281,8 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaHash)
                     "account": "{}",
                     "ledger_hash": "{}"
                 }})",
-                Account,
-                LedgerHash
+                kACCOUNT,
+                kLEDGER_HASH
             )),
             Context{yield}
         );
@@ -300,11 +300,11 @@ TEST_F(RPCGatewayBalancesHandlerTest, AccountNotFound)
     backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);
     ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return empty account
-    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(kACCOUNT)).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
@@ -315,7 +315,7 @@ TEST_F(RPCGatewayBalancesHandlerTest, AccountNotFound)
                 R"({{
                     "account": "{}"
                 }})",
-                Account
+                kACCOUNT
             )),
             Context{yield}
         );
@@ -333,22 +333,22 @@ TEST_F(RPCGatewayBalancesHandlerTest, InvalidHotWallet)
     backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);
     ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
-    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(kACCOUNT)).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
-    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{kINDEX2}}, kINDEX1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(kACCOUNT)).key;
     ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     // create a valid line, balance is 0
-    auto const line1 = createRippleStateLedgerObject("USD", Issuer, 0, Account, 10, Account2, 20, TxnID, 123);
+    auto const line1 = createRippleStateLedgerObject("USD", kISSUER, 0, kACCOUNT, 10, kACCOUNT2, 20, kTXN_ID, 123);
     std::vector<Blob> bbs;
     bbs.push_back(line1.getSerializer().peekData());
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -362,8 +362,8 @@ TEST_F(RPCGatewayBalancesHandlerTest, InvalidHotWallet)
                     "account": "{}",
                     "hotwallet": "{}"
                 }})",
-                Account,
-                Account2
+                kACCOUNT,
+                kACCOUNT2
             )),
             Context{yield}
         );
@@ -392,16 +392,16 @@ TEST_P(NormalPathTest, CheckOutput)
     backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, seq);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);
     ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(ledgerHeader));
 
     // return valid account
-    auto const accountKk = ripple::keylet::account(getAccountIdWithString(Account)).key;
+    auto const accountKk = ripple::keylet::account(getAccountIdWithString(kACCOUNT)).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, seq, _)).WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     // return valid owner dir
-    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1);
-    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(Account)).key;
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{kINDEX2}}, kINDEX1);
+    auto const ownerDirKk = ripple::keylet::ownerDir(getAccountIdWithString(kACCOUNT)).key;
     ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, seq, _))
         .WillByDefault(Return(bundle.mockedDir.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
@@ -424,7 +424,7 @@ TEST_P(NormalPathTest, CheckOutput)
                     "account": "{}",
                     {}
                 }})",
-                Account,
+                kACCOUNT,
                 bundle.hotwallet
             )),
             Context{yield}
@@ -437,34 +437,34 @@ TEST_P(NormalPathTest, CheckOutput)
 auto
 generateNormalPathTestBundles()
 {
-    auto frozenState = createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123);
+    auto frozenState = createRippleStateLedgerObject("JPY", kISSUER, -50, kACCOUNT, 10, kACCOUNT3, 20, kTXN_ID, 123);
     frozenState.setFieldU32(ripple::sfFlags, ripple::lsfLowFreeze);
 
-    auto overflowState = createRippleStateLedgerObject("JPY", Issuer, 50, Account, 10, Account3, 20, TxnID, 123);
+    auto overflowState = createRippleStateLedgerObject("JPY", kISSUER, 50, kACCOUNT, 10, kACCOUNT3, 20, kTXN_ID, 123);
     int64_t const min64 = -9922966390934554;
-    overflowState.setFieldAmount(ripple::sfBalance, ripple::STAmount(getIssue("JPY", Issuer), min64, 80));
+    overflowState.setFieldAmount(ripple::sfBalance, ripple::STAmount(getIssue("JPY", kISSUER), min64, 80));
     return std::vector<NormalTestBundle>{
         NormalTestBundle{
             "AllBranches",
             createOwnerDirLedgerObject(
-                {ripple::uint256{Index2},
-                 ripple::uint256{Index2},
-                 ripple::uint256{Index2},
-                 ripple::uint256{Index2},
-                 ripple::uint256{Index2},
-                 ripple::uint256{Index2}},
-                Index1
+                {ripple::uint256{kINDEX2},
+                 ripple::uint256{kINDEX2},
+                 ripple::uint256{kINDEX2},
+                 ripple::uint256{kINDEX2},
+                 ripple::uint256{kINDEX2},
+                 ripple::uint256{kINDEX2}},
+                kINDEX1
             ),
             std::vector{// hotwallet
-                        createRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
+                        createRippleStateLedgerObject("USD", kISSUER, -10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123),
                         // hotwallet
-                        createRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
+                        createRippleStateLedgerObject("CNY", kISSUER, -20, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123),
                         // positive balance -> asset
-                        createRippleStateLedgerObject("EUR", Issuer, 30, Account, 100, Account3, 200, TxnID, 123),
+                        createRippleStateLedgerObject("EUR", kISSUER, 30, kACCOUNT, 100, kACCOUNT3, 200, kTXN_ID, 123),
                         // positive balance -> asset
-                        createRippleStateLedgerObject("JPY", Issuer, 40, Account, 100, Account3, 200, TxnID, 123),
+                        createRippleStateLedgerObject("JPY", kISSUER, 40, kACCOUNT, 100, kACCOUNT3, 200, kTXN_ID, 123),
                         // obligation
-                        createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123),
+                        createRippleStateLedgerObject("JPY", kISSUER, -50, kACCOUNT, 10, kACCOUNT3, 20, kTXN_ID, 123),
                         frozenState
 
             },
@@ -509,17 +509,17 @@ generateNormalPathTestBundles()
                     "ledger_index":300,
                     "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652"
                 }})",
-                Account2,
-                Account3,
-                Account3,
-                Account
+                kACCOUNT2,
+                kACCOUNT3,
+                kACCOUNT3,
+                kACCOUNT
             ),
-            fmt::format(R"("hotwallet": "{}")", Account2)
+            fmt::format(R"("hotwallet": "{}")", kACCOUNT2)
         },
         NormalTestBundle{
             "NoHotwallet",
-            createOwnerDirLedgerObject({ripple::uint256{Index2}}, Index1),
-            std::vector{createRippleStateLedgerObject("JPY", Issuer, -50, Account, 10, Account3, 20, TxnID, 123)},
+            createOwnerDirLedgerObject({ripple::uint256{kINDEX2}}, kINDEX1),
+            std::vector{createRippleStateLedgerObject("JPY", kISSUER, -50, kACCOUNT, 10, kACCOUNT3, 20, kTXN_ID, 123)},
             fmt::format(
                 R"({{
                     "obligations":{{
@@ -529,13 +529,13 @@ generateNormalPathTestBundles()
                     "ledger_index":300,
                     "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652"
                 }})",
-                Account
+                kACCOUNT
             ),
             R"("ledger_index" : "validated")"
         },
         NormalTestBundle{
             "ObligationOverflow",
-            createOwnerDirLedgerObject({ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1),
+            createOwnerDirLedgerObject({ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}}, kINDEX1),
             std::vector{overflowState, overflowState},
             fmt::format(
                 R"({{
@@ -546,22 +546,23 @@ generateNormalPathTestBundles()
                     "ledger_index":300,
                     "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652"
                 }})",
-                Account
+                kACCOUNT
             ),
             R"("ledger_index" : "validated")"
         },
         NormalTestBundle{
             "HighID",
             createOwnerDirLedgerObject(
-                {ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}},
-                Index1
+                {ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}
+                },
+                kINDEX1
             ),
             std::vector{// hotwallet
-                        createRippleStateLedgerObject("USD", Issuer, 10, Account2, 100, Account, 200, TxnID, 123),
+                        createRippleStateLedgerObject("USD", kISSUER, 10, kACCOUNT2, 100, kACCOUNT, 200, kTXN_ID, 123),
                         // hotwallet
-                        createRippleStateLedgerObject("CNY", Issuer, 20, Account2, 100, Account, 200, TxnID, 123),
-                        createRippleStateLedgerObject("EUR", Issuer, 30, Account3, 100, Account, 200, TxnID, 123),
-                        createRippleStateLedgerObject("JPY", Issuer, -50, Account3, 10, Account, 20, TxnID, 123)
+                        createRippleStateLedgerObject("CNY", kISSUER, 20, kACCOUNT2, 100, kACCOUNT, 200, kTXN_ID, 123),
+                        createRippleStateLedgerObject("EUR", kISSUER, 30, kACCOUNT3, 100, kACCOUNT, 200, kTXN_ID, 123),
+                        createRippleStateLedgerObject("JPY", kISSUER, -50, kACCOUNT3, 10, kACCOUNT, 20, kTXN_ID, 123)
             },
             fmt::format(
                 R"({{
@@ -592,21 +593,21 @@ generateNormalPathTestBundles()
                     "ledger_index":300,
                     "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652"
                 }})",
-                Account2,
-                Account3,
-                Account
+                kACCOUNT2,
+                kACCOUNT3,
+                kACCOUNT
             ),
-            fmt::format(R"("hotwallet": "{}")", Account2)
+            fmt::format(R"("hotwallet": "{}")", kACCOUNT2)
         },
         NormalTestBundle{
             "HotWalletArray",
             createOwnerDirLedgerObject(
-                {ripple::uint256{Index2}, ripple::uint256{Index2}, ripple::uint256{Index2}}, Index1
+                {ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}, ripple::uint256{kINDEX2}}, kINDEX1
             ),
             std::vector{
-                createRippleStateLedgerObject("USD", Issuer, -10, Account, 100, Account2, 200, TxnID, 123),
-                createRippleStateLedgerObject("CNY", Issuer, -20, Account, 100, Account2, 200, TxnID, 123),
-                createRippleStateLedgerObject("EUR", Issuer, -30, Account, 100, Account3, 200, TxnID, 123)
+                createRippleStateLedgerObject("USD", kISSUER, -10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123),
+                createRippleStateLedgerObject("CNY", kISSUER, -20, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123),
+                createRippleStateLedgerObject("EUR", kISSUER, -30, kACCOUNT, 100, kACCOUNT3, 200, kTXN_ID, 123)
 
             },
             fmt::format(
@@ -633,11 +634,11 @@ generateNormalPathTestBundles()
                     "ledger_index":300,
                     "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652"
                 }})",
-                Account3,
-                Account2,
-                Account
+                kACCOUNT3,
+                kACCOUNT2,
+                kACCOUNT
             ),
-            fmt::format(R"("hotwallet": ["{}", "{}"])", Account2, Account3)
+            fmt::format(R"("hotwallet": ["{}", "{}"])", kACCOUNT2, kACCOUNT3)
         },
     };
 }

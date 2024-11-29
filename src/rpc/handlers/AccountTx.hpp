@@ -58,8 +58,8 @@ class AccountTxHandler {
 
 public:
     // no max limit
-    static constexpr auto limitMin = 1;
-    static constexpr auto limitDefault = 200;
+    static constexpr auto kLIMIT_MIN = 1;
+    static constexpr auto kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold the marker data
@@ -133,7 +133,7 @@ public:
             {JS(limit),
              validation::Type<uint32_t>{},
              validation::Min(1u),
-             modifiers::Clamp<int32_t>{limitMin, std::numeric_limits<int32_t>::max()}},
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, std::numeric_limits<int32_t>::max()}},
             {JS(marker),
              meta::WithCustomError{
                  validation::Type<boost::json::object>{},

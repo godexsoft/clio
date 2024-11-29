@@ -125,7 +125,7 @@ TEST_F(BackendCassandraTest, Basic)
         ripple::LedgerHeader const lgrInfo = util::deserializeHeader(ripple::makeSlice(rawHeaderBlob));
 
         backend_->writeLedger(lgrInfo, std::move(rawHeaderBlob));
-        backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfo.seq, uint256ToString(data::lastKey));
+        backend_->writeSuccessor(uint256ToString(data::kFIRST_KEY), lgrInfo.seq, uint256ToString(data::kLAST_KEY));
         ASSERT_TRUE(backend_->finishWrites(lgrInfo.seq));
         {
             auto rng = backend_->fetchLedgerRange();
@@ -417,8 +417,8 @@ TEST_F(BackendCassandraTest, Basic)
             backend_->writeNFTTransactions(parsedNFTTxs);
 
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
-            backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, std::string{accountIndexBlob});
-            backend_->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::lastKey));
+            backend_->writeSuccessor(uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, std::string{accountIndexBlob});
+            backend_->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::kLAST_KEY));
 
             ASSERT_TRUE(backend_->finishWrites(lgrInfoNext.seq));
         }
@@ -517,7 +517,9 @@ TEST_F(BackendCassandraTest, Basic)
 
             backend_->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{});
-            backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, uint256ToString(data::lastKey));
+            backend_->writeSuccessor(
+                uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, uint256ToString(data::kLAST_KEY)
+            );
 
             ASSERT_TRUE(backend_->finishWrites(lgrInfoNext.seq));
         }
@@ -639,7 +641,7 @@ TEST_F(BackendCassandraTest, Basic)
                         );
                     } else {
                         backend_->writeSuccessor(
-                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::lastKey)
+                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::kLAST_KEY)
                         );
                     }
                 }
@@ -648,7 +650,9 @@ TEST_F(BackendCassandraTest, Basic)
                         std::string{state[lgrInfo.seq - 1].back().first}, lgrInfo.seq, std::string{objs[0].first}
                     );
                 } else {
-                    backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfo.seq, std::string{objs[0].first});
+                    backend_->writeSuccessor(
+                        uint256ToString(data::kFIRST_KEY), lgrInfo.seq, std::string{objs[0].first}
+                    );
                 }
             }
 
@@ -897,7 +901,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
 
         backend_->startWrites();
         backend_->writeLedger(lgrInfo, std::move(rawHeaderBlob));
-        backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfo.seq, uint256ToString(data::lastKey));
+        backend_->writeSuccessor(uint256ToString(data::kFIRST_KEY), lgrInfo.seq, uint256ToString(data::kLAST_KEY));
         ASSERT_TRUE(backend_->finishWrites(lgrInfo.seq));
         {
             auto rng = backend_->fetchLedgerRange();
@@ -971,8 +975,8 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
             backend_->cache().update({{*key, {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
-            backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, std::string{accountIndexBlob});
-            backend_->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::lastKey));
+            backend_->writeSuccessor(uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, std::string{accountIndexBlob});
+            backend_->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::kLAST_KEY));
 
             ASSERT_TRUE(backend_->finishWrites(lgrInfoNext.seq));
         }
@@ -1046,7 +1050,9 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
             backend_->cache().update({{*key, {}}}, lgrInfoNext.seq);
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{});
-            backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, uint256ToString(data::lastKey));
+            backend_->writeSuccessor(
+                uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, uint256ToString(data::kLAST_KEY)
+            );
 
             ASSERT_TRUE(backend_->finishWrites(lgrInfoNext.seq));
         }
@@ -1121,7 +1127,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
                         );
                     } else {
                         backend_->writeSuccessor(
-                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::lastKey)
+                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::kLAST_KEY)
                         );
                     }
                 }
@@ -1130,7 +1136,9 @@ TEST_F(BackendCassandraTest, CacheIntegration)
                         std::string{state[lgrInfo.seq - 1].back().first}, lgrInfo.seq, std::string{objs[0].first}
                     );
                 } else {
-                    backend_->writeSuccessor(uint256ToString(data::firstKey), lgrInfo.seq, std::string{objs[0].first});
+                    backend_->writeSuccessor(
+                        uint256ToString(data::kFIRST_KEY), lgrInfo.seq, std::string{objs[0].first}
+                    );
                 }
             }
 

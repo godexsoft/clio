@@ -38,14 +38,14 @@ using namespace rpc;
 using namespace util::prometheus;
 
 namespace {
-constexpr auto JSONConfig = R"JSON({
+constexpr auto kJSON_CONFIG = R"JSON({
         "server": { "max_queue_size" : 2 },
         "workers": 4
     })JSON";
 }  // namespace
 
 struct WorkQueueTestBase : NoLoggerFixture {
-    Config cfg = Config{boost::json::parse(JSONConfig)};
+    Config cfg = Config{boost::json::parse(kJSON_CONFIG)};
     WorkQueue queue = WorkQueue::makeWorkQueue(cfg);
 };
 
@@ -53,12 +53,12 @@ struct WorkQueueTest : WithPrometheus, WorkQueueTestBase {};
 
 TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 {
-    static constexpr auto Total = 512u;
+    static constexpr auto kTOTAL = 512u;
     uint32_t executeCount = 0u;
 
     std::mutex mtx;
 
-    for (auto i = 0u; i < Total; ++i) {
+    for (auto i = 0u; i < kTOTAL; ++i) {
         queue.postCoro(
             [&executeCount, &mtx](auto /* yield */) {
                 std::lock_guard const lk(mtx);
@@ -72,22 +72,22 @@ TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 
     auto const report = queue.report();
 
-    EXPECT_EQ(executeCount, Total);
-    EXPECT_EQ(report.at("queued"), Total);
+    EXPECT_EQ(executeCount, kTOTAL);
+    EXPECT_EQ(report.at("queued"), kTOTAL);
     EXPECT_EQ(report.at("current_queue_size"), 0);
     EXPECT_EQ(report.at("max_queue_size"), 2);
 }
 
 TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
 {
-    static constexpr auto Total = 3u;
+    static constexpr auto kTOTAL = 3u;
     auto expectedCount = 2u;
     auto unblocked = false;
 
     std::mutex mtx;
     std::condition_variable cv;
 
-    for (auto i = 0u; i < Total; ++i) {
+    for (auto i = 0u; i < kTOTAL; ++i) {
         auto res = queue.postCoro(
             [&](auto /* yield */) {
                 std::unique_lock lk{mtx};
@@ -98,7 +98,7 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
             false
         );
 
-        if (i == Total - 1) {
+        if (i == kTOTAL - 1) {
             EXPECT_FALSE(res);
 
             std::unique_lock const lk{mtx};

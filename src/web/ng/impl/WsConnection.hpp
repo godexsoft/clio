@@ -61,7 +61,7 @@ public:
     sendBuffer(
         boost::asio::const_buffer buffer,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = Connection::defaultTimeout
+        std::chrono::steady_clock::duration timeout = Connection::kDEFAULT_TIMEOUT
     ) = 0;
 };
 
@@ -128,7 +128,7 @@ public:
     sendBuffer(
         boost::asio::const_buffer buffer,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = Connection::defaultTimeout
+        std::chrono::steady_clock::duration timeout = Connection::kDEFAULT_TIMEOUT
     ) override
     {
         auto error =
@@ -142,14 +142,14 @@ public:
     send(
         Response response,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = defaultTimeout
+        std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT
     ) override
     {
         return sendBuffer(response.asWsResponse(), yield, timeout);
     }
 
     std::expected<Request, Error>
-    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) override
+    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         auto error = util::withTimeout([this](auto&& yield) { stream_.async_read(buffer_, yield); }, yield, timeout);
         if (error)
@@ -162,7 +162,7 @@ public:
     }
 
     void
-    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) override
+    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         boost::beast::websocket::stream_base::timeout wsTimeout{};
         stream_.get_option(wsTimeout);

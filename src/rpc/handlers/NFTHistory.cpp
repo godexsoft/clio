@@ -100,7 +100,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input input, Context const& ctx) c
         }
     }
 
-    auto const limit = input.limit.value_or(limitDefault);
+    auto const limit = input.limit.value_or(kLIMIT_DEFAULT);
     auto const tokenID = ripple::uint256{input.nftID.c_str()};
 
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {

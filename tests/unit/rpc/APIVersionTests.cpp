@@ -27,9 +27,9 @@
 
 namespace {
 
-constexpr auto DefaultApiVersion = 5u;
-constexpr auto MinApiVersion = 2u;
-constexpr auto MaxApiVersion = 10u;
+constexpr auto kDEFAULT_API_VERSION = 5u;
+constexpr auto kMIN_API_VERSION = 2u;
+constexpr auto kMAX_API_VERSION = 10u;
 
 }  // namespace
 
@@ -38,14 +38,14 @@ namespace json = boost::json;
 
 class RPCAPIVersionTest : public NoLoggerFixture {
 protected:
-    ProductionAPIVersionParser parser_{DefaultApiVersion, MinApiVersion, MaxApiVersion};
+    ProductionAPIVersionParser parser_{kDEFAULT_API_VERSION, kMIN_API_VERSION, kMAX_API_VERSION};
 };
 
 TEST_F(RPCAPIVersionTest, ReturnsDefaultVersionIfNotSpecified)
 {
     auto ver = parser_.parse(json::parse("{}").as_object());
     EXPECT_TRUE(ver);
-    EXPECT_EQ(ver.value(), DefaultApiVersion);
+    EXPECT_EQ(ver.value(), kDEFAULT_API_VERSION);
 }
 
 TEST_F(RPCAPIVersionTest, ReturnsErrorIfVersionHigherThanMaxSupported)
@@ -103,9 +103,9 @@ TEST_F(RPCAPIVersionTest, GetsValuesFromConfigCorrectly)
             "max": {},
             "default": {}
         }})",
-        MinApiVersion,
-        MaxApiVersion,
-        DefaultApiVersion
+        kMIN_API_VERSION,
+        kMAX_API_VERSION,
+        kDEFAULT_API_VERSION
     ))};
 
     ProductionAPIVersionParser const configuredParser{cfg};
@@ -128,7 +128,7 @@ TEST_F(RPCAPIVersionTest, GetsValuesFromConfigCorrectly)
     {
         auto ver = configuredParser.parse(json::parse(R"({})").as_object());
         EXPECT_TRUE(ver);
-        EXPECT_EQ(ver.value(), DefaultApiVersion);
+        EXPECT_EQ(ver.value(), kDEFAULT_API_VERSION);
     }
     {
         auto ver = configuredParser.parse(json::parse(R"({"api_version": 11})").as_object());

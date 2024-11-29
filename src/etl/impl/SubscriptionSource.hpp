@@ -91,9 +91,9 @@ private:
 
     std::future<void> runFuture_;
 
-    static constexpr std::chrono::seconds wsTimeout{30};
-    static constexpr std::chrono::seconds retryMaxDelay{30};
-    static constexpr std::chrono::seconds retryDelay{1};
+    static constexpr std::chrono::seconds kWS_TIMEOUT{30};
+    static constexpr std::chrono::seconds kRETRY_MAX_DELAY{30};
+    static constexpr std::chrono::seconds kRETRY_DELAY{1};
 
 public:
     /**
@@ -108,8 +108,8 @@ public:
      * @param onConnect The onConnect hook. Called when the connection is established
      * @param onDisconnect The onDisconnect hook. Called when the connection is lost
      * @param onLedgerClosed The onLedgerClosed hook. Called when the ledger is closed if the source is forwarding
-     * @param timeout A timeout for websocket operations. Defaults to 30 seconds
-     * @param delay The retry delay. Defaults to 1 second
+     * @param wsTimeout A timeout for websocket operations. Defaults to 30 seconds
+     * @param retryDelay The retry delay. Defaults to 1 second
      */
     SubscriptionSource(
         boost::asio::io_context& ioContext,
@@ -120,8 +120,8 @@ public:
         OnConnectHook onConnect,
         OnDisconnectHook onDisconnect,
         OnLedgerClosedHook onLedgerClosed,
-        std::chrono::steady_clock::duration const timeout = SubscriptionSource::wsTimeout,
-        std::chrono::steady_clock::duration const delay = SubscriptionSource::retryDelay
+        std::chrono::steady_clock::duration const wsTimeout = SubscriptionSource::kWS_TIMEOUT,
+        std::chrono::steady_clock::duration const retryDelay = SubscriptionSource::kRETRY_DELAY
     );
 
     /**

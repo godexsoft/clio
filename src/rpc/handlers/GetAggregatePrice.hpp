@@ -130,11 +130,11 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static constexpr auto oraclesMax = 200;
+        static constexpr auto kORACLES_MAX = 200;
 
         static auto const kORACLES_VALIDATOR =
             modifiers::CustomModifier{[](boost::json::value& value, std::string_view) -> MaybeError {
-                if (!value.is_array() or value.as_array().empty() or value.as_array().size() > oraclesMax)
+                if (!value.is_array() or value.as_array().empty() or value.as_array().size() > kORACLES_MAX)
                     return Error{Status{RippledError::rpcORACLE_MALFORMED}};
 
                 for (auto& oracle : value.as_array()) {

@@ -195,7 +195,7 @@ SubscribeHandler::subscribeToBooks(
     Output& output
 ) const
 {
-    static constexpr auto fetchLimit = 200;
+    static constexpr auto kFETCH_LIMIT = 200;
 
     std::optional<data::LedgerRange> rng;
 
@@ -207,7 +207,7 @@ SubscribeHandler::subscribeToBooks(
             auto const getOrderBook = [&](auto const& book, auto& snapshots) {
                 auto const bookBase = getBookBase(book);
                 auto const [offers, _] =
-                    sharedPtrBackend_->fetchBookOffers(bookBase, rng->maxSequence, fetchLimit, yield);
+                    sharedPtrBackend_->fetchBookOffers(bookBase, rng->maxSequence, kFETCH_LIMIT, yield);
 
                 // the taker is not really uesed, same issue with
                 // https://github.com/XRPLF/xrpl-dev-portal/issues/1818

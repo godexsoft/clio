@@ -42,10 +42,10 @@ using namespace testing;
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto NftID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
-constexpr auto NftID2 = "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022";
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kNFT_ID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+constexpr auto kNFT_ID2 = "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022";
 
 }  // namespace
 
@@ -60,7 +60,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonHexLedgerHash)
                 "nft_id": "{}", 
                 "ledger_hash": "xxx"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -80,7 +80,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonStringLedgerHash)
                 "nft_id": "{}", 
                 "ledger_hash": 123
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -100,7 +100,7 @@ TEST_F(RPCNFTInfoHandlerTest, InvalidLedgerIndexString)
                 "nft_id": "{}", 
                 "ledger_index": "notvalidated"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -148,7 +148,7 @@ TEST_F(RPCNFTInfoHandlerTest, NFTIDNotString)
 TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerHash)
 {
     // mock fetchLedgerByHash return empty
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
 
@@ -157,8 +157,8 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerHash)
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -183,7 +183,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerStringIndex)
             "nft_id": "{}",
             "ledger_index": "4"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -206,7 +206,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerIntIndex)
             "nft_id": "{}",
             "ledger_index": 4
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -224,16 +224,16 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerHash2)
 {
     backend_->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 31);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 31);
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     auto const input = json::parse(fmt::format(
         R"({{ 
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -257,7 +257,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerIndex2)
             "nft_id": "{}",
             "ledger_index": "31"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -273,19 +273,19 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistLedgerViaLedgerIndex2)
 TEST_F(RPCNFTInfoHandlerTest, NonExistNFT)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // fetch nft return emtpy
     ON_CALL(*backend_, fetchNFT).WillByDefault(Return(std::optional<NFT>{}));
-    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{NftID}, 30, _)).Times(1);
+    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{kNFT_ID}, 30, _)).Times(1);
     auto const input = json::parse(fmt::format(
         R"({{
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTInfoHandler{backend_}};
@@ -300,7 +300,7 @@ TEST_F(RPCNFTInfoHandlerTest, NonExistNFT)
 // normal case when only provide nft_id
 TEST_F(RPCNFTInfoHandlerTest, DefaultParameters)
 {
-    static constexpr auto CurrentOutput = R"({
+    static constexpr auto kCURRENT_OUTPUT = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -315,33 +315,33 @@ TEST_F(RPCNFTInfoHandlerTest, DefaultParameters)
     })";
 
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // fetch nft return something
-    auto const nft = std::make_optional<NFT>(createNft(NftID, Account, ledgerHeader.seq));
+    auto const nft = std::make_optional<NFT>(createNft(kNFT_ID, kACCOUNT, ledgerHeader.seq));
     ON_CALL(*backend_, fetchNFT).WillByDefault(Return(nft));
-    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{NftID}, 30, _)).Times(1);
+    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{kNFT_ID}, 30, _)).Times(1);
 
     auto const input = json::parse(fmt::format(
         R"({{
             "nft_id": "{}"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTInfoHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(json::parse(CurrentOutput), *output.result);
+        EXPECT_EQ(json::parse(kCURRENT_OUTPUT), *output.result);
     });
 }
 
 // nft is burned -> should not omit uri
 TEST_F(RPCNFTInfoHandlerTest, BurnedNFT)
 {
-    static constexpr auto CurrentOutput = R"({
+    static constexpr auto kCURRENT_OUTPUT = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -356,34 +356,34 @@ TEST_F(RPCNFTInfoHandlerTest, BurnedNFT)
     })";
 
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // fetch nft return something
     auto const nft =
-        std::make_optional<NFT>(createNft(NftID, Account, ledgerHeader.seq, ripple::Blob{'u', 'r', 'i'}, true));
+        std::make_optional<NFT>(createNft(kNFT_ID, kACCOUNT, ledgerHeader.seq, ripple::Blob{'u', 'r', 'i'}, true));
     ON_CALL(*backend_, fetchNFT).WillByDefault(Return(nft));
-    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{NftID}, 30, _)).Times(1);
+    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{kNFT_ID}, 30, _)).Times(1);
 
     auto const input = json::parse(fmt::format(
         R"({{
             "nft_id": "{}"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTInfoHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(json::parse(CurrentOutput), *output.result);
+        EXPECT_EQ(json::parse(kCURRENT_OUTPUT), *output.result);
     });
 }
 
 // uri is not available -> should specify an empty string
 TEST_F(RPCNFTInfoHandlerTest, NotBurnedNFTWithoutURI)
 {
-    static constexpr auto CurrentOutput = R"({
+    static constexpr auto kCURRENT_OUTPUT = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -398,33 +398,33 @@ TEST_F(RPCNFTInfoHandlerTest, NotBurnedNFTWithoutURI)
     })";
 
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // fetch nft return something
-    auto const nft = std::make_optional<NFT>(createNft(NftID, Account, ledgerHeader.seq, ripple::Blob{}));
+    auto const nft = std::make_optional<NFT>(createNft(kNFT_ID, kACCOUNT, ledgerHeader.seq, ripple::Blob{}));
     ON_CALL(*backend_, fetchNFT).WillByDefault(Return(nft));
-    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{NftID}, 30, _)).Times(1);
+    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{kNFT_ID}, 30, _)).Times(1);
 
     auto const input = json::parse(fmt::format(
         R"({{
             "nft_id": "{}"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTInfoHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(json::parse(CurrentOutput), *output.result);
+        EXPECT_EQ(json::parse(kCURRENT_OUTPUT), *output.result);
     });
 }
 
 // check taxon field, transfer fee and serial
 TEST_F(RPCNFTInfoHandlerTest, NFTWithExtraFieldsSet)
 {
-    static constexpr auto CurrentOutput = R"({
+    static constexpr auto kCURRENT_OUTPUT = R"({
         "nft_id": "00081388319F12E15BCA13E1B933BF4C99C8E1BBC36BD4910A85D52F00000022",
         "ledger_index": 30,
         "owner": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
@@ -439,25 +439,25 @@ TEST_F(RPCNFTInfoHandlerTest, NFTWithExtraFieldsSet)
     })";
 
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // fetch nft return something
-    auto const nft = std::make_optional<NFT>(createNft(NftID2, Account, ledgerHeader.seq));
+    auto const nft = std::make_optional<NFT>(createNft(kNFT_ID2, kACCOUNT, ledgerHeader.seq));
     ON_CALL(*backend_, fetchNFT).WillByDefault(Return(nft));
-    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{NftID2}, 30, _)).Times(1);
+    EXPECT_CALL(*backend_, fetchNFT(ripple::uint256{kNFT_ID2}, 30, _)).Times(1);
 
     auto const input = json::parse(fmt::format(
         R"({{
             "nft_id": "{}"
         }})",
-        NftID2
+        kNFT_ID2
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTInfoHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(json::parse(CurrentOutput), *output.result);
+        EXPECT_EQ(json::parse(kCURRENT_OUTPUT), *output.result);
     });
 }

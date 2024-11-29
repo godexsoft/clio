@@ -73,7 +73,7 @@ Config::lookup(KeyType key) const
 
     std::reference_wrapper<boost::json::value const> cur = std::cref(store_);
     auto hasBrokenPath = false;
-    auto tokenized = impl::Tokenizer<KeyType, separator>{key};
+    auto tokenized = impl::Tokenizer<KeyType, kSEPARATOR>{key};
     std::string subkey{};
 
     auto maybeSection = tokenized.next();
@@ -91,7 +91,7 @@ Config::lookup(KeyType key) const
             }
         }
 
-        subkey += separator;
+        subkey += kSEPARATOR;
         maybeSection = tokenized.next();
     }
 
@@ -186,7 +186,7 @@ std::chrono::milliseconds
 Config::toMilliseconds(float value)
 {
     ASSERT(value >= 0.0f, "Floating point value of seconds must be non-negative, got: {}", value);
-    return std::chrono::milliseconds{std::lroundf(value * static_cast<float>(util::millisecondsPerSecond))};
+    return std::chrono::milliseconds{std::lroundf(value * static_cast<float>(util::kMILLISECONDS_PER_SECOND))};
 }
 
 Config

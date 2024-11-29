@@ -62,7 +62,7 @@
 
 namespace web::impl {
 
-static auto constexpr HealthCheckHTML = R"html(
+static auto constexpr kHEALTH_CHECK_HTML = R"html(
     <!DOCTYPE html>
     <html>
         <head><title>Test page for Clio</title></head>
@@ -216,7 +216,7 @@ public:
             return httpFail(ec, "read");
 
         if (req_.method() == http::verb::get and req_.target() == "/health")
-            return sender_(httpResponse(http::status::ok, "text/html", HealthCheckHTML));
+            return sender_(httpResponse(http::status::ok, "text/html", kHEALTH_CHECK_HTML));
 
         // Update isAdmin property of the connection
         ConnectionBase::isAdmin_ = adminVerification_->isAdmin(req_, this->clientIp);

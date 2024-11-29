@@ -160,8 +160,10 @@ CheckOptions:
   readability-identifier-naming.ClassConstantPrefix: 'k'
   readability-identifier-naming.StaticConstantCase: UPPER_CASE
   readability-identifier-naming.StaticConstantPrefix: 'k'
-  readability-identifier-naming.StaticVariableCase: aNy_CasE
-  readability-identifier-naming.ConstexprVariableCase: aNy_CasE
+  readability-identifier-naming.StaticVariableCase: UPPER_CASE
+  readability-identifier-naming.StaticVariablePrefix: 'k'
+  readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
+  readability-identifier-naming.ConstexprVariablePrefix: 'k'
   readability-identifier-naming.LocalConstantCase: camelBack
   readability-identifier-naming.LocalVariableCase: camelBack
   readability-identifier-naming.TemplateParameterCase: CamelCase

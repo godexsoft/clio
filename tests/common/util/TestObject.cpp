@@ -58,7 +58,7 @@
 #include <vector>
 
 namespace {
-constexpr auto Index1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
+constexpr auto kINDEX1 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC";
 }  // namespace
 
 ripple::AccountID
@@ -90,7 +90,7 @@ createLedgerHeader(std::string_view ledgerHash, ripple::LedgerIndex seq, std::op
 
     if (age) {
         auto const now = duration_cast<seconds>(system_clock::now().time_since_epoch());
-        auto const closeTime = (now - seconds{age.value()}).count() - rippleEpochStart;
+        auto const closeTime = (now - seconds{age.value()}).count() - kRIPPLE_EPOCH_START;
         ledgerHeader.closeTime = ripple::NetClock::time_point{seconds{closeTime}};
     }
 
@@ -106,7 +106,7 @@ createLedgerHeaderWithUnixTime(std::string_view ledgerHash, ripple::LedgerIndex 
     ledgerHeader.hash = ripple::uint256{ledgerHash};
     ledgerHeader.seq = seq;
 
-    auto const closeTime = closeTimeUnixStamp - seconds{rippleEpochStart}.count();
+    auto const closeTime = closeTimeUnixStamp - seconds{kRIPPLE_EPOCH_START}.count();
     ledgerHeader.closeTime = ripple::NetClock::time_point{seconds{closeTime}};
 
     return ledgerHeader;
@@ -704,7 +704,7 @@ createMintNftTxWithMetadata(
     nftArray1.push_back(entry);
 
     auto entry2 = ripple::STObject(ripple::sfNFToken);
-    entry2.setFieldH256(ripple::sfNFTokenID, ripple::uint256{Index1});
+    entry2.setFieldH256(ripple::sfNFTokenID, ripple::uint256{kINDEX1});
     entry2.setFieldVL(ripple::sfURI, ripple::Slice(url, 7));
     nftArray1.push_back(entry2);
 
@@ -738,7 +738,7 @@ createAcceptNftOfferTxWithMetadata(std::string_view accountId, uint32_t seq, uin
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfSequence, seq);
-    tx.setFieldH256(ripple::sfNFTokenBuyOffer, ripple::uint256{Index1});
+    tx.setFieldH256(ripple::sfNFTokenBuyOffer, ripple::uint256{kINDEX1});
     char const* key = "test";
     ripple::Slice const slice(key, 4);
     tx.setFieldVL(ripple::sfSigningPubKey, slice);

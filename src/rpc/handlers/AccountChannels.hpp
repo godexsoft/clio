@@ -51,9 +51,9 @@ class AccountChannelsHandler {
     std::shared_ptr<BackendInterface> const sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 10;
-    static constexpr auto limitMax = 400;
-    static constexpr auto limitDefault = 200;
+    static constexpr auto kLIMIT_MIN = 10;
+    static constexpr auto kLIMIT_MAX = 400;
+    static constexpr auto kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold data for one channel response
@@ -97,7 +97,7 @@ public:
         std::optional<std::string> destinationAccount;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = limitDefault;
+        uint32_t limit = kLIMIT_DEFAULT;
         std::optional<std::string> marker;
     };
 
@@ -126,8 +126,10 @@ public:
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(destination_account), validation::Type<std::string>{}, validation::CustomValidators::accountValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             {JS(marker), validation::CustomValidators::accountMarkerValidator},
         };

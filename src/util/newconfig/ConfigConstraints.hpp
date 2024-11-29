@@ -44,7 +44,7 @@ class ConfigValue;
 /**
  * @brief specific values that are accepted for logger levels in config.
  */
-static constexpr std::array<char const*, 7> logLevels = {
+static constexpr std::array<char const*, 7> kLOG_LEVELS = {
     "trace",
     "debug",
     "info",
@@ -57,7 +57,7 @@ static constexpr std::array<char const*, 7> logLevels = {
 /**
  * @brief specific values that are accepted for logger tag style in config.
  */
-static constexpr std::array<char const*, 5> logTags = {
+static constexpr std::array<char const*, 5> kLOG_TAGS = {
     "int",
     "uint",
     "null",
@@ -68,7 +68,7 @@ static constexpr std::array<char const*, 5> logTags = {
 /**
  * @brief specific values that are accepted for cache loading in config.
  */
-static constexpr std::array<char const*, 3> loadCacheMode = {
+static constexpr std::array<char const*, 3> kLOAD_CACHE_MODE = {
     "sync",
     "async",
     "none",
@@ -77,7 +77,7 @@ static constexpr std::array<char const*, 3> loadCacheMode = {
 /**
  * @brief specific values that are accepted for database type in config.
  */
-static constexpr std::array<char const*, 1> databaseType = {"cassandra"};
+static constexpr std::array<char const*, 1> kDATABASE_TYPE = {"cassandra"};
 
 /**
  * @brief An interface to enforce constraints on certain values within ClioConfigDefinition.
@@ -172,8 +172,8 @@ private:
     [[nodiscard]] std::optional<Error>
     checkValueImpl(Value const& port) const override;
 
-    static constexpr uint32_t portMin = 1;
-    static constexpr uint32_t portMax = 65535;
+    static constexpr uint32_t kPORT_MIN = 1;
+    static constexpr uint32_t kPORT_MAX = 65535;
 };
 
 /**
@@ -341,11 +341,11 @@ private:
 static constinit PortConstraint gValidatePort{};
 static constinit ValidIPConstraint gValidateIp{};
 
-static constinit OneOf gValidateChannelName{"channel", Logger::channels};
-static constinit OneOf gValidateLogLevelName{"log_level", logLevels};
-static constinit OneOf gValidateCassandraName{"database.type", databaseType};
-static constinit OneOf gValidateLoadMode{"cache.load", loadCacheMode};
-static constinit OneOf gValidateLogTag{"log_tag_style", logTags};
+static constinit OneOf gValidateChannelName{"channel", Logger::kCHANNELS};
+static constinit OneOf gValidateLogLevelName{"log_level", kLOG_LEVELS};
+static constinit OneOf gValidateCassandraName{"database.type", kDATABASE_TYPE};
+static constinit OneOf gValidateLoadMode{"cache.load", kLOAD_CACHE_MODE};
+static constinit OneOf gValidateLogTag{"log_tag_style", kLOG_TAGS};
 
 static constinit PositiveDouble gValidatePositiveDouble{};
 
@@ -357,6 +357,6 @@ static constinit NumberValueConstraint<uint32_t> gValidateUint32{
     std::numeric_limits<uint32_t>::min(),
     std::numeric_limits<uint32_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> gValidateApiVersion{rpc::apiVersionMin, rpc::apiVersionMax};
+static constinit NumberValueConstraint<uint32_t> gValidateApiVersion{rpc::kAPI_VERSION_MIN, rpc::kAPI_VERSION_MAX};
 
 }  // namespace util::config

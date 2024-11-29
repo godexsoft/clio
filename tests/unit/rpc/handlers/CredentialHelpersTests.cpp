@@ -49,19 +49,19 @@ using namespace testing;
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr auto Index1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr auto CredentialID = "c7a14f6b9d5d4a9cb9c223a61b8e5c7df58e8b7ad1c6b4f8e7a321fa4e5b4c9d";
-constexpr std::string_view CredentialType = "credType";
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto kINDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto kCREDENTIAL_ID = "c7a14f6b9d5d4a9cb9c223a61b8e5c7df58e8b7ad1c6b4f8e7a321fa4e5b4c9d";
+constexpr std::string_view kCREDENTIAL_TYPE = "credType";
 
 }  // namespace
 
 TEST(CreateAuthCredentialsTest, UniqueCredentials)
 {
     ripple::STArray credentials;
-    auto const cred1 = createCredentialObject(Account, Account2, CredentialType);
-    auto const cred2 = createCredentialObject(Account2, Account, CredentialType);
+    auto const cred1 = createCredentialObject(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE);
+    auto const cred2 = createCredentialObject(kACCOUNT2, kACCOUNT, kCREDENTIAL_TYPE);
 
     credentials.push_back(cred1);
     credentials.push_back(cred2);
@@ -87,8 +87,8 @@ TEST(ParseAuthorizeCredentialsTest, ValidCredentialsArray)
 {
     boost::json::array credentials;
     boost::json::object credential1;
-    credential1[JS(issuer)] = Account;
-    credential1[JS(credential_type)] = ripple::strHex(CredentialType);
+    credential1[JS(issuer)] = kACCOUNT;
+    credential1[JS(credential_type)] = ripple::strHex(kCREDENTIAL_TYPE);
 
     credentials.push_back(credential1);
     ripple::STArray const parsedCredentials = credentials::parseAuthorizeCredentials(credentials);
@@ -114,12 +114,12 @@ class CredentialHelperTest : public util::prometheus::WithPrometheus,
 
 TEST_F(CredentialHelperTest, GetInvalidCredentialArray)
 {
-    boost::json::array credentialsArray = {CredentialID};
-    auto const info = createLedgerHeader(Index1, 30);
+    boost::json::array credentialsArray = {kCREDENTIAL_ID};
+    auto const info = createLedgerHeader(kINDEX1, 30);
 
     boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto const ret = credentials::fetchCredentialArray(
-            credentialsArray, getAccountIdWithString(Account), *backend_, info, yield
+            credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, info, yield
         );
         ASSERT_FALSE(ret.has_value());
         auto const status = ret.error();
@@ -133,23 +133,25 @@ TEST_F(CredentialHelperTest, GetValidCredentialArray)
 {
     backend_->setRange(10, 30);
 
-    auto ledgerHeader = createLedgerHeader(Index1, 30);
-    auto const credLedgerObject = createCredentialObject(Account, Account2, CredentialType, true);
+    auto ledgerHeader = createLedgerHeader(kINDEX1, 30);
+    auto const credLedgerObject = createCredentialObject(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE, true);
 
     ON_CALL(*backend_, doFetchLedgerObject(_, _, _)).WillByDefault(Return(credLedgerObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
-    boost::json::array credentialsArray = {CredentialID};
+    boost::json::array credentialsArray = {kCREDENTIAL_ID};
 
     ripple::STArray expectedAuthCreds;
     ripple::STObject credential(ripple::sfCredential);
-    credential.setAccountID(ripple::sfIssuer, getAccountIdWithString(Account2));
-    credential.setFieldVL(ripple::sfCredentialType, ripple::Blob{std::begin(CredentialType), std::end(CredentialType)});
+    credential.setAccountID(ripple::sfIssuer, getAccountIdWithString(kACCOUNT2));
+    credential.setFieldVL(
+        ripple::sfCredentialType, ripple::Blob{std::begin(kCREDENTIAL_TYPE), std::end(kCREDENTIAL_TYPE)}
+    );
     expectedAuthCreds.push_back(std::move(credential));
 
     boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto const result = credentials::fetchCredentialArray(
-            credentialsArray, getAccountIdWithString(Account), *backend_, ledgerHeader, yield
+            credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, ledgerHeader, yield
         );
         ASSERT_TRUE(result.has_value());
         EXPECT_EQ(result.value(), expectedAuthCreds);

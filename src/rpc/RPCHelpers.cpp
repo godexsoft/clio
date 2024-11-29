@@ -156,9 +156,9 @@ getDeliveredAmount(
         // then its absence indicates that the amount delivered is listed in the
         // Amount field. DeliveredAmount went live January 24, 2014.
         // 446000000 is in Feb 2014, well after DeliveredAmount went live
-        static constexpr std::uint32_t firstLedgerWithDeliveredAmount = 4594095;
-        static constexpr std::uint32_t deliveredAmountLiveDate = 446000000;
-        if (ledgerSequence >= firstLedgerWithDeliveredAmount || date > deliveredAmountLiveDate) {
+        static constexpr std::uint32_t kFIRST_LEDGER_WITH_DELIVERED_AMOUNT = 4594095;
+        static constexpr std::uint32_t kDELIVERED_AMOUNT_LIVE_DATE = 446000000;
+        if (ledgerSequence >= kFIRST_LEDGER_WITH_DELIVERED_AMOUNT || date > kDELIVERED_AMOUNT_LIVE_DATE) {
             return txn->getFieldAmount(ripple::sfAmount);
         }
     }
@@ -286,13 +286,13 @@ toExpandedJson(
 std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint16_t txnIndex, uint16_t networkId) noexcept
 {
-    static constexpr uint32_t maxLedgerSeq = 0x0FFF'FFFF;
-    if (ledgerSeq > maxLedgerSeq)
+    static constexpr uint32_t kMAX_LEDGER_SEQ = 0x0FFF'FFFF;
+    if (ledgerSeq > kMAX_LEDGER_SEQ)
         return {};
 
-    static constexpr uint64_t ctidPrefix = 0xC000'0000;
+    static constexpr uint64_t kCTID_PREFIX = 0xC000'0000;
     uint64_t const ctidValue =
-        ((ctidPrefix + static_cast<uint64_t>(ledgerSeq)) << 32) + (static_cast<uint64_t>(txnIndex) << 16) + networkId;
+        ((kCTID_PREFIX + static_cast<uint64_t>(ledgerSeq)) << 32) + (static_cast<uint64_t>(txnIndex) << 16) + networkId;
 
     return {fmt::format("{:016X}", ctidValue)};
 }
@@ -711,8 +711,8 @@ traverseOwnedNodes(
     // Only reserve 2048 nodes when fetching all owned ledger objects. If there
     // are more, then keys will allocate more memory, which is suboptimal, but
     // should only occur occasionally.
-    static constexpr std::uint32_t minNodes = 2048;
-    keys.reserve(std::min(minNodes, limit));
+    static constexpr std::uint32_t kMIN_NODES = 2048;
+    keys.reserve(std::min(kMIN_NODES, limit));
 
     auto start = std::chrono::system_clock::now();
 
@@ -848,10 +848,10 @@ parseRippleLibSeed(boost::json::value const& value)
 
     auto const result = ripple::decodeBase58Token(boost::json::value_to<std::string>(value), ripple::TokenType::None);
 
-    static constexpr std::size_t seedSize = 18;
-    static constexpr std::array<std::uint8_t, 2> seedPrefix = {0xE1, 0x4B};
-    if (result.size() == seedSize && static_cast<std::uint8_t>(result[0]) == seedPrefix[0] &&
-        static_cast<std::uint8_t>(result[1]) == seedPrefix[1])
+    static constexpr std::size_t kSEED_SIZE = 18;
+    static constexpr std::array<std::uint8_t, 2> kSEED_PREFIX = {0xE1, 0x4B};
+    if (result.size() == kSEED_SIZE && static_cast<std::uint8_t>(result[0]) == kSEED_PREFIX[0] &&
+        static_cast<std::uint8_t>(result[1]) == kSEED_PREFIX[1])
         return ripple::Seed(ripple::makeSlice(result.substr(2)));
 
     return {};

@@ -44,14 +44,14 @@ using namespace testing;
 
 namespace {
 
-constexpr auto MinSeq = 10;
-constexpr auto MaxSeq = 30;
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto NftID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DF";
-constexpr auto NftID2 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DA";
-constexpr auto NftID3 = "15FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DF";
+constexpr auto kMIN_SEQ = 10;
+constexpr auto kMAX_SEQ = 30;
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kNFT_ID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DF";
+constexpr auto kNFT_ID2 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DA";
+constexpr auto kNFT_ID3 = "15FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DF";
 
 }  // namespace
 
@@ -348,7 +348,7 @@ struct AccountTxParameterTest : public RPCAccountTxHandlerTest,
                 "ledger_index_min": 11,
                 "ledger_hash": "{}"
             }})",
-                    LedgerHash
+                    kLEDGER_HASH
                 ),
                 "invalidParams",
                 "containsLedgerSpecifierAndRange"
@@ -362,7 +362,7 @@ struct AccountTxParameterTest : public RPCAccountTxHandlerTest,
                 "ledger_index_min": 11,
                 "ledger_hash": "{}"
             }})",
-                    LedgerHash
+                    kLEDGER_HASH
                 ),
                 std::nullopt,
                 std::nullopt,
@@ -402,7 +402,7 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(AccountTxParameterTest, CheckParams)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     auto const& testBundle = GetParam();
 
     auto const req = json::parse(testBundle.testJson);
@@ -435,19 +435,19 @@ genTransactions(uint32_t seq1, uint32_t seq2)
 {
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = seq1;
-    ripple::STObject const metaObj = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 22, 23);
     trans1.metadata = metaObj.getSerializer().peekData();
     trans1.date = 1;
     transactions.push_back(trans1);
 
     auto trans2 = TransactionAndMetadata();
-    ripple::STObject const obj2 = createPaymentTransactionObject(Account, Account2, 1, 1, 32);
+    ripple::STObject const obj2 = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 1, 1, 32);
     trans2.transaction = obj.getSerializer().peekData();
     trans2.ledgerSequence = seq2;
-    ripple::STObject const metaObj2 = createPaymentTransactionMetaObject(Account, Account2, 22, 23);
+    ripple::STObject const metaObj2 = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 22, 23);
     trans2.metadata = metaObj2.getSerializer().peekData();
     trans2.date = 2;
     transactions.push_back(trans2);
@@ -459,22 +459,22 @@ genNFTTransactions(uint32_t seq)
 {
     auto transactions = std::vector<TransactionAndMetadata>{};
 
-    auto trans1 = createMintNftTxWithMetadata(Account, 1, 50, 123, NftID);
+    auto trans1 = createMintNftTxWithMetadata(kACCOUNT, 1, 50, 123, kNFT_ID);
     trans1.ledgerSequence = seq;
     trans1.date = 1;
     transactions.push_back(trans1);
 
-    auto trans2 = createAcceptNftOfferTxWithMetadata(Account, 1, 50, NftID2);
+    auto trans2 = createAcceptNftOfferTxWithMetadata(kACCOUNT, 1, 50, kNFT_ID2);
     trans2.ledgerSequence = seq;
     trans2.date = 2;
     transactions.push_back(trans2);
 
-    auto trans3 = createCancelNftOffersTxWithMetadata(Account, 1, 50, std::vector<std::string>{NftID2, NftID3});
+    auto trans3 = createCancelNftOffersTxWithMetadata(kACCOUNT, 1, 50, std::vector<std::string>{kNFT_ID2, kNFT_ID3});
     trans3.ledgerSequence = seq;
     trans3.date = 3;
     transactions.push_back(trans3);
 
-    auto trans4 = createCreateNftOfferTxWithMetadata(Account, 1, 50, NftID, 123, NftID2);
+    auto trans4 = createCreateNftOfferTxWithMetadata(kACCOUNT, 1, 50, kNFT_ID, 123, kNFT_ID2);
     trans4.ledgerSequence = seq;
     trans4.date = 4;
     transactions.push_back(trans4);
@@ -484,9 +484,9 @@ genNFTTransactions(uint32_t seq)
 
 TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardTrue)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -495,7 +495,7 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardTrue)
             testing::_,
             testing::_,
             true,
-            testing::Optional(testing::Eq(TransactionsCursor{MinSeq, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMIN_SEQ, INT32_MAX})),
             testing::_
         )
     )
@@ -510,15 +510,15 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardTrue)
                 "ledger_index_max": {},
                 "forward": true
             }})",
-            Account,
-            MinSeq + 1,
-            MaxSeq - 1
+            kACCOUNT,
+            kMIN_SEQ + 1,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 1);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 1);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
@@ -527,9 +527,9 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardTrue)
 
 TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardFalse)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -538,7 +538,7 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardFalse)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq - 1, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ - 1, INT32_MAX})),
             testing::_
         )
     )
@@ -553,15 +553,15 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardFalse)
                 "ledger_index_max": {},
                 "forward": false
             }})",
-            Account,
-            MinSeq + 1,
-            MaxSeq - 1
+            kACCOUNT,
+            kMIN_SEQ + 1,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 1);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 1);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
@@ -570,9 +570,9 @@ TEST_F(RPCAccountTxHandlerTest, IndexSpecificForwardFalse)
 
 TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardTrue)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -581,7 +581,7 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardTrue)
             testing::_,
             testing::_,
             true,
-            testing::Optional(testing::Eq(TransactionsCursor{MinSeq - 1, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMIN_SEQ - 1, INT32_MAX})),
             testing::_
         )
     )
@@ -596,15 +596,15 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardTrue)
                 "ledger_index_max": {},
                 "forward": true
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
@@ -613,9 +613,9 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardTrue)
 
 TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardFalse)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -624,7 +624,7 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardFalse)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ, INT32_MAX})),
             testing::_
         )
     )
@@ -639,15 +639,15 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardFalse)
                 "ledger_index_max": {},
                 "forward": false
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
@@ -656,9 +656,9 @@ TEST_F(RPCAccountTxHandlerTest, IndexNotSpecificForwardFalse)
 
 TEST_F(RPCAccountTxHandlerTest, BinaryTrue)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -667,7 +667,7 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrue)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ, INT32_MAX})),
             testing::_
         )
     )
@@ -682,15 +682,15 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrue)
                 "ledger_index_max": {},
                 "binary": true
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_EQ(
@@ -713,9 +713,9 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrue)
 
 TEST_F(RPCAccountTxHandlerTest, BinaryTrueV2)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     EXPECT_CALL(
         *backend_,
@@ -723,7 +723,7 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrueV2)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ, INT32_MAX})),
             testing::_
         )
     )
@@ -738,15 +738,15 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrueV2)
                 "ledger_index_max": {},
                 "binary": true
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
         auto const output = handler.process(kINPUT, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_EQ(
@@ -769,9 +769,9 @@ TEST_F(RPCAccountTxHandlerTest, BinaryTrueV2)
 
 TEST_F(RPCAccountTxHandlerTest, LimitAndMarker)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MinSeq + 1, MaxSeq - 1);
+    auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -793,15 +793,15 @@ TEST_F(RPCAccountTxHandlerTest, LimitAndMarker)
                 "forward": false,
                 "marker": {{"ledger":10,"seq":11}}
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("limit").as_uint64(), 2);
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
@@ -810,10 +810,10 @@ TEST_F(RPCAccountTxHandlerTest, LimitAndMarker)
 
 TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndex)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // adjust the order for forward->false
-    auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
+    auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -822,15 +822,15 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndex)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq - 1, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ - 1, INT32_MAX})),
             testing::_
         )
     )
         .Times(1);
 
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ - 1);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ - 1, _)).WillByDefault(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountTxHandler{backend_}};
@@ -839,14 +839,14 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndex)
                 "account": "{}",
                 "ledger_index": {}
             }})",
-            Account,
-            MaxSeq - 1
+            kACCOUNT,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MaxSeq - 1);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 1);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMAX_SEQ - 1);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
         EXPECT_FALSE(output.result->as_object().contains("marker"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
@@ -855,10 +855,10 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndex)
 
 TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerIntIndex)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ - 1, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountTxHandler{backend_}};
@@ -867,8 +867,8 @@ TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerIntIndex)
                 "account": "{}",
                 "ledger_index": {}
             }})",
-            Account,
-            MaxSeq - 1
+            kACCOUNT,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
@@ -880,10 +880,10 @@ TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerIntIndex)
 
 TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerStringIndex)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq - 1, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ - 1, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountTxHandler{backend_}};
@@ -892,8 +892,8 @@ TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerStringIndex)
                 "account": "{}",
                 "ledger_index": "{}"
             }})",
-            Account,
-            MaxSeq - 1
+            kACCOUNT,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_FALSE(output);
@@ -905,10 +905,10 @@ TEST_F(RPCAccountTxHandlerTest, SpecificNonexistLedgerStringIndex)
 
 TEST_F(RPCAccountTxHandlerTest, SpecificLedgerHash)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // adjust the order for forward->false
-    auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
+    auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -917,15 +917,15 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerHash)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq - 1, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ - 1, INT32_MAX})),
             testing::_
         )
     )
         .Times(1);
 
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq - 1);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ - 1);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountTxHandler{backend_}};
@@ -934,14 +934,14 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerHash)
                 "account": "{}",
                 "ledger_hash": "{}"
             }})",
-            Account,
-            LedgerHash
+            kACCOUNT,
+            kLEDGER_HASH
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MaxSeq - 1);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 1);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMAX_SEQ - 1);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
         EXPECT_FALSE(output.result->as_object().contains("marker"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
@@ -950,10 +950,10 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerHash)
 
 TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndexValidated)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // adjust the order for forward->false
-    auto const transactions = genTransactions(MaxSeq, MaxSeq - 1);
+    auto const transactions = genTransactions(kMAX_SEQ, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -962,15 +962,15 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndexValidated)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ, INT32_MAX})),
             testing::_
         )
     )
         .Times(1);
 
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(ledgerHeader));
+    ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillByDefault(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountTxHandler{backend_}};
@@ -979,13 +979,13 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndexValidated)
                 "account": "{}",
                 "ledger_index": "validated"
             }})",
-            Account
+            kACCOUNT
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MaxSeq);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMAX_SEQ);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
         EXPECT_FALSE(output.result->as_object().contains("marker"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
@@ -994,9 +994,9 @@ TEST_F(RPCAccountTxHandlerTest, SpecificLedgerIndexValidated)
 
 TEST_F(RPCAccountTxHandlerTest, TxLessThanMinSeq)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
+    auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -1005,7 +1005,7 @@ TEST_F(RPCAccountTxHandlerTest, TxLessThanMinSeq)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq - 1, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ - 1, INT32_MAX})),
             testing::_
         )
     )
@@ -1020,15 +1020,15 @@ TEST_F(RPCAccountTxHandlerTest, TxLessThanMinSeq)
                 "ledger_index_max": {},
                 "forward": false
             }})",
-            Account,
-            MinSeq + 2,
-            MaxSeq - 1
+            kACCOUNT,
+            kMIN_SEQ + 2,
+            kMAX_SEQ - 1
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 2);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 1);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 2);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
         EXPECT_FALSE(output.result->as_object().contains("marker"));
@@ -1037,9 +1037,9 @@ TEST_F(RPCAccountTxHandlerTest, TxLessThanMinSeq)
 
 TEST_F(RPCAccountTxHandlerTest, TxLargerThanMaxSeq)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MaxSeq - 1, MinSeq + 1);
+    auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -1048,7 +1048,7 @@ TEST_F(RPCAccountTxHandlerTest, TxLargerThanMaxSeq)
             testing::_,
             testing::_,
             false,
-            testing::Optional(testing::Eq(TransactionsCursor{MaxSeq - 2, INT32_MAX})),
+            testing::Optional(testing::Eq(TransactionsCursor{kMAX_SEQ - 2, INT32_MAX})),
             testing::_
         )
     )
@@ -1063,15 +1063,15 @@ TEST_F(RPCAccountTxHandlerTest, TxLargerThanMaxSeq)
                 "ledger_index_max": {},
                 "forward": false
             }})",
-            Account,
-            MinSeq + 1,
-            MaxSeq - 2
+            kACCOUNT,
+            kMIN_SEQ + 1,
+            kMAX_SEQ - 2
         ));
         auto const output = handler.process(kINPUT, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("account").as_string(), Account);
-        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), MinSeq + 1);
-        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), MaxSeq - 2);
+        EXPECT_EQ(output.result->at("account").as_string(), kACCOUNT);
+        EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 1);
+        EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 2);
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
         EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger": 12, "seq": 34})"));
@@ -1276,9 +1276,9 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v1)
                 "seq": 34
             }
         })";
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genNFTTransactions(MinSeq + 1);
+    auto const transactions = genNFTTransactions(kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -1299,7 +1299,7 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v1)
                 "forward": false,
                 "marker": {{"ledger": 10, "seq": 11}}
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
@@ -1515,9 +1515,9 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v2)
                 "seq": 34
             }
         })";
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genNFTTransactions(MinSeq + 1);
+    auto const transactions = genNFTTransactions(kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
@@ -1528,7 +1528,7 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v2)
     )
         .Times(1);
 
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, 11);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, 11);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(transactions.size()).WillRepeatedly(Return(ledgerHeader));
 
     runSpawn([&, this](auto yield) {
@@ -1541,7 +1541,7 @@ TEST_F(RPCAccountTxHandlerTest, NFTTxs_API_v2)
                 "forward": false,
                 "marker": {{"ledger": 10, "seq": 11}}
             }})",
-            Account,
+            kACCOUNT,
             -1,
             -1
         ));
@@ -2040,19 +2040,19 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(AccountTxTransactionTypeTest, SpecificTransactionType)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    auto const transactions = genTransactions(MaxSeq, MaxSeq - 1);
+    auto const transactions = genTransactions(kMAX_SEQ, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
-        *backend_, fetchAccountTransactions(_, _, false, Optional(Eq(TransactionsCursor{MaxSeq, INT32_MAX})), _)
+        *backend_, fetchAccountTransactions(_, _, false, Optional(Eq(TransactionsCursor{kMAX_SEQ, INT32_MAX})), _)
     )
         .Times(1);
 
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
-    ON_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).WillByDefault(Return(ledgerHeader));
-    EXPECT_CALL(*backend_, fetchLedgerBySequence(MaxSeq, _)).Times(Between(1, 2));
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
+    ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillByDefault(Return(ledgerHeader));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).Times(Between(1, 2));
 
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {

@@ -47,8 +47,8 @@ using namespace feed;
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
 
 }  // namespace
 
@@ -550,12 +550,13 @@ TEST_F(RPCUnsubscribeTest, Accounts)
         R"({{
             "accounts": ["{}","{}"]
         }})",
-        Account,
-        Account2
+        kACCOUNT,
+        kACCOUNT2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(Account).value(), _)).Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(Account2).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(kACCOUNT).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubAccount(rpc::accountFromStringStrict(kACCOUNT2).value(), _))
+        .Times(1);
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{backend_, mockSubscriptionManagerPtr_}};
@@ -571,13 +572,13 @@ TEST_F(RPCUnsubscribeTest, AccountsProposed)
         R"({{
             "accounts_proposed": ["{}","{}"]
         }})",
-        Account,
-        Account2
+        kACCOUNT,
+        kACCOUNT2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(Account).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(kACCOUNT).value(), _))
         .Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(Account2).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubProposedAccount(rpc::accountFromStringStrict(kACCOUNT2).value(), _))
         .Times(1);
 
     runSpawn([&, this](auto yield) {
@@ -605,7 +606,7 @@ TEST_F(RPCUnsubscribeTest, Books)
                 }}
             ]
         }})",
-        Account
+        kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
@@ -638,7 +639,7 @@ TEST_F(RPCUnsubscribeTest, SingleBooks)
                 }}
             ]
         }})",
-        Account
+        kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());

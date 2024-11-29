@@ -55,9 +55,9 @@ public:
      */
     explicit VersionHandler(util::Config const& config)
         : apiVersionParser_(
-              config.valueOr("default", apiVersionDefault),
-              config.valueOr("min", apiVersionMin),
-              config.valueOr("max", apiVersionMax)
+              config.valueOr("default", kAPI_VERSION_DEFAULT),
+              config.valueOr("min", kAPI_VERSION_MIN),
+              config.valueOr("max", kAPI_VERSION_MAX)
           )
     {
     }

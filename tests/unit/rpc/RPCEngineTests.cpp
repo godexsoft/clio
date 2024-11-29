@@ -57,7 +57,7 @@ namespace json = boost::json;
 using namespace testing;
 
 namespace {
-constexpr auto ForwardReply = R"JSON({
+constexpr auto kFORWARD_REPLY = R"JSON({
     "result": 
     {
         "status": "success",
@@ -112,7 +112,7 @@ generateTestValuesForParametersTest()
          .isUnknownCmd = neverCalled,
          .handlerReturnError = false,
          .status = rpc::Status{},
-         .response = boost::json::parse(ForwardReply).as_object()},
+         .response = boost::json::parse(kFORWARD_REPLY).as_object()},
         {.testName = "ForwardAdminCmd",
          .isAdmin = false,
          .method = "ledger",
@@ -184,8 +184,8 @@ TEST_P(RPCEngineFlowParameterTest, Test)
 
     if (testBundle.forwarded) {
         EXPECT_CALL(*mockLoadBalancerPtr_, forwardToRippled)
-            .WillOnce(Return(std::expected<boost::json::object, rpc::ClioError>(json::parse(ForwardReply).as_object()))
-            );
+            .WillOnce(Return(std::expected<boost::json::object, rpc::ClioError>(json::parse(kFORWARD_REPLY).as_object())
+            ));
         EXPECT_CALL(*handlerProvider, contains).WillOnce(Return(true));
         EXPECT_CALL(*mockCountersPtr_, rpcForwarded(testBundle.method));
     }

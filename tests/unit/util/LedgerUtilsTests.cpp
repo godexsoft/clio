@@ -30,8 +30,8 @@
 
 TEST(LedgerUtilsTests, LedgerObjectTypeList)
 {
-    constexpr auto types = util::LedgerTypes::getLedgerEntryTypeStrList();
-    static constexpr char const* TypesList[] = {
+    constexpr auto kTYPES = util::LedgerTypes::getLedgerEntryTypeStrList();
+    static constexpr char const* kTYPES_LIST[] = {
         JS(account),
         JS(amendments),
         JS(check),
@@ -59,17 +59,17 @@ TEST(LedgerUtilsTests, LedgerObjectTypeList)
         JS(nunl)
     };
 
-    static_assert(std::size(TypesList) == types.size());
+    static_assert(std::size(kTYPES_LIST) == kTYPES.size());
 
-    static_assert(std::all_of(std::cbegin(TypesList), std::cend(TypesList), [&types](std::string_view type) {
-        return std::find(std::cbegin(types), std::cend(types), type) != std::cend(types);
+    static_assert(std::all_of(std::cbegin(kTYPES_LIST), std::cend(kTYPES_LIST), [&kTYPES](std::string_view type) {
+        return std::find(std::cbegin(kTYPES), std::cend(kTYPES), type) != std::cend(kTYPES);
     }));
 }
 
 TEST(LedgerUtilsTests, AccountOwnedTypeList)
 {
-    constexpr auto accountOwned = util::LedgerTypes::getAccountOwnedLedgerTypeStrList();
-    static constexpr char const* CorrectTypes[] = {
+    constexpr auto kACCOUNT_OWNED = util::LedgerTypes::getAccountOwnedLedgerTypeStrList();
+    static constexpr char const* kCORRECT_TYPES[] = {
         JS(account),
         JS(check),
         JS(deposit_preauth),
@@ -92,13 +92,13 @@ TEST(LedgerUtilsTests, AccountOwnedTypeList)
         JS(mptoken)
     };
 
-    static_assert(std::size(CorrectTypes) == accountOwned.size());
+    static_assert(std::size(kCORRECT_TYPES) == kACCOUNT_OWNED.size());
 
     static_assert(std::all_of(
-        std::cbegin(CorrectTypes),
-        std::cend(CorrectTypes),
-        [&accountOwned](std::string_view type) {
-            return std::find(std::cbegin(accountOwned), std::cend(accountOwned), type) != std::cend(accountOwned);
+        std::cbegin(kCORRECT_TYPES),
+        std::cend(kCORRECT_TYPES),
+        [&kACCOUNT_OWNED](std::string_view type) {
+            return std::find(std::cbegin(kACCOUNT_OWNED), std::cend(kACCOUNT_OWNED), type) != std::cend(kACCOUNT_OWNED);
         }
     ));
 }
@@ -109,17 +109,17 @@ TEST(LedgerUtilsTests, StrToType)
     EXPECT_EQ(util::LedgerTypes::getLedgerEntryTypeFromStr("tomato"), ripple::ltANY);
     EXPECT_EQ(util::LedgerTypes::getLedgerEntryTypeFromStr("account"), ripple::ltACCOUNT_ROOT);
 
-    constexpr auto types = util::LedgerTypes::getLedgerEntryTypeStrList();
-    std::for_each(types.cbegin(), types.cend(), [](auto const& typeStr) {
+    constexpr auto kTYPES = util::LedgerTypes::getLedgerEntryTypeStrList();
+    std::for_each(kTYPES.cbegin(), kTYPES.cend(), [](auto const& typeStr) {
         EXPECT_NE(util::LedgerTypes::getLedgerEntryTypeFromStr(typeStr), ripple::ltANY);
     });
 }
 
 TEST(LedgerUtilsTests, DeletionBlockerTypes)
 {
-    constexpr auto testedTypes = util::LedgerTypes::getDeletionBlockerLedgerTypes();
+    constexpr auto kTESTED_TYPES = util::LedgerTypes::getDeletionBlockerLedgerTypes();
 
-    static constexpr ripple::LedgerEntryType DeletionBlockers[] = {
+    static constexpr ripple::LedgerEntryType kDELETION_BLOCKERS[] = {
         ripple::ltCHECK,
         ripple::ltESCROW,
         ripple::ltNFTOKEN_PAGE,
@@ -132,9 +132,9 @@ TEST(LedgerUtilsTests, DeletionBlockerTypes)
         ripple::ltMPTOKEN
     };
 
-    static_assert(std::size(DeletionBlockers) == testedTypes.size());
-    static_assert(std::any_of(testedTypes.cbegin(), testedTypes.cend(), [](auto const& type) {
-        return std::find(std::cbegin(DeletionBlockers), std::cend(DeletionBlockers), type) !=
-            std::cend(DeletionBlockers);
+    static_assert(std::size(kDELETION_BLOCKERS) == kTESTED_TYPES.size());
+    static_assert(std::any_of(kTESTED_TYPES.cbegin(), kTESTED_TYPES.cend(), [](auto const& type) {
+        return std::find(std::cbegin(kDELETION_BLOCKERS), std::cend(kDELETION_BLOCKERS), type) !=
+            std::cend(kDELETION_BLOCKERS);
     }));
 }

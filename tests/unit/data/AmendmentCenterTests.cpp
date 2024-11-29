@@ -38,7 +38,7 @@
 
 using namespace data;
 
-constexpr auto Seq = 30u;
+constexpr auto kSEQ = 30u;
 
 struct AmendmentCenterTest : util::prometheus::WithPrometheus, MockBackendTest, SyncAsioContextTest {
     AmendmentCenter amendmentCenter{backend_};
@@ -78,23 +78,23 @@ TEST_F(AmendmentCenterTest, IsEnabled)
     EXPECT_FALSE(amendmentCenter.isSupported("unknown"));
 
     auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
-    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, kSEQ, testing::_))
         .WillRepeatedly(testing::Return(amendments.getSerializer().peekData()));
 
-    EXPECT_TRUE(amendmentCenter.isEnabled("fixUniversalNumber", Seq));
-    EXPECT_FALSE(amendmentCenter.isEnabled("unknown", Seq));
-    EXPECT_FALSE(amendmentCenter.isEnabled("ImmediateOfferKilled", Seq));
+    EXPECT_TRUE(amendmentCenter.isEnabled("fixUniversalNumber", kSEQ));
+    EXPECT_FALSE(amendmentCenter.isEnabled("unknown", kSEQ));
+    EXPECT_FALSE(amendmentCenter.isEnabled("ImmediateOfferKilled", kSEQ));
 }
 
 TEST_F(AmendmentCenterTest, IsMultipleEnabled)
 {
     auto const amendments = createAmendmentsObject({Amendments::fixUniversalNumber});
-    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, kSEQ, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
     runSpawn([this](auto yield) {
         std::vector<data::AmendmentKey> const keys{"fixUniversalNumber", "unknown", "ImmediateOfferKilled"};
-        auto const result = amendmentCenter.isEnabled(yield, keys, Seq);
+        auto const result = amendmentCenter.isEnabled(yield, keys, kSEQ);
 
         EXPECT_EQ(result.size(), keys.size());
         EXPECT_TRUE(result.at(0));
@@ -105,12 +105,12 @@ TEST_F(AmendmentCenterTest, IsMultipleEnabled)
 
 TEST_F(AmendmentCenterTest, IsEnabledThrowsWhenUnavailable)
 {
-    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, kSEQ, testing::_))
         .WillOnce(testing::Return(std::nullopt));
 
     runSpawn([this](auto yield) {
         EXPECT_THROW(
-            { [[maybe_unused]] auto const result = amendmentCenter.isEnabled(yield, "irrelevant", Seq); },
+            { [[maybe_unused]] auto const result = amendmentCenter.isEnabled(yield, "irrelevant", kSEQ); },
             std::runtime_error
         );
     });
@@ -119,21 +119,21 @@ TEST_F(AmendmentCenterTest, IsEnabledThrowsWhenUnavailable)
 TEST_F(AmendmentCenterTest, IsEnabledReturnsFalseWhenNoAmendments)
 {
     auto const amendments = createBrokenAmendmentsObject();
-    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, kSEQ, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
-    runSpawn([this](auto yield) { EXPECT_FALSE(amendmentCenter.isEnabled(yield, "irrelevant", Seq)); });
+    runSpawn([this](auto yield) { EXPECT_FALSE(amendmentCenter.isEnabled(yield, "irrelevant", kSEQ)); });
 }
 
 TEST_F(AmendmentCenterTest, IsEnabledReturnsVectorOfFalseWhenNoAmendments)
 {
     auto const amendments = createBrokenAmendmentsObject();
-    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, Seq, testing::_))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::amendments().key, kSEQ, testing::_))
         .WillOnce(testing::Return(amendments.getSerializer().peekData()));
 
     runSpawn([this](auto yield) {
         std::vector<data::AmendmentKey> const keys{"fixUniversalNumber", "ImmediateOfferKilled"};
-        auto const vec = amendmentCenter.isEnabled(yield, keys, Seq);
+        auto const vec = amendmentCenter.isEnabled(yield, keys, kSEQ);
 
         EXPECT_EQ(vec.size(), keys.size());
         EXPECT_TRUE(std::ranges::all_of(vec, [](bool val) { return val == false; }));

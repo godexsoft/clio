@@ -58,7 +58,7 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input input, Context const& ctx)
         return fillOutputByIndex(maxIndex);
 
     auto const convertISOTimeStrToTicks = [](std::string const& isoTimeStr) {
-        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, dateFormat);
+        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, kDATE_FORMAT);
         // systemTime must be valid after validation passed
         return systemTime->time_since_epoch().count();
     };

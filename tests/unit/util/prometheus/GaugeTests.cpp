@@ -92,30 +92,30 @@ TEST_F(GaugeIntTests, set)
 
 TEST_F(GaugeIntTests, multithreadAddAndSubstract)
 {
-    static constexpr auto NumAdditions = 1000;
-    static constexpr auto NumNumberAdditions = 100;
-    static constexpr auto NumberToAdd = 11;
-    static constexpr auto NumSubstractions = 2000;
-    static constexpr auto NumNumberSubstractions = 300;
-    static constexpr auto NumberToSubstract = 300;
+    static constexpr auto kNUM_ADDITIONS = 1000;
+    static constexpr auto kNUM_NUMBER_ADDITIONS = 100;
+    static constexpr auto kNUMBER_TO_ADD = 11;
+    static constexpr auto kNUM_SUBSTRACTIONS = 2000;
+    static constexpr auto kNUM_NUMBER_SUBSTRACTIONS = 300;
+    static constexpr auto kNUMBER_TO_SUBSTRACT = 300;
     std::thread thread1([&] {
-        for (int i = 0; i < NumAdditions; ++i) {
+        for (int i = 0; i < kNUM_ADDITIONS; ++i) {
             ++gauge;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < NumNumberAdditions; ++i) {
-            gauge += NumberToAdd;
+        for (int i = 0; i < kNUM_NUMBER_ADDITIONS; ++i) {
+            gauge += kNUMBER_TO_ADD;
         }
     });
     std::thread thread3([&] {
-        for (int i = 0; i < NumSubstractions; ++i) {
+        for (int i = 0; i < kNUM_SUBSTRACTIONS; ++i) {
             --gauge;
         }
     });
     std::thread thread4([&] {
-        for (int i = 0; i < NumNumberSubstractions; ++i) {
-            gauge -= NumberToSubstract;
+        for (int i = 0; i < kNUM_NUMBER_SUBSTRACTIONS; ++i) {
+            gauge -= kNUMBER_TO_SUBSTRACT;
         }
     });
     thread1.join();
@@ -124,7 +124,8 @@ TEST_F(GaugeIntTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_EQ(
         gauge.value(),
-        NumAdditions + NumNumberAdditions * NumberToAdd - NumSubstractions - NumNumberSubstractions * NumberToSubstract
+        kNUM_ADDITIONS + kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD - kNUM_SUBSTRACTIONS -
+            kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT
     );
 }
 
@@ -165,30 +166,30 @@ TEST_F(GaugeDoubleTests, set)
 
 TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
 {
-    static constexpr auto NumAdditions = 1000;
-    static constexpr auto NumNumberAdditions = 100;
-    static constexpr auto NumberToAdd = 11.1234;
-    static constexpr auto NumSubstractions = 2000;
-    static constexpr auto NumNumberSubstractions = 300;
-    static constexpr auto NumberToSubstract = 300.321;
+    static constexpr auto kNUM_ADDITIONS = 1000;
+    static constexpr auto kNUM_NUMBER_ADDITIONS = 100;
+    static constexpr auto kNUMBER_TO_ADD = 11.1234;
+    static constexpr auto kNUM_SUBSTRACTIONS = 2000;
+    static constexpr auto kNUM_NUMBER_SUBSTRACTIONS = 300;
+    static constexpr auto kNUMBER_TO_SUBSTRACT = 300.321;
     std::thread thread1([&] {
-        for (int i = 0; i < NumAdditions; ++i) {
+        for (int i = 0; i < kNUM_ADDITIONS; ++i) {
             ++gauge;
         }
     });
     std::thread thread2([&] {
-        for (int i = 0; i < NumNumberAdditions; ++i) {
-            gauge += NumberToAdd;
+        for (int i = 0; i < kNUM_NUMBER_ADDITIONS; ++i) {
+            gauge += kNUMBER_TO_ADD;
         }
     });
     std::thread thread3([&] {
-        for (int i = 0; i < NumSubstractions; ++i) {
+        for (int i = 0; i < kNUM_SUBSTRACTIONS; ++i) {
             --gauge;
         }
     });
     std::thread thread4([&] {
-        for (int i = 0; i < NumNumberSubstractions; ++i) {
-            gauge -= NumberToSubstract;
+        for (int i = 0; i < kNUM_NUMBER_SUBSTRACTIONS; ++i) {
+            gauge -= kNUMBER_TO_SUBSTRACT;
         }
     });
     thread1.join();
@@ -197,7 +198,8 @@ TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_NEAR(
         gauge.value(),
-        NumAdditions + NumNumberAdditions * NumberToAdd - NumSubstractions - NumNumberSubstractions * NumberToSubstract,
+        kNUM_ADDITIONS + kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD - kNUM_SUBSTRACTIONS -
+            kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT,
         1e-9
     );
 }

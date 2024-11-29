@@ -68,7 +68,7 @@ boost::log::filter LogService::filter{};
 std::ostream&
 operator<<(std::ostream& stream, Severity sev)
 {
-    static constexpr std::array<char const*, 6> labels = {
+    static constexpr std::array<char const*, 6> kLABELS = {
         "TRC",
         "DBG",
         "NFO",
@@ -77,7 +77,7 @@ operator<<(std::ostream& stream, Severity sev)
         "FTL",
     };
 
-    return stream << labels.at(static_cast<int>(sev));
+    return stream << kLABELS.at(static_cast<int>(sev));
 }
 
 Severity
@@ -152,13 +152,13 @@ LogService::init(util::Config const& config)
     auto defaultSeverity = config.valueOr<Severity>("log_level", Severity::NFO);
 
     std::unordered_map<std::string, Severity> minSeverity;
-    for (auto const& channel : Logger::channels)
+    for (auto const& channel : Logger::kCHANNELS)
         minSeverity[channel] = defaultSeverity;
     minSeverity["Alert"] = Severity::WRN;  // Channel for alerts, always warning severity
 
     for (auto const overrides = config.arrayOr("log_channels", {}); auto const& cfg : overrides) {
         auto name = cfg.valueOrThrow<std::string>("channel", "Channel name is required");
-        if (std::count(std::begin(Logger::channels), std::end(Logger::channels), name) == 0)
+        if (std::count(std::begin(Logger::kCHANNELS), std::end(Logger::kCHANNELS), name) == 0)
             throw std::runtime_error("Can't override settings for log channel " + name + ": invalid channel");
 
         minSeverity[name] = cfg.valueOr<Severity>("log_level", defaultSeverity);

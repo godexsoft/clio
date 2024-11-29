@@ -46,11 +46,11 @@ using namespace testing;
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto NftID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
-constexpr auto Index1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr auto Index2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kNFT_ID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
+constexpr auto kINDEX1 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto kINDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
 
 }  // namespace
 
@@ -65,7 +65,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonHexLedgerHash)
                 "nft_id": "{}", 
                 "ledger_hash": "xxx"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -85,7 +85,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitNotInt)
                 "nft_id": "{}", 
                 "limit": "xxx"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -104,7 +104,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitNegative)
                 "nft_id": "{}", 
                 "limit": -1
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -123,7 +123,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitZero)
                 "nft_id": "{}", 
                 "limit": 0
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -142,7 +142,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonStringLedgerHash)
                 "nft_id": "{}", 
                 "ledger_hash": 123
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -162,7 +162,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, InvalidLedgerIndexString)
                 "nft_id": "{}", 
                 "ledger_index": "notvalidated"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -210,7 +210,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NFTIDNotString)
 TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerHash)
 {
     // mock fetchLedgerByHash return empty
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
 
@@ -219,8 +219,8 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerHash)
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTBuyOffersHandler{backend_}};
@@ -245,7 +245,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerIndex)
             "nft_id": "{}",
             "ledger_index": "4"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTBuyOffersHandler{backend_}};
@@ -263,16 +263,16 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerHash2)
 {
     backend_->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 31);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 31);
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     auto const input = json::parse(fmt::format(
         R"({{ 
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTBuyOffersHandler{backend_}};
@@ -296,7 +296,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerIndex2)
             "nft_id": "{}",
             "ledger_index": "31"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTBuyOffersHandler{backend_}};
@@ -312,8 +312,8 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonExistLedgerViaLedgerIndex2)
 TEST_F(RPCNFTBuyOffersHandlerTest, NoNFT)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(ledgerHeader));
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::nullopt));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
@@ -322,8 +322,8 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NoNFT)
             "nft_id": "{}",
             "ledger_hash": "{}"
         }})",
-        NftID,
-        LedgerHash
+        kNFT_ID,
+        kLEDGER_HASH
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTBuyOffersHandler{backend_}};
@@ -344,7 +344,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MarkerNotString)
                 "nft_id": "{}", 
                 "marker": 9
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -366,7 +366,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, InvalidMarker)
                 "nft_id": "{}",
                 "marker": "123invalid"
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -382,7 +382,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, InvalidMarker)
                 "nft_id": "{}", 
                 "marker": 250
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_FALSE(output);
@@ -395,7 +395,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, InvalidMarker)
 // normal case when only provide nft_id
 TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
 {
-    static constexpr auto CorrectOutput = R"({
+    static constexpr auto kCORRECT_OUTPUT = R"({
         "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
         "validated": true,
         "offers": [
@@ -415,13 +415,13 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
     })";
 
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
-    auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
-    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{Index1}, ripple::uint256{Index2}}, Index1);
+    auto const directory = ripple::keylet::nft_buys(ripple::uint256{kNFT_ID});
+    auto const ownerDir = createOwnerDirLedgerObject({ripple::uint256{kINDEX1}, ripple::uint256{kINDEX2}}, kINDEX1);
 
     ON_CALL(*backend_, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -429,7 +429,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = createNftBuyOffer(NftID, Account);
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
     bbs.push_back(offer.getSerializer().peekData());
     bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -439,14 +439,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
         R"({{
             "nft_id": "{}"
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTBuyOffersHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(json::parse(CorrectOutput), *output.result);
+        EXPECT_EQ(json::parse(kCORRECT_OUTPUT), *output.result);
     });
 }
 
@@ -454,7 +454,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, DefaultParameters)
 TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -462,13 +462,13 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 500;
-    auto const offer = createNftBuyOffer(NftID, Account);
-    auto idx = ripple::uint256{Index1};
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
+    auto idx = ripple::uint256{kINDEX1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, kINDEX1);
 
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
@@ -481,7 +481,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
             "nft_id": "{}",
             "limit": 50
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTBuyOffersHandler{this->backend_}};
@@ -501,7 +501,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, MultipleResultsWithMarkerAndLimitOutput)
 TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -509,14 +509,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 500;
-    auto const offer = createNftBuyOffer(NftID, Account);
-    auto idx = ripple::uint256{Index1};
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
+    auto idx = ripple::uint256{kINDEX1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
-    auto const cursorBuyOffer = createNftBuyOffer(NftID, Account);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, kINDEX1);
+    auto const cursorBuyOffer = createNftBuyOffer(kNFT_ID, kACCOUNT);
 
     // first is nft offer object
     auto const cursor = ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353"};
@@ -525,7 +525,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
         .WillByDefault(Return(cursorBuyOffer.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject(first.key, testing::_, testing::_)).Times(1);
 
-    auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
+    auto const directory = ripple::keylet::nft_buys(ripple::uint256{kNFT_ID});
     auto const startHint = 0ul;  // offer node is hardcoded to 0ul
     auto const secondKey = ripple::keylet::page(directory, startHint).key;
     ON_CALL(*backend_, doFetchLedgerObject(secondKey, testing::_, testing::_))
@@ -541,7 +541,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
             "marker": "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353",
             "limit": 50
         }})",
-        NftID
+        kNFT_ID
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTBuyOffersHandler{this->backend_}};
@@ -563,7 +563,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsForInputWithMarkerAndLimit)
 TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimit)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(3);
 
@@ -571,14 +571,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
     std::vector<ripple::uint256> indexes;
     std::vector<Blob> bbs;
     auto repetitions = 100;
-    auto const offer = createNftBuyOffer(NftID, Account);
-    auto idx = ripple::uint256{Index1};
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
+    auto idx = ripple::uint256{kINDEX1};
     while ((repetitions--) != 0) {
         indexes.push_back(idx++);
         bbs.push_back(offer.getSerializer().peekData());
     }
-    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, Index1);
-    auto const cursorBuyOffer = createNftBuyOffer(NftID, Account);
+    ripple::STObject const ownerDir = createOwnerDirLedgerObject(indexes, kINDEX1);
+    auto const cursorBuyOffer = createNftBuyOffer(kNFT_ID, kACCOUNT);
 
     // first is nft offer object
     auto const cursor = ripple::uint256{"E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353"};
@@ -587,7 +587,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
         .WillByDefault(Return(cursorBuyOffer.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject(first.key, testing::_, testing::_)).Times(1);
 
-    auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
+    auto const directory = ripple::keylet::nft_buys(ripple::uint256{kNFT_ID});
     auto const startHint = 0ul;  // offer node is hardcoded to 0ul
     auto const secondKey = ripple::keylet::page(directory, startHint).key;
     ON_CALL(*backend_, doFetchLedgerObject(secondKey, testing::_, testing::_))
@@ -605,7 +605,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
                 "marker": "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC353",
                 "limit": 50
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
 
@@ -623,7 +623,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
                 "nft_id": "{}", 
                 "limit": 49
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);  // todo: check limit somehow?
@@ -636,7 +636,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
                 "nft_id": "{}", 
                 "limit": 501
             }})",
-            NftID
+            kNFT_ID
         ));
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);  // todo: check limit somehow?
@@ -646,14 +646,14 @@ TEST_F(RPCNFTBuyOffersHandlerTest, ResultsWithoutMarkerForInputWithMarkerAndLimi
 TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
-    auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
+    auto const directory = ripple::keylet::nft_buys(ripple::uint256{kNFT_ID});
     auto const ownerDir =
-        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMin + 1, ripple::uint256{Index1}}, Index1);
+        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::kLIMIT_MIN + 1, ripple::uint256{kINDEX1}}, kINDEX1);
 
     ON_CALL(*backend_, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -661,9 +661,9 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = createNftBuyOffer(NftID, Account);
-    bbs.reserve(NFTBuyOffersHandler::limitMin + 1);
-    for (auto i = 0; i < NFTBuyOffersHandler::limitMin + 1; i++)
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
+    bbs.reserve(NFTBuyOffersHandler::kLIMIT_MIN + 1);
+    for (auto i = 0; i < NFTBuyOffersHandler::kLIMIT_MIN + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
@@ -673,30 +673,30 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitLessThanMin)
             "nft_id": "{}",
             "limit": {}
         }})",
-        NftID,
-        NFTBuyOffersHandler::limitMin - 1
+        kNFT_ID,
+        NFTBuyOffersHandler::kLIMIT_MIN - 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTBuyOffersHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTBuyOffersHandler::limitMin);
-        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTBuyOffersHandler::limitMin);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTBuyOffersHandler::kLIMIT_MIN);
+        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTBuyOffersHandler::kLIMIT_MIN);
     });
 }
 
 TEST_F(RPCNFTBuyOffersHandlerTest, LimitMoreThanMax)
 {
     backend_->setRange(10, 30);
-    auto ledgerHeader = createLedgerHeader(LedgerHash, 30);
+    auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     // return owner index containing 2 indexes
-    auto const directory = ripple::keylet::nft_buys(ripple::uint256{NftID});
+    auto const directory = ripple::keylet::nft_buys(ripple::uint256{kNFT_ID});
     auto const ownerDir =
-        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::limitMax + 1, ripple::uint256{Index1}}, Index1);
+        createOwnerDirLedgerObject(std::vector{NFTBuyOffersHandler::kLIMIT_MAX + 1, ripple::uint256{kINDEX1}}, kINDEX1);
 
     ON_CALL(*backend_, doFetchLedgerObject(directory.key, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
@@ -704,9 +704,9 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitMoreThanMax)
 
     // return two nft buy offers
     std::vector<Blob> bbs;
-    auto const offer = createNftBuyOffer(NftID, Account);
-    bbs.reserve(NFTBuyOffersHandler::limitMax + 1);
-    for (auto i = 0; i < NFTBuyOffersHandler::limitMax + 1; i++)
+    auto const offer = createNftBuyOffer(kNFT_ID, kACCOUNT);
+    bbs.reserve(NFTBuyOffersHandler::kLIMIT_MAX + 1);
+    for (auto i = 0; i < NFTBuyOffersHandler::kLIMIT_MAX + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
@@ -716,15 +716,15 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitMoreThanMax)
             "nft_id": "{}",
             "limit": {}
         }})",
-        NftID,
-        NFTBuyOffersHandler::limitMax + 1
+        kNFT_ID,
+        NFTBuyOffersHandler::kLIMIT_MAX + 1
     ));
     runSpawn([&, this](auto yield) {
         auto handler = AnyHandler{NFTBuyOffersHandler{this->backend_}};
         auto const output = handler.process(input, Context{yield});
 
         ASSERT_TRUE(output);
-        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTBuyOffersHandler::limitMax);
-        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTBuyOffersHandler::limitMax);
+        EXPECT_EQ(output.result->at("offers").as_array().size(), NFTBuyOffersHandler::kLIMIT_MAX);
+        EXPECT_EQ(output.result->at("limit").as_uint64(), NFTBuyOffersHandler::kLIMIT_MAX);
     });
 }

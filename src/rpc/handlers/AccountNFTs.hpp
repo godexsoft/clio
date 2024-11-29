@@ -47,9 +47,9 @@ class AccountNFTsHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 20;
-    static constexpr auto limitMax = 400;
-    static constexpr auto limitDefault = 100;
+    static constexpr auto kLIMIT_MIN = 20;
+    static constexpr auto kLIMIT_MAX = 400;
+    static constexpr auto kLIMIT_DEFAULT = 100;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -72,7 +72,7 @@ public:
         std::string account;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = limitDefault;  // Limit the number of token pages to retrieve. [20,400]
+        uint32_t limit = kLIMIT_DEFAULT;  // Limit the number of token pages to retrieve. [20,400]
         std::optional<std::string> marker;
     };
 
@@ -101,8 +101,10 @@ public:
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             {JS(marker), validation::CustomValidators::uint256HexStringValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
         };
 
         return kRPC_SPEC;

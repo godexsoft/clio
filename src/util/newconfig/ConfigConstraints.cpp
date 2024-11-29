@@ -52,7 +52,7 @@ PortConstraint::checkValueImpl(Value const& port) const
     } else {
         p = static_cast<uint32_t>(std::get<int64_t>(port));
     }
-    if (p >= portMin && p <= portMax)
+    if (p >= kPORT_MIN && p <= kPORT_MAX)
         return std::nullopt;
     return Error{"Port does not satisfy the constraint bounds"};
 }

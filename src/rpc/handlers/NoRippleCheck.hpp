@@ -55,9 +55,9 @@ class NoRippleCheckHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 1;
-    static constexpr auto limitMax = 500;
-    static constexpr auto limitDefault = 300;
+    static constexpr auto kLIMIT_MIN = 1;
+    static constexpr auto kLIMIT_MAX = 500;
+    static constexpr auto kLIMIT_DEFAULT = 300;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -79,7 +79,7 @@ public:
         bool roleGateway = false;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = limitDefault;
+        uint32_t limit = kLIMIT_DEFAULT;
         JsonBool transactions{false};
     };
 
@@ -113,8 +113,10 @@ public:
              }},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(limit), validation::Type<uint32_t>(), validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            }
+            {JS(limit),
+             validation::Type<uint32_t>(),
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}}
         };
 
         static auto const kRPC_SPEC = RpcSpec{

@@ -114,8 +114,8 @@ TEST_F(ExtractionTests, OneObject)
     auto res = extractObj(original);
     EXPECT_EQ(ripple::strHex(res.key), ripple::strHex(expected.keyRaw));
     EXPECT_EQ(ripple::strHex(res.data), ripple::strHex(expected.dataRaw));
-    EXPECT_EQ(res.predecessor, uint256ToString(data::lastKey));
-    EXPECT_EQ(res.successor, uint256ToString(data::firstKey));
+    EXPECT_EQ(res.predecessor, uint256ToString(data::kLAST_KEY));
+    EXPECT_EQ(res.successor, uint256ToString(data::kFIRST_KEY));
     EXPECT_EQ(res.type, expected.type);
 }
 
@@ -159,8 +159,8 @@ TEST_F(ExtractionTests, MultipleObjects)
     for (auto const& obj : res) {
         EXPECT_EQ(ripple::strHex(obj.key), ripple::strHex(expected.keyRaw));
         EXPECT_EQ(ripple::strHex(obj.data), ripple::strHex(expected.dataRaw));
-        EXPECT_EQ(obj.predecessor, uint256ToString(data::lastKey));
-        EXPECT_EQ(obj.successor, uint256ToString(data::firstKey));
+        EXPECT_EQ(obj.predecessor, uint256ToString(data::kLAST_KEY));
+        EXPECT_EQ(obj.successor, uint256ToString(data::kFIRST_KEY));
         EXPECT_EQ(obj.type, expected.type);
     }
 }

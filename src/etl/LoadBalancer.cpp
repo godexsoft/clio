@@ -87,9 +87,9 @@ LoadBalancer::LoadBalancer(
         };
     }
 
-    static constexpr std::uint32_t maxDownload = 256;
+    static constexpr std::uint32_t kMAX_DOWNLOAD = 256;
     if (auto value = config.maybeValue<uint32_t>("num_markers"); value) {
-        ASSERT(*value > 0 and *value <= maxDownload, "'num_markers' value in config must be in range 1-256");
+        ASSERT(*value > 0 and *value <= kMAX_DOWNLOAD, "'num_markers' value in config must be in range 1-256");
         downloadRanges_ = *value;
     } else if (backend->fetchLedgerRange()) {
         downloadRanges_ = 4;
@@ -244,7 +244,7 @@ LoadBalancer::forwardToRippled(
 
     auto numAttempts = 0u;
 
-    auto xUserValue = isAdmin ? adminForwardingXUserValue : userForwardingXUserValue;
+    auto xUserValue = isAdmin ? kADMIN_FORWARDING_X_USER_VALUE : kUSER_FORWARDING_X_USER_VALUE;
 
     std::optional<boost::json::object> response;
     rpc::ClioError error = rpc::ClioError::EtlConnectionError;

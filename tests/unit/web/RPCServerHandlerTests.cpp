@@ -47,8 +47,8 @@ using namespace web;
 
 namespace {
 
-constexpr auto MinSeq = 10;
-constexpr auto MaxSeq = 30;
+constexpr auto kMIN_SEQ = 10;
+constexpr auto kMAX_SEQ = 30;
 
 }  // namespace
 
@@ -94,15 +94,15 @@ struct WebRPCServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTe
 
 TEST_F(WebRPCServerHandlerTest, HTTPDefaultPath)
 {
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Result = "{}";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESULT = "{}";
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "status": "success"
                                         },
@@ -114,28 +114,28 @@ TEST_F(WebRPCServerHandlerTest, HTTPDefaultPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsNormalPath)
 {
     session->upgraded = true;
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99,
                                         "api_version": 2
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Result = "{}";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESULT = "{}";
+    static constexpr auto kRESPONSE = R"({
                                         "result":{},
                                         "id": 99,
                                         "status": "success",
@@ -149,32 +149,32 @@ TEST_F(WebRPCServerHandlerTest, WsNormalPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
 {
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // Note: forwarding always goes thru WS API
-    static constexpr auto Result = R"({
+    static constexpr auto kRESULT = R"({
                                         "result": {
                                             "index": 1
                                         },
                                         "forwarded": true
                                     })";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result":{
                                                 "index": 1,
                                                 "status": "success"
@@ -188,26 +188,26 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
 {
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // Note: forwarding always goes thru WS API
-    static constexpr auto Result = R"({
+    static constexpr auto kRESULT = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -215,7 +215,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
                                         "type": "response",
                                         "forwarded": true
                                     })";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result":{
                                             "error": "error",
                                             "error_code": 123,
@@ -232,33 +232,33 @@ TEST_F(WebRPCServerHandlerTest, HTTPForwardedErrorPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
 {
     session->upgraded = true;
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // Note: forwarding always goes thru WS API
-    static constexpr auto Result = R"({
+    static constexpr auto kRESULT = R"({
                                         "result": {
                                             "index": 1
                                         },
                                         "forwarded": true
                                    })";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result":{
                                             "index": 1
                                         },
@@ -274,27 +274,27 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
 {
     session->upgraded = true;
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     // Note: forwarding always goes thru WS API
-    static constexpr auto Result = R"({
+    static constexpr auto kRESULT = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -303,7 +303,7 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
                                         "forwarded": true
                                    })";
     // WS error responses, unlike their successful counterpart, contain everything on top level without "result"
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "error": "error",
                                         "error_code": 123,
                                         "error_message": "error message",
@@ -319,19 +319,19 @@ TEST_F(WebRPCServerHandlerTest, WsForwardedErrorPath)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
 
     // Forwarded errors counted as successful:
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
 {
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "error": "invalidParams",
                                             "error_code": 31,
@@ -355,9 +355,9 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
                                         ]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "method": "ledger",
                                             "params": [
                                                 {
@@ -371,14 +371,14 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsErrorPath)
 {
     session->upgraded = true;
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "id": "123",
                                         "error": "invalidParams",
                                         "error_code": 31,
@@ -400,9 +400,9 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
                                         ]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "command": "ledger",
                                             "ledger_index": "xx",
                                             "id": "123",
@@ -414,18 +414,18 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(45));
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPNotReady)
 {
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "error": "notReady",
                                             "error_code": 13,
@@ -441,20 +441,20 @@ TEST_F(WebRPCServerHandlerTest, HTTPNotReady)
 
     EXPECT_CALL(*rpcEngine, notifyNotReady).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsNotReady)
 {
     session->upgraded = true;
 
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "error": "notReady",
                                         "error_code": 13,
                                         "error_message": "Not ready to handle this request.",
@@ -469,17 +469,17 @@ TEST_F(WebRPCServerHandlerTest, WsNotReady)
 
     EXPECT_CALL(*rpcEngine, notifyNotReady).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPBadSyntaxWhenRequestSubscribe)
 {
-    static constexpr auto Request = R"({"method": "subscribe"})";
+    static constexpr auto kREQUEST = R"({"method": "subscribe"})";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "error": "badSyntax",
                                             "error_code": 1,
@@ -495,66 +495,66 @@ TEST_F(WebRPCServerHandlerTest, HTTPBadSyntaxWhenRequestSubscribe)
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPMissingCommand)
 {
-    static constexpr auto Request = R"({"method2": "server_info"})";
+    static constexpr auto kREQUEST = R"({"method2": "server_info"})";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response = "Null method";
+    static constexpr auto kRESPONSE = "Null method";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(session->message, Response);
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(session->message, kRESPONSE);
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPCommandNotString)
 {
-    static constexpr auto Request = R"({"method": 1})";
+    static constexpr auto kREQUEST = R"({"method": 1})";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response = "method is not string";
+    static constexpr auto kRESPONSE = "method is not string";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(session->message, Response);
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(session->message, kRESPONSE);
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPCommandIsEmpty)
 {
-    static constexpr auto Request = R"({"method": ""})";
+    static constexpr auto kREQUEST = R"({"method": ""})";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response = "method is empty";
+    static constexpr auto kRESPONSE = "method is empty";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(session->message, Response);
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(session->message, kRESPONSE);
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, WsMissingCommand)
 {
     session->upgraded = true;
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command2": "server_info",
                                         "id": 99
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "error": "missingCommand",
                                         "error_code": 6001,
                                         "error_message": "Method/Command is not specified or is not a string.",
@@ -569,49 +569,49 @@ TEST_F(WebRPCServerHandlerTest, WsMissingCommand)
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableNotArray)
 {
-    static constexpr auto Response = "params unparseable";
+    static constexpr auto kRESPONSE = "params unparseable";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "method": "ledger",
                                             "params": "wrong"
                                         })";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(session->message, Response);
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(session->message, kRESPONSE);
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPParamsUnparseableArrayWithDigit)
 {
-    static constexpr auto Response = "params unparseable";
+    static constexpr auto kRESPONSE = "params unparseable";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "method": "ledger",
                                             "params": [1]
                                         })";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(session->message, Response);
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(session->message, kRESPONSE);
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
 {
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "error": "internal",
                                             "error_code": 73,
@@ -625,9 +625,9 @@ TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
                                         }
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "method": "ledger",
                                             "params": [{}]
                                         })";
@@ -635,15 +635,15 @@ TEST_F(WebRPCServerHandlerTest, HTTPInternalError)
     EXPECT_CALL(*rpcEngine, notifyInternalError).Times(1);
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_)).Times(1).WillOnce(testing::Throw(std::runtime_error("MyError")));
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsInternalError)
 {
     session->upgraded = true;
 
-    static constexpr auto Response = R"({
+    static constexpr auto kRESPONSE = R"({
                                         "error": "internal",
                                         "error_code": 73,
                                         "error_message": "Internal error.",
@@ -656,9 +656,9 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
                                         }
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto RequestJson = R"({
+    static constexpr auto kREQUEST_JSON = R"({
                                             "command": "ledger",
                                             "id": "123"
                                         })";
@@ -666,21 +666,21 @@ TEST_F(WebRPCServerHandlerTest, WsInternalError)
     EXPECT_CALL(*rpcEngine, notifyInternalError).Times(1);
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_)).Times(1).WillOnce(testing::Throw(std::runtime_error("MyError")));
 
-    (*handler)(RequestJson, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST_JSON, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPOutDated)
 {
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Result = "{}";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESULT = "{}";
+    static constexpr auto kRESPONSE = R"({
                                         "result": {
                                             "status": "success"
                                         },
@@ -696,28 +696,28 @@ TEST_F(WebRPCServerHandlerTest, HTTPOutDated)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(61));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsOutdated)
 {
     session->upgraded = true;
 
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Result = "{}";
-    static constexpr auto Response = R"({
+    static constexpr auto kRESULT = "{}";
+    static constexpr auto kRESPONSE = R"({
                                         "result":{},
                                         "id": 99,
                                         "status": "success",
@@ -734,13 +734,13 @@ TEST_F(WebRPCServerHandlerTest, WsOutdated)
                                         ]
                                     })";
     EXPECT_CALL(*rpcEngine, buildResponse(testing::_))
-        .WillOnce(testing::Return(rpc::Result{boost::json::parse(Result).as_object()}));
+        .WillOnce(testing::Return(rpc::Result{boost::json::parse(kRESULT).as_object()}));
     EXPECT_CALL(*rpcEngine, notifyComplete("server_info", testing::_)).Times(1);
 
     EXPECT_CALL(*etl, lastCloseAgeSeconds()).WillOnce(testing::Return(61));
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, WsTooBusy)
@@ -750,14 +750,14 @@ TEST_F(WebRPCServerHandlerTest, WsTooBusy)
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
         std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend_, localRpcEngine, etl);
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "command": "server_info",
                                         "id": 99
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response =
+    static constexpr auto kRESPONSE =
         R"({
             "error": "tooBusy",
             "error_code": 9,
@@ -769,8 +769,8 @@ TEST_F(WebRPCServerHandlerTest, WsTooBusy)
     EXPECT_CALL(*localRpcEngine, notifyTooBusy).Times(1);
     EXPECT_CALL(*localRpcEngine, post).WillOnce(testing::Return(false));
 
-    (*localHandler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*localHandler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
@@ -778,14 +778,14 @@ TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
     auto localRpcEngine = std::make_shared<MockRPCEngine>();
     auto localHandler =
         std::make_shared<RPCServerHandler<MockRPCEngine, MockETLService>>(cfg, backend_, localRpcEngine, etl);
-    static constexpr auto Request = R"({
+    static constexpr auto kREQUEST = R"({
                                         "method": "server_info",
                                         "params": [{}]
                                     })";
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
-    static constexpr auto Response =
+    static constexpr auto kRESPONSE =
         R"({
             "error": "tooBusy",
             "error_code": 9,
@@ -797,27 +797,27 @@ TEST_F(WebRPCServerHandlerTest, HTTPTooBusy)
     EXPECT_CALL(*localRpcEngine, notifyTooBusy).Times(1);
     EXPECT_CALL(*localRpcEngine, post).WillOnce(testing::Return(false));
 
-    (*localHandler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*localHandler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 TEST_F(WebRPCServerHandlerTest, HTTPRequestNotJson)
 {
-    static constexpr auto Request = "not json";
-    static constexpr auto ResponsePrefix = "Unable to parse JSON from the request";
+    static constexpr auto kREQUEST = "not json";
+    static constexpr auto kRESPONSE_PREFIX = "Unable to parse JSON from the request";
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_THAT(session->message, testing::StartsWith(ResponsePrefix));
+    (*handler)(kREQUEST, session);
+    EXPECT_THAT(session->message, testing::StartsWith(kRESPONSE_PREFIX));
     EXPECT_EQ(session->lastStatus, boost::beast::http::status::bad_request);
 }
 
 TEST_F(WebRPCServerHandlerTest, WsRequestNotJson)
 {
     session->upgraded = true;
-    static constexpr auto Request = "not json";
-    static constexpr auto Response =
+    static constexpr auto kREQUEST = "not json";
+    static constexpr auto kRESPONSE =
         R"({
             "error": "badSyntax",
             "error_code": 1,
@@ -828,8 +828,8 @@ TEST_F(WebRPCServerHandlerTest, WsRequestNotJson)
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
-    (*handler)(Request, session);
-    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(Response));
+    (*handler)(kREQUEST, session);
+    EXPECT_EQ(boost::json::parse(session->message), boost::json::parse(kRESPONSE));
 }
 
 struct InvalidAPIVersionTestBundle {
@@ -847,8 +847,8 @@ auto
 generateInvalidVersions()
 {
     return std::vector<InvalidAPIVersionTestBundle>{
-        {"v0", "0", fmt::format("Requested API version is lower than minimum supported ({})", rpc::apiVersionMin)},
-        {"v4", "4", fmt::format("Requested API version is higher than maximum supported ({})", rpc::apiVersionMax)},
+        {"v0", "0", fmt::format("Requested API version is lower than minimum supported ({})", rpc::kAPI_VERSION_MIN)},
+        {"v4", "4", fmt::format("Requested API version is higher than maximum supported ({})", rpc::kAPI_VERSION_MAX)},
         {"null", "null", "API version must be an integer"},
         {"str", "\"bogus\"", "API version must be an integer"},
         {"bool", "false", "API version must be an integer"},
@@ -875,7 +875,7 @@ TEST_P(WebRPCServerHandlerInvalidAPIVersionParamTest, HTTPInvalidAPIVersion)
         GetParam().version
     );
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 
@@ -895,7 +895,7 @@ TEST_P(WebRPCServerHandlerInvalidAPIVersionParamTest, WSInvalidAPIVersion)
         GetParam().version
     );
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     EXPECT_CALL(*rpcEngine, notifyBadSyntax).Times(1);
 

@@ -42,18 +42,18 @@
 
 namespace {
 
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto TokenID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
-constexpr auto Issuer = "raSsG8F6KePke7sqw2MXYZ3mu7p68GvFma";
-constexpr auto Serial = 49386;
-constexpr auto TaxOn = 0;
-constexpr auto Flag = 8;
-constexpr auto TxnID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr auto Page = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr auto InvalidPage = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FCAAA";
-constexpr auto MaxSeq = 30;
-constexpr auto MinSeq = 10;
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kTOKEN_ID = "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA";
+constexpr auto kISSUER = "raSsG8F6KePke7sqw2MXYZ3mu7p68GvFma";
+constexpr auto kSERIAL = 49386;
+constexpr auto kTAX_ON = 0;
+constexpr auto kFLAG = 8;
+constexpr auto kTXN_ID = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto kPAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+constexpr auto kINVALID_PAGE = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FCAAA";
+constexpr auto kMAX_SEQ = 30;
+constexpr auto kMIN_SEQ = 10;
 
 }  // namespace
 
@@ -170,10 +170,10 @@ TEST_P(AccountNFTParameterTest, InvalidParams)
 
 TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaHash)
 {
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
     auto static const kINPUT = json::parse(fmt::format(
@@ -181,8 +181,8 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaHash)
             "account":"{}",
             "ledger_hash":"{}"
         }})",
-        Account,
-        LedgerHash
+        kACCOUNT,
+        kLEDGER_HASH
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -196,20 +196,20 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaHash)
 
 TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaStringIndex)
 {
-    constexpr auto seq = 12;
+    constexpr auto kSEQ = 12;
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
     auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "account":"{}",
             "ledger_index":"{}"
         }})",
-        Account,
-        seq
+        kACCOUNT,
+        kSEQ
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -223,20 +223,20 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaStringIndex)
 
 TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaIntIndex)
 {
-    constexpr auto seq = 12;
+    constexpr auto kSEQ = 12;
 
-    backend_->setRange(MinSeq, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
-    ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
+    ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
     auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "account":"{}",
             "ledger_index":{}
         }})",
-        Account,
-        seq
+        kACCOUNT,
+        kSEQ
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -250,8 +250,8 @@ TEST_F(RPCAccountNFTsHandlerTest, LedgerNotFoundViaIntIndex)
 
 TEST_F(RPCAccountNFTsHandlerTest, AccountNotFound)
 {
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
@@ -262,7 +262,7 @@ TEST_F(RPCAccountNFTsHandlerTest, AccountNotFound)
         R"({{
             "account":"{}"
         }})",
-        Account
+        kACCOUNT
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -295,28 +295,29 @@ TEST_F(RPCAccountNFTsHandlerTest, NormalPath)
             ],
             "limit":100
         }})",
-        LedgerHash,
-        Account,
-        TokenID,
-        Flag,
-        Issuer,
-        TaxOn,
-        Serial
+        kLEDGER_HASH,
+        kACCOUNT,
+        kTOKEN_ID,
+        kFLAG,
+        kISSUER,
+        kTAX_ON,
+        kSERIAL
     );
 
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
     auto const firstPage = ripple::keylet::nftpage_max(accountID).key;
-    auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt);
+    auto const pageObject = createNftTokenPage(
+        std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
+    );
     ON_CALL(*backend_, doFetchLedgerObject(firstPage, 30, _))
         .WillByDefault(Return(pageObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
@@ -325,7 +326,7 @@ TEST_F(RPCAccountNFTsHandlerTest, NormalPath)
         R"({{
             "account":"{}"
         }})",
-        Account
+        kACCOUNT
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -337,32 +338,32 @@ TEST_F(RPCAccountNFTsHandlerTest, NormalPath)
 
 TEST_F(RPCAccountNFTsHandlerTest, Limit)
 {
-    static constexpr auto Limit = 20;
+    static constexpr auto kLIMIT = 20;
 
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
     auto const firstPage = ripple::keylet::nftpage_max(accountID).key;
     auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, firstPage);
+        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, firstPage);
     ON_CALL(*backend_, doFetchLedgerObject(firstPage, 30, _))
         .WillByDefault(Return(pageObject.getSerializer().peekData()));
-    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1 + Limit);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1 + kLIMIT);
 
     auto static const kINPUT = json::parse(fmt::format(
         R"({{
             "account":"{}",
             "limit":{}
         }})",
-        Account,
-        Limit
+        kACCOUNT,
+        kLIMIT
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -375,19 +376,20 @@ TEST_F(RPCAccountNFTsHandlerTest, Limit)
 
 TEST_F(RPCAccountNFTsHandlerTest, Marker)
 {
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
-    auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Page}, 30, _))
+    auto const pageObject = createNftTokenPage(
+        std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
+    );
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPAGE}, 30, _))
         .WillByDefault(Return(pageObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
@@ -396,8 +398,8 @@ TEST_F(RPCAccountNFTsHandlerTest, Marker)
             "account":"{}",
             "marker":"{}"
         }})",
-        Account,
-        Page
+        kACCOUNT,
+        kPAGE
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -409,13 +411,13 @@ TEST_F(RPCAccountNFTsHandlerTest, Marker)
 
 TEST_F(RPCAccountNFTsHandlerTest, InvalidMarker)
 {
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
@@ -424,8 +426,8 @@ TEST_F(RPCAccountNFTsHandlerTest, InvalidMarker)
             "account":"{}",
             "marker":"{}"
         }})",
-        Account,
-        InvalidPage
+        kACCOUNT,
+        kINVALID_PAGE
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -439,13 +441,13 @@ TEST_F(RPCAccountNFTsHandlerTest, InvalidMarker)
 
 TEST_F(RPCAccountNFTsHandlerTest, AccountWithNoNFT)
 {
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
@@ -453,7 +455,7 @@ TEST_F(RPCAccountNFTsHandlerTest, AccountWithNoNFT)
         R"({{
             "account":"{}"
         }})",
-        Account
+        kACCOUNT
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -465,19 +467,20 @@ TEST_F(RPCAccountNFTsHandlerTest, AccountWithNoNFT)
 
 TEST_F(RPCAccountNFTsHandlerTest, invalidPage)
 {
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
-    auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Page}, 30, _))
+    auto const pageObject = createNftTokenPage(
+        std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
+    );
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPAGE}, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
@@ -486,8 +489,8 @@ TEST_F(RPCAccountNFTsHandlerTest, invalidPage)
             "account":"{}",
             "marker":"{}"
         }})",
-        Account,
-        Page
+        kACCOUNT,
+        kPAGE
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -520,29 +523,30 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitLessThanMin)
             ],
             "limit":{}
         }})",
-        LedgerHash,
-        Account,
-        TokenID,
-        Flag,
-        Issuer,
-        TaxOn,
-        Serial,
-        AccountNFTsHandler::limitMin
+        kLEDGER_HASH,
+        kACCOUNT,
+        kTOKEN_ID,
+        kFLAG,
+        kISSUER,
+        kTAX_ON,
+        kSERIAL,
+        AccountNFTsHandler::kLIMIT_MIN
     );
 
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
     auto const firstPage = ripple::keylet::nftpage_max(accountID).key;
-    auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt);
+    auto const pageObject = createNftTokenPage(
+        std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
+    );
     ON_CALL(*backend_, doFetchLedgerObject(firstPage, 30, _))
         .WillByDefault(Return(pageObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
@@ -552,8 +556,8 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitLessThanMin)
             "account":"{}",
             "limit":{}
         }})",
-        Account,
-        AccountNFTsHandler::limitMin - 1
+        kACCOUNT,
+        AccountNFTsHandler::kLIMIT_MIN - 1
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -584,29 +588,30 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitMoreThanMax)
             ],
             "limit":{}
         }})",
-        LedgerHash,
-        Account,
-        TokenID,
-        Flag,
-        Issuer,
-        TaxOn,
-        Serial,
-        AccountNFTsHandler::limitMax
+        kLEDGER_HASH,
+        kACCOUNT,
+        kTOKEN_ID,
+        kFLAG,
+        kISSUER,
+        kTAX_ON,
+        kSERIAL,
+        AccountNFTsHandler::kLIMIT_MAX
     );
 
-    backend_->setRange(MinSeq, MaxSeq);
-    auto const ledgerHeader = createLedgerHeader(LedgerHash, MaxSeq);
+    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
-    auto const accountObject = createAccountRootObject(Account, 0, 1, 10, 2, TxnID, 3);
-    auto const accountID = getAccountIdWithString(Account);
+    auto const accountObject = createAccountRootObject(kACCOUNT, 0, 1, 10, 2, kTXN_ID, 3);
+    auto const accountID = getAccountIdWithString(kACCOUNT);
     ON_CALL(*backend_, doFetchLedgerObject(ripple::keylet::account(accountID).key, 30, _))
         .WillByDefault(Return(accountObject.getSerializer().peekData()));
 
     auto const firstPage = ripple::keylet::nftpage_max(accountID).key;
-    auto const pageObject =
-        createNftTokenPage(std::vector{std::make_pair<std::string, std::string>(TokenID, "www.ok.com")}, std::nullopt);
+    auto const pageObject = createNftTokenPage(
+        std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
+    );
     ON_CALL(*backend_, doFetchLedgerObject(firstPage, 30, _))
         .WillByDefault(Return(pageObject.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
@@ -616,8 +621,8 @@ TEST_F(RPCAccountNFTsHandlerTest, LimitMoreThanMax)
             "account":"{}",
             "limit":{}
         }})",
-        Account,
-        AccountNFTsHandler::limitMax + 1
+        kACCOUNT,
+        AccountNFTsHandler::kLIMIT_MAX + 1
     ));
     auto const handler = AnyHandler{AccountNFTsHandler{backend_}};
     runSpawn([&](auto yield) {

@@ -45,9 +45,9 @@ class NFTsByIssuerHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 1;
-    static constexpr auto limitMax = 100;
-    static constexpr auto limitDefault = 50;
+    static constexpr auto kLIMIT_MIN = 1;
+    static constexpr auto kLIMIT_MAX = 100;
+    static constexpr auto kLIMIT_DEFAULT = 50;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -99,8 +99,10 @@ public:
             {JS(nft_taxon), validation::Type<uint32_t>{}},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
             {JS(marker), validation::CustomValidators::uint256HexStringValidator},
         };
 

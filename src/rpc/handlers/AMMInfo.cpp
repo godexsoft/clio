@@ -64,11 +64,11 @@ std::string
 toIso8601(ripple::NetClock::time_point tp)
 {
     using namespace std::chrono;
-    static constexpr auto rippleEpochOffset = seconds{rippleEpochStart};
+    static constexpr auto kRIPPLE_EPOCH_OFFSET = seconds{kRIPPLE_EPOCH_START};
 
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
-        date::sys_time<system_clock::duration>(system_clock::time_point{tp.time_since_epoch() + rippleEpochOffset})
+        date::sys_time<system_clock::duration>(system_clock::time_point{tp.time_since_epoch() + kRIPPLE_EPOCH_OFFSET})
     );
 };
 

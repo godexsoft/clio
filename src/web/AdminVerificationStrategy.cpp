@@ -62,12 +62,12 @@ PasswordAdminVerificationStrategy::isAdmin(RequestHeader const& request, std::st
         return false;
     }
     auto userAuth = it->value();
-    if (!userAuth.starts_with(passwordPrefix)) {
+    if (!userAuth.starts_with(kPASSWORD_PREFIX)) {
         // Invalid Authorization header
         return false;
     }
 
-    userAuth.remove_prefix(passwordPrefix.size());
+    userAuth.remove_prefix(kPASSWORD_PREFIX.size());
     return passwordSha256_ == util::toUpper(userAuth);
 }
 

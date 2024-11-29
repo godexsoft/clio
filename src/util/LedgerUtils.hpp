@@ -87,7 +87,7 @@ class LedgerTypes {
     using LedgerTypeAttribute = impl::LedgerTypeAttribute;
     using LedgerTypeAttributeList = LedgerTypeAttribute[];
 
-    static constexpr LedgerTypeAttributeList const ledgerTypes{
+    static constexpr LedgerTypeAttributeList const kLEDGER_TYPES{
         LedgerTypeAttribute::accountOwnedLedgerType(JS(account), ripple::ltACCOUNT_ROOT),
         LedgerTypeAttribute::chainLedgerType(JS(amendments), ripple::ltAMENDMENTS),
         LedgerTypeAttribute::deletionBlockerLedgerType(JS(check), ripple::ltCHECK),
@@ -127,8 +127,8 @@ public:
     static constexpr auto
     getLedgerEntryTypeStrList()
     {
-        std::array<char const*, std::size(ledgerTypes)> res{};
-        std::transform(std::begin(ledgerTypes), std::end(ledgerTypes), std::begin(res), [](auto const& item) {
+        std::array<char const*, std::size(kLEDGER_TYPES)> res{};
+        std::transform(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), std::begin(res), [](auto const& item) {
             return item.name_;
         });
         return res;
@@ -142,15 +142,16 @@ public:
     static constexpr auto
     getAccountOwnedLedgerTypeStrList()
     {
-        constexpr auto filter = [](auto const& item) {
+        constexpr auto kFILTER = [](auto const& item) {
             return item.category_ != LedgerTypeAttribute::LedgerCategory::Chain;
         };
 
-        constexpr auto accountOwnedCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
-        std::array<char const*, accountOwnedCount> res{};
+        constexpr auto kACCOUNT_OWNED_COUNT =
+            std::count_if(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), kFILTER);
+        std::array<char const*, kACCOUNT_OWNED_COUNT> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {
-            if (filter(item)) {
+        std::for_each(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), [&](auto const& item) {
+            if (kFILTER(item)) {
                 *it = item.name_;
                 ++it;
             }
@@ -166,15 +167,16 @@ public:
     static constexpr auto
     getDeletionBlockerLedgerTypes()
     {
-        constexpr auto filter = [](auto const& item) {
+        constexpr auto kFILTER = [](auto const& item) {
             return item.category_ == LedgerTypeAttribute::LedgerCategory::DeletionBlocker;
         };
 
-        constexpr auto deletionBlockersCount = std::count_if(std::begin(ledgerTypes), std::end(ledgerTypes), filter);
-        std::array<ripple::LedgerEntryType, deletionBlockersCount> res{};
+        constexpr auto kDELETION_BLOCKERS_COUNT =
+            std::count_if(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), kFILTER);
+        std::array<ripple::LedgerEntryType, kDELETION_BLOCKERS_COUNT> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(ledgerTypes), std::end(ledgerTypes), [&](auto const& item) {
-            if (filter(item)) {
+        std::for_each(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), [&](auto const& item) {
+            if (kFILTER(item)) {
                 *it = item.type_;
                 ++it;
             }

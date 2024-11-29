@@ -32,7 +32,7 @@
 #include <string>
 
 namespace {
-constexpr auto keyspace = "factory_test";
+constexpr auto kEYSPACE = "factory_test";
 }  // namespace
 
 class BackendCassandraFactoryTest : public SyncAsioContextTest, public util::prometheus::WithPrometheus {
@@ -65,7 +65,7 @@ protected:
         // drop the keyspace for next test
         data::cassandra::Handle const handle{TestGlobals::instance().backendHost};
         EXPECT_TRUE(handle.connect());
-        handle.execute("DROP KEYSPACE " + std::string{keyspace});
+        handle.execute("DROP KEYSPACE " + std::string{kEYSPACE});
     }
 };
 
@@ -98,7 +98,7 @@ TEST_F(BackendCassandraFactoryTest, CreateCassandraBackendDBDisconnect)
             }}
         }})",
         "127.0.0.2",
-        keyspace
+        kEYSPACE
     ))};
     EXPECT_THROW(data::makeBackend(cfg), std::runtime_error);
 }
@@ -118,7 +118,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackend)
             }}
         }})",
         TestGlobals::instance().backendHost,
-        keyspace
+        kEYSPACE
     ))};
 
     {
@@ -131,8 +131,8 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackend)
         // insert range table
         data::cassandra::Handle const handle{TestGlobals::instance().backendHost};
         EXPECT_TRUE(handle.connect());
-        handle.execute(fmt::format("INSERT INTO {}.ledger_range (is_latest, sequence) VALUES (False, 100)", keyspace));
-        handle.execute(fmt::format("INSERT INTO {}.ledger_range (is_latest, sequence) VALUES (True, 500)", keyspace));
+        handle.execute(fmt::format("INSERT INTO {}.ledger_range (is_latest, sequence) VALUES (False, 100)", kEYSPACE));
+        handle.execute(fmt::format("INSERT INTO {}.ledger_range (is_latest, sequence) VALUES (True, 500)", kEYSPACE));
     }
 
     {
@@ -161,7 +161,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithEmpt
             }}
         }})",
         TestGlobals::instance().backendHost,
-        keyspace
+        kEYSPACE
     ))};
     EXPECT_THROW(data::makeBackend(cfg), std::runtime_error);
 }
@@ -182,7 +182,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithDBRe
             }}
         }})",
         TestGlobals::instance().backendHost,
-        keyspace
+        kEYSPACE
     ))};
 
     util::Config const cfgWrite{boost::json::parse(fmt::format(
@@ -199,7 +199,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithDBRe
             }}
         }})",
         TestGlobals::instance().backendHost,
-        keyspace
+        kEYSPACE
     ))};
 
     EXPECT_TRUE(data::makeBackend(cfgWrite));

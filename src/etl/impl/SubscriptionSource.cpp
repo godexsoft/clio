@@ -68,16 +68,16 @@ SubscriptionSource::SubscriptionSource(
     OnConnectHook onConnect,
     OnDisconnectHook onDisconnect,
     OnLedgerClosedHook onLedgerClosed,
-    std::chrono::steady_clock::duration const timeout,
-    std::chrono::steady_clock::duration const delay
+    std::chrono::steady_clock::duration const wsTimeout,
+    std::chrono::steady_clock::duration const retryDelay
 )
     : log_(fmt::format("SubscriptionSource[{}:{}]", ip, wsPort))
     , wsConnectionBuilder_(ip, wsPort)
     , validatedLedgers_(std::move(validatedLedgers))
     , subscriptions_(std::move(subscriptions))
     , strand_(boost::asio::make_strand(ioContext))
-    , wsTimeout_(timeout)
-    , retry_(util::makeRetryExponentialBackoff(delay, retryMaxDelay, strand_))
+    , wsTimeout_(wsTimeout)
+    , retry_(util::makeRetryExponentialBackoff(retryDelay, kRETRY_MAX_DELAY, strand_))
     , onConnect_(std::move(onConnect))
     , onDisconnect_(std::move(onDisconnect))
     , onLedgerClosed_(std::move(onLedgerClosed))
@@ -222,9 +222,9 @@ SubscriptionSource::handleMessage(std::string const& message)
         auto const object = raw.as_object();
         uint32_t ledgerIndex = 0;
 
-        static constexpr auto jsLedgerClosed = "ledgerClosed";
-        static constexpr auto jsValidationReceived = "validationReceived";
-        static constexpr auto jsManifestReceived = "manifestReceived";
+        static constexpr auto kJS_LEDGER_CLOSED = "ledgerClosed";
+        static constexpr auto kJS_VALIDATION_RECEIVED = "validationReceived";
+        static constexpr auto kJS_MANIFEST_RECEIVED = "manifestReceived";
 
         if (object.contains(JS(result))) {
             auto const& result = object.at(JS(result)).as_object();
@@ -237,7 +237,7 @@ SubscriptionSource::handleMessage(std::string const& message)
             }
             LOG(log_.debug()) << "Received a message on ledger subscription stream. Message: " << object;
 
-        } else if (object.contains(JS(type)) && object.at(JS(type)) == jsLedgerClosed) {
+        } else if (object.contains(JS(type)) && object.at(JS(type)) == kJS_LEDGER_CLOSED) {
             LOG(log_.debug()) << "Received a message of type 'ledgerClosed' on ledger subscription stream. Message: "
                               << object;
             if (object.contains(JS(ledger_index))) {
@@ -259,10 +259,10 @@ SubscriptionSource::handleMessage(std::string const& message)
                 if (object.contains(JS(transaction)) and !object.contains(JS(meta))) {
                     LOG(log_.debug()) << "Forwarding proposed transaction: " << object;
                     subscriptions_->forwardProposedTransaction(object);
-                } else if (object.contains(JS(type)) && object.at(JS(type)) == jsValidationReceived) {
+                } else if (object.contains(JS(type)) && object.at(JS(type)) == kJS_VALIDATION_RECEIVED) {
                     LOG(log_.debug()) << "Forwarding validation: " << object;
                     subscriptions_->forwardValidation(object);
-                } else if (object.contains(JS(type)) && object.at(JS(type)) == jsManifestReceived) {
+                } else if (object.contains(JS(type)) && object.at(JS(type)) == kJS_MANIFEST_RECEIVED) {
                     LOG(log_.debug()) << "Forwarding manifest: " << object;
                     subscriptions_->forwardManifest(object);
                 }

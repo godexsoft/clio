@@ -43,7 +43,7 @@ namespace json = boost::json;
 
 namespace {
 
-constexpr auto JSONData = R"JSON(
+constexpr auto kJSON_DATA = R"JSON(
     {
         "arr": [                
             { "first": 1234 },
@@ -68,7 +68,7 @@ constexpr auto JSONData = R"JSON(
 
 class ConfigTest : public NoLoggerFixture {
 protected:
-    Config cfg_{json::parse(JSONData)};
+    Config cfg_{json::parse(kJSON_DATA)};
 };
 
 TEST_F(ConfigTest, SanityCheck)
@@ -260,7 +260,7 @@ private:
 
 TEST_F(ConfigTest, File)
 {
-    auto tmp = TmpFile(JSONData);
+    auto tmp = TmpFile(kJSON_DATA);
     auto conf = ConfigReader::open(tmp.path());
 
     ASSERT_EQ(conf.value<int64_t>("top"), 420);

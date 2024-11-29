@@ -121,7 +121,7 @@ SignalsHandler::cancelTimer()
 void
 SignalsHandler::setHandler(void (*handler)(int))
 {
-    for (int const signal : handledSignals) {
+    for (int const signal : kHANDLED_SIGNALS) {
         std::signal(signal, handler == nullptr ? SIG_DFL : handler);
     }
 }

@@ -46,14 +46,14 @@ using namespace testing;
 
 namespace {
 
-constexpr auto RangeMin = 10;
-constexpr auto RangeMax = 30;
-constexpr auto Account = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto Account2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr auto LedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr auto Index1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
-constexpr auto Index2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
-constexpr auto TxnID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F0DD";
+constexpr auto kRANGE_MIN = 10;
+constexpr auto kRANGE_MAX = 30;
+constexpr auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr auto kINDEX1 = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F9DD";
+constexpr auto kINDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+constexpr auto kTXN_ID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76DB4D16F0DD";
 
 }  // namespace
 
@@ -114,7 +114,7 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(LedgerDataParameterTest, InvalidParams)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -129,10 +129,10 @@ TEST_P(LedgerDataParameterTest, InvalidParams)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -140,7 +140,7 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
             R"({{
                 "ledger_index": {}
             }})",
-            RangeMax
+            kRANGE_MAX
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -152,10 +152,10 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -163,7 +163,7 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
             R"({{
                 "ledger_index": "{}"
             }})",
-            RangeMax
+            kRANGE_MAX
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -175,10 +175,10 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{LedgerHash}, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -186,7 +186,7 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
             R"({{
                 "ledger_hash": "{}"
             }})",
-            LedgerHash
+            kLEDGER_HASH
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -198,14 +198,15 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 
 TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kINDEX1}, kRANGE_MAX, _))
+        .WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -213,7 +214,7 @@ TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
             R"({{
                 "marker": "{}"
             }})",
-            Index1
+            kINDEX1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -240,9 +241,9 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
       "closed":true
    })";
 
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
-    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     // when 'type' not specified, default to all the types
     auto limitLine = 5;
@@ -250,15 +251,16 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limitLine--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = createTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(kACCOUNT, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -275,10 +277,10 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
         // guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
         EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLEDGER_EXPECTED));
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 10);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
@@ -299,9 +301,9 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
       "closed": true
    })";
 
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
-    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     // When 'type' not specified, default to all the types
     auto limitLine = 5;
@@ -309,15 +311,16 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limitLine--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = createTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(kACCOUNT, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -354,26 +357,27 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
       "closed":true
    })";
 
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     auto limitLine = 5;
     auto limitTicket = 5;
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limitLine--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
     while ((limitTicket--) != 0) {
-        auto const ticket = createTicketLedgerObject(Account, limitTicket);
+        auto const ticket = createTicketLedgerObject(kACCOUNT, limitTicket);
         bbs.push_back(ticket.getSerializer().peekData());
     }
 
@@ -395,10 +399,10 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
         // guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
         EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLEDGER_EXPECTED));
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 5);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
@@ -419,24 +423,25 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
       "closed":true
    })";
 
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     auto limitLine = 5;
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + 1);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limitLine--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
-    auto const amm = createAmmObject(Account, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", Account2);
+    auto const amm = createAmmObject(kACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kACCOUNT2);
     bbs.push_back(amm.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -457,10 +462,10 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
         // guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
         EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLEDGER_EXPECTED));
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
@@ -481,20 +486,21 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
       "closed":true
    })";
 
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     // page end
     // marker return seq
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(2);
-    ON_CALL(*backend_, doFetchSuccessorKey(firstKey, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{Index2}, RangeMax, _)).WillByDefault(Return(std::nullopt));
+    ON_CALL(*backend_, doFetchSuccessorKey(kFIRST_KEY, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kINDEX2}, kRANGE_MAX, _))
+        .WillByDefault(Return(std::nullopt));
 
-    auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+    auto const line = createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
     bbs.push_back(line.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -508,25 +514,25 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
         EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLEDGER_EXPECTED));
-        EXPECT_EQ(output.result->as_object().at("marker").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("marker").as_uint64(), kRANGE_MAX);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, Marker)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{Index1}, RangeMax, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kINDEX1}, kRANGE_MAX, _))
         .WillByDefault(
-            Return(createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123)
+            Return(createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123)
                        .getSerializer()
                        .peekData())
         );
@@ -534,13 +540,14 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
     auto limit = 10;
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limit);
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{Index1}, RangeMax, _))
-        .WillByDefault(Return(ripple::uint256{Index2}));
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{Index2}, RangeMax, _))
-        .WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kINDEX1}, kRANGE_MAX, _))
+        .WillByDefault(Return(ripple::uint256{kINDEX2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kINDEX2}, kRANGE_MAX, _))
+        .WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limit--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -554,25 +561,25 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
                 "limit":10,
                 "marker": "{}"
             }})",
-            Index1
+            kINDEX1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_FALSE(output.result->as_object().contains("ledger"));
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 10);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     auto limit = 10;
     std::vector<LedgerObject> los;
@@ -581,11 +588,12 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
     EXPECT_CALL(*backend_, fetchLedgerDiff).Times(1);
 
     while ((limit--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
-        los.emplace_back(LedgerObject{ripple::uint256{Index2}, Blob{}});  // NOLINT(modernize-use-emplace)
+        los.emplace_back(LedgerObject{ripple::uint256{kINDEX2}, Blob{}});  // NOLINT(modernize-use-emplace)
     }
-    ON_CALL(*backend_, fetchLedgerDiff(RangeMax, _)).WillByDefault(Return(los));
+    ON_CALL(*backend_, fetchLedgerDiff(kRANGE_MAX, _)).WillByDefault(Return(los));
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
@@ -598,34 +606,35 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
                 "marker": {},
                 "out_of_order": true
             }})",
-            RangeMax
+            kRANGE_MAX
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_FALSE(output.result->as_object().contains("ledger"));
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 10);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
         EXPECT_FALSE(output.result->as_object().at("cache_full").as_bool());
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, Binary)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     auto limit = 10;
     std::vector<Blob> bbs;
 
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limit);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limit--) != 0) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -646,27 +655,28 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().contains("ledger_data"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().at("closed").as_bool());
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 10);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
-    auto limit = LedgerDataHandler::limitBinary + 1;
+    auto limit = LedgerDataHandler::kLIMIT_BINARY + 1;
     std::vector<Blob> bbs;
 
-    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::limitBinary);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::kLIMIT_BINARY);
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limit--) != 0u) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -680,35 +690,36 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
                 "limit":{},
                 "binary": true
             }})",
-            LedgerDataHandler::limitBinary + 1
+            LedgerDataHandler::kLIMIT_BINARY + 1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().contains("ledger_data"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().at("closed").as_bool());
-        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::limitBinary);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::kLIMIT_BINARY);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
-    auto limit = LedgerDataHandler::limitJSON + 1;
+    auto limit = LedgerDataHandler::kLIMIT_JSON + 1;
     std::vector<Blob> bbs;
 
-    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::limitJSON);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::kLIMIT_JSON);
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
     while ((limit--) != 0u) {
-        auto const line = createRippleStateLedgerObject("USD", Account2, 10, Account, 100, Account2, 200, TxnID, 123);
+        auto const line =
+            createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
     }
 
@@ -722,31 +733,31 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
                 "limit":{},
                 "binary": false
             }})",
-            LedgerDataHandler::limitJSON + 1
+            LedgerDataHandler::kLIMIT_JSON + 1
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_TRUE(output.result->as_object().at("ledger").as_object().at("closed").as_bool());
-        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::limitJSON);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("state").as_array().size(), LedgerDataHandler::kLIMIT_JSON);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
-    auto const issuance = createMptIssuanceObject(Account, 2, "metadata");
+    auto const issuance = createMptIssuanceObject(kACCOUNT, 2, "metadata");
     bbs.push_back(issuance.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -763,9 +774,9 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
 
         auto const& objects = output.result->as_object().at("state").as_array();
         EXPECT_EQ(objects.front().at("LedgerEntryType").as_string(), "MPTokenIssuance");
@@ -773,24 +784,24 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
         // make sure mptID is synethetically parsed if object is mptIssuance
         EXPECT_EQ(
             objects.front().at("mpt_issuance_id").as_string(),
-            ripple::to_string(ripple::makeMptID(2, getAccountIdWithString(Account)))
+            ripple::to_string(ripple::makeMptID(2, getAccountIdWithString(kACCOUNT)))
         );
     });
 }
 
 TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
 {
-    backend_->setRange(RangeMin, RangeMax);
+    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
-    ON_CALL(*backend_, fetchLedgerBySequence(RangeMax, _))
-        .WillByDefault(Return(createLedgerHeader(LedgerHash, RangeMax)));
+    ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
+        .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
-    ON_CALL(*backend_, doFetchSuccessorKey(_, RangeMax, _)).WillByDefault(Return(ripple::uint256{Index2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(_, kRANGE_MAX, _)).WillByDefault(Return(ripple::uint256{kINDEX2}));
 
-    auto const mptoken = createMpTokenObject(Account, ripple::makeMptID(2, getAccountIdWithString(Account)));
+    auto const mptoken = createMpTokenObject(kACCOUNT, ripple::makeMptID(2, getAccountIdWithString(kACCOUNT)));
     bbs.push_back(mptoken.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -807,9 +818,9 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
-        EXPECT_EQ(output.result->as_object().at("marker").as_string(), Index2);
-        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), LedgerHash);
-        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), RangeMax);
+        EXPECT_EQ(output.result->as_object().at("marker").as_string(), kINDEX2);
+        EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLEDGER_HASH);
+        EXPECT_EQ(output.result->as_object().at("ledger_index").as_uint64(), kRANGE_MAX);
 
         auto const& objects = output.result->as_object().at("state").as_array();
         EXPECT_EQ(objects.front().at("LedgerEntryType").as_string(), "MPToken");

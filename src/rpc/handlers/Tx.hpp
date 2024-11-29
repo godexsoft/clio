@@ -144,14 +144,14 @@ public:
         if (!input.ctid && !input.transaction)  // at least one identifier must be supplied
             return Error{Status{RippledError::rpcINVALID_PARAMS}};
 
-        static constexpr auto maxLedgerRange = 1000u;
+        static constexpr auto kMAX_LEDGER_RANGE = 1000u;
         auto const rangeSupplied = input.minLedger && input.maxLedger;
 
         if (rangeSupplied) {
             if (*input.minLedger > *input.maxLedger)
                 return Error{Status{RippledError::rpcINVALID_LGR_RANGE}};
 
-            if (*input.maxLedger - *input.minLedger > maxLedgerRange)
+            if (*input.maxLedger - *input.minLedger > kMAX_LEDGER_RANGE)
                 return Error{Status{RippledError::rpcEXCESSIVE_LGR_RANGE}};
         }
 

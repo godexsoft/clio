@@ -55,9 +55,9 @@ class AccountLinesHandler {
     std::shared_ptr<BackendInterface> const sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 10;
-    static constexpr auto limitMax = 400;
-    static constexpr auto limitDefault = 200;
+    static constexpr auto kLIMIT_MIN = 10;
+    static constexpr auto kLIMIT_MAX = 400;
+    static constexpr auto kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold data for one line response
@@ -101,7 +101,7 @@ public:
         std::optional<std::string> peer;
         bool ignoreDefault = false;  // TODO: document
                                      // https://github.com/XRPLF/xrpl-dev-portal/issues/1839
-        uint32_t limit = limitDefault;
+        uint32_t limit = kLIMIT_DEFAULT;
         std::optional<std::string> marker;
     };
 
@@ -137,8 +137,10 @@ public:
              }},
             {JS(ignore_default), validation::Type<bool>{}},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
             {JS(marker), validation::CustomValidators::accountMarkerValidator},
             {JS(ledger), check::Deprecated{}},

@@ -35,7 +35,7 @@ using namespace testing;
 
 namespace {
 
-constexpr auto Seq = 30;
+constexpr auto kSEQ = 30;
 
 std::vector<data::LedgerObject> const kDIFFS_FOR_SEQ = {
     {.key = ripple::uint256{"05E1EAC2574BE082B00B16F907CE32E6058DEB8F9E81CF34A00E80A5D71FA4FE"}, .blob = Blob{}
@@ -75,16 +75,16 @@ TEST_F(CursorFromDiffProviderTests, MultipleDiffs)
     auto const numCursors = 15;
     auto const provider = etl::impl::CursorFromDiffProvider{backend_, numCursors};
 
-    backend_->setRange(Seq - 10, Seq);
-    ON_CALL(*backend_, fetchLedgerDiff(Seq, _)).WillByDefault(Return(kDIFFS_FOR_SEQ));
-    ON_CALL(*backend_, fetchLedgerDiff(Seq - 1, _)).WillByDefault(Return(kDIFFS_FOR_SEQ_MINUS1));
+    backend_->setRange(kSEQ - 10, kSEQ);
+    ON_CALL(*backend_, fetchLedgerDiff(kSEQ, _)).WillByDefault(Return(kDIFFS_FOR_SEQ));
+    ON_CALL(*backend_, fetchLedgerDiff(kSEQ - 1, _)).WillByDefault(Return(kDIFFS_FOR_SEQ_MINUS1));
     EXPECT_CALL(*backend_, fetchLedgerDiff(_, _)).Times(2);
 
-    auto const cursors = provider.getCursors(Seq);
+    auto const cursors = provider.getCursors(kSEQ);
     ASSERT_EQ(cursors.size(), numCursors + 1);
 
-    EXPECT_EQ(cursors.front().start, firstKey);
-    EXPECT_EQ(cursors.back().end, lastKey);
+    EXPECT_EQ(cursors.front().start, kFIRST_KEY);
+    EXPECT_EQ(cursors.back().end, kLAST_KEY);
 }
 
 TEST_F(CursorFromDiffProviderTests, NotEnoughDiffs)
@@ -92,17 +92,17 @@ TEST_F(CursorFromDiffProviderTests, NotEnoughDiffs)
     auto const numCursors = 35;
     auto const provider = etl::impl::CursorFromDiffProvider{backend_, numCursors};
     auto const availableDiffs = 10;
-    backend_->setRange(Seq - availableDiffs + 1, Seq);
+    backend_->setRange(kSEQ - availableDiffs + 1, kSEQ);
     ON_CALL(*backend_, fetchLedgerDiff(_, _)).WillByDefault(Return(std::vector<data::LedgerObject>{}));
-    ON_CALL(*backend_, fetchLedgerDiff(Seq, _)).WillByDefault(Return(kDIFFS_FOR_SEQ));
-    ON_CALL(*backend_, fetchLedgerDiff(Seq - 1, _)).WillByDefault(Return(kDIFFS_FOR_SEQ_MINUS1));
+    ON_CALL(*backend_, fetchLedgerDiff(kSEQ, _)).WillByDefault(Return(kDIFFS_FOR_SEQ));
+    ON_CALL(*backend_, fetchLedgerDiff(kSEQ - 1, _)).WillByDefault(Return(kDIFFS_FOR_SEQ_MINUS1));
     EXPECT_CALL(*backend_, fetchLedgerDiff(_, _)).Times(availableDiffs);
 
-    auto const cursors = provider.getCursors(Seq);
+    auto const cursors = provider.getCursors(kSEQ);
     auto const removed = 2;   // lost 2 objects because it is removed.
     auto const repeated = 1;  // repeated 1 object
     ASSERT_EQ(cursors.size(), kDIFFS_FOR_SEQ.size() + kDIFFS_FOR_SEQ_MINUS1.size() - removed - repeated + 1);
 
-    EXPECT_EQ(cursors.front().start, firstKey);
-    EXPECT_EQ(cursors.back().end, lastKey);
+    EXPECT_EQ(cursors.front().start, kFIRST_KEY);
+    EXPECT_EQ(cursors.back().end, kLAST_KEY);
 }

@@ -41,10 +41,10 @@ namespace data::cassandra::impl {
  * @brief Bundles all cassandra settings in one place.
  */
 struct Settings {
-    static constexpr std::size_t defaultConnectionTimeout = 10000;
-    static constexpr uint32_t defaultMaxWriteRequestsOutstanding = 10'000;
-    static constexpr uint32_t defaultMaxReadRequestsOutstanding = 100'000;
-    static constexpr std::size_t defaultBatchSize = 20;
+    static constexpr std::size_t kDEFAULT_CONNECTION_TIMEOUT = 10000;
+    static constexpr uint32_t kDEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING = 10'000;
+    static constexpr uint32_t kDEFAULT_MAX_READ_REQUESTS_OUTSTANDING = 100'000;
+    static constexpr std::size_t kDEFAULT_BATCH_SIZE = 20;
 
     /**
      * @brief Represents the configuration of contact points for cassandra.
@@ -65,7 +65,7 @@ struct Settings {
     bool enableLog = false;
 
     /** @brief Connect timeout specified in milliseconds */
-    std::chrono::milliseconds connectionTimeout = std::chrono::milliseconds{defaultConnectionTimeout};
+    std::chrono::milliseconds connectionTimeout = std::chrono::milliseconds{kDEFAULT_CONNECTION_TIMEOUT};
 
     /** @brief Request timeout specified in milliseconds */
     std::chrono::milliseconds requestTimeout = std::chrono::milliseconds{0};  // no timeout at all
@@ -77,16 +77,16 @@ struct Settings {
     uint32_t threads = std::thread::hardware_concurrency();
 
     /** @brief The maximum number of outstanding write requests at any given moment */
-    uint32_t maxWriteRequestsOutstanding = defaultMaxWriteRequestsOutstanding;
+    uint32_t maxWriteRequestsOutstanding = kDEFAULT_MAX_WRITE_REQUESTS_OUTSTANDING;
 
     /** @brief The maximum number of outstanding read requests at any given moment */
-    uint32_t maxReadRequestsOutstanding = defaultMaxReadRequestsOutstanding;
+    uint32_t maxReadRequestsOutstanding = kDEFAULT_MAX_READ_REQUESTS_OUTSTANDING;
 
     /** @brief The number of connection per host to always have active */
     uint32_t coreConnectionsPerHost = 1u;
 
     /** @brief Size of batches when writing */
-    std::size_t writeBatchSize = defaultBatchSize;
+    std::size_t writeBatchSize = kDEFAULT_BATCH_SIZE;
 
     /** @brief Size of the IO queue */
     std::optional<uint32_t> queueSizeIO = std::nullopt;  // NOLINT(readability-redundant-member-init)

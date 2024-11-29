@@ -45,7 +45,7 @@ using namespace testing;
 namespace json = boost::json;
 
 namespace {
-constexpr auto ClientIp = "127.0.0.1";
+constexpr auto kCLIENT_IP = "127.0.0.1";
 }  // namespace
 
 class RPCForwardingProxyTest : public HandlerBaseTest {
@@ -212,7 +212,7 @@ TEST_P(ShouldForwardParameterTest, Test)
     runSpawn([&](auto yield) {
         auto const range = backend_->fetchLedgerRange();
         auto const ctx = web::Context(
-            yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, testBundle.isAdmin
+            yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, kCLIENT_IP, testBundle.isAdmin
         );
 
         auto const res = proxy_.shouldForward(ctx);
@@ -230,7 +230,7 @@ TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
     auto const forwarded = json::parse(R"({"test": true, "command": "submit"})");
 
     EXPECT_CALL(
-        *rawBalancerPtr, forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(ClientIp), true, _)
+        *rawBalancerPtr, forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(kCLIENT_IP), true, _)
     )
         .WillOnce(Return(json::object{}));
 
@@ -241,7 +241,7 @@ TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
     runSpawn([&](auto yield) {
         auto const range = backend_->fetchLedgerRange();
         auto const ctx =
-            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, true);
+            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, kCLIENT_IP, true);
 
         auto const res = proxy_.forward(ctx);
 
@@ -260,7 +260,7 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
     auto const forwarded = json::parse(R"({"test": true, "command": "submit"})");
 
     EXPECT_CALL(
-        *rawBalancerPtr, forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(ClientIp), true, _)
+        *rawBalancerPtr, forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(kCLIENT_IP), true, _)
     )
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 
@@ -271,7 +271,7 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
     runSpawn([&](auto yield) {
         auto const range = backend_->fetchLedgerRange();
         auto const ctx =
-            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, ClientIp, true);
+            web::Context(yield, method, apiVersion, params.as_object(), nullptr, tagFactory_, *range, kCLIENT_IP, true);
 
         auto const res = proxy_.forward(ctx);
 

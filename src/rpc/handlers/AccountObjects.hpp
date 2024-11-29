@@ -56,9 +56,9 @@ class AccountObjectsHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 10;
-    static constexpr auto limitMax = 400;
-    static constexpr auto limitDefault = 200;
+    static constexpr auto kLIMIT_MIN = 10;
+    static constexpr auto kLIMIT_MAX = 400;
+    static constexpr auto kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -80,7 +80,7 @@ public:
         std::string account;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = limitDefault;  // [10,400]
+        uint32_t limit = kLIMIT_DEFAULT;  // [10,400]
         std::optional<std::string> marker;
         std::optional<ripple::LedgerEntryType> type;
         bool deletionBlockersOnly = false;
@@ -112,8 +112,10 @@ public:
             {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>(limitMin, limitMax)
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>(kLIMIT_MIN, kLIMIT_MAX)},
             {JS(type),
              validation::Type<std::string>{},
              validation::OneOf<std::string>(accountOwnedTypes.cbegin(), accountOwnedTypes.cend())},

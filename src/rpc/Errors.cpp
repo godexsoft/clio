@@ -42,7 +42,7 @@ namespace rpc {
 WarningInfo const&
 getWarningInfo(WarningCode code)
 {
-    static constexpr WarningInfo infos[]{
+    static constexpr WarningInfo kINFOS[]{
         {WarnUnknown, "Unknown warning"},
         {WarnRpcClio,
          "This is a clio server. clio only serves validated data. If you want to talk to rippled, include "
@@ -55,7 +55,7 @@ getWarningInfo(WarningCode code)
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid WarningCode"));
@@ -74,7 +74,7 @@ makeWarning(WarningCode code)
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    static constexpr ClioErrorInfo infos[]{
+    static constexpr ClioErrorInfo kINFOS[]{
         {ClioError::RpcMalformedCurrency, "malformedCurrency", "Malformed currency."},
         {ClioError::RpcMalformedRequest, "malformedRequest", "Malformed request."},
         {ClioError::RpcMalformedOwner, "malformedOwner", "Malformed owner."},
@@ -100,7 +100,7 @@ getErrorInfo(ClioError code)
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid error code"));

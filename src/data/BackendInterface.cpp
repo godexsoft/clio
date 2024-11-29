@@ -320,7 +320,7 @@ BackendInterface::fetchLedgerPage(
         ripple::uint256 const& curCursor = [&]() {
             if (!keys.empty())
                 return keys.back();
-            return (cursor ? *cursor : firstKey);
+            return (cursor ? *cursor : kFIRST_KEY);
         }();
 
         std::uint32_t const seq = outOfOrder ? range_->maxSequence : ledgerSequence;

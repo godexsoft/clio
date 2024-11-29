@@ -30,9 +30,9 @@
 
 namespace {
 
-constexpr auto DefaultApiVersion = 3u;
-constexpr auto MinApiVersion = 2u;
-constexpr auto MaxApiVersion = 10u;
+constexpr auto kDEFAULT_API_VERSION = 3u;
+constexpr auto kMIN_API_VERSION = 2u;
+constexpr auto kMAX_API_VERSION = 10u;
 
 }  // namespace
 
@@ -49,9 +49,9 @@ TEST_F(RPCVersionHandlerTest, Default)
             "max": {},
             "default": {}
         }})",
-        MinApiVersion,
-        MaxApiVersion,
-        DefaultApiVersion
+        kMIN_API_VERSION,
+        kMAX_API_VERSION,
+        kDEFAULT_API_VERSION
     ))};
 
     runSpawn([&](auto yield) {

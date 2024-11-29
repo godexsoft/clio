@@ -65,7 +65,7 @@ public:
     }
 };
 
-static constexpr std::size_t defaultWaitBetweenRetry = 500;
+static constexpr std::size_t kDEFAULT_WAIT_BETWEEN_RETRY = 500;
 /**
  * @brief A helper function that catches DatabaseTimout exceptions and retries indefinitely.
  *
@@ -76,7 +76,7 @@ static constexpr std::size_t defaultWaitBetweenRetry = 500;
  */
 template <typename FnType>
 auto
-retryOnTimeout(FnType func, size_t waitMs = defaultWaitBetweenRetry)
+retryOnTimeout(FnType func, size_t waitMs = kDEFAULT_WAIT_BETWEEN_RETRY)
 {
     static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 

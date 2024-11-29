@@ -647,7 +647,7 @@ public:
     {
         if (auto const res = executor_.read(yield, schema_->selectSuccessor, key, ledgerSequence); res) {
             if (auto const result = res->template get<ripple::uint256>(); result) {
-                if (*result == lastKey)
+                if (*result == kLAST_KEY)
                     return std::nullopt;
                 return result;
             }

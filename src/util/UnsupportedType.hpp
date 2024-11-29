@@ -23,6 +23,6 @@ namespace util {
 
 /** @brief used for compile time checking of unsupported types */
 template <typename>
-static constexpr bool Unsupported = false;
+static constexpr bool kUNSUPPORTED = false;
 
 }  // namespace util

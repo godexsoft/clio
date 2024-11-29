@@ -42,7 +42,7 @@ using namespace etl;
 namespace {
 
 // taken from BackendTests
-constexpr auto RawHeader =
+constexpr auto kRAW_HEADER =
     "03C3141A01633CD656F91B4EBB5EB89B791BD34DBC8A04BB6F407C5335BC54351E"
     "DD733898497E809E04074D14D271E4832D7888754F9230800761563A292FA2315A"
     "6DB6FE30CC5909B285080FCD6773CC883F9FE0EE4D439340AC592AADB973ED3CF5"
@@ -103,7 +103,7 @@ TEST_F(ETLTransformerTest, StopsOnEmptyFetchResponse)
 {
     backend_->cache().setFull();  // to avoid throwing exception in updateCache
 
-    auto const blob = hexStringToBinaryString(RawHeader);
+    auto const blob = hexStringToBinaryString(kRAW_HEADER);
     auto const response = std::make_optional<FakeFetchResponse>(blob);
 
     ON_CALL(dataPipe_, popNext).WillByDefault([this, &response](auto) -> std::optional<FakeFetchResponse> {
@@ -138,7 +138,7 @@ TEST_F(ETLTransformerTest, DoesNotPublishIfCanNotBuildNextLedger)
 {
     backend_->cache().setFull();  // to avoid throwing exception in updateCache
 
-    auto const blob = hexStringToBinaryString(RawHeader);
+    auto const blob = hexStringToBinaryString(kRAW_HEADER);
     auto const response = std::make_optional<FakeFetchResponse>(blob);
 
     ON_CALL(dataPipe_, popNext).WillByDefault(Return(response));

@@ -53,9 +53,9 @@ class BookOffersHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto limitMin = 1;
-    static constexpr auto limitMax = 100;
-    static constexpr auto limitDefault = 60;
+    static constexpr auto kLIMIT_MIN = 1;
+    static constexpr auto kLIMIT_MAX = 100;
+    static constexpr auto kLIMIT_DEFAULT = 60;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -76,7 +76,7 @@ public:
     struct Input {
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = limitDefault;
+        uint32_t limit = kLIMIT_DEFAULT;
         std::optional<ripple::AccountID> taker;
         ripple::Currency paysCurrency;
         ripple::Currency getsCurrency;
@@ -140,8 +140,10 @@ public:
                  validation::CustomValidators::accountValidator,
                  Status(RippledError::rpcINVALID_PARAMS, "Invalid field 'taker'.")
              }},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u), modifiers::Clamp<int32_t>{limitMin, limitMax}
-            },
+            {JS(limit),
+             validation::Type<uint32_t>{},
+             validation::Min(1u),
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
             {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
         };

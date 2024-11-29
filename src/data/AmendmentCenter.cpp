@@ -52,8 +52,8 @@ namespace {
 std::unordered_set<std::string>&
 supportedAmendments()
 {
-    static std::unordered_set<std::string> amendments = {};
-    return amendments;
+    static std::unordered_set<std::string> kAMENDMENTS = {};
+    return kAMENDMENTS;
 }
 
 bool

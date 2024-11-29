@@ -56,7 +56,7 @@ public:
     virtual std::expected<bool, Error>
     isUpgradeRequested(
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = defaultTimeout
+        std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT
     ) = 0;
 
     virtual std::expected<ConnectionPtr, Error>
@@ -109,7 +109,7 @@ public:
     send(
         Response response,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = defaultTimeout
+        std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT
     ) override
     {
         auto const httpResponse = std::move(response).intoHttpResponse();
@@ -122,7 +122,7 @@ public:
     }
 
     std::expected<Request, Error>
-    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) override
+    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         if (request_.has_value()) {
             Request result{std::move(request_).value()};
@@ -137,7 +137,7 @@ public:
     }
 
     void
-    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout) override
+    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         [[maybe_unused]] boost::system::error_code error;
         if constexpr (IsSslTcpStream<StreamType>) {
@@ -154,7 +154,7 @@ public:
     }
 
     std::expected<bool, Error>
-    isUpgradeRequested(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = defaultTimeout)
+    isUpgradeRequested(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT)
         override
     {
         auto expectedRequest = fetch(yield, timeout);

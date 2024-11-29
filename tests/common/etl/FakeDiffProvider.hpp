@@ -61,7 +61,7 @@ struct DiffProvider {
         threadKeysMap_[std::this_thread::get_id()]++;
 
         if (threadKeysMap_[std::this_thread::get_id()] == keysSize - 1) {
-            return data::lastKey;
+            return data::kLAST_KEY;
         }
         if (threadKeysMap_[std::this_thread::get_id()] == keysSize) {
             threadKeysMap_[std::this_thread::get_id()] = 0;

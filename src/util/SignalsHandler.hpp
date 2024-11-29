@@ -70,7 +70,7 @@ public:
      * @param config The configuration.
      * @param forceExitHandler The handler for forced exit.
      */
-    SignalsHandler(Config const& config, std::function<void()> forceExitHandler = defaultForceExitHandler);
+    SignalsHandler(Config const& config, std::function<void()> forceExitHandler = kDEFAULT_FORCE_EXIT_HANDLER);
 
     SignalsHandler(SignalsHandler const&) = delete;
     SignalsHandler(SignalsHandler&&) = delete;
@@ -98,7 +98,7 @@ public:
         stopSignal_.connect(static_cast<int>(priority), std::forward<SomeCallback>(callback));
     }
 
-    static constexpr auto handledSignals = {SIGINT, SIGTERM};
+    static constexpr auto kHANDLED_SIGNALS = {SIGINT, SIGTERM};
 
 private:
     /**
@@ -115,7 +115,7 @@ private:
     static void
     setHandler(void (*handler)(int) = nullptr);
 
-    static constexpr auto defaultForceExitHandler = []() { std::exit(EXIT_FAILURE); };
+    static constexpr auto kDEFAULT_FORCE_EXIT_HANDLER = []() { std::exit(EXIT_FAILURE); };
 };
 
 }  // namespace util
