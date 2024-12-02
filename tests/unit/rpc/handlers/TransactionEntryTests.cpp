@@ -48,7 +48,12 @@ constexpr auto kCURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
 
 }  // namespace
 
-class RPCTransactionEntryHandlerTest : public HandlerBaseTest {};
+struct RPCTransactionEntryHandlerTest : HandlerBaseTest {
+    RPCTransactionEntryHandlerTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 TEST_F(RPCTransactionEntryHandlerTest, TxHashNotProvide)
 {
@@ -102,7 +107,6 @@ TEST_F(RPCTransactionEntryHandlerTest, NonExistLedgerViaLedgerHash)
 // error case ledger non exist via index
 TEST_F(RPCTransactionEntryHandlerTest, NonExistLedgerViaLedgerIndex)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerBySequence return empty
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -125,7 +129,6 @@ TEST_F(RPCTransactionEntryHandlerTest, NonExistLedgerViaLedgerIndex)
 
 TEST_F(RPCTransactionEntryHandlerTest, TXNotFound)
 {
-    backend_->setRange(10, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(kINDEX, 30)));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchTransaction(ripple::uint256{kTXN_ID}, _))
@@ -158,7 +161,6 @@ TEST_F(RPCTransactionEntryHandlerTest, LedgerSeqNotMatch)
     ON_CALL(*backend_, fetchTransaction(ripple::uint256{kTXN_ID}, _)).WillByDefault(Return(tx));
     EXPECT_CALL(*backend_, fetchTransaction).Times(1);
 
-    backend_->setRange(10, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(kINDEX, 30)));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -236,7 +238,6 @@ TEST_F(RPCTransactionEntryHandlerTest, NormalPath)
     ON_CALL(*backend_, fetchTransaction(ripple::uint256{kTXN_ID}, _)).WillByDefault(Return(tx));
     EXPECT_CALL(*backend_, fetchTransaction).Times(1);
 
-    backend_->setRange(10, tx.ledgerSequence);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(createLedgerHeader(kINDEX, tx.ledgerSequence)));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -312,8 +313,6 @@ TEST_F(RPCTransactionEntryHandlerTest, NormalPathV2)
     tx.date = 123456;
     tx.ledgerSequence = 30;
     EXPECT_CALL(*backend_, fetchTransaction(ripple::uint256{kTXN_ID}, _)).WillOnce(Return(tx));
-
-    backend_->setRange(10, tx.ledgerSequence);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kINDEX, tx.ledgerSequence)));
 
     runSpawn([&, this](auto yield) {

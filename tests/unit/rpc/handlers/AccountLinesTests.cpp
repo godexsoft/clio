@@ -59,7 +59,12 @@ constexpr auto kTXN_ID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76
 
 }  // namespace
 
-class RPCAccountLinesHandlerTest : public HandlerBaseTest {};
+struct RPCAccountLinesHandlerTest : HandlerBaseTest {
+    RPCAccountLinesHandlerTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 // TODO: a lot of the tests are copy-pasted from AccountChannelsTest
 // because the logic is mostly the same but currently implemented in
@@ -345,7 +350,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerHash)
 // error case ledger non exist via index
 TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerStringIndex)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerBySequence return empty
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -368,7 +372,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerStringIndex)
 
 TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerIntIndex)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerBySequence return empty
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -393,7 +396,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerIntIndex)
 // idk why this case will happen in reality
 TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerHash2)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 31);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
@@ -419,7 +421,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerHash2)
 // error case ledger > max seq via index
 TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerIndex2)
 {
-    backend_->setRange(10, 30);
     // no need to check from db, call fetchLedgerBySequence 0 time
     // differ from previous logic
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(0);
@@ -443,7 +444,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistLedgerViaLedgerIndex2)
 // error case account not exist
 TEST_F(RPCAccountLinesHandlerTest, NonExistAccount)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -471,7 +471,6 @@ TEST_F(RPCAccountLinesHandlerTest, NonExistAccount)
 // normal case when only provide account
 TEST_F(RPCAccountLinesHandlerTest, DefaultParameterTest)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -550,7 +549,6 @@ TEST_F(RPCAccountLinesHandlerTest, DefaultParameterTest)
 // normal case : limit is used
 TEST_F(RPCAccountLinesHandlerTest, UseLimit)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(3);
@@ -629,7 +627,6 @@ TEST_F(RPCAccountLinesHandlerTest, UseLimit)
 // normal case : destination is used
 TEST_F(RPCAccountLinesHandlerTest, UseDestination)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -691,7 +688,6 @@ TEST_F(RPCAccountLinesHandlerTest, UseDestination)
 // normal case : but the lines is emtpy
 TEST_F(RPCAccountLinesHandlerTest, EmptyChannel)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -761,7 +757,6 @@ TEST_F(RPCAccountLinesHandlerTest, OptionalResponseField)
         ]
     })";
 
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -815,7 +810,6 @@ TEST_F(RPCAccountLinesHandlerTest, OptionalResponseField)
 // normal case : test marker output correct
 TEST_F(RPCAccountLinesHandlerTest, MarkerOutput)
 {
-    backend_->setRange(10, 30);
     auto account = getAccountIdWithString(kACCOUNT);
     auto accountKk = ripple::keylet::account(account).key;
     auto ownerDirKk = ripple::keylet::ownerDir(account).key;
@@ -885,7 +879,6 @@ TEST_F(RPCAccountLinesHandlerTest, MarkerOutput)
 // normal case : handler marker correctly
 TEST_F(RPCAccountLinesHandlerTest, MarkerInput)
 {
-    backend_->setRange(10, 30);
     auto account = getAccountIdWithString(kACCOUNT);
     auto accountKk = ripple::keylet::account(account).key;
     static constexpr auto kNEXT_PAGE = 99;
@@ -942,7 +935,6 @@ TEST_F(RPCAccountLinesHandlerTest, MarkerInput)
 
 TEST_F(RPCAccountLinesHandlerTest, LimitLessThanMin)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -1024,7 +1016,6 @@ TEST_F(RPCAccountLinesHandlerTest, LimitLessThanMin)
 
 TEST_F(RPCAccountLinesHandlerTest, LimitMoreThanMax)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);

@@ -54,7 +54,12 @@ constexpr auto kTXN_ID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F591
 
 }  // namespace
 
-class RPCNoRippleCheckTest : public HandlerBaseTest {};
+struct RPCNoRippleCheckTest : HandlerBaseTest {
+    RPCNoRippleCheckTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 struct NoRippleParamTestCaseBundle {
     std::string testName;
@@ -64,8 +69,7 @@ struct NoRippleParamTestCaseBundle {
 };
 
 // parameterized test cases for parameters check
-struct NoRippleCheckParameterTest : public RPCNoRippleCheckTest,
-                                    public WithParamInterface<NoRippleParamTestCaseBundle> {};
+struct NoRippleCheckParameterTest : RPCNoRippleCheckTest, WithParamInterface<NoRippleParamTestCaseBundle> {};
 
 static auto
 generateTestValuesForParametersTest()
@@ -204,7 +208,6 @@ TEST_F(NoRippleCheckParameterTest, V1ApiTransactionsIsNotBool)
 
 TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaHash)
 {
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(std::nullopt));
@@ -232,7 +235,6 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaIntIndex)
 {
     constexpr auto kSEQ = 12;
 
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::nullopt));
@@ -260,7 +262,6 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaStringIndex)
 {
     constexpr auto kSEQ = 12;
 
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::nullopt));
@@ -286,7 +287,6 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaStringIndex)
 
 TEST_F(RPCNoRippleCheckTest, AccountNotExist)
 {
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -326,7 +326,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRipple
             "validated":true
         })";
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -388,7 +387,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleUnsetTrustLineNoRipp
             "validated":true
         })";
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -445,7 +443,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRip
             "validated":true
         })";
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -507,7 +504,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
             "validated":true
         })";
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -553,7 +549,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
 {
     static constexpr auto kSEQ = 30;
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -603,7 +598,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathLimit)
 {
     constexpr auto kSEQ = 30;
 
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -707,7 +701,6 @@ TEST_F(RPCNoRippleCheckTest, NormalPathTransactions)
         ripple::tfClearNoRipple
     );
 
-    backend_->setRange(10, kSEQ);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -762,7 +755,6 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
 {
     constexpr auto kSEQ = 30;
 
-    backend_->setRange(10, 30);
     auto ledgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerHeader));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);

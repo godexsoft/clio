@@ -56,7 +56,12 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-class RPCAccountOffersHandlerTest : public HandlerBaseTest {};
+struct RPCAccountOffersHandlerTest : HandlerBaseTest {
+    RPCAccountOffersHandlerTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 struct AccountOfferParamTestCaseBundle {
     std::string testName;
@@ -165,7 +170,6 @@ TEST_P(AccountOfferParameterTest, InvalidParams)
 
 TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaHash)
 {
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
@@ -193,7 +197,6 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaStringIndex)
 {
     constexpr auto kSEQ = 12;
 
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
@@ -220,7 +223,6 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaIntIndex)
 {
     constexpr auto kSEQ = 12;
 
-    backend_->setRange(10, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
@@ -245,7 +247,6 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaIntIndex)
 
 TEST_F(RPCAccountOffersHandlerTest, AccountNotFound)
 {
-    backend_->setRange(10, 30);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -300,7 +301,6 @@ TEST_F(RPCAccountOffersHandlerTest, DefaultParams)
     );
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -349,7 +349,6 @@ TEST_F(RPCAccountOffersHandlerTest, Limit)
 {
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -400,7 +399,6 @@ TEST_F(RPCAccountOffersHandlerTest, Marker)
 {
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -456,7 +454,6 @@ TEST_F(RPCAccountOffersHandlerTest, MarkerNotExists)
 {
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -494,7 +491,6 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
 {
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 
@@ -550,7 +546,6 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
 {
     constexpr auto kLEDGER_SEQ = 30;
 
-    backend_->setRange(10, kLEDGER_SEQ);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kLEDGER_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
 

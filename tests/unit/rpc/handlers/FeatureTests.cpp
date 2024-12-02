@@ -49,7 +49,12 @@ constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF2
 
 }  // namespace
 
-class RPCFeatureHandlerTest : public HandlerBaseTest {
+struct RPCFeatureHandlerTest : HandlerBaseTest {
+    RPCFeatureHandlerTest()
+    {
+        backend_->setRange(kRANGE_MIN, kRANGE_MAX);
+    }
+
 protected:
     StrictMockAmendmentCenterSharedPtr mockAmendmentCenterPtr_;
 };
@@ -62,8 +67,8 @@ struct RPCFeatureHandlerParamTestCaseBundle {
 };
 
 // parameterized test cases for parameters check
-struct RPCFeatureHandlerParamTest : public RPCFeatureHandlerTest,
-                                    public testing::WithParamInterface<RPCFeatureHandlerParamTestCaseBundle> {};
+struct RPCFeatureHandlerParamTest : RPCFeatureHandlerTest,
+                                    testing::WithParamInterface<RPCFeatureHandlerParamTestCaseBundle> {};
 
 static auto
 generateTestValuesForParametersTest()
@@ -153,7 +158,6 @@ TEST_P(RPCFeatureHandlerParamTest, InvalidParams)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
@@ -174,7 +178,6 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
@@ -195,7 +198,6 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     EXPECT_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, testing::_))
         .WillOnce(testing::Return(std::nullopt));
 
@@ -234,8 +236,6 @@ TEST_F(RPCFeatureHandlerTest, AlwaysNoPermissionForVetoed)
 
 TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledResult)
 {
-    backend_->setRange(10, 30);
-
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,
@@ -286,8 +286,6 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
 
 TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
 {
-    backend_->setRange(10, 30);
-
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,
@@ -341,8 +339,6 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
 
 TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
 {
-    backend_->setRange(10, 30);
-
     auto const all = std::vector<data::Amendment>{{
         .name = Amendments::fixUniversalNumber,
         .feature = data::Amendment::getAmendmentId(Amendments::fixUniversalNumber),
@@ -369,8 +365,6 @@ TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
 
 TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
 {
-    backend_->setRange(10, 30);
-
     auto const all = std::vector<data::Amendment>{
         {
             .name = Amendments::fixUniversalNumber,

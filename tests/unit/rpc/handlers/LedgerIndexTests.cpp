@@ -47,7 +47,12 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-class RPCLedgerIndexTest : public HandlerBaseTestStrict {};
+struct RPCLedgerIndexTest : HandlerBaseTestStrict {
+    RPCLedgerIndexTest()
+    {
+        backend_->setRange(kRANGE_MIN, kRANGE_MAX);
+    }
+};
 
 TEST_F(RPCLedgerIndexTest, DateStrNotValid)
 {
@@ -64,7 +69,6 @@ TEST_F(RPCLedgerIndexTest, DateStrNotValid)
 
 TEST_F(RPCLedgerIndexTest, NoDateGiven)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kRANGE_MAX, 5);
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillOnce(Return(ledgerHeader));
 
@@ -81,7 +85,6 @@ TEST_F(RPCLedgerIndexTest, NoDateGiven)
 
 TEST_F(RPCLedgerIndexTest, EarlierThanMinLedger)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
@@ -97,8 +100,8 @@ TEST_F(RPCLedgerIndexTest, EarlierThanMinLedger)
 
 TEST_F(RPCLedgerIndexTest, ChangeTimeZone)
 {
-    setenv("TZ", "EST+5", 1);
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
+    // Note: setenv/unsetenv are included with <cstdlib> but misc-include-cleaner still angry
+    setenv("TZ", "EST+5", 1);  // NOLINT(misc-include-cleaner)
     auto const handler = AnyHandler{LedgerIndexHandler{backend_}};
     auto const req = json::parse(R"({"date": "2024-06-25T12:23:05Z"})");
     auto const ledgerHeader =
@@ -110,7 +113,7 @@ TEST_F(RPCLedgerIndexTest, ChangeTimeZone)
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "lgrNotFound");
     });
-    unsetenv("TZ");
+    unsetenv("TZ");  // NOLINT(misc-include-cleaner)
 }
 
 struct LedgerIndexTestsCaseBundle {
@@ -148,7 +151,6 @@ TEST_P(LedgerIndexTests, SearchFromLedgerRange)
 {
     auto const testBundle = GetParam();
     auto const jv = json::parse(testBundle.json).as_object();
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     // start from 1719318190 , which is the unix time for 2024-06-25T12:23:10Z to 2024-06-25T12:23:50Z with
     // step 2

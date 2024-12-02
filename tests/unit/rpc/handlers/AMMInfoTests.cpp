@@ -62,7 +62,12 @@ constexpr auto kINDEX2 = "E6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD974
 
 }  // namespace
 
-class RPCAMMInfoHandlerTest : public HandlerBaseTest {};
+struct RPCAMMInfoHandlerTest : HandlerBaseTest {
+    RPCAMMInfoHandlerTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 struct AMMInfoParamTestCaseBundle {
     std::string testName;
@@ -71,7 +76,7 @@ struct AMMInfoParamTestCaseBundle {
     std::string expectedErrorMessage;
 };
 
-struct AMMInfoParameterTest : public RPCAMMInfoHandlerTest, public WithParamInterface<AMMInfoParamTestCaseBundle> {};
+struct AMMInfoParameterTest : RPCAMMInfoHandlerTest, WithParamInterface<AMMInfoParamTestCaseBundle> {};
 
 static auto
 generateTestValuesForParametersTest()
@@ -123,8 +128,6 @@ TEST_P(AMMInfoParameterTest, InvalidParams)
 
 TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     auto const missingAccountKey = getAccountKey(kNOTFOUND_ACCOUNT);
     auto const accountRoot = createAccountRootObject(kAMM_ACCOUNT, 0, 2, 200, 2, kINDEX1, 2);
@@ -158,8 +161,6 @@ TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotExist)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
@@ -183,8 +184,6 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotExist)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotInDBIsMalformed)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
@@ -209,8 +208,6 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotInDBIsMalformed)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotFoundMissingAmmField)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     auto const accountRoot = createAccountRootObject(kAMM_ACCOUNT, 0, 2, 200, 2, kINDEX1, 2);
 
@@ -237,8 +234,6 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotFoundMissingAmmField)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     auto const accountKey = getAccountKey(kAMM_ACCOUNT);
     auto const ammId = ripple::uint256{kAMM_ID};
@@ -274,8 +269,6 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, 30);
     auto const accountKey = getAccountKey(kAMM_ACCOUNT);
     auto const account2Key = getAccountKey(kAMM_ACCOUNT2);
@@ -315,8 +308,6 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -389,8 +380,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -473,8 +462,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -547,8 +534,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -626,8 +611,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -717,8 +700,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -809,8 +790,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -886,8 +865,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -979,8 +956,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
 {
-    backend_->setRange(10, 30);
-
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -1078,8 +1053,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);
@@ -1189,8 +1162,6 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
 
 TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
 {
-    backend_->setRange(10, 30);
-
     auto const lgrInfo = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto const account1 = getAccountIdWithString(kAMM_ACCOUNT);
     auto const account2 = getAccountIdWithString(kAMM_ACCOUNT2);

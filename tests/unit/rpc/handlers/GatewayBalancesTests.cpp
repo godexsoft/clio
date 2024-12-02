@@ -62,7 +62,12 @@ constexpr auto kTXN_ID = "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F591
 
 }  // namespace
 
-class RPCGatewayBalancesHandlerTest : public HandlerBaseTest {};
+struct RPCGatewayBalancesHandlerTest : HandlerBaseTest {
+    RPCGatewayBalancesHandlerTest()
+    {
+        backend_->setRange(10, 300);
+    }
+};
 
 struct ParameterTestBundle {
     std::string testName;
@@ -211,7 +216,6 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaStringIndex)
 {
     auto const seq = 123;
 
-    backend_->setRange(10, 300);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
@@ -240,7 +244,6 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaIntIndex)
 {
     auto const seq = 123;
 
-    backend_->setRange(10, 300);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(seq, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
@@ -267,7 +270,6 @@ TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaIntIndex)
 
 TEST_F(RPCGatewayBalancesHandlerTest, LedgerNotFoundViaHash)
 {
-    backend_->setRange(10, 300);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
@@ -297,7 +299,6 @@ TEST_F(RPCGatewayBalancesHandlerTest, AccountNotFound)
 {
     auto const seq = 300;
 
-    backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);
@@ -330,7 +331,6 @@ TEST_F(RPCGatewayBalancesHandlerTest, InvalidHotWallet)
 {
     auto const seq = 300;
 
-    backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);
@@ -389,7 +389,6 @@ TEST_P(NormalPathTest, CheckOutput)
     auto const& bundle = GetParam();
     auto const seq = 300;
 
-    backend_->setRange(10, seq);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, seq);

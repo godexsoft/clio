@@ -69,7 +69,12 @@ std::string const kMPT_OUT2 =
 
 }  // namespace
 
-class RPCMPTHoldersHandlerTest : public HandlerBaseTest {};
+struct RPCMPTHoldersHandlerTest : HandlerBaseTest {
+    RPCMPTHoldersHandlerTest()
+    {
+        backend_->setRange(10, 30);
+    }
+};
 
 TEST_F(RPCMPTHoldersHandlerTest, NonHexLedgerHash)
 {
@@ -248,7 +253,6 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerHash)
 // error case ledger non exist via index
 TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerStringIndex)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerBySequence return empty
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(std::optional<ripple::LedgerInfo>{}));
     auto const input = json::parse(fmt::format(
@@ -270,7 +274,6 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerStringIndex)
 
 TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerIntIndex)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerBySequence return empty
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(std::optional<ripple::LedgerInfo>{}));
     auto const input = json::parse(fmt::format(
@@ -294,7 +297,6 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerIntIndex)
 // idk why this case will happen in reality
 TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerHash2)
 {
-    backend_->setRange(10, 30);
     // mock fetchLedgerByHash return ledger but seq is 31 > 30
     auto ledgerinfo = createLedgerHeader(kLEDGER_HASH, 31);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerinfo));
@@ -320,7 +322,6 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerHash2)
 // error case ledger > max seq via index
 TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerIndex2)
 {
-    backend_->setRange(10, 30);
     // no need to check from db,call fetchLedgerBySequence 0 time
     // differ from previous logic
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(0);
@@ -344,7 +345,6 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerIndex2)
 // normal case when MPT does not exist
 TEST_F(RPCMPTHoldersHandlerTest, MPTNotFound)
 {
-    backend_->setRange(10, 30);
     auto ledgerinfo = createLedgerHeader(kLEDGER_HASH, 30);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(ledgerinfo));
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
@@ -384,7 +384,6 @@ TEST_F(RPCMPTHoldersHandlerTest, DefaultParameters)
         kMPT_OUT1
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(kMPT_ID)).key;
@@ -433,7 +432,6 @@ TEST_F(RPCMPTHoldersHandlerTest, CustomAmounts)
         kMPT_ID
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(kMPT_ID)).key;
@@ -478,7 +476,6 @@ TEST_F(RPCMPTHoldersHandlerTest, SpecificLedgerIndex)
         kMPT_OUT1
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, specificLedger);
     ON_CALL(*backend_, fetchLedgerBySequence(specificLedger, _)).WillByDefault(Return(ledgerInfo));
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
@@ -529,7 +526,6 @@ TEST_F(RPCMPTHoldersHandlerTest, MarkerParameter)
         ripple::strHex(getAccountIdWithString(kHOLDE_R1_ACCOUNT))
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(kMPT_ID)).key;
@@ -576,7 +572,6 @@ TEST_F(RPCMPTHoldersHandlerTest, MultipleMPTs)
         kMPT_OUT2
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(kMPT_ID)).key;
@@ -620,7 +615,6 @@ TEST_F(RPCMPTHoldersHandlerTest, LimitMoreThanMAx)
         kMPT_OUT1
     );
 
-    backend_->setRange(10, 30);
     auto ledgerInfo = createLedgerHeader(kLEDGER_HASH, 30);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerInfo));
     auto const issuanceKk = ripple::keylet::mptIssuance(ripple::uint192(kMPT_ID)).key;

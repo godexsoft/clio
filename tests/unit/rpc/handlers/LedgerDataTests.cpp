@@ -57,7 +57,12 @@ constexpr auto kTXN_ID = "05FB0EB4B899F056FA095537C5817163801F544BAFCEA39C995D76
 
 }  // namespace
 
-class RPCLedgerDataHandlerTest : public HandlerBaseTest {};
+struct RPCLedgerDataHandlerTest : HandlerBaseTest {
+    RPCLedgerDataHandlerTest()
+    {
+        backend_->setRange(kRANGE_MIN, kRANGE_MAX);
+    }
+};
 
 struct LedgerDataParamTestCaseBundle {
     std::string testName;
@@ -114,7 +119,6 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(LedgerDataParameterTest, InvalidParams)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
@@ -129,8 +133,6 @@ TEST_P(LedgerDataParameterTest, InvalidParams)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillByDefault(Return(std::nullopt));
 
@@ -152,8 +154,6 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillByDefault(Return(std::nullopt));
 
@@ -175,8 +175,6 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(std::nullopt));
 
@@ -198,8 +196,6 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 
 TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -240,8 +236,6 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
       "transaction_hash":"0000000000000000000000000000000000000000000000000000000000000000",
       "closed":true
    })";
-
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
@@ -301,8 +295,6 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
       "closed": true
    })";
 
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
     // When 'type' not specified, default to all the types
@@ -356,8 +348,6 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
       "transaction_hash":"0000000000000000000000000000000000000000000000000000000000000000",
       "closed":true
    })";
-
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
@@ -423,8 +413,6 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
       "closed":true
    })";
 
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -486,8 +474,6 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
       "closed":true
    })";
 
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -523,8 +509,6 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
 
 TEST_F(RPCLedgerDataHandlerTest, Marker)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -575,8 +559,6 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
 
 TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -620,8 +602,6 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 
 TEST_F(RPCLedgerDataHandlerTest, Binary)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -662,8 +642,6 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
 
 TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -705,8 +683,6 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 
 TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -747,8 +723,6 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 
 TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
@@ -791,8 +765,6 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
 
 TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
 {
-    backend_->setRange(kRANGE_MIN, kRANGE_MAX);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));

@@ -54,7 +54,12 @@ constexpr auto kMIN_SEQ = 10;
 
 }  // namespace
 
-class RPCBookChangesHandlerTest : public HandlerBaseTest {};
+struct RPCBookChangesHandlerTest : HandlerBaseTest {
+    RPCBookChangesHandlerTest()
+    {
+        backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    }
+};
 
 struct BookChangesParamTestCaseBundle {
     std::string testName;
@@ -106,7 +111,6 @@ TEST_P(BookChangesParameterTest, InvalidParams)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaIntSequence)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
@@ -124,7 +128,6 @@ TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaIntSequence)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaStringSequence)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillByDefault(Return(std::nullopt));
@@ -142,7 +145,6 @@ TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaStringSequence)
 
 TEST_F(RPCBookChangesHandlerTest, LedgerNonExistViaHash)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
@@ -187,7 +189,6 @@ TEST_F(RPCBookChangesHandlerTest, NormalPath)
             ]
         })";
 
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _))
         .WillByDefault(Return(createLedgerHeader(kLEDGER_HASH, kMAX_SEQ)));

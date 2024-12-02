@@ -53,7 +53,12 @@ constexpr auto kNFT_ID = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D
 
 }  // namespace
 
-class RPCNFTHistoryHandlerTest : public HandlerBaseTest {};
+struct RPCNFTHistoryHandlerTest : HandlerBaseTest {
+    RPCNFTHistoryHandlerTest()
+    {
+        backend_->setRange(kMIN_SEQ, kMAX_SEQ);
+    }
+};
 
 struct NFTHistoryParamTestCaseBundle {
     std::string testName;
@@ -232,7 +237,6 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(NFTHistoryParameterTest, InvalidParams)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
@@ -272,8 +276,6 @@ genTransactions(uint32_t seq1, uint32_t seq2)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -417,7 +419,6 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
                                     "seq": 34
                                 }
                                 })";
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
@@ -569,7 +570,6 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
                                     "seq": 34
                                 }
                                 })";
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
 
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
@@ -610,8 +610,6 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -649,8 +647,6 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -692,8 +688,6 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
 
 TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -749,8 +743,6 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
 
 TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     EXPECT_CALL(
@@ -805,8 +797,6 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
 
 TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -846,8 +836,6 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     // adjust the order for forward->false
     auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
@@ -891,8 +879,6 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ - 1, _)).WillByDefault(Return(std::nullopt));
 
@@ -916,8 +902,6 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ - 1, _)).WillByDefault(Return(std::nullopt));
 
@@ -941,8 +925,6 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
 
 TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     // adjust the order for forward->false
     auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
@@ -986,8 +968,6 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
 
 TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -1029,8 +1009,6 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
 
 TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMAX_SEQ - 1, kMIN_SEQ + 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
@@ -1072,8 +1050,6 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
 
 TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
 {
-    backend_->setRange(kMIN_SEQ, kMAX_SEQ);
-
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{transactions, TransactionsCursor{12, 34}};
     ON_CALL(*backend_, fetchNFTTransactions).WillByDefault(Return(transCursor));
