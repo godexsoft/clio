@@ -42,20 +42,20 @@ namespace rpc {
 WarningInfo const&
 getWarningInfo(WarningCode code)
 {
-    constexpr static WarningInfo infos[]{
-        {warnUNKNOWN, "Unknown warning"},
-        {warnRPC_CLIO,
+    constexpr static WarningInfo kINFOS[]{
+        {WarnUnknown, "Unknown warning"},
+        {WarnRpcClio,
          "This is a clio server. clio only serves validated data. If you want to talk to rippled, include "
          "'ledger_index':'current' in your request"},
-        {warnRPC_OUTDATED, "This server may be out of date"},
-        {warnRPC_RATE_LIMIT, "You are about to be rate limited"},
-        {warnRPC_DEPRECATED,
+        {WarnRpcOutdated, "This server may be out of date"},
+        {WarnRpcRateLimit, "You are about to be rate limited"},
+        {WarnRpcDeprecated,
          "Some fields from your request are deprecated. Please check the documentation at "
          "https://xrpl.org/docs/references/http-websocket-apis/ and update your request."}
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid WarningCode"));
@@ -74,33 +74,33 @@ makeWarning(WarningCode code)
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    constexpr static ClioErrorInfo infos[]{
-        {ClioError::rpcMALFORMED_CURRENCY, "malformedCurrency", "Malformed currency."},
-        {ClioError::rpcMALFORMED_REQUEST, "malformedRequest", "Malformed request."},
-        {ClioError::rpcMALFORMED_OWNER, "malformedOwner", "Malformed owner."},
-        {ClioError::rpcMALFORMED_ADDRESS, "malformedAddress", "Malformed address."},
-        {ClioError::rpcINVALID_HOT_WALLET, "invalidHotWallet", "Invalid hot wallet."},
-        {ClioError::rpcUNKNOWN_OPTION, "unknownOption", "Unknown option."},
-        {ClioError::rpcFIELD_NOT_FOUND_TRANSACTION, "fieldNotFoundTransaction", "Missing field."},
-        {ClioError::rpcMALFORMED_ORACLE_DOCUMENT_ID, "malformedDocumentID", "Malformed oracle_document_id."},
-        {ClioError::rpcMALFORMED_AUTHORIZED_CREDENTIALS,
+    constexpr static ClioErrorInfo kINFOS[]{
+        {ClioError::RpcMalformedCurrency, "malformedCurrency", "Malformed currency."},
+        {ClioError::RpcMalformedRequest, "malformedRequest", "Malformed request."},
+        {ClioError::RpcMalformedOwner, "malformedOwner", "Malformed owner."},
+        {ClioError::RpcMalformedAddress, "malformedAddress", "Malformed address."},
+        {ClioError::RpcInvalidHotWallet, "invalidHotWallet", "Invalid hot wallet."},
+        {ClioError::RpcUnknownOption, "unknownOption", "Unknown option."},
+        {ClioError::RpcFieldNotFoundTransaction, "fieldNotFoundTransaction", "Missing field."},
+        {ClioError::RpcMalformedOracleDocumentId, "malformedDocumentID", "Malformed oracle_document_id."},
+        {ClioError::RpcMalformedAuthorizedCredentials,
          "malformedAuthorizedCredentials",
          "Malformed authorized credentials."},
         // special system errors
-        {ClioError::rpcINVALID_API_VERSION, JS(invalid_API_version), "Invalid API version."},
-        {ClioError::rpcCOMMAND_IS_MISSING, JS(missingCommand), "Method is not specified or is not a string."},
-        {ClioError::rpcCOMMAND_NOT_STRING, "commandNotString", "Method is not a string."},
-        {ClioError::rpcCOMMAND_IS_EMPTY, "emptyCommand", "Method is an empty string."},
-        {ClioError::rpcPARAMS_UNPARSEABLE, "paramsUnparseable", "Params must be an array holding exactly one object."},
+        {ClioError::RpcInvalidApiVersion, JS(invalid_API_version), "Invalid API version."},
+        {ClioError::RpcCommandIsMissing, JS(missingCommand), "Method is not specified or is not a string."},
+        {ClioError::RpcCommandNotString, "commandNotString", "Method is not a string."},
+        {ClioError::RpcCommandIsEmpty, "emptyCommand", "Method is an empty string."},
+        {ClioError::RpcParamsUnparseable, "paramsUnparseable", "Params must be an array holding exactly one object."},
         // etl related errors
-        {ClioError::etlCONNECTION_ERROR, "connectionError", "Couldn't connect to rippled."},
-        {ClioError::etlREQUEST_ERROR, "requestError", "Error sending request to rippled."},
-        {ClioError::etlREQUEST_TIMEOUT, "timeout", "Request to rippled timed out."},
-        {ClioError::etlINVALID_RESPONSE, "invalidResponse", "Rippled returned an invalid response."}
+        {ClioError::EtlConnectionError, "connectionError", "Couldn't connect to rippled."},
+        {ClioError::EtlRequestError, "requestError", "Error sending request to rippled."},
+        {ClioError::EtlRequestTimeout, "timeout", "Request to rippled timed out."},
+        {ClioError::EtlInvalidResponse, "invalidResponse", "Rippled returned an invalid response."}
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid error code"));

@@ -65,32 +65,32 @@ public:
 template <typename CtxType, typename OpType>
 struct BasicScheduledOperation {
     struct State {
-        std::mutex m_;
-        std::condition_variable ready_;
-        std::optional<OpType> op_{std::nullopt};
+        std::mutex m;
+        std::condition_variable ready;
+        std::optional<OpType> op{std::nullopt};
 
         void
         emplace(auto&& op)
         {
-            std::lock_guard const lock{m_};
-            op_.emplace(std::forward<decltype(op)>(op));
-            ready_.notify_all();
+            std::lock_guard const lock{m};
+            op.emplace(std::forward<decltype(op)>(op));
+            ready.notify_all();
         }
 
         [[nodiscard]] OpType&
         get()
         {
-            std::unique_lock lock{m_};
-            ready_.wait(lock, [this] { return op_.has_value(); });
-            return op_.value();
+            std::unique_lock lock{m};
+            ready.wait(lock, [this] { return op.has_value(); });
+            return op.value();
         }
     };
 
-    std::shared_ptr<State> state_ = std::make_shared<State>();
-    typename CtxType::Timer timer_;
+    std::shared_ptr<State> state = std::make_shared<State>();
+    typename CtxType::Timer timer;
 
     BasicScheduledOperation(auto& executor, auto delay, auto&& fn)
-        : timer_(executor, delay, [state = state_, fn = std::forward<decltype(fn)>(fn)](auto ec) mutable {
+        : timer(executor, delay, [state = state, fn = std::forward<decltype(fn)>(fn)](auto ec) mutable {
             state->emplace(fn(ec));
         })
     {
@@ -99,26 +99,26 @@ struct BasicScheduledOperation {
     [[nodiscard]] auto
     get()
     {
-        return state_->get().get();
+        return state->get().get();
     }
 
     void
     wait() noexcept
     {
-        state_->get().wait();
+        state->get().wait();
     }
 
     void
     cancel() noexcept
     {
-        timer_.cancel();
+        timer.cancel();
     }
 
     void
     requestStop() noexcept
         requires(SomeStoppableOperation<OpType>)
     {
-        state_->get().requestStop();
+        state->get().requestStop();
     }
 
     void

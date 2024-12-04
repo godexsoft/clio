@@ -35,15 +35,15 @@ using namespace util;
 using testing::AtLeast;
 
 struct RepeatTests : SyncAsioContextTest {
-    Repeat repeat{ctx};
+    Repeat repeat{ctx_};
     testing::StrictMock<testing::MockFunction<void()>> handlerMock;
 
     void
     withRunningContext(std::function<void()> func)
     {
         tests::common::util::callWithTimeout(std::chrono::seconds{1}, [this, func = std::move(func)]() {
-            auto workGuard = boost::asio::make_work_guard(ctx);
-            std::thread thread{[this]() { ctx.run(); }};
+            auto workGuard = boost::asio::make_work_guard(ctx_);
+            std::thread thread{[this]() { ctx_.run(); }};
             func();
             workGuard.reset();
             thread.join();

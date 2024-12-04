@@ -40,7 +40,7 @@ TEST_F(CliArgsTests, Parse_NoArgs)
 
     int const returnCode = 123;
     EXPECT_CALL(onRunMock, Call).WillOnce([](CliArgs::Action::Run const& run) {
-        EXPECT_EQ(run.configPath, CliArgs::defaultConfigPath);
+        EXPECT_EQ(run.configPath, CliArgs::kDEFAULT_CONFIG_PATH);
         EXPECT_FALSE(run.useNgWebServer);
         return returnCode;
     });
@@ -54,7 +54,7 @@ TEST_F(CliArgsTests, Parse_NgWebServer)
 
         int const returnCode = 123;
         EXPECT_CALL(onRunMock, Call).WillOnce([](CliArgs::Action::Run const& run) {
-            EXPECT_EQ(run.configPath, CliArgs::defaultConfigPath);
+            EXPECT_EQ(run.configPath, CliArgs::kDEFAULT_CONFIG_PATH);
             EXPECT_TRUE(run.useNgWebServer);
             return returnCode;
         });

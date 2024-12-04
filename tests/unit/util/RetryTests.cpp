@@ -30,78 +30,78 @@
 using namespace util;
 
 struct RetryTests : virtual ::testing::Test {
-    std::chrono::milliseconds const delay_{1};
-    std::chrono::milliseconds const maxDelay_{5};
+    std::chrono::milliseconds const delay{1};
+    std::chrono::milliseconds const maxDelay{5};
 };
 
 TEST_F(RetryTests, ExponentialBackoffStrategy)
 {
-    ExponentialBackoffStrategy strategy{delay_, maxDelay_};
+    ExponentialBackoffStrategy strategy{delay, maxDelay};
 
-    EXPECT_EQ(strategy.getDelay(), delay_);
-
-    strategy.increaseDelay();
-    EXPECT_EQ(strategy.getDelay(), delay_ * 2);
+    EXPECT_EQ(strategy.getDelay(), delay);
 
     strategy.increaseDelay();
-    EXPECT_LT(strategy.getDelay(), maxDelay_);
+    EXPECT_EQ(strategy.getDelay(), delay * 2);
+
+    strategy.increaseDelay();
+    EXPECT_LT(strategy.getDelay(), maxDelay);
 
     for (size_t i = 0; i < 10; ++i) {
         strategy.increaseDelay();
-        EXPECT_EQ(strategy.getDelay(), maxDelay_);
-        EXPECT_EQ(strategy.getDelay(), maxDelay_);
+        EXPECT_EQ(strategy.getDelay(), maxDelay);
+        EXPECT_EQ(strategy.getDelay(), maxDelay);
     }
 
     strategy.reset();
-    EXPECT_EQ(strategy.getDelay(), delay_);
+    EXPECT_EQ(strategy.getDelay(), delay);
 }
 
 struct RetryWithExponentialBackoffStrategyTests : SyncAsioContextTest, RetryTests {
     RetryWithExponentialBackoffStrategyTests()
     {
-        EXPECT_EQ(retry_.attemptNumber(), 0);
-        EXPECT_EQ(retry_.delayValue(), delay_);
+        EXPECT_EQ(retry.attemptNumber(), 0);
+        EXPECT_EQ(retry.delayValue(), delay);
     }
 
-    Retry retry_ = makeRetryExponentialBackoff(delay_, maxDelay_, boost::asio::make_strand(ctx));
-    testing::MockFunction<void()> mockCallback_;
+    Retry retry = makeRetryExponentialBackoff(delay, maxDelay, boost::asio::make_strand(ctx_));
+    testing::MockFunction<void()> mockCallback;
 };
 
 TEST_F(RetryWithExponentialBackoffStrategyTests, Retry)
 {
-    retry_.retry(mockCallback_.AsStdFunction());
+    retry.retry(mockCallback.AsStdFunction());
 
-    EXPECT_EQ(retry_.attemptNumber(), 0);
+    EXPECT_EQ(retry.attemptNumber(), 0);
 
-    EXPECT_CALL(mockCallback_, Call());
+    EXPECT_CALL(mockCallback, Call());
     runContext();
 
-    EXPECT_EQ(retry_.attemptNumber(), 1);
-    EXPECT_EQ(retry_.delayValue(), delay_ * 2);
+    EXPECT_EQ(retry.attemptNumber(), 1);
+    EXPECT_EQ(retry.delayValue(), delay * 2);
 }
 
 TEST_F(RetryWithExponentialBackoffStrategyTests, Cancel)
 {
-    retry_.retry(mockCallback_.AsStdFunction());
-    retry_.cancel();
+    retry.retry(mockCallback.AsStdFunction());
+    retry.cancel();
     runContext();
-    EXPECT_EQ(retry_.attemptNumber(), 0);
+    EXPECT_EQ(retry.attemptNumber(), 0);
 
-    retry_.cancel();
-    EXPECT_EQ(retry_.attemptNumber(), 0);
+    retry.cancel();
+    EXPECT_EQ(retry.attemptNumber(), 0);
 }
 
 TEST_F(RetryWithExponentialBackoffStrategyTests, Reset)
 {
-    retry_.retry(mockCallback_.AsStdFunction());
+    retry.retry(mockCallback.AsStdFunction());
 
-    EXPECT_CALL(mockCallback_, Call());
+    EXPECT_CALL(mockCallback, Call());
     runContext();
 
-    EXPECT_EQ(retry_.attemptNumber(), 1);
-    EXPECT_EQ(retry_.delayValue(), delay_ * 2);
+    EXPECT_EQ(retry.attemptNumber(), 1);
+    EXPECT_EQ(retry.delayValue(), delay * 2);
 
-    retry_.reset();
-    EXPECT_EQ(retry_.attemptNumber(), 0);
-    EXPECT_EQ(retry_.delayValue(), delay_);
+    retry.reset();
+    EXPECT_EQ(retry.attemptNumber(), 0);
+    EXPECT_EQ(retry.delayValue(), delay);
 }

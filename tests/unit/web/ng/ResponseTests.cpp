@@ -54,21 +54,21 @@ TEST_F(ResponseDeathTest, asConstBufferWithHttpData)
 }
 
 struct ResponseTest : testing::Test {
-    int const httpVersion_ = 11;
-    http::status const responseStatus_ = http::status::ok;
+    int const httpVersion = 11;
+    http::status const responseStatus = http::status::ok;
 };
 
 TEST_F(ResponseTest, intoHttpResponse)
 {
-    Request const request{http::request<http::string_body>{http::verb::post, "/", httpVersion_, "some message"}};
+    Request const request{http::request<http::string_body>{http::verb::post, "/", httpVersion, "some message"}};
     std::string const responseMessage = "response message";
 
-    web::ng::Response response{responseStatus_, responseMessage, request};
+    web::ng::Response response{responseStatus, responseMessage, request};
 
     auto const httpResponse = std::move(response).intoHttpResponse();
-    EXPECT_EQ(httpResponse.result(), responseStatus_);
+    EXPECT_EQ(httpResponse.result(), responseStatus);
     EXPECT_EQ(httpResponse.body(), responseMessage);
-    EXPECT_EQ(httpResponse.version(), httpVersion_);
+    EXPECT_EQ(httpResponse.version(), httpVersion);
     EXPECT_EQ(httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive());
 
     ASSERT_GT(httpResponse.count(http::field::content_type), 0);
@@ -80,15 +80,15 @@ TEST_F(ResponseTest, intoHttpResponse)
 
 TEST_F(ResponseTest, intoHttpResponseJson)
 {
-    Request const request{http::request<http::string_body>{http::verb::post, "/", httpVersion_, "some message"}};
+    Request const request{http::request<http::string_body>{http::verb::post, "/", httpVersion, "some message"}};
     boost::json::object const responseMessage{{"key", "value"}};
 
-    web::ng::Response response{responseStatus_, responseMessage, request};
+    web::ng::Response response{responseStatus, responseMessage, request};
 
     auto const httpResponse = std::move(response).intoHttpResponse();
-    EXPECT_EQ(httpResponse.result(), responseStatus_);
+    EXPECT_EQ(httpResponse.result(), responseStatus);
     EXPECT_EQ(httpResponse.body(), boost::json::serialize(responseMessage));
-    EXPECT_EQ(httpResponse.version(), httpVersion_);
+    EXPECT_EQ(httpResponse.version(), httpVersion);
     EXPECT_EQ(httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive());
 
     ASSERT_GT(httpResponse.count(http::field::content_type), 0);
@@ -102,7 +102,7 @@ TEST_F(ResponseTest, asConstBuffer)
 {
     Request const request("some request", Request::HttpHeaders{});
     std::string const responseMessage = "response message";
-    web::ng::Response const response{responseStatus_, responseMessage, request};
+    web::ng::Response const response{responseStatus, responseMessage, request};
 
     auto const buffer = response.asWsResponse();
     EXPECT_EQ(buffer.size(), responseMessage.size());
@@ -115,7 +115,7 @@ TEST_F(ResponseTest, asConstBufferJson)
 {
     Request const request("some request", Request::HttpHeaders{});
     boost::json::object const responseMessage{{"key", "value"}};
-    web::ng::Response const response{responseStatus_, responseMessage, request};
+    web::ng::Response const response{responseStatus, responseMessage, request};
 
     auto const buffer = response.asWsResponse();
     EXPECT_EQ(buffer.size(), boost::json::serialize(responseMessage).size());

@@ -74,7 +74,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedMethod = Request::Method::Unsupported,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestIsHttpTestBundle {
@@ -105,7 +105,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedIsHttp = false,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestAsHttpRequestTest : RequestTest {};
@@ -175,36 +175,36 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedTarget = std::nullopt,
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct RequestHttpHeadersTest : RequestTest {
-    http::field const headerName_ = http::field::user_agent;
-    std::string const headerValue_ = "clio";
+    http::field const headerName = http::field::user_agent;
+    std::string const headerValue = "clio";
 };
 
 TEST_F(RequestHttpHeadersTest, httpHeaders_HttpRequest)
 {
     auto httpRequest = http::request<http::string_body>{http::verb::get, "/", 11};
-    httpRequest.set(headerName_, headerValue_);
+    httpRequest.set(headerName, headerValue);
     Request const request{std::move(httpRequest)};
 
     auto const& headersFromRequest = request.httpHeaders();
-    ASSERT_EQ(headersFromRequest.count(headerName_), 1);
+    ASSERT_EQ(headersFromRequest.count(headerName), 1);
     ASSERT_EQ(std::distance(headersFromRequest.cbegin(), headersFromRequest.cend()), 1);
-    EXPECT_EQ(headersFromRequest.at(headerName_), headerValue_);
+    EXPECT_EQ(headersFromRequest.at(headerName), headerValue);
 }
 
 TEST_F(RequestHttpHeadersTest, httpHeaders_WsRequest)
 {
     Request::HttpHeaders headers;
-    headers.set(headerName_, headerValue_);
+    headers.set(headerName, headerValue);
     Request const request{"websocket message", headers};
 
     auto const& headersFromRequest = request.httpHeaders();
     ASSERT_EQ(std::distance(headersFromRequest.cbegin(), headersFromRequest.cend()), 1);
-    ASSERT_EQ(headersFromRequest.count(headerName_), 1);
-    EXPECT_EQ(headersFromRequest.at(headerName_), headerValue_);
+    ASSERT_EQ(headersFromRequest.count(headerName), 1);
+    EXPECT_EQ(headersFromRequest.at(headerName), headerValue);
 }
 
 struct RequestHeaderValueTest : RequestTest {};

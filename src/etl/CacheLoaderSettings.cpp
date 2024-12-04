@@ -47,7 +47,7 @@ CacheLoaderSettings::isDisabled() const
 }
 
 [[nodiscard]] CacheLoaderSettings
-make_CacheLoaderSettings(util::Config const& config)
+makeCacheLoaderSettings(util::Config const& config)
 {
     CacheLoaderSettings settings;
     settings.numThreads = config.valueOr("io_threads", settings.numThreads);

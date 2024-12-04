@@ -43,17 +43,17 @@ char const*
 toString(MetricType type)
 {
     switch (type) {
-        case MetricType::COUNTER_INT:
+        case MetricType::CounterInt:
             [[fallthrough]];
-        case MetricType::COUNTER_DOUBLE:
+        case MetricType::CounterDouble:
             return "counter";
-        case MetricType::GAUGE_INT:
+        case MetricType::GaugeInt:
             [[fallthrough]];
-        case MetricType::GAUGE_DOUBLE:
+        case MetricType::GaugeDouble:
             return "gauge";
-        case MetricType::HISTOGRAM_INT:
+        case MetricType::HistogramInt:
             [[fallthrough]];
-        case MetricType::HISTOGRAM_DOUBLE:
+        case MetricType::HistogramDouble:
             return "histogram";
         case MetricType::SUMMARY:
             return "summary";

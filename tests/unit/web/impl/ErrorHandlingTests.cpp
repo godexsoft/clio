@@ -39,10 +39,10 @@ using namespace web::impl;
 using namespace web;
 
 struct ErrorHandlingTests : NoLoggerFixture {
-    util::TagDecoratorFactory tagFactory_{util::Config{}};
-    std::string const clientIp_ = "some ip";
-    ConnectionBaseStrictMockPtr connection_ =
-        std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory_, clientIp_);
+    util::TagDecoratorFactory tagFactory{util::Config{}};
+    std::string const clientIp = "some ip";
+    ConnectionBaseStrictMockPtr connection =
+        std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory, clientIp);
 };
 
 struct ErrorHandlingComposeErrorTestBundle {
@@ -57,8 +57,8 @@ struct ErrorHandlingComposeErrorTest : ErrorHandlingTests,
 
 TEST_P(ErrorHandlingComposeErrorTest, composeError)
 {
-    connection_->upgraded = GetParam().connectionUpgraded;
-    ErrorHelper const errorHelper{connection_, GetParam().request};
+    connection->upgraded = GetParam().connectionUpgraded;
+    ErrorHelper const errorHelper{connection, GetParam().request};
     auto const result = errorHelper.composeError(rpc::RippledError::rpcNOT_READY);
     EXPECT_EQ(boost::json::serialize(result), boost::json::serialize(GetParam().expectedResult));
 }
@@ -115,7 +115,7 @@ INSTANTIATE_TEST_CASE_P(
                 {"request", {{"id", 1}, {"api_version", 2}}}}}}
          }}
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct ErrorHandlingSendErrorTestBundle {
@@ -131,10 +131,10 @@ struct ErrorHandlingSendErrorTest : ErrorHandlingTests,
 
 TEST_P(ErrorHandlingSendErrorTest, sendError)
 {
-    connection_->upgraded = GetParam().connectionUpgraded;
-    ErrorHelper const errorHelper{connection_};
+    connection->upgraded = GetParam().connectionUpgraded;
+    ErrorHelper const errorHelper{connection};
 
-    EXPECT_CALL(*connection_, send(std::string{GetParam().expectedMessage}, GetParam().expectedStatus));
+    EXPECT_CALL(*connection, send(std::string{GetParam().expectedMessage}, GetParam().expectedStatus));
     errorHelper.sendError(GetParam().status);
 }
 
@@ -152,35 +152,35 @@ INSTANTIATE_TEST_CASE_P(
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_InvalidApiVersion",
             false,
-            rpc::Status{rpc::ClioError::rpcINVALID_API_VERSION},
+            rpc::Status{rpc::ClioError::RpcInvalidApiVersion},
             "invalid_API_version",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandIsMissing",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_IS_MISSING},
+            rpc::Status{rpc::ClioError::RpcCommandIsMissing},
             "Null method",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandIsEmpty",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_IS_EMPTY},
+            rpc::Status{rpc::ClioError::RpcCommandIsEmpty},
             "method is empty",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_CommandNotString",
             false,
-            rpc::Status{rpc::ClioError::rpcCOMMAND_NOT_STRING},
+            rpc::Status{rpc::ClioError::RpcCommandNotString},
             "method is not string",
             boost::beast::http::status::bad_request
         },
         ErrorHandlingSendErrorTestBundle{
             "NotUpgradedConnection_ParamsUnparseable",
             false,
-            rpc::Status{rpc::ClioError::rpcPARAMS_UNPARSEABLE},
+            rpc::Status{rpc::ClioError::RpcParamsUnparseable},
             "params unparseable",
             boost::beast::http::status::bad_request
         },
@@ -192,15 +192,15 @@ INSTANTIATE_TEST_CASE_P(
             boost::beast::http::status::bad_request
         },
     }),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_F(ErrorHandlingTests, sendInternalError)
 {
-    ErrorHelper const errorHelper{connection_};
+    ErrorHelper const errorHelper{connection};
 
     EXPECT_CALL(
-        *connection_,
+        *connection,
         send(
             std::string{
                 R"({"result":{"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response"}})"
@@ -213,9 +213,9 @@ TEST_F(ErrorHandlingTests, sendInternalError)
 
 TEST_F(ErrorHandlingTests, sendNotReadyError)
 {
-    ErrorHelper const errorHelper{connection_};
+    ErrorHelper const errorHelper{connection};
     EXPECT_CALL(
-        *connection_,
+        *connection,
         send(
             std::string{
                 R"({"result":{"error":"notReady","error_code":13,"error_message":"Not ready to handle this request.","status":"error","type":"response"}})"
@@ -228,10 +228,10 @@ TEST_F(ErrorHandlingTests, sendNotReadyError)
 
 TEST_F(ErrorHandlingTests, sendTooBusyError_UpgradedConnection)
 {
-    connection_->upgraded = true;
-    ErrorHelper const errorHelper{connection_};
+    connection->upgraded = true;
+    ErrorHelper const errorHelper{connection};
     EXPECT_CALL(
-        *connection_,
+        *connection,
         send(
             std::string{
                 R"({"error":"tooBusy","error_code":9,"error_message":"The server is too busy to help you now.","status":"error","type":"response"})"
@@ -244,10 +244,10 @@ TEST_F(ErrorHandlingTests, sendTooBusyError_UpgradedConnection)
 
 TEST_F(ErrorHandlingTests, sendTooBusyError_NotUpgradedConnection)
 {
-    connection_->upgraded = false;
-    ErrorHelper const errorHelper{connection_};
+    connection->upgraded = false;
+    ErrorHelper const errorHelper{connection};
     EXPECT_CALL(
-        *connection_,
+        *connection,
         send(
             std::string{
                 R"({"error":"tooBusy","error_code":9,"error_message":"The server is too busy to help you now.","status":"error","type":"response"})"
@@ -260,10 +260,10 @@ TEST_F(ErrorHandlingTests, sendTooBusyError_NotUpgradedConnection)
 
 TEST_F(ErrorHandlingTests, sendJsonParsingError_UpgradedConnection)
 {
-    connection_->upgraded = true;
-    ErrorHelper const errorHelper{connection_};
+    connection->upgraded = true;
+    ErrorHelper const errorHelper{connection};
     EXPECT_CALL(
-        *connection_,
+        *connection,
         send(
             std::string{
                 R"({"error":"badSyntax","error_code":1,"error_message":"Syntax error.","status":"error","type":"response"})"
@@ -276,11 +276,10 @@ TEST_F(ErrorHandlingTests, sendJsonParsingError_UpgradedConnection)
 
 TEST_F(ErrorHandlingTests, sendJsonParsingError_NotUpgradedConnection)
 {
-    connection_->upgraded = false;
-    ErrorHelper const errorHelper{connection_};
+    connection->upgraded = false;
+    ErrorHelper const errorHelper{connection};
     EXPECT_CALL(
-        *connection_,
-        send(std::string{"Unable to parse JSON from the request"}, boost::beast::http::status::bad_request)
+        *connection, send(std::string{"Unable to parse JSON from the request"}, boost::beast::http::status::bad_request)
     );
     errorHelper.sendJsonParsingError();
 }

@@ -31,19 +31,19 @@ class FakeBook {
 
 public:
     std::string*
-    mutable_first_book()
+    mutableFirstBook()
     {
         return &first_;
     }
 
     std::string
-    book_base() const
+    bookBase() const
     {
         return base_;
     }
 
     std::string*
-    mutable_book_base()
+    mutableBookBase()
     {
         return &base_;
     }
@@ -79,7 +79,7 @@ private:
 
 public:
     ModType
-    mod_type() const
+    modType() const
     {
         return mod_;
     }
@@ -91,7 +91,7 @@ public:
     }
 
     std::string*
-    mutable_key()
+    mutableKey()
     {
         return &key_;
     }
@@ -103,32 +103,32 @@ public:
     }
 
     std::string*
-    mutable_data()
+    mutableData()
     {
         return &data_;
     }
 
     std::string*
-    mutable_predecessor()
+    mutablePredecessor()
     {
         return &predecessor_;
     }
 
     std::string*
-    mutable_successor()
+    mutableSuccessor()
     {
         return &successor_;
     }
 };
 
 class FakeLedgerObjects {
-    std::vector<FakeLedgerObject> objects;
+    std::vector<FakeLedgerObject> objects_;
 
 public:
     std::vector<FakeLedgerObject>*
-    mutable_objects()
+    mutableObjects()
     {
-        return &objects;
+        return &objects_;
     }
 };
 
@@ -137,7 +137,7 @@ class FakeTransactionsList {
 
 public:
     std::size_t
-    transactions_size() const
+    transactionsSize() const
     {
         return size_;
     }
@@ -148,7 +148,7 @@ class FakeObjectsList {
 
 public:
     std::size_t
-    objects_size() const
+    objectsSize() const
     {
         return size_;
     }
@@ -178,43 +178,43 @@ struct FakeFetchResponse {
     }
 
     static FakeTransactionsList
-    transactions_list()
+    transactionsList()
     {
         return {};
     }
 
     static FakeObjectsList
-    ledger_objects()
+    ledgerObjects()
     {
         return {};
     }
 
     bool
-    object_neighbors_included() const
+    objectNeighborsIncluded() const
     {
         return objectNeighborsIncluded;
     }
 
     FakeLedgerObjects*
-    mutable_ledger_objects()
+    mutableLedgerObjects()
     {
         return &ledgerObjects;
     }
 
     std::string
-    ledger_header() const
+    ledgerHeader() const
     {
         return ledgerHeader;
     }
 
     std::string*
-    mutable_ledger_header()
+    mutableLedgerHeader()
     {
         return &ledgerHeader;
     }
 
     FakeBookSuccessors*
-    mutable_book_successors()
+    mutableBookSuccessors()
     {
         return &bookSuccessors;
     }

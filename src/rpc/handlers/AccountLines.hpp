@@ -54,9 +54,9 @@ class AccountLinesHandler {
     std::shared_ptr<BackendInterface> const sharedPtrBackend_;
 
 public:
-    static auto constexpr LIMIT_MIN = 10;
-    static auto constexpr LIMIT_MAX = 400;
-    static auto constexpr LIMIT_DEFAULT = 200;
+    static auto constexpr kLIMIT_MIN = 10;
+    static auto constexpr kLIMIT_MAX = 400;
+    static auto constexpr kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold data for one line response
@@ -100,7 +100,7 @@ public:
         std::optional<std::string> peer;
         bool ignoreDefault = false;  // TODO: document
                                      // https://github.com/XRPLF/xrpl-dev-portal/issues/1839
-        uint32_t limit = LIMIT_DEFAULT;
+        uint32_t limit = kLIMIT_DEFAULT;
         std::optional<std::string> marker;
     };
 
@@ -124,29 +124,29 @@ public:
     static RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const rpcSpec = RpcSpec{
+        static auto const kRPC_SPEC = RpcSpec{
             {JS(account),
              validation::Required{},
              meta::WithCustomError{
-                 validation::CustomValidators::AccountValidator, Status(RippledError::rpcACT_MALFORMED)
+                 validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)
              }},
             {JS(peer),
              meta::WithCustomError{
-                 validation::CustomValidators::AccountValidator, Status(RippledError::rpcACT_MALFORMED)
+                 validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)
              }},
             {JS(ignore_default), validation::Type<bool>{}},
-            {JS(ledger_hash), validation::CustomValidators::Uint256HexStringValidator},
+            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
             {JS(limit),
              validation::Type<uint32_t>{},
              validation::Min(1u),
-             modifiers::Clamp<int32_t>{LIMIT_MIN, LIMIT_MAX}},
-            {JS(ledger_index), validation::CustomValidators::LedgerIndexValidator},
-            {JS(marker), validation::CustomValidators::AccountMarkerValidator},
+             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
+            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
+            {JS(marker), validation::CustomValidators::accountMarkerValidator},
             {JS(ledger), check::Deprecated{}},
             {"peer_index", check::Deprecated{}},
         };
 
-        return rpcSpec;
+        return kRPC_SPEC;
     }
 
     /**

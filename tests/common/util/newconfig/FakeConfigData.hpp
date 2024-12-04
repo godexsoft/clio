@@ -50,10 +50,10 @@ generateConfig()
         {"ip", ConfigValue{ConfigType::Double}.defaultValue(444.22)},
         {"array.[].sub", Array{ConfigValue{ConfigType::Double}}},
         {"array.[].sub2", Array{ConfigValue{ConfigType::String}.optional()}},
-        {"higher.[].low.section", Array{ConfigValue{ConfigType::String}.withConstraint(validateChannelName)}},
+        {"higher.[].low.section", Array{ConfigValue{ConfigType::String}.withConstraint(gValidateChannelName)}},
         {"higher.[].low.admin", Array{ConfigValue{ConfigType::Boolean}}},
         {"dosguard.whitelist.[]", Array{ConfigValue{ConfigType::String}.optional()}},
-        {"dosguard.port", ConfigValue{ConfigType::Integer}.defaultValue(55555).withConstraint(validatePort)},
+        {"dosguard.port", ConfigValue{ConfigType::Integer}.defaultValue(55555).withConstraint(gValidatePort)},
         {"optional.withDefault", ConfigValue{ConfigType::Double}.defaultValue(0.0).optional()},
         {"optional.withNoDefault", ConfigValue{ConfigType::Double}.optional()},
         {"requireValue", ConfigValue{ConfigType::String}}
@@ -101,7 +101,7 @@ generateConfig()
 */
 
 /* Used to test overwriting default values in ClioConfigDefinition Above */
-constexpr static auto JSONData = R"JSON(
+constexpr static auto kJSON_DATA = R"JSON(
     {
     "header": {
        "text1": "value",
@@ -194,7 +194,7 @@ constexpr static auto JSONData = R"JSON(
 */
 
 // Invalid Json key/values
-constexpr static auto invalidJSONData = R"JSON(
+constexpr static auto kINVALID_JSON_DATA = R"JSON(
 {
     "header": {
         "port": "999",

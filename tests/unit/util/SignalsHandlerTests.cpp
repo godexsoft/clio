@@ -37,28 +37,28 @@ using testing::MockFunction;
 using testing::StrictMock;
 
 struct SignalsHandlerTestsBase : NoLoggerFixture {
-    StrictMock<MockFunction<void()>> forceExitHandler_;
-    StrictMock<MockFunction<void()>> stopHandler_;
-    StrictMock<MockFunction<void()>> anotherStopHandler_;
+    StrictMock<MockFunction<void()>> forceExitHandler;
+    StrictMock<MockFunction<void()>> stopHandler;
+    StrictMock<MockFunction<void()>> anotherStopHandler;
 
     void
     allowTestToFinish()
     {
-        std::unique_lock const lock{mutex_};
-        testCanBeFinished_ = true;
-        cv_.notify_one();
+        std::unique_lock const lock{mutex};
+        testCanBeFinished = true;
+        cv.notify_one();
     }
 
     void
     wait()
     {
-        std::unique_lock lock{mutex_};
-        cv_.wait(lock, [this] { return testCanBeFinished_; });
+        std::unique_lock lock{mutex};
+        cv.wait(lock, [this] { return testCanBeFinished; });
     }
 
-    std::mutex mutex_;
-    std::condition_variable cv_;
-    bool testCanBeFinished_{false};
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool testCanBeFinished{false};
 };
 
 TEST(SignalsHandlerDeathTest, CantCreateTwoSignalsHandlers)
@@ -69,49 +69,49 @@ TEST(SignalsHandlerDeathTest, CantCreateTwoSignalsHandlers)
 }
 
 struct SignalsHandlerTests : SignalsHandlerTestsBase {
-    SignalsHandler handler_{
+    SignalsHandler handler{
         util::Config{boost::json::value{{"graceful_period", 3.0}}},
-        forceExitHandler_.AsStdFunction()
+        forceExitHandler.AsStdFunction()
     };
 };
 
 TEST_F(SignalsHandlerTests, NoSignal)
 {
-    handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    handler_.subscribeToStop(anotherStopHandler_.AsStdFunction());
+    handler.subscribeToStop(stopHandler.AsStdFunction());
+    handler.subscribeToStop(anotherStopHandler.AsStdFunction());
 }
 
 TEST_F(SignalsHandlerTests, OneSignal)
 {
-    handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    handler_.subscribeToStop(anotherStopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call());
-    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
+    handler.subscribeToStop(stopHandler.AsStdFunction());
+    handler.subscribeToStop(anotherStopHandler.AsStdFunction());
+    EXPECT_CALL(stopHandler, Call());
+    EXPECT_CALL(anotherStopHandler, Call()).WillOnce([this]() { allowTestToFinish(); });
     std::raise(SIGINT);
 
     wait();
 }
 
 struct SignalsHandlerTimeoutTests : SignalsHandlerTestsBase {
-    SignalsHandler handler_{
+    SignalsHandler handler{
         util::Config{boost::json::value{{"graceful_period", 0.001}}},
-        forceExitHandler_.AsStdFunction()
+        forceExitHandler.AsStdFunction()
     };
 };
 
 TEST_F(SignalsHandlerTimeoutTests, OneSignalTimeout)
 {
-    handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
-    EXPECT_CALL(forceExitHandler_, Call());
+    handler.subscribeToStop(stopHandler.AsStdFunction());
+    EXPECT_CALL(stopHandler, Call()).WillOnce([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+    EXPECT_CALL(forceExitHandler, Call());
     std::raise(SIGINT);
 }
 
 TEST_F(SignalsHandlerTests, TwoSignals)
 {
-    handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([] { std::raise(SIGINT); });
-    EXPECT_CALL(forceExitHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
+    handler.subscribeToStop(stopHandler.AsStdFunction());
+    EXPECT_CALL(stopHandler, Call()).WillOnce([] { std::raise(SIGINT); });
+    EXPECT_CALL(forceExitHandler, Call()).WillOnce([this]() { allowTestToFinish(); });
     std::raise(SIGINT);
 
     wait();
@@ -147,11 +147,11 @@ TEST_P(SignalsHandlerPriorityTests, Priority)
 {
     bool stopHandlerCalled = false;
 
-    handler_.subscribeToStop(anotherStopHandler_.AsStdFunction(), GetParam().anotherStopHandlerPriority);
-    handler_.subscribeToStop(stopHandler_.AsStdFunction(), GetParam().stopHandlerPriority);
+    handler.subscribeToStop(anotherStopHandler.AsStdFunction(), GetParam().anotherStopHandlerPriority);
+    handler.subscribeToStop(stopHandler.AsStdFunction(), GetParam().stopHandlerPriority);
 
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([&] { stopHandlerCalled = true; });
-    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([&] {
+    EXPECT_CALL(stopHandler, Call()).WillOnce([&] { stopHandlerCalled = true; });
+    EXPECT_CALL(anotherStopHandler, Call()).WillOnce([&] {
         EXPECT_TRUE(stopHandlerCalled);
         allowTestToFinish();
     });

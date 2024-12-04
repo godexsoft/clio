@@ -63,7 +63,7 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
 
 struct GrpcSourceNgTests : NoLoggerFixture, tests::util::WithMockXrpLedgerAPIService {
     GrpcSourceNgTests()
-        : WithMockXrpLedgerAPIService("localhost:0"), grpcSource_("localhost", std::to_string(getXRPLMockPort()))
+        : WithMockXrpLedgerAPIService("localhost:0"), grpcSource("localhost", std::to_string(getXRPLMockPort()))
     {
     }
 
@@ -124,14 +124,14 @@ struct GrpcSourceNgTests : NoLoggerFixture, tests::util::WithMockXrpLedgerAPISer
         };
     };
 
-    testing::StrictMock<MockLoadObserver> observer_;
-    etlng::impl::GrpcSource grpcSource_;
+    testing::StrictMock<MockLoadObserver> observer;
+    etlng::impl::GrpcSource grpcSource;
 };
 
 struct GrpcSourceNgLoadInitialLedgerTests : GrpcSourceNgTests {
-    uint32_t const sequence_ = 123u;
-    uint32_t const numMarkers_ = 4u;
-    bool const cacheOnly_ = false;
+    uint32_t const sequence = 123u;
+    uint32_t const numMarkers = 4u;
+    bool const cacheOnly = false;
 };
 
 }  // namespace
@@ -160,7 +160,7 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
             return grpc::Status{};
         });
 
-    auto const [status, response] = grpcSource_.fetchLedger(sequence, getObjects, getObjectNeighbors);
+    auto const [status, response] = grpcSource.fetchLedger(sequence, getObjects, getObjectNeighbors);
     ASSERT_TRUE(status.ok());
     EXPECT_TRUE(response.validated());
     EXPECT_FALSE(response.is_unlimited());
@@ -170,17 +170,17 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
 TEST_F(GrpcSourceNgLoadInitialLedgerTests, GetLedgerDataNotFound)
 {
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
-        .Times(numMarkers_)
+        .Times(numMarkers)
         .WillRepeatedly([&](grpc::ServerContext* /*context*/,
                             org::xrpl::rpc::v1::GetLedgerDataRequest const* request,
                             org::xrpl::rpc::v1::GetLedgerDataResponse* /*response*/) {
-            EXPECT_EQ(request->ledger().sequence(), sequence_);
+            EXPECT_EQ(request->ledger().sequence(), sequence);
             EXPECT_EQ(request->user(), "ETL");
 
             return grpc::Status{grpc::StatusCode::NOT_FOUND, "Not found"};
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    auto const [data, success] = grpcSource.loadInitialLedger(sequence, numMarkers, observer);
     EXPECT_TRUE(data.empty());
     EXPECT_FALSE(success);
 }
@@ -189,15 +189,15 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
 {
     auto const key = ripple::uint256{4};
     auto const keyStr = uint256ToString(key);
-    auto const object = CreateTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
+    auto const object = createTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence);
     auto const objectData = object.getSerializer().peekData();
 
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
-        .Times(numMarkers_)
+        .Times(numMarkers)
         .WillRepeatedly([&](grpc::ServerContext* /*context*/,
                             org::xrpl::rpc::v1::GetLedgerDataRequest const* request,
                             org::xrpl::rpc::v1::GetLedgerDataResponse* response) {
-            EXPECT_EQ(request->ledger().sequence(), sequence_);
+            EXPECT_EQ(request->ledger().sequence(), sequence);
             EXPECT_EQ(request->user(), "ETL");
 
             response->set_is_unlimited(true);
@@ -208,17 +208,17 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
             return grpc::Status{};
         });
 
-    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
-        .Times(numMarkers_)
+    EXPECT_CALL(observer, onInitialLoadGotMoreObjects)
+        .Times(numMarkers)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_FALSE(lastKey.has_value());
             EXPECT_EQ(data.size(), 1);
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    auto const [data, success] = grpcSource.loadInitialLedger(sequence, numMarkers, observer);
 
     EXPECT_TRUE(success);
-    EXPECT_EQ(data.size(), numMarkers_);
+    EXPECT_EQ(data.size(), numMarkers);
 
     EXPECT_EQ(data, std::vector<std::string>(4, keyStr));
 }
@@ -229,21 +229,21 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorre
     GTEST_SKIP() << "Skipping flaky test. Will be fixed in #1752.";
 
     auto const totalKeys = 256uz;
-    auto const totalPerMarker = totalKeys / numMarkers_;
+    auto const totalPerMarker = totalKeys / numMarkers;
     auto const batchSize = totalPerMarker / 4uz;
     auto const batchesPerMarker = totalPerMarker / batchSize;
 
-    auto keyStore = KeyStore(totalKeys, numMarkers_);
+    auto keyStore = KeyStore(totalKeys, numMarkers);
 
-    auto const object = CreateTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence_);
+    auto const object = createTicketLedgerObject("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", sequence);
     auto const objectData = object.getSerializer().peekData();
 
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
-        .Times(numMarkers_ * batchesPerMarker)
+        .Times(numMarkers * batchesPerMarker)
         .WillRepeatedly([&](grpc::ServerContext* /*context*/,
                             org::xrpl::rpc::v1::GetLedgerDataRequest const* request,
                             org::xrpl::rpc::v1::GetLedgerDataResponse* response) {
-            EXPECT_EQ(request->ledger().sequence(), sequence_);
+            EXPECT_EQ(request->ledger().sequence(), sequence);
             EXPECT_EQ(request->user(), "ETL");
 
             response->set_is_unlimited(true);
@@ -268,25 +268,25 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorre
     std::atomic_uint total = 0u;
     [[maybe_unused]] testing::InSequence const seqGuard;
 
-    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
-        .Times(numMarkers_)
+    EXPECT_CALL(observer, onInitialLoadGotMoreObjects)
+        .Times(numMarkers)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_LE(data.size(), batchSize);
             EXPECT_FALSE(lastKey.has_value());
             total += data.size();
         });
 
-    EXPECT_CALL(observer_, onInitialLoadGotMoreObjects)
-        .Times((numMarkers_ - 1) * batchesPerMarker)
+    EXPECT_CALL(observer, onInitialLoadGotMoreObjects)
+        .Times((numMarkers - 1) * batchesPerMarker)
         .WillRepeatedly([&](uint32_t, std::vector<Object> const& data, std::optional<std::string> lastKey) {
             EXPECT_LE(data.size(), batchSize);
             EXPECT_TRUE(lastKey.has_value());
             total += data.size();
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    auto const [data, success] = grpcSource.loadInitialLedger(sequence, numMarkers, observer);
 
     EXPECT_TRUE(success);
-    EXPECT_EQ(data.size(), numMarkers_);
+    EXPECT_EQ(data.size(), numMarkers);
     EXPECT_EQ(total, totalKeys);
 }

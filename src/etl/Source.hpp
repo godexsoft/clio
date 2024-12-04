@@ -174,7 +174,7 @@ using SourceFactory = std::function<SourcePtr(
  * @return The created source
  */
 SourcePtr
-make_Source(
+makeSource(
     util::Config const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,

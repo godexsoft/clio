@@ -39,94 +39,94 @@ struct ETLExtractorTest : util::prometheus::WithPrometheus, NoLoggerFixture {
     using LedgerFetcherType = MockLedgerFetcher;
     using ExtractorType = etl::impl::Extractor<ExtractionDataPipeType, LedgerFetcherType>;
 
-    ExtractionDataPipeType dataPipe_;
-    MockNetworkValidatedLedgersPtr networkValidatedLedgers_;
-    LedgerFetcherType ledgerFetcher_;
-    SystemState state_;
+    ExtractionDataPipeType dataPipe;
+    MockNetworkValidatedLedgersPtr networkValidatedLedgers;
+    LedgerFetcherType ledgerFetcher;
+    SystemState state;
 
     ETLExtractorTest()
     {
-        state_.isStopping = false;
-        state_.writeConflict = false;
-        state_.isReadOnly = false;
-        state_.isWriting = false;
+        state.isStopping = false;
+        state.writeConflict = false;
+        state.isReadOnly = false;
+        state.isWriting = false;
     }
 };
 
 TEST_F(ETLExtractorTest, StopsWhenCurrentSequenceExceedsFinishSequence)
 {
-    EXPECT_CALL(*networkValidatedLedgers_, waitUntilValidatedByNetwork).Times(3).WillRepeatedly(Return(true));
-    EXPECT_CALL(dataPipe_, getStride).Times(3).WillRepeatedly(Return(4));
+    EXPECT_CALL(*networkValidatedLedgers, waitUntilValidatedByNetwork).Times(3).WillRepeatedly(Return(true));
+    EXPECT_CALL(dataPipe, getStride).Times(3).WillRepeatedly(Return(4));
 
     auto response = FakeFetchResponse{};
-    EXPECT_CALL(ledgerFetcher_, fetchDataAndDiff).Times(3).WillRepeatedly(Return(response));
-    EXPECT_CALL(dataPipe_, push).Times(3);
-    EXPECT_CALL(dataPipe_, finish(0)).Times(1);
+    EXPECT_CALL(ledgerFetcher, fetchDataAndDiff).Times(3).WillRepeatedly(Return(response));
+    EXPECT_CALL(dataPipe, push).Times(3);
+    EXPECT_CALL(dataPipe, finish(0)).Times(1);
 
     // expected to invoke for seq 0, 4, 8 and finally stop as seq will be greater than finishing seq
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 11, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 11, state};
 }
 
 TEST_F(ETLExtractorTest, StopsOnWriteConflict)
 {
-    EXPECT_CALL(dataPipe_, finish(0));
-    state_.writeConflict = true;
+    EXPECT_CALL(dataPipe, finish(0));
+    state.writeConflict = true;
 
     // despite finish sequence being far ahead, we set writeConflict and so exit the loop immediately
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 64, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 64, state};
 }
 
 TEST_F(ETLExtractorTest, StopsOnServerShutdown)
 {
-    EXPECT_CALL(dataPipe_, finish(0));
-    state_.isStopping = true;
+    EXPECT_CALL(dataPipe, finish(0));
+    state.isStopping = true;
 
     // despite finish sequence being far ahead, we set isStopping and so exit the loop immediately
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 64, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 64, state};
 }
 
 // stop extractor thread if fetcheResponse is empty
 TEST_F(ETLExtractorTest, StopsIfFetchIsUnsuccessful)
 {
-    EXPECT_CALL(*networkValidatedLedgers_, waitUntilValidatedByNetwork).WillOnce(Return(true));
+    EXPECT_CALL(*networkValidatedLedgers, waitUntilValidatedByNetwork).WillOnce(Return(true));
 
-    EXPECT_CALL(ledgerFetcher_, fetchDataAndDiff).WillOnce(Return(std::nullopt));
-    EXPECT_CALL(dataPipe_, finish(0));
+    EXPECT_CALL(ledgerFetcher, fetchDataAndDiff).WillOnce(Return(std::nullopt));
+    EXPECT_CALL(dataPipe, finish(0));
 
     // we break immediately because fetchDataAndDiff returns nullopt
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 64, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 64, state};
 }
 
 TEST_F(ETLExtractorTest, StopsIfWaitingUntilValidatedByNetworkTimesOut)
 {
     // note that in actual clio code we don't return false unless a timeout is specified and exceeded
-    EXPECT_CALL(*networkValidatedLedgers_, waitUntilValidatedByNetwork).WillOnce(Return(false));
-    EXPECT_CALL(dataPipe_, finish(0)).Times(1);
+    EXPECT_CALL(*networkValidatedLedgers, waitUntilValidatedByNetwork).WillOnce(Return(false));
+    EXPECT_CALL(dataPipe, finish(0)).Times(1);
 
     // we emulate waitUntilValidatedByNetwork timing out which would lead to shutdown of the extractor thread
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 64, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 64, state};
 }
 
 TEST_F(ETLExtractorTest, SendsCorrectResponseToDataPipe)
 {
-    EXPECT_CALL(*networkValidatedLedgers_, waitUntilValidatedByNetwork).WillOnce(Return(true));
-    EXPECT_CALL(dataPipe_, getStride).WillOnce(Return(4));
+    EXPECT_CALL(*networkValidatedLedgers, waitUntilValidatedByNetwork).WillOnce(Return(true));
+    EXPECT_CALL(dataPipe, getStride).WillOnce(Return(4));
 
     auto response = FakeFetchResponse{1234};
 
-    EXPECT_CALL(ledgerFetcher_, fetchDataAndDiff).WillOnce(Return(response));
-    EXPECT_CALL(dataPipe_, push(_, std::optional{response}));
-    EXPECT_CALL(dataPipe_, finish(0));
+    EXPECT_CALL(ledgerFetcher, fetchDataAndDiff).WillOnce(Return(response));
+    EXPECT_CALL(dataPipe, push(_, std::optional{response}));
+    EXPECT_CALL(dataPipe, finish(0));
 
     // expect to finish after just one response due to finishSequence set to 1
-    ExtractorType extractor{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 0, 1, state_};
+    ExtractorType extractor{dataPipe, networkValidatedLedgers, ledgerFetcher, 0, 1, state};
     extractor.waitTillFinished();  // this is what clio does too. waiting for the thread to join
 }
 
 TEST_F(ETLExtractorTest, CallsPipeFinishWithInitialSequenceAtExit)
 {
-    EXPECT_CALL(dataPipe_, finish(123));
-    state_.isStopping = true;
+    EXPECT_CALL(dataPipe, finish(123));
+    state.isStopping = true;
 
-    ExtractorType{dataPipe_, networkValidatedLedgers_, ledgerFetcher_, 123, 234, state_};
+    ExtractorType{dataPipe, networkValidatedLedgers, ledgerFetcher, 123, 234, state};
 }

@@ -81,8 +81,8 @@ struct Context : util::Taggable {
         , clientIp(std::move(clientIp))
         , isAdmin(isAdmin)
     {
-        static util::Logger const perfLog{"Performance"};
-        LOG(perfLog.debug()) << tag() << "new Context created";
+        static util::Logger const kPERF_LOG{"Performance"};
+        LOG(kPERF_LOG.debug()) << tag() << "new Context created";
     }
 
     Context(Context&&) = default;

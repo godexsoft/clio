@@ -45,11 +45,11 @@ namespace json = boost::json;
 using namespace testing;
 using namespace feed;
 
-constexpr static auto ACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr static auto kACCOUNT = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr static auto kACCOUN_T2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
 
 struct RPCUnsubscribeTest : HandlerBaseTest {
-    web::SubscriptionContextPtr session_ = std::make_shared<MockSession>();
+    web::SubscriptionContextPtr session = std::make_shared<MockSession>();
     StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr;
 };
 
@@ -489,7 +489,7 @@ INSTANTIATE_TEST_CASE_P(
     RPCUnsubscribe,
     UnsubscribeParameterTest,
     ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(UnsubscribeParameterTest, InvalidParams)
@@ -510,7 +510,7 @@ TEST_F(RPCUnsubscribeTest, EmptyResponse)
 {
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(json::parse(R"({})"), Context{yield, session_});
+        auto const output = handler.process(json::parse(R"({})"), Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -533,7 +533,7 @@ TEST_F(RPCUnsubscribeTest, Streams)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(input, Context{yield, session_});
+        auto const output = handler.process(input, Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -545,16 +545,17 @@ TEST_F(RPCUnsubscribeTest, Accounts)
         R"({{
             "accounts": ["{}","{}"]
         }})",
-        ACCOUNT,
-        ACCOUNT2
+        kACCOUNT,
+        kACCOUN_T2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubAccount(rpc::accountFromStringStrict(ACCOUNT).value(), _)).Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubAccount(rpc::accountFromStringStrict(ACCOUNT2).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubAccount(rpc::accountFromStringStrict(kACCOUNT).value(), _)).Times(1);
+    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubAccount(rpc::accountFromStringStrict(kACCOUN_T2).value(), _))
+        .Times(1);
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(input, Context{yield, session_});
+        auto const output = handler.process(input, Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -566,18 +567,18 @@ TEST_F(RPCUnsubscribeTest, AccountsProposed)
         R"({{
             "accounts_proposed": ["{}","{}"]
         }})",
-        ACCOUNT,
-        ACCOUNT2
+        kACCOUNT,
+        kACCOUN_T2
     ));
 
-    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubProposedAccount(rpc::accountFromStringStrict(ACCOUNT).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubProposedAccount(rpc::accountFromStringStrict(kACCOUNT).value(), _))
         .Times(1);
-    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubProposedAccount(rpc::accountFromStringStrict(ACCOUNT2).value(), _))
+    EXPECT_CALL(*mockSubscriptionManagerPtr, unsubProposedAccount(rpc::accountFromStringStrict(kACCOUN_T2).value(), _))
         .Times(1);
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(input, Context{yield, session_});
+        auto const output = handler.process(input, Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -600,7 +601,7 @@ TEST_F(RPCUnsubscribeTest, Books)
                 }}
             ]
         }})",
-        ACCOUNT
+        kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
@@ -611,7 +612,7 @@ TEST_F(RPCUnsubscribeTest, Books)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(input, Context{yield, session_});
+        auto const output = handler.process(input, Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -633,7 +634,7 @@ TEST_F(RPCUnsubscribeTest, SingleBooks)
                 }}
             ]
         }})",
-        ACCOUNT
+        kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
@@ -643,7 +644,7 @@ TEST_F(RPCUnsubscribeTest, SingleBooks)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr}};
-        auto const output = handler.process(input, Context{yield, session_});
+        auto const output = handler.process(input, Context{yield, session});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -667,7 +668,7 @@ TEST(RPCUnsubscribeSpecTest, DeprecatedFields)
     auto const& warning = warnings[0].as_object();
     ASSERT_TRUE(warning.contains("id"));
     ASSERT_TRUE(warning.contains("message"));
-    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::warnRPC_DEPRECATED));
+    EXPECT_EQ(warning.at("id").as_int64(), static_cast<int64_t>(rpc::WarningCode::WarnRpcDeprecated));
     for (auto const& field : {"url", "rt_accounts", "rt_accounts"}) {
         EXPECT_NE(
             warning.at("message").as_string().find(fmt::format("Field '{}' is deprecated.", field)), std::string::npos

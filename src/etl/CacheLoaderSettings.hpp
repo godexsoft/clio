@@ -64,6 +64,6 @@ struct CacheLoaderSettings {
  * @returns The CacheLoaderSettings object
  */
 [[nodiscard]] CacheLoaderSettings
-make_CacheLoaderSettings(util::Config const& config);
+makeCacheLoaderSettings(util::Config const& config);
 
 }  // namespace etl

@@ -40,19 +40,19 @@
 
 using namespace rpc;
 
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
-constexpr static auto SEQ = 30;
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr static auto kRANGEMIN = 10;
+constexpr static auto kRANGEMAX = 30;
+constexpr static auto kSEQ = 30;
+constexpr static auto kLEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 struct RPCFeatureHandlerTest : HandlerBaseTest {
     RPCFeatureHandlerTest()
     {
-        backend->setRange(RANGEMIN, RANGEMAX);
+        backend_->setRange(kRANGEMIN, kRANGEMAX);
     }
 
 protected:
-    StrictMockAmendmentCenterSharedPtr mockAmendmentCenterPtr;
+    StrictMockAmendmentCenterSharedPtr mockAmendmentCenterPtr_;
 };
 
 struct RPCFeatureHandlerParamTestCaseBundle {
@@ -134,14 +134,14 @@ INSTANTIATE_TEST_CASE_P(
     RPCFeatureGroup1,
     RPCFeatureHandlerParamTest,
     testing::ValuesIn(generateTestValuesForParametersTest()),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_P(RPCFeatureHandlerParamTest, InvalidParams)
 {
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 2});
         ASSERT_FALSE(output);
@@ -154,15 +154,15 @@ TEST_P(RPCFeatureHandlerParamTest, InvalidParams)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
             R"({{
                 "ledger_index": {}
             }})",
-            RANGEMAX
+            kRANGEMAX
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -174,15 +174,15 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 {
-    EXPECT_CALL(*backend, fetchLedgerBySequence(RANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGEMAX, testing::_)).WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
             R"({{
                 "ledger_index": "{}"
             }})",
-            RANGEMAX
+            kRANGEMAX
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -194,16 +194,16 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 
 TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
 {
-    EXPECT_CALL(*backend, fetchLedgerByHash(ripple::uint256{LEDGERHASH}, testing::_))
+    EXPECT_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGERHASH}, testing::_))
         .WillOnce(testing::Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
             R"({{
                 "ledger_hash": "{}"
             }})",
-            LEDGERHASH
+            kLEDGERHASH
         ));
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -216,7 +216,7 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
 TEST_F(RPCFeatureHandlerTest, AlwaysNoPermissionForVetoed)
 {
     runSpawn([this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output =
             handler.process(boost::json::parse(R"({"vetoed": true, "feature": "foo"})"), Context{yield});
 
@@ -234,26 +234,26 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
 {
     auto const all = std::vector<data::Amendment>{
         {
-            .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .name = Amendments::kFIX_UNIVERSAL_NUMBER,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_UNIVERSAL_NUMBER),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
-            .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .name = Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         }
     };
-    auto const keys = std::vector<data::AmendmentKey>{Amendments::fixUniversalNumber};
+    auto const keys = std::vector<data::AmendmentKey>{Amendments::kFIX_UNIVERSAL_NUMBER};
     auto const enabled = std::vector<bool>{true};
 
-    EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, getAll).WillOnce(testing::ReturnRef(all));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(testing::_, keys, kSEQ)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
         R"({{
@@ -267,12 +267,12 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        kLEDGERHASH,
+        kSEQ
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output = handler.process(boost::json::parse(R"({"feature": "fixUniversalNumber"})"), Context{yield});
 
         ASSERT_TRUE(output);
@@ -284,26 +284,26 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
 {
     auto const all = std::vector<data::Amendment>{
         {
-            .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .name = Amendments::kFIX_UNIVERSAL_NUMBER,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_UNIVERSAL_NUMBER),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
-            .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .name = Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         }
     };
-    auto const keys = std::vector<data::AmendmentKey>{Amendments::fixUniversalNumber};
+    auto const keys = std::vector<data::AmendmentKey>{Amendments::kFIX_UNIVERSAL_NUMBER};
     auto const enabled = std::vector<bool>{true};
 
-    EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, getAll).WillOnce(testing::ReturnRef(all));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(testing::_, keys, kSEQ)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
         R"({{
@@ -317,12 +317,12 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        kLEDGERHASH,
+        kSEQ
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output = handler.process(
             boost::json::parse(R"({"feature": "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0"})"),
             Context{yield}
@@ -336,19 +336,19 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
 TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
 {
     auto const all = std::vector<data::Amendment>{{
-        .name = Amendments::fixUniversalNumber,
-        .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+        .name = Amendments::kFIX_UNIVERSAL_NUMBER,
+        .feature = data::Amendment::getAmendmentId(Amendments::kFIX_UNIVERSAL_NUMBER),
         .isSupportedByXRPL = true,
         .isSupportedByClio = true,
     }};
     auto const keys = std::vector<data::AmendmentKey>{"nonexistent"};
-    EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, getAll).WillOnce(testing::ReturnRef(all));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     runSpawn([this](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output = handler.process(boost::json::parse(R"({"feature": "nonexistent"})"), Context{yield});
 
         ASSERT_FALSE(output);
@@ -363,30 +363,31 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
 {
     auto const all = std::vector<data::Amendment>{
         {
-            .name = Amendments::fixUniversalNumber,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixUniversalNumber),
+            .name = Amendments::kFIX_UNIVERSAL_NUMBER,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_UNIVERSAL_NUMBER),
             .isSupportedByXRPL = true,
             .isSupportedByClio = true,
         },
         {
-            .name = Amendments::fixRemoveNFTokenAutoTrustLine,
-            .feature = data::Amendment::GetAmendmentId(Amendments::fixRemoveNFTokenAutoTrustLine),
+            .name = Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE,
+            .feature = data::Amendment::getAmendmentId(Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE),
             .isSupportedByXRPL = true,
             .isSupportedByClio = false,
         }
     };
-    auto const keys =
-        std::vector<data::AmendmentKey>{Amendments::fixUniversalNumber, Amendments::fixRemoveNFTokenAutoTrustLine};
+    auto const keys = std::vector<data::AmendmentKey>{
+        Amendments::kFIX_UNIVERSAL_NUMBER, Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE
+    };
     auto const enabled = std::vector<bool>{true, false};
 
-    EXPECT_CALL(*mockAmendmentCenterPtr, getAll).WillOnce(testing::ReturnRef(all));
-    EXPECT_CALL(*mockAmendmentCenterPtr, isEnabled(testing::_, keys, SEQ)).WillOnce(testing::Return(enabled));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, getAll).WillOnce(testing::ReturnRef(all));
+    EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(testing::_, keys, kSEQ)).WillOnce(testing::Return(enabled));
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const amendments =
-        CreateAmendmentsObject({Amendments::fixUniversalNumber, Amendments::fixRemoveNFTokenAutoTrustLine});
+        createAmendmentsObject({Amendments::kFIX_UNIVERSAL_NUMBER, Amendments::kFIX_REMOVE_NF_TOKEN_AUTO_TRUST_LINE});
 
     auto const expectedOutput = fmt::format(
         R"({{
@@ -408,12 +409,12 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
             "ledger_index": {}, 
             "validated": true
         }})",
-        LEDGERHASH,
-        SEQ
+        kLEDGERHASH,
+        kSEQ
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
-        auto const handler = AnyHandler{FeatureHandler{backend, mockAmendmentCenterPtr}};
+        auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output = handler.process(boost::json::parse(R"({})"), Context{yield});
 
         ASSERT_TRUE(output);

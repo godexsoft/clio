@@ -33,40 +33,40 @@
 using namespace web;
 
 struct SubscriptionContextTests : NoLoggerFixture {
-    util::TagDecoratorFactory tagFactory_{util::Config{}};
-    ConnectionBaseStrictMockPtr connection_ =
-        std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory_, "some ip");
+    util::TagDecoratorFactory tagFactory{util::Config{}};
+    ConnectionBaseStrictMockPtr connection =
+        std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory, "some ip");
 
-    SubscriptionContext subscriptionContext_{tagFactory_, connection_};
-    testing::StrictMock<testing::MockFunction<void(SubscriptionContextInterface*)>> callbackMock_;
+    SubscriptionContext subscriptionContext{tagFactory, connection};
+    testing::StrictMock<testing::MockFunction<void(SubscriptionContextInterface*)>> callbackMock;
 };
 
 TEST_F(SubscriptionContextTests, send)
 {
     auto message = std::make_shared<std::string>("message");
-    EXPECT_CALL(*connection_, send(message));
-    subscriptionContext_.send(message);
+    EXPECT_CALL(*connection, send(message));
+    subscriptionContext.send(message);
 }
 
 TEST_F(SubscriptionContextTests, sendConnectionExpired)
 {
     auto message = std::make_shared<std::string>("message");
-    connection_.reset();
-    subscriptionContext_.send(message);
+    connection.reset();
+    subscriptionContext.send(message);
 }
 
 TEST_F(SubscriptionContextTests, onDisconnect)
 {
-    auto localContext = std::make_unique<SubscriptionContext>(tagFactory_, connection_);
-    localContext->onDisconnect(callbackMock_.AsStdFunction());
+    auto localContext = std::make_unique<SubscriptionContext>(tagFactory, connection);
+    localContext->onDisconnect(callbackMock.AsStdFunction());
 
-    EXPECT_CALL(callbackMock_, Call(localContext.get()));
+    EXPECT_CALL(callbackMock, Call(localContext.get()));
     localContext.reset();
 }
 
 TEST_F(SubscriptionContextTests, setApiSubversion)
 {
-    EXPECT_EQ(subscriptionContext_.apiSubversion(), 0);
-    subscriptionContext_.setApiSubversion(42);
-    EXPECT_EQ(subscriptionContext_.apiSubversion(), 42);
+    EXPECT_EQ(subscriptionContext.apiSubversion(), 0);
+    subscriptionContext.setApiSubversion(42);
+    EXPECT_EQ(subscriptionContext.apiSubversion(), 42);
 }

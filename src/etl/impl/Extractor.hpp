@@ -109,7 +109,7 @@ private:
                 break;
 
             // TODO: extract this part into a strategy perhaps
-            auto const tps = fetchResponse->transactions_list().transactions_size() / time;
+            auto const tps = fetchResponse->transactionsList().transactionsSize() / time;
             LOG(log_.info()) << "Extract phase time = " << time << "; Extract phase tps = " << tps
                              << "; Avg extract time = " << totalTime / (currentSequence - startSequence_ + 1)
                              << "; seq = " << currentSequence;

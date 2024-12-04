@@ -124,7 +124,7 @@ public:
      * @return A new instance of the RPC engine
      */
     static std::shared_ptr<RPCEngine>
-    make_RPCEngine(
+    makeRpcEngine(
         util::Config const& config,
         std::shared_ptr<BackendInterface> const& backend,
         std::shared_ptr<LoadBalancerType> const& balancer,

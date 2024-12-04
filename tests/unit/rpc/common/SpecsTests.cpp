@@ -86,8 +86,8 @@ struct ProcessorTestBundle {
 };
 
 struct FieldProcessorTests : SpecsTests, testing::WithParamInterface<ProcessorTestBundle> {
-    FieldSpec spec_{"key", RequirementMockRef(requirementMock), RequirementMockRef(anotherRequirementMock)};
-    boost::json::value json_;
+    FieldSpec spec{"key", RequirementMockRef(requirementMock), RequirementMockRef(anotherRequirementMock)};
+    boost::json::value json;
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -119,13 +119,13 @@ TEST_P(FieldProcessorTests, FieldSpecWithRequirementProcess)
             .WillOnce(testing::Return(GetParam().otherRequirementResult.value()));
     }
 
-    auto const result = spec_.process(json_);
+    auto const result = spec.process(json);
     EXPECT_EQ(result, GetParam().expectedResult);
 }
 
 TEST_F(FieldProcessorTests, FieldSpecWithRequirementCheck)
 {
-    auto const result = spec_.check(json_);
+    auto const result = spec.check(json);
     EXPECT_EQ(result, check::Warnings{});
 }
 
@@ -137,8 +137,8 @@ struct FieldCheckerTestBundle {
 };
 
 struct FieldCheckerTests : SpecsTests, testing::WithParamInterface<FieldCheckerTestBundle> {
-    FieldSpec spec_{"key", CheckMockRef(checkMock), CheckMockRef(anotherCheckMock)};
-    boost::json::value json_;
+    FieldSpec spec{"key", CheckMockRef(checkMock), CheckMockRef(anotherCheckMock)};
+    boost::json::value json;
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -148,23 +148,23 @@ INSTANTIATE_TEST_SUITE_P(
         FieldCheckerTestBundle{"NoWarnings", std::nullopt, std::nullopt, check::Warnings{}},
         FieldCheckerTestBundle{
             "FirstWarning",
-            check::Warning{WarningCode::warnUNKNOWN, "error1"},
+            check::Warning{WarningCode::WarnUnknown, "error1"},
             std::nullopt,
-            check::Warnings{check::Warning{WarningCode::warnUNKNOWN, "error1"}}
+            check::Warnings{check::Warning{WarningCode::WarnUnknown, "error1"}}
         },
         FieldCheckerTestBundle{
             "SecondWarning",
             std::nullopt,
-            check::Warning{WarningCode::warnUNKNOWN, "error2"},
-            check::Warnings{check::Warning{WarningCode::warnUNKNOWN, "error2"}}
+            check::Warning{WarningCode::WarnUnknown, "error2"},
+            check::Warnings{check::Warning{WarningCode::WarnUnknown, "error2"}}
         },
         FieldCheckerTestBundle{
             "BothWarnings",
-            check::Warning{WarningCode::warnUNKNOWN, "error1"},
-            check::Warning{WarningCode::warnUNKNOWN, "error2"},
+            check::Warning{WarningCode::WarnUnknown, "error1"},
+            check::Warning{WarningCode::WarnUnknown, "error2"},
             check::Warnings{
-                check::Warning{WarningCode::warnUNKNOWN, "error1"},
-                check::Warning{WarningCode::warnUNKNOWN, "error2"}
+                check::Warning{WarningCode::WarnUnknown, "error1"},
+                check::Warning{WarningCode::WarnUnknown, "error2"}
             }
         }
     ),
@@ -173,7 +173,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_F(FieldCheckerTests, FieldSpecWithCheckProcess)
 {
-    auto const result = spec_.process(json_);
+    auto const result = spec.process(json);
     EXPECT_EQ(result, MaybeError{});
 }
 
@@ -181,7 +181,7 @@ TEST_P(FieldCheckerTests, FieldSpecWithCheck)
 {
     EXPECT_CALL(checkMock, check).WillOnce(testing::Return(GetParam().checkResult));
     EXPECT_CALL(anotherCheckMock, check).WillOnce(testing::Return(GetParam().otherCheckResult));
-    auto const result = spec_.check(json_);
+    auto const result = spec.check(json);
     EXPECT_EQ(result, GetParam().expectedWarnings);
 }
 
@@ -230,8 +230,8 @@ struct RpcSpecCheckTestBundle {
 };
 
 struct RpcSpecCheckTests : SpecsTests, testing::WithParamInterface<RpcSpecCheckTestBundle> {
-    RpcSpec spec_{{"key1", CheckMockRef(checkMock)}, {"key2", CheckMockRef(anotherCheckMock)}};
-    boost::json::value json_;
+    RpcSpec spec{{"key1", CheckMockRef(checkMock)}, {"key2", CheckMockRef(anotherCheckMock)}};
+    boost::json::value json;
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -241,27 +241,27 @@ INSTANTIATE_TEST_SUITE_P(
         RpcSpecCheckTestBundle{"NoWarnings", std::nullopt, std::nullopt, {}},
         RpcSpecCheckTestBundle{
             "FirstWarning",
-            check::Warning{WarningCode::warnUNKNOWN, "error1"},
+            check::Warning{WarningCode::WarnUnknown, "error1"},
             std::nullopt,
-            {{WarningCode::warnUNKNOWN, {"error1"}}}
+            {{WarningCode::WarnUnknown, {"error1"}}}
         },
         RpcSpecCheckTestBundle{
             "SecondWarning",
             std::nullopt,
-            check::Warning{WarningCode::warnUNKNOWN, "error2"},
-            {{WarningCode::warnUNKNOWN, {"error2"}}}
+            check::Warning{WarningCode::WarnUnknown, "error2"},
+            {{WarningCode::WarnUnknown, {"error2"}}}
         },
         RpcSpecCheckTestBundle{
             "BothWarnings",
-            check::Warning{WarningCode::warnUNKNOWN, "error1"},
-            check::Warning{WarningCode::warnUNKNOWN, "error2"},
-            {{WarningCode::warnUNKNOWN, {"error1", "error2"}}}
+            check::Warning{WarningCode::WarnUnknown, "error1"},
+            check::Warning{WarningCode::WarnUnknown, "error2"},
+            {{WarningCode::WarnUnknown, {"error1", "error2"}}}
         },
         RpcSpecCheckTestBundle{
             "DifferentWarningCodes",
-            check::Warning{WarningCode::warnUNKNOWN, "error1"},
-            check::Warning{WarningCode::warnRPC_CLIO, "error2"},
-            {{WarningCode::warnUNKNOWN, {"error1"}}, {WarningCode::warnRPC_CLIO, {"error2"}}}
+            check::Warning{WarningCode::WarnUnknown, "error1"},
+            check::Warning{WarningCode::WarnRpcClio, "error2"},
+            {{WarningCode::WarnUnknown, {"error1"}}, {WarningCode::WarnRpcClio, {"error2"}}}
         }
 
     ),
@@ -273,7 +273,7 @@ TEST_P(RpcSpecCheckTests, Check)
     EXPECT_CALL(checkMock, check).WillOnce(testing::Return(GetParam().checkResult));
     EXPECT_CALL(anotherCheckMock, check).WillOnce(testing::Return(GetParam().otherCheckResult));
 
-    auto const result = spec_.check(json_);
+    auto const result = spec.check(json);
     ASSERT_EQ(result.size(), GetParam().expectedWarnings.size());
     for (auto const& entry : result) {
         ASSERT_TRUE(entry.is_object());
