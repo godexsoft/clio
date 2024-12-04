@@ -91,9 +91,9 @@ private:
 
     std::future<void> runFuture_;
 
-    static constexpr std::chrono::seconds WS_TIMEOUT{30};
-    static constexpr std::chrono::seconds RETRY_MAX_DELAY{30};
-    static constexpr std::chrono::seconds RETRY_DELAY{1};
+    static constexpr std::chrono::seconds kWS_TIMEOUT{30};
+    static constexpr std::chrono::seconds kRETRY_MAX_DELAY{30};
+    static constexpr std::chrono::seconds kRETRY_DELAY{1};
 
 public:
     /**
@@ -121,8 +121,8 @@ public:
         OnConnectHook onConnect,
         OnDisconnectHook onDisconnect,
         OnLedgerClosedHook onLedgerClosed,
-        std::chrono::steady_clock::duration const wsTimeout = WS_TIMEOUT,
-        std::chrono::steady_clock::duration const retryDelay = RETRY_DELAY
+        std::chrono::steady_clock::duration const wsTimeout = kWS_TIMEOUT,
+        std::chrono::steady_clock::duration const retryDelay = kRETRY_DELAY
     );
 
     /**

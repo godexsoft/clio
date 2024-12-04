@@ -65,7 +65,7 @@ CounterInt&
 PrometheusImpl::counterInt(std::string name, Labels labels, std::optional<std::string> description)
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::COUNTER_INT);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::CounterInt);
     return convertBaseTo<CounterInt>(metricBase);
 }
 
@@ -73,7 +73,7 @@ CounterDouble&
 PrometheusImpl::counterDouble(std::string name, Labels labels, std::optional<std::string> description)
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::COUNTER_DOUBLE);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::CounterDouble);
     return convertBaseTo<CounterDouble>(metricBase);
 }
 
@@ -81,7 +81,7 @@ GaugeInt&
 PrometheusImpl::gaugeInt(std::string name, Labels labels, std::optional<std::string> description)
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::GAUGE_INT);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::GaugeInt);
     return convertBaseTo<GaugeInt>(metricBase);
 }
 
@@ -89,7 +89,7 @@ GaugeDouble&
 PrometheusImpl::gaugeDouble(std::string name, Labels labels, std::optional<std::string> description)
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::GAUGE_DOUBLE);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::GaugeDouble);
     return convertBaseTo<GaugeDouble>(metricBase);
 }
 
@@ -102,7 +102,7 @@ PrometheusImpl::histogramInt(
 )
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::HISTOGRAM_INT, buckets);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::HistogramInt, buckets);
     return convertBaseTo<HistogramInt>(metricBase);
 }
 
@@ -115,7 +115,7 @@ PrometheusImpl::histogramDouble(
 )
 {
     MetricBase& metricBase =
-        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::HISTOGRAM_DOUBLE, buckets);
+        getMetric(std::move(name), std::move(labels), std::move(description), MetricType::HistogramDouble, buckets);
     return convertBaseTo<HistogramDouble>(metricBase);
 }
 
@@ -181,7 +181,7 @@ PrometheusService::init(util::Config const& config)
     bool const enabled = config.valueOr("prometheus.enabled", true);
     bool const compressReply = config.valueOr("prometheus.compress_reply", true);
 
-    instance_ = std::make_unique<util::prometheus::PrometheusImpl>(enabled, compressReply);
+    instance = std::make_unique<util::prometheus::PrometheusImpl>(enabled, compressReply);
 }
 
 util::prometheus::Bool
@@ -265,14 +265,14 @@ PrometheusService::compressReplyEnabled()
 void
 PrometheusService::replaceInstance(std::unique_ptr<util::prometheus::PrometheusInterface> instance)
 {
-    instance_ = std::move(instance);
+    instance = std::move(instance);
 }
 
 util::prometheus::PrometheusInterface&
 PrometheusService::instance()
 {
-    ASSERT(instance_ != nullptr, "PrometheusService::instance() called before init()");
-    return *instance_;
+    ASSERT(instance != nullptr, "PrometheusService::instance() called before init()");
+    return *instance;
 }
 
-std::unique_ptr<util::prometheus::PrometheusInterface> PrometheusService::instance_;
+std::unique_ptr<util::prometheus::PrometheusInterface> PrometheusService::instance;

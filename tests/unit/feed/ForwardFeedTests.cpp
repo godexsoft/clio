@@ -32,7 +32,7 @@ using namespace feed::impl;
 namespace json = boost::json;
 using namespace util::prometheus;
 
-constexpr static auto FEED = R"({"test":"test"})";
+constexpr static auto kFEED = R"({"test":"test"})";
 
 class NamedForwardFeedTest : public ForwardFeed {
 public:
@@ -45,33 +45,33 @@ using FeedForwardTest = FeedBaseTest<NamedForwardFeedTest>;
 
 TEST_F(FeedForwardTest, Pub)
 {
-    EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    testFeedPtr->sub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 1);
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect);
+    testFeedPtr_->sub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 1);
 
-    auto const json = json::parse(FEED).as_object();
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(FEED))).Times(1);
-    testFeedPtr->pub(json);
+    auto const json = json::parse(kFEED).as_object();
+    EXPECT_CALL(*mockSessionPtr_, send(sharedStringJsonEq(kFEED))).Times(1);
+    testFeedPtr_->pub(json);
 
-    testFeedPtr->unsub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 0);
-    testFeedPtr->pub(json);
+    testFeedPtr_->unsub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 0);
+    testFeedPtr_->pub(json);
 }
 
 TEST_F(FeedForwardTest, AutoDisconnect)
 {
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
-    EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
-    testFeedPtr->sub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 1);
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
+    testFeedPtr_->sub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 1);
 
-    auto const json = json::parse(FEED).as_object();
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(FEED)));
-    testFeedPtr->pub(json);
+    auto const json = json::parse(kFEED).as_object();
+    EXPECT_CALL(*mockSessionPtr_, send(sharedStringJsonEq(kFEED)));
+    testFeedPtr_->pub(json);
 
-    slot(sessionPtr.get());
-    sessionPtr.reset();
-    EXPECT_EQ(testFeedPtr->count(), 0);
+    slot(sessionPtr_.get());
+    sessionPtr_.reset();
+    EXPECT_EQ(testFeedPtr_->count(), 0);
 
-    testFeedPtr->pub(json);
+    testFeedPtr_->pub(json);
 }

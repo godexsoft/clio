@@ -42,25 +42,25 @@
 
 using namespace web::ng;
 
-struct ng_SubscriptionContextTests : SyncAsioContextTest {
-    util::TagDecoratorFactory tagFactory_{util::Config{}};
-    MockWsConnectionImpl connection_{"some ip", boost::beast::flat_buffer{}, tagFactory_};
-    testing::StrictMock<testing::MockFunction<bool(Error const&, Connection const&)>> errorHandler_;
+struct NgSubscriptionContextTests : SyncAsioContextTest {
+    util::TagDecoratorFactory tagFactory{util::Config{}};
+    MockWsConnectionImpl connection{"some ip", boost::beast::flat_buffer{}, tagFactory};
+    testing::StrictMock<testing::MockFunction<bool(Error const&, Connection const&)>> errorHandler;
 
     SubscriptionContext
     makeSubscriptionContext(boost::asio::yield_context yield, std::optional<size_t> maxSendQueueSize = std::nullopt)
     {
-        return SubscriptionContext{tagFactory_, connection_, maxSendQueueSize, yield, errorHandler_.AsStdFunction()};
+        return SubscriptionContext{tagFactory, connection, maxSendQueueSize, yield, errorHandler.AsStdFunction()};
     }
 };
 
-TEST_F(ng_SubscriptionContextTests, Send)
+TEST_F(NgSubscriptionContextTests, Send)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
         auto const message = std::make_shared<std::string>("some message");
 
-        EXPECT_CALL(connection_, sendBuffer).WillOnce([&message](boost::asio::const_buffer buffer, auto, auto) {
+        EXPECT_CALL(connection, sendBuffer).WillOnce([&message](boost::asio::const_buffer buffer, auto, auto) {
             EXPECT_EQ(boost::beast::buffers_to_string(buffer), *message);
             return std::nullopt;
         });
@@ -69,7 +69,7 @@ TEST_F(ng_SubscriptionContextTests, Send)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendOrder)
+TEST_F(NgSubscriptionContextTests, SendOrder)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -77,13 +77,13 @@ TEST_F(ng_SubscriptionContextTests, SendOrder)
         auto const message2 = std::make_shared<std::string>("message2");
 
         testing::Sequence const sequence;
-        EXPECT_CALL(connection_, sendBuffer)
+        EXPECT_CALL(connection, sendBuffer)
             .InSequence(sequence)
             .WillOnce([&message1](boost::asio::const_buffer buffer, auto, auto) {
                 EXPECT_EQ(boost::beast::buffers_to_string(buffer), *message1);
                 return std::nullopt;
             });
-        EXPECT_CALL(connection_, sendBuffer)
+        EXPECT_CALL(connection, sendBuffer)
             .InSequence(sequence)
             .WillOnce([&message2](boost::asio::const_buffer buffer, auto, auto) {
                 EXPECT_EQ(boost::beast::buffers_to_string(buffer), *message2);
@@ -96,36 +96,36 @@ TEST_F(ng_SubscriptionContextTests, SendOrder)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendFailed)
+TEST_F(NgSubscriptionContextTests, SendFailed)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
         auto const message = std::make_shared<std::string>("some message");
 
-        EXPECT_CALL(connection_, sendBuffer).WillOnce([&message](boost::asio::const_buffer buffer, auto, auto) {
+        EXPECT_CALL(connection, sendBuffer).WillOnce([&message](boost::asio::const_buffer buffer, auto, auto) {
             EXPECT_EQ(boost::beast::buffers_to_string(buffer), *message);
             return boost::system::errc::make_error_code(boost::system::errc::not_supported);
         });
-        EXPECT_CALL(errorHandler_, Call).WillOnce(testing::Return(true));
-        EXPECT_CALL(connection_, close);
+        EXPECT_CALL(errorHandler, Call).WillOnce(testing::Return(true));
+        EXPECT_CALL(connection, close);
         subscriptionContext.send(message);
         subscriptionContext.disconnect(yield);
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendTooManySubscriptions)
+TEST_F(NgSubscriptionContextTests, SendTooManySubscriptions)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield, 1);
         auto const message = std::make_shared<std::string>("message1");
 
-        EXPECT_CALL(connection_, sendBuffer)
+        EXPECT_CALL(connection, sendBuffer)
             .WillOnce([&message](boost::asio::const_buffer buffer, boost::asio::yield_context innerYield, auto) {
                 boost::asio::post(innerYield);  // simulate send is slow by switching to another coroutine
                 EXPECT_EQ(boost::beast::buffers_to_string(buffer), *message);
                 return std::nullopt;
             });
-        EXPECT_CALL(connection_, close);
+        EXPECT_CALL(connection, close);
 
         subscriptionContext.send(message);
         subscriptionContext.send(message);
@@ -134,7 +134,7 @@ TEST_F(ng_SubscriptionContextTests, SendTooManySubscriptions)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SendAfterDisconnect)
+TEST_F(NgSubscriptionContextTests, SendAfterDisconnect)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);
@@ -144,7 +144,7 @@ TEST_F(ng_SubscriptionContextTests, SendAfterDisconnect)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, OnDisconnect)
+TEST_F(NgSubscriptionContextTests, OnDisconnect)
 {
     testing::StrictMock<testing::MockFunction<void(web::SubscriptionContextInterface*)>> onDisconnect;
 
@@ -156,7 +156,7 @@ TEST_F(ng_SubscriptionContextTests, OnDisconnect)
     });
 }
 
-TEST_F(ng_SubscriptionContextTests, SetApiSubversion)
+TEST_F(NgSubscriptionContextTests, SetApiSubversion)
 {
     runSpawn([this](boost::asio::yield_context yield) {
         auto subscriptionContext = makeSubscriptionContext(yield);

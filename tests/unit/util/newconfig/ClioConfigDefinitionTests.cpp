@@ -112,37 +112,37 @@ struct NewConfigDeathTest : NewConfigTest {};
 
 TEST_F(NewConfigDeathTest, GetNonExistentKeys)
 {
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getValue("head."); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getValue("asdf"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getValue("head."); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getValue("asdf"); }, ".*");
 }
 
 TEST_F(NewConfigDeathTest, GetValueButIsArray)
 {
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getValue("dosguard.whitelist"); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getValue("dosguard.whitelist.[]"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getValue("dosguard.whitelist"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getValue("dosguard.whitelist.[]"); }, ".*");
 }
 
 TEST_F(NewConfigDeathTest, GetNonExistentObjectKey)
 {
     ASSERT_FALSE(configData.contains("head"));
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getObject("head"); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getObject("doesNotExist"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getObject("head"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getObject("doesNotExist"); }, ".*");
 }
 
 TEST_F(NewConfigDeathTest, GetObjectButIsArray)
 {
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getObject("array"); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getObject("array", 2); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getObject("array"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getObject("array", 2); }, ".*");
 }
 
 TEST_F(NewConfigDeathTest, GetArrayButIsValue)
 {
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getArray("header.text1"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getArray("header.text1"); }, ".*");
 }
 
 TEST_F(NewConfigDeathTest, GetNonExistentArrayKey)
 {
-    EXPECT_DEATH({ [[maybe_unused]] auto a_ = configData.getArray("asdf"); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] auto a = configData.getArray("asdf"); }, ".*");
 }
 
 TEST(ConfigDescription, GetValues)
@@ -166,7 +166,7 @@ TEST(ConfigDescriptionAssertDeathTest, NonExistingKeyTest)
 struct OverrideConfigVals : testing::Test {
     OverrideConfigVals()
     {
-        ConfigFileJson const jsonFileObj{boost::json::parse(JSONData).as_object()};
+        ConfigFileJson const jsonFileObj{boost::json::parse(kJSON_DATA).as_object()};
         auto const errors = configData.parse(jsonFileObj);
         EXPECT_TRUE(!errors.has_value());
     }
@@ -280,7 +280,7 @@ struct IncorrectOverrideValues : testing::Test {
 
 TEST_F(IncorrectOverrideValues, InvalidJsonErrors)
 {
-    ConfigFileJson const jsonFileObj{boost::json::parse(invalidJSONData).as_object()};
+    ConfigFileJson const jsonFileObj{boost::json::parse(kINVALID_JSON_DATA).as_object()};
     auto const errors = configData.parse(jsonFileObj);
     EXPECT_TRUE(errors.has_value());
 

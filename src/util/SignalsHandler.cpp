@@ -35,38 +35,38 @@ namespace util {
 namespace impl {
 
 class SignalsHandlerStatic {
-    static SignalsHandler* handler_;
+    static SignalsHandler* handler;
 
 public:
     static void
     registerHandler(SignalsHandler& handler)
     {
-        ASSERT(handler_ == nullptr, "There could be only one instance of SignalsHandler");
-        handler_ = &handler;
+        ASSERT(handler == nullptr, "There could be only one instance of SignalsHandler");
+        handler = &handler;
     }
 
     static void
     resetHandler()
     {
-        handler_ = nullptr;
+        handler = nullptr;
     }
 
     static void
     handleSignal(int signal)
     {
-        ASSERT(handler_ != nullptr, "SignalsHandler is not initialized");
-        handler_->stopHandler_(signal);
+        ASSERT(handler != nullptr, "SignalsHandler is not initialized");
+        handler->stopHandler_(signal);
     }
 
     static void
     handleSecondSignal(int signal)
     {
-        ASSERT(handler_ != nullptr, "SignalsHandler is not initialized");
-        handler_->secondSignalHandler_(signal);
+        ASSERT(handler != nullptr, "SignalsHandler is not initialized");
+        handler->secondSignalHandler_(signal);
     }
 };
 
-SignalsHandler* SignalsHandlerStatic::handler_ = nullptr;
+SignalsHandler* SignalsHandlerStatic::handler = nullptr;
 
 }  // namespace impl
 
@@ -122,7 +122,7 @@ SignalsHandler::cancelTimer()
 void
 SignalsHandler::setHandler(void (*handler)(int))
 {
-    for (int const signal : HANDLED_SIGNALS) {
+    for (int const signal : kHANDLED_SIGNALS) {
         std::signal(signal, handler == nullptr ? SIG_DFL : handler);
     }
 }

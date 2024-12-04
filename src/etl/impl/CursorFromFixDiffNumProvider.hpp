@@ -77,14 +77,14 @@ public:
             std::end(diffs)
         );
 
-        std::vector<ripple::uint256> cursors{data::firstKey};
+        std::vector<ripple::uint256> cursors{data::kFIRST_KEY};
         rg::copy(
             diffs                                                                   //
                 | vs::filter([](auto const& obj) { return not obj.blob.empty(); })  //
                 | vs::transform([](auto const& obj) { return obj.key; }),
             std::back_inserter(cursors)
         );
-        cursors.push_back(data::lastKey);  // last pair should cover the remaining range
+        cursors.push_back(data::kLAST_KEY);  // last pair should cover the remaining range
 
         std::vector<CursorPair> pairs;
         pairs.reserve(cursors.size());

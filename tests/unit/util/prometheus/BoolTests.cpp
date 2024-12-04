@@ -33,25 +33,25 @@ struct BoolTests : public testing::Test {
         MOCK_METHOD(void, set, (int64_t), ());
         MOCK_METHOD(int64_t, value, (), ());
     };
-    StrictMock<MockImpl> impl_;
-    AnyBool<StrictMock<MockImpl>> bool_{impl_};
+    StrictMock<MockImpl> impl;
+    AnyBool<StrictMock<MockImpl>> bool_{impl};
 };
 
 TEST_F(BoolTests, Set)
 {
-    EXPECT_CALL(impl_, set(1));
+    EXPECT_CALL(impl, set(1));
     bool_ = true;
 
-    EXPECT_CALL(impl_, set(0));
+    EXPECT_CALL(impl, set(0));
     bool_ = false;
 }
 
 TEST_F(BoolTests, Get)
 {
-    EXPECT_CALL(impl_, value()).WillOnce(testing::Return(1));
+    EXPECT_CALL(impl, value()).WillOnce(testing::Return(1));
     EXPECT_TRUE(bool_);
 
-    EXPECT_CALL(impl_, value()).WillOnce(testing::Return(0));
+    EXPECT_CALL(impl, value()).WillOnce(testing::Return(0));
     EXPECT_FALSE(bool_);
 }
 

@@ -146,6 +146,6 @@ private:
  * @return The Server or an error message.
  */
 std::expected<Server, std::string>
-make_Server(util::Config const& config, boost::asio::io_context& context);
+makeServer(util::Config const& config, boost::asio::io_context& context);
 
 }  // namespace web::ng

@@ -25,49 +25,49 @@
 #include <fmt/core.h>
 #include <gtest/gtest.h>
 
-constexpr static auto DEFAULT_API_VERSION = 5u;
-constexpr static auto MIN_API_VERSION = 2u;
-constexpr static auto MAX_API_VERSION = 10u;
+constexpr static auto kDEFAULT_API_VERSION = 5u;
+constexpr static auto kMIN_API_VERSION = 2u;
+constexpr static auto kMAX_API_VERSION = 10u;
 
 using namespace rpc::impl;
 namespace json = boost::json;
 
 class RPCAPIVersionTest : public NoLoggerFixture {
 protected:
-    ProductionAPIVersionParser parser{DEFAULT_API_VERSION, MIN_API_VERSION, MAX_API_VERSION};
+    ProductionAPIVersionParser parser_{kDEFAULT_API_VERSION, kMIN_API_VERSION, kMAX_API_VERSION};
 };
 
 TEST_F(RPCAPIVersionTest, ReturnsDefaultVersionIfNotSpecified)
 {
-    auto ver = parser.parse(json::parse("{}").as_object());
+    auto ver = parser_.parse(json::parse("{}").as_object());
     EXPECT_TRUE(ver);
-    EXPECT_EQ(ver.value(), DEFAULT_API_VERSION);
+    EXPECT_EQ(ver.value(), kDEFAULT_API_VERSION);
 }
 
 TEST_F(RPCAPIVersionTest, ReturnsErrorIfVersionHigherThanMaxSupported)
 {
-    auto ver = parser.parse(json::parse(R"({"api_version": 11})").as_object());
+    auto ver = parser_.parse(json::parse(R"({"api_version": 11})").as_object());
     EXPECT_FALSE(ver);
 }
 
 TEST_F(RPCAPIVersionTest, ReturnsErrorIfVersionLowerThanMinSupported)
 {
-    auto ver = parser.parse(json::parse(R"({"api_version": 1})").as_object());
+    auto ver = parser_.parse(json::parse(R"({"api_version": 1})").as_object());
     EXPECT_FALSE(ver);
 }
 
 TEST_F(RPCAPIVersionTest, ReturnsErrorOnWrongType)
 {
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": null})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": null})").as_object());
         EXPECT_FALSE(ver);
     }
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": "5"})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": "5"})").as_object());
         EXPECT_FALSE(ver);
     }
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": "wrong"})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": "wrong"})").as_object());
         EXPECT_FALSE(ver);
     }
 }
@@ -75,17 +75,17 @@ TEST_F(RPCAPIVersionTest, ReturnsErrorOnWrongType)
 TEST_F(RPCAPIVersionTest, ReturnsParsedVersionIfAllPreconditionsAreMet)
 {
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": 2})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": 2})").as_object());
         EXPECT_TRUE(ver);
         EXPECT_EQ(ver.value(), 2u);
     }
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": 10})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": 10})").as_object());
         EXPECT_TRUE(ver);
         EXPECT_EQ(ver.value(), 10u);
     }
     {
-        auto ver = parser.parse(json::parse(R"({"api_version": 5})").as_object());
+        auto ver = parser_.parse(json::parse(R"({"api_version": 5})").as_object());
         EXPECT_TRUE(ver);
         EXPECT_EQ(ver.value(), 5u);
     }
@@ -99,9 +99,9 @@ TEST_F(RPCAPIVersionTest, GetsValuesFromConfigCorrectly)
             "max": {},
             "default": {}
         }})",
-        MIN_API_VERSION,
-        MAX_API_VERSION,
-        DEFAULT_API_VERSION
+        kMIN_API_VERSION,
+        kMAX_API_VERSION,
+        kDEFAULT_API_VERSION
     ))};
 
     ProductionAPIVersionParser const configuredParser{cfg};
@@ -124,7 +124,7 @@ TEST_F(RPCAPIVersionTest, GetsValuesFromConfigCorrectly)
     {
         auto ver = configuredParser.parse(json::parse(R"({})").as_object());
         EXPECT_TRUE(ver);
-        EXPECT_EQ(ver.value(), DEFAULT_API_VERSION);
+        EXPECT_EQ(ver.value(), kDEFAULT_API_VERSION);
     }
     {
         auto ver = configuredParser.parse(json::parse(R"({"api_version": 11})").as_object());

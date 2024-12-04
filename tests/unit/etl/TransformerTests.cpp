@@ -40,7 +40,7 @@ using namespace testing;
 using namespace etl;
 
 // taken from BackendTests
-constexpr static auto RAW_HEADER =
+constexpr static auto kRAW_HEADER =
     "03C3141A01633CD656F91B4EBB5EB89B791BD34DBC8A04BB6F407C5335BC54351E"
     "DD733898497E809E04074D14D271E4832D7888754F9230800761563A292FA2315A"
     "6DB6FE30CC5909B285080FCD6773CC883F9FE0EE4D439340AC592AADB973ED3CF5"
@@ -56,104 +56,104 @@ struct ETLTransformerTest : util::prometheus::WithPrometheus, MockBackendTest {
     using TransformerType = etl::impl::
         Transformer<ExtractionDataPipeType, LedgerLoaderType, LedgerPublisherType, AmendmentBlockHandlerType>;
 
-    ExtractionDataPipeType dataPipe_;
-    LedgerLoaderType ledgerLoader_;
-    LedgerPublisherType ledgerPublisher_;
-    AmendmentBlockHandlerType amendmentBlockHandler_;
-    SystemState state_;
+    ExtractionDataPipeType dataPipe;
+    LedgerLoaderType ledgerLoader;
+    LedgerPublisherType ledgerPublisher;
+    AmendmentBlockHandlerType amendmentBlockHandler;
+    SystemState state;
 
-    std::unique_ptr<TransformerType> transformer_;
+    std::unique_ptr<TransformerType> transformer;
 
     void
     SetUp() override
     {
-        state_.isStopping = false;
-        state_.writeConflict = false;
-        state_.isReadOnly = false;
-        state_.isWriting = false;
+        state.isStopping = false;
+        state.writeConflict = false;
+        state.isReadOnly = false;
+        state.isWriting = false;
     }
 
     void
     TearDown() override
     {
-        transformer_.reset();
+        transformer.reset();
     }
 };
 
 TEST_F(ETLTransformerTest, StopsOnWriteConflict)
 {
-    state_.writeConflict = true;
+    state.writeConflict = true;
 
-    EXPECT_CALL(dataPipe_, popNext).Times(0);
-    EXPECT_CALL(ledgerPublisher_, publish(_)).Times(0);
+    EXPECT_CALL(dataPipe, popNext).Times(0);
+    EXPECT_CALL(ledgerPublisher, publish(_)).Times(0);
 
-    transformer_ = std::make_unique<TransformerType>(
-        dataPipe_, backend, ledgerLoader_, ledgerPublisher_, amendmentBlockHandler_, 0, state_
+    transformer = std::make_unique<TransformerType>(
+        dataPipe, backend_, ledgerLoader, ledgerPublisher, amendmentBlockHandler, 0, state
     );
 
-    transformer_->waitTillFinished();  // explicitly joins the thread
+    transformer->waitTillFinished();  // explicitly joins the thread
 }
 
 TEST_F(ETLTransformerTest, StopsOnEmptyFetchResponse)
 {
-    backend->cache().setFull();  // to avoid throwing exception in updateCache
+    backend_->cache().setFull();  // to avoid throwing exception in updateCache
 
-    auto const blob = hexStringToBinaryString(RAW_HEADER);
+    auto const blob = hexStringToBinaryString(kRAW_HEADER);
     auto const response = std::make_optional<FakeFetchResponse>(blob);
 
-    ON_CALL(dataPipe_, popNext).WillByDefault([this, &response](auto) -> std::optional<FakeFetchResponse> {
-        if (state_.isStopping)
+    ON_CALL(dataPipe, popNext).WillByDefault([this, &response](auto) -> std::optional<FakeFetchResponse> {
+        if (state.isStopping)
             return std::nullopt;
         return response;  // NOLINT (performance-no-automatic-move)
     });
-    ON_CALL(*backend, doFinishWrites).WillByDefault(Return(true));
+    ON_CALL(*backend_, doFinishWrites).WillByDefault(Return(true));
 
     // TODO: most of this should be hidden in a smaller entity that is injected into the transformer thread
-    EXPECT_CALL(dataPipe_, popNext).Times(AtLeast(1));
-    EXPECT_CALL(*backend, startWrites).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeLedger(_, _)).Times(AtLeast(1));
-    EXPECT_CALL(ledgerLoader_, insertTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeAccountTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeNFTs).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeNFTTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, doFinishWrites).Times(AtLeast(1));
-    EXPECT_CALL(ledgerPublisher_, publish(_)).Times(AtLeast(1));
+    EXPECT_CALL(dataPipe, popNext).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, startWrites).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeLedger(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(ledgerLoader, insertTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeAccountTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeNFTs).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeNFTTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, doFinishWrites).Times(AtLeast(1));
+    EXPECT_CALL(ledgerPublisher, publish(_)).Times(AtLeast(1));
 
-    transformer_ = std::make_unique<TransformerType>(
-        dataPipe_, backend, ledgerLoader_, ledgerPublisher_, amendmentBlockHandler_, 0, state_
+    transformer = std::make_unique<TransformerType>(
+        dataPipe, backend_, ledgerLoader, ledgerPublisher, amendmentBlockHandler, 0, state
     );
 
     // after 10ms we start spitting out empty responses which means the extractor is finishing up
     // this is normally combined with stopping the entire thing by setting the isStopping flag.
     std::this_thread::sleep_for(std::chrono::milliseconds{10});
-    state_.isStopping = true;
+    state.isStopping = true;
 }
 
 TEST_F(ETLTransformerTest, DoesNotPublishIfCanNotBuildNextLedger)
 {
-    backend->cache().setFull();  // to avoid throwing exception in updateCache
+    backend_->cache().setFull();  // to avoid throwing exception in updateCache
 
-    auto const blob = hexStringToBinaryString(RAW_HEADER);
+    auto const blob = hexStringToBinaryString(kRAW_HEADER);
     auto const response = std::make_optional<FakeFetchResponse>(blob);
 
-    ON_CALL(dataPipe_, popNext).WillByDefault(Return(response));
-    ON_CALL(*backend, doFinishWrites).WillByDefault(Return(false));  // emulate write failure
+    ON_CALL(dataPipe, popNext).WillByDefault(Return(response));
+    ON_CALL(*backend_, doFinishWrites).WillByDefault(Return(false));  // emulate write failure
 
     // TODO: most of this should be hidden in a smaller entity that is injected into the transformer thread
-    EXPECT_CALL(dataPipe_, popNext).Times(AtLeast(1));
-    EXPECT_CALL(*backend, startWrites).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeLedger(_, _)).Times(AtLeast(1));
-    EXPECT_CALL(ledgerLoader_, insertTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeAccountTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeNFTs).Times(AtLeast(1));
-    EXPECT_CALL(*backend, writeNFTTransactions).Times(AtLeast(1));
-    EXPECT_CALL(*backend, doFinishWrites).Times(AtLeast(1));
+    EXPECT_CALL(dataPipe, popNext).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, startWrites).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeLedger(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(ledgerLoader, insertTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeAccountTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeNFTs).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, writeNFTTransactions).Times(AtLeast(1));
+    EXPECT_CALL(*backend_, doFinishWrites).Times(AtLeast(1));
 
     // should not call publish
-    EXPECT_CALL(ledgerPublisher_, publish(_)).Times(0);
+    EXPECT_CALL(ledgerPublisher, publish(_)).Times(0);
 
-    transformer_ = std::make_unique<TransformerType>(
-        dataPipe_, backend, ledgerLoader_, ledgerPublisher_, amendmentBlockHandler_, 0, state_
+    transformer = std::make_unique<TransformerType>(
+        dataPipe, backend_, ledgerLoader, ledgerPublisher, amendmentBlockHandler, 0, state
     );
 }
 

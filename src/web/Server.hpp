@@ -335,18 +335,18 @@ using HttpServer = Server<HttpSession, SslHttpSession, HandlerType>;
  */
 template <typename HandlerType>
 static std::shared_ptr<HttpServer<HandlerType>>
-make_HttpServer(
+makeHttpServer(
     util::Config const& config,
     boost::asio::io_context& ioc,
     dosguard::DOSGuardInterface& dosGuard,
     std::shared_ptr<HandlerType> const& handler
 )
 {
-    static util::Logger const log{"WebServer"};
+    static util::Logger const kLOG{"WebServer"};
 
     auto expectedSslContext = ng::impl::makeServerSslContext(config);
     if (not expectedSslContext) {
-        LOG(log.error()) << "Failed to create SSL context: " << expectedSslContext.error();
+        LOG(kLOG.error()) << "Failed to create SSL context: " << expectedSslContext.error();
         return nullptr;
     }
 
@@ -357,9 +357,9 @@ make_HttpServer(
     auto const address = boost::asio::ip::make_address(serverConfig.value<std::string>("ip"));
     auto const port = serverConfig.value<unsigned short>("port");
 
-    auto expectedAdminVerification = make_AdminVerificationStrategy(config);
+    auto expectedAdminVerification = makeAdminVerificationStrategy(config);
     if (not expectedAdminVerification.has_value()) {
-        LOG(log.error()) << expectedAdminVerification.error();
+        LOG(kLOG.error()) << expectedAdminVerification.error();
         throw std::logic_error{expectedAdminVerification.error()};
     }
 

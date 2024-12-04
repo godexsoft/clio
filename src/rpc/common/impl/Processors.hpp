@@ -27,7 +27,7 @@
 namespace rpc::impl {
 
 template <typename>
-static constexpr bool unsupported_handler_v = false;
+static constexpr bool kUNSUPPORTED_HANDLER_V = false;
 
 template <SomeHandler HandlerType>
 struct DefaultProcessor final {

@@ -29,37 +29,37 @@ using namespace rpc;
 namespace json = boost::json;
 using namespace testing;
 
-constexpr static auto RANGEMIN = 10;
-constexpr static auto RANGEMAX = 30;
+constexpr static auto kRANGEMIN = 10;
+constexpr static auto kRANGEMAX = 30;
 
 class RPCLedgerRangeTest : public HandlerBaseTest {};
 
 TEST_F(RPCLedgerRangeTest, LedgerRangeMinMaxSame)
 {
     runSpawn([this](auto yield) {
-        backend->updateRange(RANGEMIN);
+        backend_->updateRange(kRANGEMIN);
 
-        auto const handler = AnyHandler{LedgerRangeHandler{backend}};
+        auto const handler = AnyHandler{LedgerRangeHandler{backend_}};
         auto const req = json::parse("{}");
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         auto const json = output.result.value();
-        EXPECT_EQ(json.at("ledger_index_min").as_uint64(), RANGEMIN);
-        EXPECT_EQ(json.at("ledger_index_max").as_uint64(), RANGEMIN);
+        EXPECT_EQ(json.at("ledger_index_min").as_uint64(), kRANGEMIN);
+        EXPECT_EQ(json.at("ledger_index_max").as_uint64(), kRANGEMIN);
     });
 }
 
 TEST_F(RPCLedgerRangeTest, LedgerRangeFullySet)
 {
     runSpawn([this](auto yield) {
-        backend->setRange(RANGEMIN, RANGEMAX);
+        backend_->setRange(kRANGEMIN, kRANGEMAX);
 
-        auto const handler = AnyHandler{LedgerRangeHandler{backend}};
+        auto const handler = AnyHandler{LedgerRangeHandler{backend_}};
         auto const req = json::parse("{}");
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         auto const json = output.result.value();
-        EXPECT_EQ(json.at("ledger_index_min").as_uint64(), RANGEMIN);
-        EXPECT_EQ(json.at("ledger_index_max").as_uint64(), RANGEMAX);
+        EXPECT_EQ(json.at("ledger_index_min").as_uint64(), kRANGEMIN);
+        EXPECT_EQ(json.at("ledger_index_max").as_uint64(), kRANGEMAX);
     });
 }

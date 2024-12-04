@@ -75,53 +75,53 @@ struct ForwardingSourceMock {
 };
 
 struct SourceImplTest : public ::testing::Test {
-    boost::asio::io_context ioc_;
+    boost::asio::io_context ioc;
 
-    StrictMock<GrpcSourceMock> grpcSourceMock_;
-    std::shared_ptr<StrictMock<SubscriptionSourceMock>> subscriptionSourceMock_ =
+    StrictMock<GrpcSourceMock> grpcSourceMock;
+    std::shared_ptr<StrictMock<SubscriptionSourceMock>> subscriptionSourceMock =
         std::make_shared<StrictMock<SubscriptionSourceMock>>();
-    StrictMock<ForwardingSourceMock> forwardingSourceMock_;
+    StrictMock<ForwardingSourceMock> forwardingSourceMock;
 
     SourceImpl<
         StrictMock<GrpcSourceMock>&,
         std::shared_ptr<StrictMock<SubscriptionSourceMock>>,
         StrictMock<ForwardingSourceMock>&>
-        source_{
+        source{
             "some_ip",
             "some_ws_port",
             "some_grpc_port",
-            grpcSourceMock_,
-            subscriptionSourceMock_,
-            forwardingSourceMock_
+            grpcSourceMock,
+            subscriptionSourceMock,
+            forwardingSourceMock
         };
 };
 
 TEST_F(SourceImplTest, run)
 {
-    EXPECT_CALL(*subscriptionSourceMock_, run());
-    source_.run();
+    EXPECT_CALL(*subscriptionSourceMock, run());
+    source.run();
 }
 
 TEST_F(SourceImplTest, isConnected)
 {
-    EXPECT_CALL(*subscriptionSourceMock_, isConnected()).WillOnce(testing::Return(true));
-    EXPECT_TRUE(source_.isConnected());
+    EXPECT_CALL(*subscriptionSourceMock, isConnected()).WillOnce(testing::Return(true));
+    EXPECT_TRUE(source.isConnected());
 }
 
 TEST_F(SourceImplTest, setForwarding)
 {
-    EXPECT_CALL(*subscriptionSourceMock_, setForwarding(true));
-    source_.setForwarding(true);
+    EXPECT_CALL(*subscriptionSourceMock, setForwarding(true));
+    source.setForwarding(true);
 }
 
 TEST_F(SourceImplTest, toJson)
 {
-    EXPECT_CALL(*subscriptionSourceMock_, validatedRange()).WillOnce(Return(std::string("some_validated_range")));
-    EXPECT_CALL(*subscriptionSourceMock_, isConnected()).WillOnce(Return(true));
+    EXPECT_CALL(*subscriptionSourceMock, validatedRange()).WillOnce(Return(std::string("some_validated_range")));
+    EXPECT_CALL(*subscriptionSourceMock, isConnected()).WillOnce(Return(true));
     auto const lastMessageTime = std::chrono::steady_clock::now();
-    EXPECT_CALL(*subscriptionSourceMock_, lastMessageTime()).WillOnce(Return(lastMessageTime));
+    EXPECT_CALL(*subscriptionSourceMock, lastMessageTime()).WillOnce(Return(lastMessageTime));
 
-    auto const json = source_.toJson();
+    auto const json = source.toJson();
 
     EXPECT_EQ(boost::json::value_to<std::string>(json.at("validated_range")), "some_validated_range");
     EXPECT_EQ(boost::json::value_to<std::string>(json.at("is_connected")), "1");
@@ -134,9 +134,9 @@ TEST_F(SourceImplTest, toJson)
 
 TEST_F(SourceImplTest, toString)
 {
-    EXPECT_CALL(*subscriptionSourceMock_, validatedRange()).WillOnce(Return(std::string("some_validated_range")));
+    EXPECT_CALL(*subscriptionSourceMock, validatedRange()).WillOnce(Return(std::string("some_validated_range")));
 
-    auto const str = source_.toString();
+    auto const str = source.toString();
     EXPECT_EQ(
         str,
         "{validated range: some_validated_range, ip: some_ip, web socket port: some_ws_port, grpc port: some_grpc_port}"
@@ -146,16 +146,16 @@ TEST_F(SourceImplTest, toString)
 TEST_F(SourceImplTest, hasLedger)
 {
     uint32_t const ledgerSeq = 123;
-    EXPECT_CALL(*subscriptionSourceMock_, hasLedger(ledgerSeq)).WillOnce(Return(true));
-    EXPECT_TRUE(source_.hasLedger(ledgerSeq));
+    EXPECT_CALL(*subscriptionSourceMock, hasLedger(ledgerSeq)).WillOnce(Return(true));
+    EXPECT_TRUE(source.hasLedger(ledgerSeq));
 }
 
 TEST_F(SourceImplTest, fetchLedger)
 {
     uint32_t const ledgerSeq = 123;
 
-    EXPECT_CALL(grpcSourceMock_, fetchLedger(ledgerSeq, true, false));
-    auto const [actualStatus, actualResponse] = source_.fetchLedger(ledgerSeq);
+    EXPECT_CALL(grpcSourceMock, fetchLedger(ledgerSeq, true, false));
+    auto const [actualStatus, actualResponse] = source.fetchLedger(ledgerSeq);
 
     EXPECT_EQ(actualStatus.error_code(), grpc::StatusCode::OK);
 }
@@ -165,9 +165,9 @@ TEST_F(SourceImplTest, loadInitialLedger)
     uint32_t const ledgerSeq = 123;
     uint32_t const numMarkers = 3;
 
-    EXPECT_CALL(grpcSourceMock_, loadInitialLedger(ledgerSeq, numMarkers, false))
+    EXPECT_CALL(grpcSourceMock, loadInitialLedger(ledgerSeq, numMarkers, false))
         .WillOnce(Return(std::make_pair(std::vector<std::string>{}, true)));
-    auto const [actualLedgers, actualSuccess] = source_.loadInitialLedger(ledgerSeq, numMarkers);
+    auto const [actualLedgers, actualSuccess] = source.loadInitialLedger(ledgerSeq, numMarkers);
 
     EXPECT_TRUE(actualLedgers.empty());
     EXPECT_TRUE(actualSuccess);
@@ -179,12 +179,12 @@ TEST_F(SourceImplTest, forwardToRippled)
     std::optional<std::string> const clientIp = "some_client_ip";
     std::string_view xUserValue = "some_user";
 
-    EXPECT_CALL(forwardingSourceMock_, forwardToRippled(request, clientIp, xUserValue, testing::_))
+    EXPECT_CALL(forwardingSourceMock, forwardToRippled(request, clientIp, xUserValue, testing::_))
         .WillOnce(Return(request));
 
     boost::asio::io_context ioContext;
     boost::asio::spawn(ioContext, [&](boost::asio::yield_context yield) {
-        auto const response = source_.forwardToRippled(request, clientIp, xUserValue, yield);
+        auto const response = source.forwardToRippled(request, clientIp, xUserValue, yield);
         EXPECT_EQ(response, request);
     });
     ioContext.run();

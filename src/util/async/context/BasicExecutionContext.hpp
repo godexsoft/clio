@@ -138,7 +138,7 @@ class BasicExecutionContext {
 
 public:
     /** @brief Whether operations on this execution context are noexcept */
-    static constexpr bool isNoexcept = noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; }));
+    static constexpr bool kIS_NOEXCEPT = noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; }));
 
     using ContextHolderType = ContextType;
 
@@ -204,7 +204,7 @@ public:
         SomeStdDuration auto delay,
         SomeHandlerWith<StopToken> auto&& fn,
         std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    ) noexcept(kIS_NOEXCEPT)
     {
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
             return TimerContextProvider::getContext(*this).scheduleAfter(
@@ -213,7 +213,7 @@ public:
         } else {
             using FnRetType = std::decay_t<decltype(fn(std::declval<StopToken>()))>;
             return ScheduledOperation<FnRetType>(
-                impl::extractAssociatedExecutor(*this),
+                impl::kEXTRACT_ASSOCIATED_EXECUTOR(*this),
                 delay,
                 [this, timeout, fn = std::forward<decltype(fn)>(fn)](auto) mutable {
                     return this->execute(
@@ -244,7 +244,7 @@ public:
         SomeStdDuration auto delay,
         SomeHandlerWith<StopToken, bool> auto&& fn,
         std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    ) noexcept(kIS_NOEXCEPT)
     {
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
             return TimerContextProvider::getContext(*this).scheduleAfter(
@@ -253,7 +253,7 @@ public:
         } else {
             using FnRetType = std::decay_t<decltype(fn(std::declval<StopToken>(), true))>;
             return ScheduledOperation<FnRetType>(
-                impl::extractAssociatedExecutor(*this),
+                impl::kEXTRACT_ASSOCIATED_EXECUTOR(*this),
                 delay,
                 [this, timeout, fn = std::forward<decltype(fn)>(fn)](auto ec) mutable {
                     return this->execute(
@@ -283,7 +283,7 @@ public:
     execute(
         SomeHandlerWith<StopToken> auto&& fn,
         std::optional<std::chrono::milliseconds> timeout = std::nullopt
-    ) noexcept(isNoexcept)
+    ) noexcept(kIS_NOEXCEPT)
     {
         return DispatcherType::dispatch(
             context_,
@@ -313,7 +313,7 @@ public:
      * @return A stoppable operation that can be used to wait for the result
      */
     [[nodiscard]] auto
-    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) noexcept(isNoexcept)
+    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) noexcept(kIS_NOEXCEPT)
     {
         return execute(
             std::forward<decltype(fn)>(fn),
@@ -328,7 +328,7 @@ public:
      * @return A unstoppable operation that can be used to wait for the result
      */
     [[nodiscard]] auto
-    execute(SomeHandlerWithoutStopToken auto&& fn) noexcept(isNoexcept)
+    execute(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
     {
         return DispatcherType::dispatch(
             context_,

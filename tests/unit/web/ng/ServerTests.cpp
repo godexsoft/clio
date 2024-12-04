@@ -62,13 +62,13 @@ struct MakeServerTestBundle {
 };
 
 struct MakeServerTest : NoLoggerFixture, testing::WithParamInterface<MakeServerTestBundle> {
-    boost::asio::io_context ioContext_;
+    boost::asio::io_context ioContext;
 };
 
 TEST_P(MakeServerTest, Make)
 {
     util::Config const config{boost::json::parse(GetParam().configJson)};
-    auto const expectedServer = make_Server(config, ioContext_);
+    auto const expectedServer = makeServer(config, ioContext);
     EXPECT_EQ(expectedServer.has_value(), GetParam().expectSuccess);
 }
 
@@ -141,39 +141,39 @@ INSTANTIATE_TEST_CASE_P(
             true
         }
     ),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 struct ServerTest : SyncAsioContextTest {
     ServerTest()
     {
-        [&]() { ASSERT_TRUE(server_.has_value()); }();
-        server_->onGet("/", getHandler_.AsStdFunction());
-        server_->onPost("/", postHandler_.AsStdFunction());
-        server_->onWs(wsHandler_.AsStdFunction());
+        [&]() { ASSERT_TRUE(server.has_value()); }();
+        server->onGet("/", getHandler.AsStdFunction());
+        server->onPost("/", postHandler.AsStdFunction());
+        server->onWs(wsHandler.AsStdFunction());
     }
 
-    uint32_t const serverPort_ = tests::util::generateFreePort();
+    uint32_t const serverPort = tests::util::generateFreePort();
 
-    util::Config const config_{
-        boost::json::object{{"server", boost::json::object{{"ip", "127.0.0.1"}, {"port", serverPort_}}}}
+    util::Config const config{
+        boost::json::object{{"server", boost::json::object{{"ip", "127.0.0.1"}, {"port", serverPort}}}}
     };
 
-    std::expected<Server, std::string> server_ = make_Server(config_, ctx);
+    std::expected<Server, std::string> server = makeServer(config, ctx_);
 
-    std::string requestMessage_ = "some request";
-    std::string const headerName_ = "Some-header";
-    std::string const headerValue_ = "some value";
+    std::string requestMessage = "some request";
+    std::string const headerName = "Some-header";
+    std::string const headerValue = "some value";
 
     testing::StrictMock<testing::MockFunction<
         Response(Request const&, ConnectionMetadata const&, web::SubscriptionContextPtr, boost::asio::yield_context)>>
-        getHandler_;
+        getHandler;
     testing::StrictMock<testing::MockFunction<
         Response(Request const&, ConnectionMetadata const&, web::SubscriptionContextPtr, boost::asio::yield_context)>>
-        postHandler_;
+        postHandler;
     testing::StrictMock<testing::MockFunction<
         Response(Request const&, ConnectionMetadata const&, web::SubscriptionContextPtr, boost::asio::yield_context)>>
-        wsHandler_;
+        wsHandler;
 };
 
 TEST_F(ServerTest, BadEndpoint)
@@ -181,7 +181,7 @@ TEST_F(ServerTest, BadEndpoint)
     boost::asio::ip::tcp::endpoint const endpoint{boost::asio::ip::address_v4::from_string("1.2.3.4"), 0};
     util::TagDecoratorFactory const tagDecoratorFactory{util::Config{boost::json::value{}}};
     Server server{
-        ctx, endpoint, std::nullopt, ProcessingPolicy::Sequential, std::nullopt, tagDecoratorFactory, std::nullopt
+        ctx_, endpoint, std::nullopt, ProcessingPolicy::Sequential, std::nullopt, tagDecoratorFactory, std::nullopt
     };
     auto maybeError = server.run();
     ASSERT_TRUE(maybeError.has_value());
@@ -210,35 +210,35 @@ struct ServerHttpTest : ServerTest, testing::WithParamInterface<ServerHttpTestBu
 
 TEST_F(ServerHttpTest, ClientDisconnects)
 {
-    HttpAsyncClient client{ctx};
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    HttpAsyncClient client{ctx_};
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
-            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
         client.disconnect();
-        ctx.stop();
+        ctx_.stop();
     });
 
-    server_->run();
+    server->run();
     runContext();
 }
 
 TEST_P(ServerHttpTest, RequestResponse)
 {
-    HttpAsyncClient client{ctx};
+    HttpAsyncClient client{ctx_};
 
-    http::request<http::string_body> request{GetParam().method, "/", 11, requestMessage_};
-    request.set(headerName_, headerValue_);
+    http::request<http::string_body> request{GetParam().method, "/", 11, requestMessage};
+    request.set(headerName, headerValue);
 
     Response const response{http::status::ok, "some response", Request{request}};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
-            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             maybeError = client.send(request, yield, std::chrono::milliseconds{100});
             EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
@@ -249,10 +249,10 @@ TEST_P(ServerHttpTest, RequestResponse)
         }
 
         client.gracefulShutdown();
-        ctx.stop();
+        ctx_.stop();
     });
 
-    auto& handler = GetParam().method == http::verb::get ? getHandler_ : postHandler_;
+    auto& handler = GetParam().method == http::verb::get ? getHandler : postHandler;
 
     EXPECT_CALL(handler, Call)
         .Times(3)
@@ -261,12 +261,12 @@ TEST_P(ServerHttpTest, RequestResponse)
             EXPECT_EQ(receivedRequest.method(), GetParam().expectedMethod());
             EXPECT_EQ(receivedRequest.message(), request.body());
             EXPECT_EQ(receivedRequest.target(), request.target());
-            EXPECT_EQ(receivedRequest.headerValue(headerName_), request.at(headerName_));
+            EXPECT_EQ(receivedRequest.headerValue(headerName), request.at(headerName));
 
             return response;
         });
 
-    server_->run();
+    server->run();
 
     runContext();
 }
@@ -275,40 +275,40 @@ INSTANTIATE_TEST_SUITE_P(
     ServerHttpTests,
     ServerHttpTest,
     testing::Values(ServerHttpTestBundle{"GET", http::verb::get}, ServerHttpTestBundle{"POST", http::verb::post}),
-    tests::util::NameGenerator
+    tests::util::kNAME_GENERATOR
 );
 
 TEST_F(ServerTest, WsClientDisconnects)
 {
-    WebSocketAsyncClient client{ctx};
+    WebSocketAsyncClient client{ctx_};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
-            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
         client.close();
-        ctx.stop();
+        ctx_.stop();
     });
 
-    server_->run();
+    server->run();
 
     runContext();
 }
 
 TEST_F(ServerTest, WsRequestResponse)
 {
-    WebSocketAsyncClient client{ctx};
+    WebSocketAsyncClient client{ctx_};
 
-    Response const response{http::status::ok, "some response", Request{requestMessage_, Request::HttpHeaders{}}};
+    Response const response{http::status::ok, "some response", Request{requestMessage, Request::HttpHeaders{}}};
 
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) {
+    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto maybeError =
-            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
-            maybeError = client.send(yield, requestMessage_, std::chrono::milliseconds{100});
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
+            maybeError = client.send(yield, requestMessage, std::chrono::milliseconds{100});
             EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
             auto const expectedResponse = client.receive(yield, std::chrono::milliseconds{100});
@@ -317,21 +317,21 @@ TEST_F(ServerTest, WsRequestResponse)
         }
 
         client.gracefulClose(yield, std::chrono::milliseconds{100});
-        ctx.stop();
+        ctx_.stop();
     });
 
-    EXPECT_CALL(wsHandler_, Call)
+    EXPECT_CALL(wsHandler, Call)
         .Times(3)
         .WillRepeatedly([&, response = response](Request const& receivedRequest, auto&&, auto&&, auto&&) {
             EXPECT_FALSE(receivedRequest.isHttp());
             EXPECT_EQ(receivedRequest.method(), Request::Method::Websocket);
-            EXPECT_EQ(receivedRequest.message(), requestMessage_);
+            EXPECT_EQ(receivedRequest.message(), requestMessage);
             EXPECT_EQ(receivedRequest.target(), std::nullopt);
 
             return response;
         });
 
-    server_->run();
+    server->run();
 
     runContext();
 }

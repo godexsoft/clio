@@ -42,9 +42,9 @@ class ProductionAPIVersionParser : public APIVersionParser {
 public:
     // Note: this constructor must remain in the header because of UNITTEST_BUILD definition below
     ProductionAPIVersionParser(
-        uint32_t defaultVersion = API_VERSION_DEFAULT,
-        uint32_t minVersion = API_VERSION_MIN,
-        uint32_t maxVersion = API_VERSION_MAX
+        uint32_t defaultVersion = kAPI_VERSION_DEFAULT,
+        uint32_t minVersion = kAPI_VERSION_MIN,
+        uint32_t maxVersion = kAPI_VERSION_MAX
     )
         : defaultVersion_{defaultVersion}, minVersion_{minVersion}, maxVersion_{maxVersion}
     {
@@ -52,14 +52,14 @@ public:
         // in production, we don't want the ability to misconfigure clio with bogus versions
         // that are not actually supported by the code itself. for testing it is desired however.
         auto checkRange = [this](uint32_t version, std::string label) {
-            if (std::clamp(version, API_VERSION_MIN, API_VERSION_MAX) != version) {
+            if (std::clamp(version, kAPI_VERSION_MIN, kAPI_VERSION_MAX) != version) {
                 LOG(log_.error()) << "API version settings issue detected: " << label << " version with value "
-                                  << version << " is outside of supported range " << API_VERSION_MIN << "-"
-                                  << API_VERSION_MAX << "; Falling back to hardcoded values.";
+                                  << version << " is outside of supported range " << kAPI_VERSION_MIN << "-"
+                                  << kAPI_VERSION_MAX << "; Falling back to hardcoded values.";
 
-                defaultVersion_ = API_VERSION_DEFAULT;
-                minVersion_ = API_VERSION_MIN;
-                maxVersion_ = API_VERSION_MAX;
+                defaultVersion_ = kAPI_VERSION_DEFAULT;
+                minVersion_ = kAPI_VERSION_MIN;
+                maxVersion_ = kAPI_VERSION_MAX;
             }
         };
 

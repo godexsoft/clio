@@ -41,10 +41,10 @@ namespace data {
  * @return A shared_ptr<BackendInterface> with the selected implementation
  */
 inline std::shared_ptr<BackendInterface>
-make_Backend(util::Config const& config)
+makeBackend(util::Config const& config)
 {
-    static util::Logger const log{"Backend"};
-    LOG(log.info()) << "Constructing BackendInterface";
+    static util::Logger const kLOG{"Backend"};
+    LOG(kLOG.info()) << "Constructing BackendInterface";
 
     auto const readOnly = config.valueOr("read_only", false);
 
@@ -63,7 +63,7 @@ make_Backend(util::Config const& config)
     if (rng)
         backend->setRange(rng->minSequence, rng->maxSequence);
 
-    LOG(log.info()) << "Constructed BackendInterface Successfully";
+    LOG(kLOG.info()) << "Constructed BackendInterface Successfully";
     return backend;
 }
 }  // namespace data

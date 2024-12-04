@@ -97,7 +97,7 @@ public:
      * @return The work queue
      */
     static WorkQueue
-    make_WorkQueue(util::Config const& config);
+    makeWorkQueue(util::Config const& config);
 
     /**
      * @brief Submit a job to the work queue.

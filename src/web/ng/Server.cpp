@@ -288,7 +288,7 @@ Server::handleConnection(boost::asio::ip::tcp::socket socket, boost::asio::yield
 }
 
 std::expected<Server, std::string>
-make_Server(util::Config const& config, boost::asio::io_context& context)
+makeServer(util::Config const& config, boost::asio::io_context& context)
 {
     auto const serverConfig = config.section("server");
 

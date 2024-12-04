@@ -28,9 +28,9 @@
 #include <fmt/core.h>
 #include <gtest/gtest.h>
 
-constexpr static auto DEFAULT_API_VERSION = 3u;
-constexpr static auto MIN_API_VERSION = 2u;
-constexpr static auto MAX_API_VERSION = 10u;
+constexpr static auto kDEFAULT_API_VERSION = 3u;
+constexpr static auto kMIN_API_VERSION = 2u;
+constexpr static auto kMAX_API_VERSION = 10u;
 
 using namespace rpc;
 namespace json = boost::json;
@@ -45,9 +45,9 @@ TEST_F(RPCVersionHandlerTest, Default)
             "max": {},
             "default": {}
         }})",
-        MIN_API_VERSION,
-        MAX_API_VERSION,
-        DEFAULT_API_VERSION
+        kMIN_API_VERSION,
+        kMAX_API_VERSION,
+        kDEFAULT_API_VERSION
     ))};
 
     runSpawn([&](auto yield) {

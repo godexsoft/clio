@@ -87,8 +87,8 @@ AccountInfoHandler::process(AccountInfoHandler::Input input, Context const& ctx)
         return amendmentCenter_->isEnabled(ctx.yield, key, seq);
     };
 
-    auto const isDisallowIncomingEnabled = isEnabled(Amendments::DisallowIncoming);
-    auto const isClawbackEnabled = isEnabled(Amendments::Clawback);
+    auto const isDisallowIncomingEnabled = isEnabled(Amendments::kDISALLOW_INCOMING);
+    auto const isClawbackEnabled = isEnabled(Amendments::kCLAWBACK);
 
     // Return SignerList(s) if that is requested.
     if (input.signerLists) {

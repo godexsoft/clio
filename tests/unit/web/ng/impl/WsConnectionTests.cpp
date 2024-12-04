@@ -47,21 +47,21 @@
 using namespace web::ng::impl;
 using namespace web::ng;
 
-struct web_WsConnectionTests : SyncAsioContextTest {
-    util::TagDecoratorFactory tagDecoratorFactory_{util::Config{boost::json::object{{"log_tag_style", "int"}}}};
-    TestHttpServer httpServer_{ctx, "localhost"};
-    WebSocketAsyncClient wsClient_{ctx};
-    Request request_{"some request", Request::HttpHeaders{}};
+struct WebWsConnectionTests : SyncAsioContextTest {
+    util::TagDecoratorFactory tagDecoratorFactory{util::Config{boost::json::object{{"log_tag_style", "int"}}}};
+    TestHttpServer httpServer{ctx_, "localhost"};
+    WebSocketAsyncClient wsClient{ctx_};
+    Request request{"some request", Request::HttpHeaders{}};
 
     std::unique_ptr<PlainWsConnection>
     acceptConnection(boost::asio::yield_context yield)
     {
-        auto expectedSocket = httpServer_.accept(yield);
+        auto expectedSocket = httpServer.accept(yield);
         [&]() { ASSERT_TRUE(expectedSocket.has_value()) << expectedSocket.error().message(); }();
         auto ip = expectedSocket->remote_endpoint().address().to_string();
 
         PlainHttpConnection httpConnection{
-            std::move(expectedSocket).value(), std::move(ip), boost::beast::flat_buffer{}, tagDecoratorFactory_
+            std::move(expectedSocket).value(), std::move(ip), boost::beast::flat_buffer{}, tagDecoratorFactory
         };
 
         auto expectedTrue = httpConnection.isUpgradeRequested(yield);
@@ -71,7 +71,7 @@ struct web_WsConnectionTests : SyncAsioContextTest {
         }();
 
         std::optional<boost::asio::ssl::context> sslContext;
-        auto expectedWsConnection = httpConnection.upgrade(sslContext, tagDecoratorFactory_, yield);
+        auto expectedWsConnection = httpConnection.upgrade(sslContext, tagDecoratorFactory, yield);
         [&]() { ASSERT_TRUE(expectedWsConnection.has_value()) << expectedWsConnection.error().message(); }();
         auto connection = std::move(expectedWsConnection).value();
         auto wsConnectionPtr = dynamic_cast<PlainWsConnection*>(connection.release());
@@ -80,10 +80,10 @@ struct web_WsConnectionTests : SyncAsioContextTest {
     }
 };
 
-TEST_F(web_WsConnectionTests, WasUpgraded)
+TEST_F(WebWsConnectionTests, WasUpgraded)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
     });
     runSpawn([this](boost::asio::yield_context yield) {
@@ -92,14 +92,14 @@ TEST_F(web_WsConnectionTests, WasUpgraded)
     });
 }
 
-TEST_F(web_WsConnectionTests, Send)
+TEST_F(WebWsConnectionTests, Send)
 {
-    Response const response{boost::beast::http::status::ok, "some response", request_};
+    Response const response{boost::beast::http::status::ok, "some response", request};
 
-    boost::asio::spawn(ctx, [this, &response](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this, &response](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
-        auto const expectedMessage = wsClient_.receive(yield, std::chrono::milliseconds{100});
+        auto const expectedMessage = wsClient.receive(yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_TRUE(expectedMessage.has_value()) << expectedMessage.error().message(); }();
         EXPECT_EQ(expectedMessage.value(), response.message());
     });
@@ -111,16 +111,16 @@ TEST_F(web_WsConnectionTests, Send)
     });
 }
 
-TEST_F(web_WsConnectionTests, MultipleSend)
+TEST_F(WebWsConnectionTests, MultipleSend)
 {
-    Response const response{boost::beast::http::status::ok, "some response", request_};
+    Response const response{boost::beast::http::status::ok, "some response", request};
 
-    boost::asio::spawn(ctx, [this, &response](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this, &response](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
-            auto const expectedMessage = wsClient_.receive(yield, std::chrono::milliseconds{100});
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
+            auto const expectedMessage = wsClient.receive(yield, std::chrono::milliseconds{100});
             [&]() { ASSERT_TRUE(expectedMessage.has_value()) << expectedMessage.error().message(); }();
             EXPECT_EQ(expectedMessage.value(), response.message());
         }
@@ -129,21 +129,21 @@ TEST_F(web_WsConnectionTests, MultipleSend)
     runSpawn([this, &response](boost::asio::yield_context yield) {
         auto wsConnection = acceptConnection(yield);
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             auto maybeError = wsConnection->send(response, yield, std::chrono::milliseconds{100});
             [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
         }
     });
 }
 
-TEST_F(web_WsConnectionTests, SendFailed)
+TEST_F(WebWsConnectionTests, SendFailed)
 {
-    Response const response{boost::beast::http::status::ok, "some response", request_};
+    Response const response{boost::beast::http::status::ok, "some response", request};
 
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
-        wsClient_.close();
+        wsClient.close();
     });
 
     runSpawn([this, &response](boost::asio::yield_context yield) {
@@ -159,13 +159,13 @@ TEST_F(web_WsConnectionTests, SendFailed)
     });
 }
 
-TEST_F(web_WsConnectionTests, Receive)
+TEST_F(WebWsConnectionTests, Receive)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
 
-        maybeError = wsClient_.send(yield, request_.message(), std::chrono::milliseconds{100});
+        maybeError = wsClient.send(yield, request.message(), std::chrono::milliseconds{100});
         EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
     });
 
@@ -174,18 +174,18 @@ TEST_F(web_WsConnectionTests, Receive)
 
         auto maybeRequest = wsConnection->receive(yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_TRUE(maybeRequest.has_value()) << maybeRequest.error().message(); }();
-        EXPECT_EQ(maybeRequest->message(), request_.message());
+        EXPECT_EQ(maybeRequest->message(), request.message());
     });
 }
 
-TEST_F(web_WsConnectionTests, MultipleReceive)
+TEST_F(WebWsConnectionTests, MultipleReceive)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
-            maybeError = wsClient_.send(yield, request_.message(), std::chrono::milliseconds{100});
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
+            maybeError = wsClient.send(yield, request.message(), std::chrono::milliseconds{100});
             EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
         }
     });
@@ -193,18 +193,18 @@ TEST_F(web_WsConnectionTests, MultipleReceive)
     runSpawn([this](boost::asio::yield_context yield) {
         auto wsConnection = acceptConnection(yield);
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             auto maybeRequest = wsConnection->receive(yield, std::chrono::milliseconds{100});
             [&]() { ASSERT_TRUE(maybeRequest.has_value()) << maybeRequest.error().message(); }();
-            EXPECT_EQ(maybeRequest->message(), request_.message());
+            EXPECT_EQ(maybeRequest->message(), request.message());
         }
     });
 }
 
-TEST_F(web_WsConnectionTests, ReceiveTimeout)
+TEST_F(WebWsConnectionTests, ReceiveTimeout)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
     });
 
@@ -216,12 +216,12 @@ TEST_F(web_WsConnectionTests, ReceiveTimeout)
     });
 }
 
-TEST_F(web_WsConnectionTests, ReceiveFailed)
+TEST_F(WebWsConnectionTests, ReceiveFailed)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
-        wsClient_.close();
+        wsClient.close();
     });
 
     runSpawn([this](boost::asio::yield_context yield) {
@@ -232,12 +232,12 @@ TEST_F(web_WsConnectionTests, ReceiveFailed)
     });
 }
 
-TEST_F(web_WsConnectionTests, Close)
+TEST_F(WebWsConnectionTests, Close)
 {
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto maybeError = wsClient_.connect("localhost", httpServer_.port(), yield, std::chrono::milliseconds{100});
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto maybeError = wsClient.connect("localhost", httpServer.port(), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError.value().message(); }();
-        auto const maybeMessage = wsClient_.receive(yield, std::chrono::milliseconds{100});
+        auto const maybeMessage = wsClient.receive(yield, std::chrono::milliseconds{100});
         EXPECT_FALSE(maybeMessage.has_value());
         EXPECT_THAT(maybeMessage.error().message(), testing::HasSubstr("was gracefully closed"));
     });

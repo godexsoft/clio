@@ -61,7 +61,7 @@ public:
     sendBuffer(
         boost::asio::const_buffer buffer,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = Connection::DEFAULT_TIMEOUT
+        std::chrono::steady_clock::duration timeout = Connection::kDEFAULT_TIMEOUT
     ) = 0;
 };
 
@@ -128,7 +128,7 @@ public:
     sendBuffer(
         boost::asio::const_buffer buffer,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = Connection::DEFAULT_TIMEOUT
+        std::chrono::steady_clock::duration timeout = Connection::kDEFAULT_TIMEOUT
     ) override
     {
         auto error =
@@ -142,14 +142,14 @@ public:
     send(
         Response response,
         boost::asio::yield_context yield,
-        std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT
+        std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT
     ) override
     {
         return sendBuffer(response.asWsResponse(), yield, timeout);
     }
 
     std::expected<Request, Error>
-    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT) override
+    receive(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         auto error = util::withTimeout([this](auto&& yield) { stream_.async_read(buffer_, yield); }, yield, timeout);
         if (error)
@@ -162,7 +162,7 @@ public:
     }
 
     void
-    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = DEFAULT_TIMEOUT) override
+    close(boost::asio::yield_context yield, std::chrono::steady_clock::duration timeout = kDEFAULT_TIMEOUT) override
     {
         boost::beast::websocket::stream_base::timeout wsTimeout{};
         stream_.get_option(wsTimeout);
@@ -177,7 +177,7 @@ using PlainWsConnection = WsConnection<boost::beast::tcp_stream>;
 using SslWsConnection = WsConnection<boost::asio::ssl::stream<boost::beast::tcp_stream>>;
 
 std::expected<std::unique_ptr<PlainWsConnection>, Error>
-make_PlainWsConnection(
+makePlainWsConnection(
     boost::asio::ip::tcp::socket socket,
     std::string ip,
     boost::beast::flat_buffer buffer,
@@ -187,7 +187,7 @@ make_PlainWsConnection(
 );
 
 std::expected<std::unique_ptr<SslWsConnection>, Error>
-make_SslWsConnection(
+makeSslWsConnection(
     boost::asio::ip::tcp::socket socket,
     std::string ip,
     boost::beast::flat_buffer buffer,

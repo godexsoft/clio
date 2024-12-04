@@ -407,5 +407,5 @@ public:
     instance();
 
 private:
-    static std::unique_ptr<util::prometheus::PrometheusInterface> instance_;
+    static std::unique_ptr<util::prometheus::PrometheusInterface> instance;
 };

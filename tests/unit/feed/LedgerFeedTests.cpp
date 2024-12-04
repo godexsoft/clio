@@ -29,7 +29,7 @@
 #include <gtest/gtest.h>
 #include <xrpl/protocol/Fees.h>
 
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr static auto kLEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 using namespace feed::impl;
 namespace json = boost::json;
@@ -39,17 +39,17 @@ using FeedLedgerTest = FeedBaseTest<LedgerFeed>;
 
 TEST_F(FeedLedgerTest, SubPub)
 {
-    backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    backend_->setRange(10, 30);
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
-    auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
+    auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
     // check the function response
     // Information about the ledgers on hand and current fee schedule. This
     // includes the same fields as a ledger stream message, except that it omits
     // the type and txn_count fields
-    constexpr static auto LedgerResponse =
+    constexpr static auto kLEDGER_RESPONSE =
         R"({
             "validated_ledgers":"10-30",
             "ledger_index":30,
@@ -61,15 +61,15 @@ TEST_F(FeedLedgerTest, SubPub)
         })";
     boost::asio::io_context ioContext;
     boost::asio::spawn(ioContext, [this](boost::asio::yield_context yield) {
-        EXPECT_CALL(*mockSessionPtr, onDisconnect);
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+        EXPECT_CALL(*mockSessionPtr_, onDisconnect);
+        auto res = testFeedPtr_->sub(yield, backend_, sessionPtr_);
         // check the response
-        EXPECT_EQ(res, json::parse(LedgerResponse));
+        EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
     });
     ioContext.run();
-    EXPECT_EQ(testFeedPtr->count(), 1);
+    EXPECT_EQ(testFeedPtr_->count(), 1);
 
-    constexpr static auto ledgerPub =
+    constexpr static auto kLEDGER_PUB =
         R"({
             "type":"ledgerClosed",
             "ledger_index":31,
@@ -83,28 +83,28 @@ TEST_F(FeedLedgerTest, SubPub)
         })";
 
     // test publish
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(ledgerPub))).Times(1);
-    auto const ledgerHeader2 = CreateLedgerHeader(LEDGERHASH, 31);
+    EXPECT_CALL(*mockSessionPtr_, send(sharedStringJsonEq(kLEDGER_PUB))).Times(1);
+    auto const ledgerHeader2 = createLedgerHeader(kLEDGERHASH, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr_->pub(ledgerHeader2, fee2, "10-31", 8);
 
     // test unsub, after unsub the send should not be called
-    testFeedPtr->unsub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 0);
-    EXPECT_CALL(*mockSessionPtr, send(_)).Times(0);
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr_->unsub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 0);
+    EXPECT_CALL(*mockSessionPtr_, send(_)).Times(0);
+    testFeedPtr_->pub(ledgerHeader2, fee2, "10-31", 8);
 }
 
 TEST_F(FeedLedgerTest, AutoDisconnect)
 {
-    backend->setRange(10, 30);
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 30);
-    EXPECT_CALL(*backend, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
+    backend_->setRange(10, 30);
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
-    auto const feeBlob = CreateLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    EXPECT_CALL(*backend, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
-    constexpr static auto LedgerResponse =
+    auto const feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
+    EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(testing::Return(feeBlob));
+    constexpr static auto kLEDGER_RESPONSE =
         R"({
             "validated_ledgers":"10-30",
             "ledger_index":30,
@@ -116,25 +116,25 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
         })";
 
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
-    EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
 
-    boost::asio::spawn(ctx, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend, sessionPtr);
+    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto res = testFeedPtr_->sub(yield, backend_, sessionPtr_);
         // check the response
-        EXPECT_EQ(res, json::parse(LedgerResponse));
+        EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
     });
-    EXPECT_EQ(testFeedPtr->count(), 1);
-    EXPECT_CALL(*mockSessionPtr, send(_)).Times(0);
+    EXPECT_EQ(testFeedPtr_->count(), 1);
+    EXPECT_CALL(*mockSessionPtr_, send(_)).Times(0);
 
     ASSERT_TRUE(slot);
-    slot(sessionPtr.get());
-    sessionPtr.reset();
+    slot(sessionPtr_.get());
+    sessionPtr_.reset();
 
-    EXPECT_EQ(testFeedPtr->count(), 0);
+    EXPECT_EQ(testFeedPtr_->count(), 0);
 
-    auto const ledgerHeader2 = CreateLedgerHeader(LEDGERHASH, 31);
+    auto const ledgerHeader2 = createLedgerHeader(kLEDGERHASH, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
     // no error
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr_->pub(ledgerHeader2, fee2, "10-31", 8);
 }

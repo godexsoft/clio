@@ -31,31 +31,31 @@
 
 using namespace feed::impl;
 
-constexpr static auto LEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
-constexpr static auto ACCOUNT1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr static auto ACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
-constexpr static auto CURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
-constexpr static auto ISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
+constexpr static auto kLEDGERHASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constexpr static auto kACCOUN_T1 = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
+constexpr static auto kACCOUN_T2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
+constexpr static auto kCURRENCY = "0158415500000000C1F76FF6ECB0BAC600000000";
+constexpr static auto kISSUER = "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD";
 
 using FeedBookChangeTest = FeedBaseTest<BookChangesFeed>;
 
 TEST_F(FeedBookChangeTest, Pub)
 {
-    EXPECT_CALL(*mockSessionPtr, onDisconnect);
-    testFeedPtr->sub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 1);
+    EXPECT_CALL(*mockSessionPtr_, onDisconnect);
+    testFeedPtr_->sub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 1);
 
-    auto const ledgerHeader = CreateLedgerHeader(LEDGERHASH, 32);
+    auto const ledgerHeader = createLedgerHeader(kLEDGERHASH, 32);
     auto transactions = std::vector<TransactionAndMetadata>{};
     auto trans1 = TransactionAndMetadata();
-    ripple::STObject const obj = CreatePaymentTransactionObject(ACCOUNT1, ACCOUNT2, 1, 1, 32);
+    ripple::STObject const obj = createPaymentTransactionObject(kACCOUN_T1, kACCOUN_T2, 1, 1, 32);
     trans1.transaction = obj.getSerializer().peekData();
     trans1.ledgerSequence = 32;
-    ripple::STObject const metaObj = CreateMetaDataForBookChange(CURRENCY, ISSUER, 22, 1, 3, 3, 1);
+    ripple::STObject const metaObj = createMetaDataForBookChange(kCURRENCY, kISSUER, 22, 1, 3, 3, 1);
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
-    constexpr static auto bookChangePublish =
+    constexpr static auto kBOOK_CHANGE_PUBLISH =
         R"({
             "type":"bookChanges",
             "ledger_index":32,
@@ -76,10 +76,10 @@ TEST_F(FeedBookChangeTest, Pub)
             ]
         })";
 
-    EXPECT_CALL(*mockSessionPtr, send(SharedStringJsonEq(bookChangePublish))).Times(1);
-    testFeedPtr->pub(ledgerHeader, transactions);
+    EXPECT_CALL(*mockSessionPtr_, send(sharedStringJsonEq(kBOOK_CHANGE_PUBLISH))).Times(1);
+    testFeedPtr_->pub(ledgerHeader, transactions);
 
-    testFeedPtr->unsub(sessionPtr);
-    EXPECT_EQ(testFeedPtr->count(), 0);
-    testFeedPtr->pub(ledgerHeader, transactions);
+    testFeedPtr_->unsub(sessionPtr_);
+    EXPECT_EQ(testFeedPtr_->count(), 0);
+    testFeedPtr_->pub(ledgerHeader, transactions);
 }
