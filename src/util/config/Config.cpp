@@ -144,7 +144,7 @@ Config::arrayOrThrow(KeyType key, std::string_view err) const
     try {
         return maybeArray(key).value();
     } catch (std::exception const&) {
-        throw std::runtime_error(err.data());
+        throw std::runtime_error(std::string{err});
     }
 }
 

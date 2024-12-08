@@ -970,7 +970,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             backend->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             backend->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend->cache().update({{*key, {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
+            backend->cache().update({{.key = *key, .blob = {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
             backend->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, std::string{accountIndexBlob});
             backend->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::lastKey));
 
@@ -1007,7 +1007,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             backend->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             std::shuffle(accountBlob.begin(), accountBlob.end(), randomEngine);
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend->cache().update({{*key, {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
+            backend->cache().update({{.key = *key, .blob = {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
             backend->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
 
             ASSERT_TRUE(backend->finishWrites(lgrInfoNext.seq));
@@ -1044,7 +1044,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
 
             backend->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend->cache().update({{*key, {}}}, lgrInfoNext.seq);
+            backend->cache().update({{.key = *key, .blob = {}}}, lgrInfoNext.seq);
             backend->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{});
             backend->writeSuccessor(uint256ToString(data::firstKey), lgrInfoNext.seq, uint256ToString(data::lastKey));
 

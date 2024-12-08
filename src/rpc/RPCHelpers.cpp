@@ -113,7 +113,7 @@ parseAccountCursor(std::optional<std::string> jsonCursor)
     std::uint64_t startHint = 0;
 
     if (!jsonCursor)
-        return AccountCursor({cursorIndex, startHint});
+        return AccountCursor({.index = cursorIndex, .hint = startHint});
 
     // Cursor is composed of a comma separated index and start hint. The
     // former will be read as hex, and the latter using boost lexical cast.
@@ -134,7 +134,7 @@ parseAccountCursor(std::optional<std::string> jsonCursor)
         return {};
     }
 
-    return AccountCursor({cursorIndex, startHint});
+    return AccountCursor({.index = cursorIndex, .hint = startHint});
 }
 
 std::optional<ripple::STAmount>
@@ -609,7 +609,7 @@ traverseNFTObjects(
 
     if (!page) {
         if (nextPage == beast::zero) {  // no nft objects in lastNFTPage
-            return AccountCursor{beast::zero, 0};
+            return AccountCursor{.index = beast::zero, .hint = 0};
         }
         // marker is in the right range, but still invalid
         return Status{RippledError::rpcINVALID_PARAMS, "Invalid marker."};
@@ -626,13 +626,13 @@ traverseNFTObjects(
         count++;
 
         if (count == limit or nftPreviousPage == beast::zero)
-            return AccountCursor{nftPreviousPage, count};
+            return AccountCursor{.index = nftPreviousPage, .hint = count};
 
         page = backend.fetchLedgerObject(nftPreviousPage, sequence, yield);
         pageSLE = ripple::SLE{ripple::SerialIter{page->data(), page->size()}, nftPreviousPage};
     }
 
-    return AccountCursor{beast::zero, 0};
+    return AccountCursor{.index = beast::zero, .hint = 0};
 }
 
 std::variant<Status, AccountCursor>
@@ -671,7 +671,7 @@ traverseOwnedNodes(
 
         // if limit reach , we return the next page and max as marker
         if (nftsCount >= limit)
-            return AccountCursor{nextNFTPage, std::numeric_limits<uint32_t>::max()};
+            return AccountCursor{.index = nextNFTPage, .hint = std::numeric_limits<uint32_t>::max()};
 
         // adjust limit ,continue traversing owned nodes
         limit -= nftsCount;
@@ -700,7 +700,7 @@ traverseOwnedNodes(
     std::function<void(ripple::SLE)> atOwnedNode
 )
 {
-    auto cursor = AccountCursor({beast::zero, 0});
+    auto cursor = AccountCursor({.index = beast::zero, .hint = 0});
 
     auto const rootIndex = owner;
     auto currentIndex = rootIndex;
@@ -758,7 +758,7 @@ traverseOwnedNodes(
             }
 
             if (limit == 0) {
-                cursor = AccountCursor({keys.back(), currentPage});
+                cursor = AccountCursor({.index = keys.back(), .hint = currentPage});
                 break;
             }
             // the next page
@@ -787,7 +787,7 @@ traverseOwnedNodes(
             }
 
             if (limit == 0) {
-                cursor = AccountCursor({keys.back(), currentPage});
+                cursor = AccountCursor({.index = keys.back(), .hint = currentPage});
                 break;
             }
 
@@ -819,7 +819,7 @@ traverseOwnedNodes(
     if (limit == 0)
         return cursor;
 
-    return AccountCursor({beast::zero, 0});
+    return AccountCursor({.index = beast::zero, .hint = 0});
 }
 
 std::shared_ptr<ripple::SLE const>
