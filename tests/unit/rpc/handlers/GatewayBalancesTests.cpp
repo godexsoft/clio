@@ -451,18 +451,23 @@ generateNormalPathTestBundles()
                 INDEX1
             ),
             .mockedObjects =
-                std::vector{// hotwallet
-                            CreateRippleStateLedgerObject("USD", ISSUER, -10, ACCOUNT, 100, ACCOUNT2, 200, TXNID, 123),
-                            // hotwallet
-                            CreateRippleStateLedgerObject("CNY", ISSUER, -20, ACCOUNT, 100, ACCOUNT2, 200, TXNID, 123),
-                            // positive balance -> asset
-                            CreateRippleStateLedgerObject("EUR", ISSUER, 30, ACCOUNT, 100, ACCOUNT3, 200, TXNID, 123),
-                            // positive balance -> asset
-                            CreateRippleStateLedgerObject("JPY", ISSUER, 40, ACCOUNT, 100, ACCOUNT3, 200, TXNID, 123),
-                            // obligation
-                            CreateRippleStateLedgerObject("JPY", ISSUER, -50, ACCOUNT, 10, ACCOUNT3, 20, TXNID, 123),
-                            frozenState
-
+                {
+                    CreateRippleStateLedgerObject(
+                        "USD", ISSUER, -10, ACCOUNT, 100, ACCOUNT2, 200, TXNID, 123
+                    ),  // hotwallet
+                    CreateRippleStateLedgerObject(
+                        "CNY", ISSUER, -20, ACCOUNT, 100, ACCOUNT2, 200, TXNID, 123
+                    ),  // hotwallet
+                    CreateRippleStateLedgerObject(
+                        "EUR", ISSUER, 30, ACCOUNT, 100, ACCOUNT3, 200, TXNID, 123
+                    ),  // positive balance -> asset
+                    CreateRippleStateLedgerObject(
+                        "JPY", ISSUER, 40, ACCOUNT, 100, ACCOUNT3, 200, TXNID, 123
+                    ),  // positive balance -> asset
+                    CreateRippleStateLedgerObject(
+                        "JPY", ISSUER, -50, ACCOUNT, 10, ACCOUNT3, 20, TXNID, 123
+                    ),  // obligation
+                    frozenState,
                 },
             .expectedJson = fmt::format(
                 R"({{
@@ -554,12 +559,15 @@ generateNormalPathTestBundles()
                 INDEX1
             ),
             .mockedObjects =
-                std::vector{// hotwallet
-                            CreateRippleStateLedgerObject("USD", ISSUER, 10, ACCOUNT2, 100, ACCOUNT, 200, TXNID, 123),
-                            // hotwallet
-                            CreateRippleStateLedgerObject("CNY", ISSUER, 20, ACCOUNT2, 100, ACCOUNT, 200, TXNID, 123),
-                            CreateRippleStateLedgerObject("EUR", ISSUER, 30, ACCOUNT3, 100, ACCOUNT, 200, TXNID, 123),
-                            CreateRippleStateLedgerObject("JPY", ISSUER, -50, ACCOUNT3, 10, ACCOUNT, 20, TXNID, 123)
+                {
+                    CreateRippleStateLedgerObject(
+                        "USD", ISSUER, 10, ACCOUNT2, 100, ACCOUNT, 200, TXNID, 123
+                    ),  // hotwallet
+                    CreateRippleStateLedgerObject(
+                        "CNY", ISSUER, 20, ACCOUNT2, 100, ACCOUNT, 200, TXNID, 123
+                    ),  // hotwallet
+                    CreateRippleStateLedgerObject("EUR", ISSUER, 30, ACCOUNT3, 100, ACCOUNT, 200, TXNID, 123),
+                    CreateRippleStateLedgerObject("JPY", ISSUER, -50, ACCOUNT3, 10, ACCOUNT, 20, TXNID, 123),
                 },
             .expectedJson = fmt::format(
                 R"({{
