@@ -165,7 +165,7 @@ NFTOffersHandlerBase::iterateOfferDirectory(
         offers.pop_back();
     }
 
-    std::move(std::begin(offers), std::end(offers), std::back_inserter(output.offers));
+    std::ranges::move(offers, std::back_inserter(output.offers));
 
     return output;
 }

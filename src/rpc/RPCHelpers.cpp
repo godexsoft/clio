@@ -220,8 +220,8 @@ deserializeTxPlusMeta(data::TransactionAndMetadata const& blobs)
     } catch (std::exception const& e) {
         std::stringstream txn;
         std::stringstream meta;
-        std::copy(blobs.transaction.begin(), blobs.transaction.end(), std::ostream_iterator<unsigned char>(txn));
-        std::copy(blobs.metadata.begin(), blobs.metadata.end(), std::ostream_iterator<unsigned char>(meta));
+        std::ranges::copy(blobs.transaction, std::ostream_iterator<unsigned char>(txn));
+        std::ranges::copy(blobs.metadata, std::ostream_iterator<unsigned char>(meta));
         LOG(gLog.error()) << "Failed to deserialize transaction. txn = " << txn.str() << " - meta = " << meta.str()
                           << " txn length = " << std::to_string(blobs.transaction.size())
                           << " meta length = " << std::to_string(blobs.metadata.size());
@@ -728,7 +728,7 @@ traverseOwnedNodes(
         ripple::SLE const hintDirSle{hintDirIt, hintIndex.key};
 
         if (auto const& indexes = hintDirSle.getFieldV256(ripple::sfIndexes);
-            std::find(std::begin(indexes), std::end(indexes), hexMarker) == std::end(indexes)) {
+            std::ranges::find(indexes, hexMarker) == std::end(indexes)) {
             // the index specified by marker is not in the page specified by marker
             return Status(ripple::rpcINVALID_PARAMS, "Invalid marker.");
         }

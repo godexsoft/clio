@@ -402,9 +402,9 @@ TEST_P(NormalPathTest, CheckOutput)
     EXPECT_CALL(*backend, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
-    std::transform(
-        bundle.mockedObjects.begin(),
-        bundle.mockedObjects.end(),
+    std::ranges::transform(
+        bundle.mockedObjects,
+
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );

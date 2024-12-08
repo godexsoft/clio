@@ -996,9 +996,9 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTReachLimitReturnMarker)
 
     auto current = ripple::keylet::nftpage_max(account).key;
     std::string first{INDEX1};
-    sort(first.begin(), first.end());
+    std::ranges::sort(first);
     for (auto i = 0; i < 10; i++) {
-        std::next_permutation(first.begin(), first.end());
+        std::ranges::next_permutation(first);
         auto previous =
             ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
         auto const nftpage =
@@ -1039,9 +1039,9 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTReachLimitNoMarker)
 
     auto current = ripple::keylet::nftpage_max(account).key;
     std::string first{INDEX1};
-    sort(first.begin(), first.end());
+    std::ranges::sort(first);
     for (auto i = 0; i < 10; i++) {
-        std::next_permutation(first.begin(), first.end());
+        std::ranges::next_permutation(first);
         auto previous =
             ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
         auto const nftpage =
@@ -1087,9 +1087,9 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMarker)
     std::string first{INDEX1};
     auto current = ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
     auto const marker = current;
-    sort(first.begin(), first.end());
+    std::ranges::sort(first);
     for (auto i = 0; i < 10; i++) {
-        std::next_permutation(first.begin(), first.end());
+        std::ranges::next_permutation(first);
         auto previous =
             ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
         auto const nftpage =
@@ -1273,9 +1273,9 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTLimitAdjust)
     std::string first{INDEX1};
     auto current = ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
     auto const marker = current;
-    sort(first.begin(), first.end());
+    std::ranges::sort(first);
     for (auto i = 0; i < 10; i++) {
-        std::next_permutation(first.begin(), first.end());
+        std::ranges::next_permutation(first);
         auto previous =
             ripple::keylet::nftpage(ripple::keylet::nftpage_min(account), ripple::uint256{first.c_str()}).key;
         auto const nftpage =

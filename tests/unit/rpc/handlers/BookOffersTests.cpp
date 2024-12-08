@@ -532,9 +532,9 @@ TEST_P(RPCBookOffersNormalPathTest, CheckOutput)
     }
 
     std::vector<Blob> bbs;
-    std::transform(
-        bundle.mockedOffers.begin(),
-        bundle.mockedOffers.end(),
+    std::ranges::transform(
+        bundle.mockedOffers,
+
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );

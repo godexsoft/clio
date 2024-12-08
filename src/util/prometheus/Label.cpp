@@ -73,7 +73,7 @@ Label::serialize() const
 
 Labels::Labels(std::vector<Label> labels) : labels_(std::move(labels))
 {
-    std::sort(labels_.begin(), labels_.end());
+    std::sort(labels_.begin(), labels_.end());  // NOLINT
 }
 
 std::string

@@ -55,7 +55,7 @@ getWarningInfo(WarningCode code)
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = std::ranges::find_if(infos, matchByCode); it != end(infos))
         return *it;
 
     throw(out_of_range("Invalid WarningCode"));
@@ -111,7 +111,7 @@ getErrorInfo(ClioError code)
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(infos), end(infos), matchByCode); it != end(infos))
+    if (auto it = std::ranges::find_if(infos, matchByCode); it != end(infos))
         return *it;
 
     throw(out_of_range("Invalid error code"));
