@@ -19,7 +19,7 @@
 
 #include "util/AsioContextTestFixture.hpp"
 #include "util/config/Config.hpp"
-#include "web/dosguard/DOSGuardInterface.hpp"
+#include "web/dosguard/DOSGuardMock.hpp"
 #include "web/dosguard/IntervalSweepHandler.hpp"
 
 #include <boost/json/parse.hpp>
@@ -40,10 +40,7 @@ protected:
     }
 )JSON";
 
-    struct DosGuardMock : BaseDOSGuard {
-        MOCK_METHOD(void, clear, (), (noexcept, override));
-    };
-    testing::StrictMock<DosGuardMock> guardMock;
+    DOSGuardStrictMock guardMock;
 
     util::Config cfg{boost::json::parse(JSONData)};
     IntervalSweepHandler sweepHandler{cfg, ctx, guardMock};

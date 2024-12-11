@@ -17,20 +17,25 @@
 */
 //==============================================================================
 
-#include "util/Repeat.hpp"
+#pragma once
 
-namespace util {
+#include "web/dosguard/DOSGuardInterface.hpp"
 
-Repeat::~Repeat()
-{
-    *stopped_ = true;
-}
+#include <gmock/gmock.h>
 
-void
-Repeat::stop()
-{
-    *stopped_ = true;
-    timer_.cancel();
-}
+#include <cstdint>
+#include <string>
+#include <string_view>
 
-}  // namespace util
+struct DOSGuardMockImpl : web::dosguard::DOSGuardInterface {
+    MOCK_METHOD(bool, isWhiteListed, (std::string_view const ip), (const, noexcept, override));
+    MOCK_METHOD(bool, isOk, (std::string const& ip), (const, noexcept, override));
+    MOCK_METHOD(void, increment, (std::string const& ip), (noexcept, override));
+    MOCK_METHOD(void, decrement, (std::string const& ip), (noexcept, override));
+    MOCK_METHOD(bool, add, (std::string const& ip, uint32_t size), (noexcept, override));
+    MOCK_METHOD(bool, request, (std::string const& ip), (noexcept, override));
+    MOCK_METHOD(void, clear, (), (noexcept, override));
+};
+
+using DOSGuardMock = testing::NiceMock<DOSGuardMockImpl>;
+using DOSGuardStrictMock = testing::StrictMock<DOSGuardMockImpl>;
