@@ -167,7 +167,7 @@ public:
     using ScheduledOperation = ScheduledOperation<BasicExecutionContext, StoppableOperation<T>>;
 
     // note: repeating operations are always stoppable and must return void
-    using RepeatingOperation = RepeatingOperation<BasicExecutionContext>;
+    using RepeatedOperation = RepeatingOperation<BasicExecutionContext>;
 
     /**
      * @brief Create a new execution context with the given number of threads.
@@ -283,7 +283,7 @@ public:
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
             return TimerContextProvider::getContext(*this).executeRepeatedly(interval, std::forward<decltype(fn)>(fn));
         } else {
-            return RepeatingOperation(impl::extractAssociatedExecutor(*this), interval, std::forward<decltype(fn)>(fn));
+            return RepeatedOperation(impl::extractAssociatedExecutor(*this), interval, std::forward<decltype(fn)>(fn));
         }
     }
 
