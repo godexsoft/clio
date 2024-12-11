@@ -51,6 +51,13 @@ concept SomeCancellable = requires(T v) {
 template <typename T>
 concept SomeOperation = requires(T v) {
     { v.wait() } -> std::same_as<void>;
+};
+
+/**
+ * @brief Specifies the interface for an operation
+ */
+template <typename T>
+concept SomeOperationWithData = SomeOperation<T> and requires(T v) {
     { v.get() };
 };
 

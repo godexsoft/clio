@@ -43,9 +43,11 @@ public:
     /**
      * @brief Construct a new Repeat object
      *
-     * @param ioc The io_context to use
+     * @param ctx The io_context-like object to use
      */
-    Repeat(boost::asio::io_context& ioc);
+    Repeat(auto& ctx) : timer_(ctx)
+    {
+    }
 
     /**
      * @brief Stop repeating

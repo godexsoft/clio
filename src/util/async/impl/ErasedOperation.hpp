@@ -27,6 +27,7 @@
 #include <expected>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 namespace util::async::impl {
 
@@ -101,8 +102,13 @@ private:
         std::expected<std::any, ExecutionError>
         get() override
         {
-            // Note: return type of the operation was already wrapped to std::any by AnyExecutionContext
-            return operation.get();
+            if constexpr (not SomeOperationWithData<OpType>) {
+                ASSERT(false, "Called get() on an operation that does not support it");
+                std::unreachable();
+            } else {
+                // Note: return type of the operation was already wrapped to std::any by AnyExecutionContext
+                return operation.get();
+            }
         }
 
         void

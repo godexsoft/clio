@@ -19,13 +19,7 @@
 
 #include "util/Repeat.hpp"
 
-#include <boost/asio/io_context.hpp>
-
 namespace util {
-
-Repeat::Repeat(boost::asio::io_context& ioc) : timer_(ioc)
-{
-}
 
 void
 Repeat::stop()

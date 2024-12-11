@@ -19,12 +19,17 @@
 
 #pragma once
 
+#include "util/Repeat.hpp"
 #include "util/async/Concepts.hpp"
+#include "util/async/Error.hpp"
 #include "util/async/Outcome.hpp"
 #include "util/async/context/impl/Cancellation.hpp"
 #include "util/async/context/impl/Timer.hpp"
 
+#include <chrono>
+#include <concepts>
 #include <condition_variable>
+#include <expected>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -180,5 +185,59 @@ using Operation = impl::BasicOperation<Outcome<RetType>>;
  */
 template <typename CtxType, typename OpType>
 using ScheduledOperation = impl::BasicScheduledOperation<CtxType, OpType>;
+
+/**
+ * @brief The `future` side of async operations that automatically repeat until aborted
+ *
+ * @note The current implementation requires the user provided function to return void and to take no arguments. There
+ * is also no mechanism to request the repeating task to stop from inside of the user provided block of code.
+ *
+ * @tparam CtxType The type of the execution context
+ */
+template <typename CtxType>
+class RepeatingOperation {
+    using DataType = std::expected<void, ExecutionError>;
+    using StopSourceType = typename CtxType::StopSource;
+
+    std::unique_ptr<util::Repeat> repeat_;
+    StoppableOutcome<DataType, StopSourceType> outcome_;
+    StoppableOperation<DataType, StopSourceType> op_;
+
+public:
+    /**
+     * @brief Construct a new Repeating Operation object
+     * @note The first invocation of the user-provided function happens with no delay
+     *
+     * @param executor The executor to operate on
+     * @param interval Time to wait before repeating the user-provided block of code
+     * @param fn The function to execute repeatedly
+     */
+    RepeatingOperation(auto& executor, std::chrono::steady_clock::duration interval, std::invocable auto&& fn)
+        : repeat_(std::make_unique<util::Repeat>(executor)), op_(&outcome_)
+    {
+        repeat_->start(interval, std::forward<decltype(fn)>(fn));
+    }
+
+    /**
+     * @brief Aborts the operation and the repeating timer
+     * @warning Calling this from inside of the repeating operation yields a deadlock
+     */
+    void
+    abort() noexcept
+    {
+        op_.requestStop();
+        repeat_->stop();
+    }
+
+    /**
+     * @brief Wait for the operation to get cancelled
+     * @warning Calling this from inside of the repeating operation yields a deadlock
+     */
+    void
+    wait() noexcept
+    {
+        op_.wait();
+    }
+};
 
 }  // namespace util::async
