@@ -80,7 +80,7 @@ struct MockExecutionContext {
     );
     MOCK_METHOD(
         RepeatingOperation<std::any> const&,
-        scheduleRepeating,
+        executeRepeatedly,
         (std::chrono::milliseconds, std::function<std::any()>),
         ()
     );

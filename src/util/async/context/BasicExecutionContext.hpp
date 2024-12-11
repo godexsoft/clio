@@ -278,10 +278,10 @@ public:
      * @return A repeating stoppable operation that can be used to wait for its cancellation
      */
     [[nodiscard]] auto
-    scheduleRepeating(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn) noexcept(isNoexcept)
+    executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn) noexcept(isNoexcept)
     {
         if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
-            return TimerContextProvider::getContext(*this).scheduleRepeating(interval, std::forward<decltype(fn)>(fn));
+            return TimerContextProvider::getContext(*this).executeRepeatedly(interval, std::forward<decltype(fn)>(fn));
         } else {
             return RepeatingOperation(impl::extractAssociatedExecutor(*this), interval, std::forward<decltype(fn)>(fn));
         }

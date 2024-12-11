@@ -173,7 +173,7 @@ TYPED_TEST(ExecutionContextTests, repeatingOperation)
 {
     testing::MockFunction<void()> call;
 
-    auto res = this->ctx.scheduleRepeating(std::chrono::milliseconds(1), [&] { call.Call(); });
+    auto res = this->ctx.executeRepeatedly(std::chrono::milliseconds(1), [&] { call.Call(); });
     EXPECT_CALL(call, Call()).Times(testing::Between(10, 16));
 
     std::this_thread::sleep_for(std::chrono::milliseconds{15});

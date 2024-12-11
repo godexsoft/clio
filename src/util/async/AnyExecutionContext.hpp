@@ -217,14 +217,14 @@ public:
      * @return A repeating stoppable operation that can be used to wait for its cancellation
      */
     [[nodiscard]] auto
-    scheduleRepeating(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn)
+    executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn)
     {
         using RetType = std::decay_t<decltype(fn())>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
         return AnyOperation<RetType>(  //
-            pimpl_->scheduleRepeating(
+            pimpl_->executeRepeatedly(
                 millis,
                 [fn = std::forward<decltype(fn)>(fn)] -> std::any {
                     fn();
@@ -280,7 +280,7 @@ private:
             scheduleAfter(std::chrono::milliseconds, std::function<std::any(AnyStopToken)>) = 0;
         virtual impl::ErasedOperation
             scheduleAfter(std::chrono::milliseconds, std::function<std::any(AnyStopToken, bool)>) = 0;
-        virtual impl::ErasedOperation scheduleRepeating(std::chrono::milliseconds, std::function<std::any()>) = 0;
+        virtual impl::ErasedOperation executeRepeatedly(std::chrono::milliseconds, std::function<std::any()>) = 0;
         virtual AnyStrand
         makeStrand() = 0;
         virtual void
@@ -323,9 +323,9 @@ private:
         }
 
         impl::ErasedOperation
-        scheduleRepeating(std::chrono::milliseconds interval, std::function<std::any()> fn) override
+        executeRepeatedly(std::chrono::milliseconds interval, std::function<std::any()> fn) override
         {
-            return ctx.scheduleRepeating(interval, std::move(fn));
+            return ctx.executeRepeatedly(interval, std::move(fn));
         }
 
         AnyStrand
