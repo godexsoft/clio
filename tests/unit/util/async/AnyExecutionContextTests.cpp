@@ -115,6 +115,9 @@ struct AnyExecutionContextTests : Test {
     template <typename T>
     using ScheduledOperationType = NiceMock<MockScheduledOperation<T>>;
 
+    template <typename T>
+    using RepeatingOperationType = NiceMock<MockRepeatingOperation<T>>;
+
     NiceMock<MockExecutionContext> mockExecutionContext;
     AnyExecutionContext ctx{static_cast<MockExecutionContext&>(mockExecutionContext)};
 };
@@ -268,6 +271,20 @@ TEST_F(AnyExecutionContextTests, TimerWithBoolHandlerExecuted)
 
     static_assert(std::is_same_v<decltype(timer), AnyOperation<int>>);
     EXPECT_EQ(timer.get().value(), 42);
+}
+
+TEST_F(AnyExecutionContextTests, RepeatingOperation)
+{
+    auto mockRepeatingOp = RepeatingOperationType<std::any>{};
+    EXPECT_CALL(mockRepeatingOp, wait());
+    EXPECT_CALL(
+        mockExecutionContext, scheduleRepeating(An<std::chrono::milliseconds>(), An<std::function<std::any()>>())
+    )
+        .WillOnce([&mockRepeatingOp] -> RepeatingOperationType<std::any> const& { return mockRepeatingOp; });
+
+    auto res = ctx.scheduleRepeating(std::chrono::milliseconds(1), [] -> void { throw 0; });
+    static_assert(std::is_same_v<decltype(res), AnyOperation<void>>);
+    res.wait();
 }
 
 TEST_F(AnyExecutionContextTests, StrandExecuteWithVoid)

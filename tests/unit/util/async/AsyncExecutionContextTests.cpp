@@ -20,12 +20,14 @@
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/async/context/SyncExecutionContext.hpp"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <chrono>
 #include <semaphore>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 using namespace util::async;
 using ::testing::Types;
@@ -165,6 +167,17 @@ TYPED_TEST(ExecutionContextTests, timerUnknownException)
     auto const err = res.get().error();
     EXPECT_TRUE(err.message.ends_with("unknown"));
     EXPECT_TRUE(std::string{err}.ends_with("unknown"));
+}
+
+TYPED_TEST(ExecutionContextTests, repeatingOperation)
+{
+    testing::MockFunction<void()> call;
+
+    auto res = this->ctx.scheduleRepeating(std::chrono::milliseconds(1), [&] { call.Call(); });
+    EXPECT_CALL(call, Call()).Times(testing::Between(10, 16));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds{15});
+    res.abort();
 }
 
 TYPED_TEST(ExecutionContextTests, strandMove)
