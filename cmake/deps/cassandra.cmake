@@ -1,1 +1,1 @@
-find_package(cassandra-cpp-driver REQUIRED CONFIG)
+# find_package(scylla-cpp-driver REQUIRED CONFIG)

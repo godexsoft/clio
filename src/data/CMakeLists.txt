@@ -15,4 +15,5 @@ target_sources(
           cassandra/SettingsProvider.cpp
 )
 
-target_link_libraries(clio_data PUBLIC cassandra-cpp-driver::cassandra-cpp-driver clio_util)
+target_link_libraries(clio_data PUBLIC /usr/local/lib/libscylla-cpp-driver.dylib clio_util)
+target_include_directories(clio_data PUBLIC /usr/local/include)

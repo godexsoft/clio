@@ -23,7 +23,6 @@ class Clio(ConanFile):
 
     requires = [
         'boost/1.82.0',
-        'cassandra-cpp-driver/2.17.0',
         'fmt/10.1.1',
         'protobuf/3.21.9',
         'grpc/1.50.1',
@@ -47,7 +46,6 @@ class Clio(ConanFile):
         
         'xrpl/*:tests': False,
         'xrpl/*:rocksdb': False,
-        'cassandra-cpp-driver/*:shared': False,
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
