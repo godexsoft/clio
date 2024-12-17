@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "data/LedgerCache.hpp"
 #include "migration/impl/MigrationManagerFactory.hpp"
 #include "util/LoggerFixtures.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
@@ -33,7 +34,8 @@ TEST_F(MigrationManagerFactoryTests, InvalidDBType)
     util::config::ClioConfigDefinition const configDef{
         {"database.type", util::config::ConfigValue{util::config::ConfigType::String}.defaultValue("invalid")}
     };
-    auto const ret = migration::impl::makeMigrationManager(configDef);
+    auto cache = data::LedgerCache{};
+    auto const ret = migration::impl::makeMigrationManager(configDef, cache);
     EXPECT_FALSE(ret);
     EXPECT_EQ(ret.error(), "Invalid database type");
 }

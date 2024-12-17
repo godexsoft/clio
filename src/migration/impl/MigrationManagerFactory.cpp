@@ -19,6 +19,7 @@
 
 #include "migration/impl/MigrationManagerFactory.hpp"
 
+#include "data/LedgerCache.hpp"
 #include "data/cassandra/SettingsProvider.hpp"
 #include "migration/MigrationManagerInterface.hpp"
 #include "migration/cassandra/CassandraMigrationBackend.hpp"
@@ -35,24 +36,24 @@
 namespace migration::impl {
 
 std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
-makeMigrationManager(util::config::ClioConfigDefinition const& config)
+makeMigrationManager(util::config::ClioConfigDefinition const& config, data::LedgerCache& cache)
 {
     static util::Logger const log{"Migration"};
     LOG(log.info()) << "Constructing MigrationManager";
 
-    auto const type = config.get<std::string>("database.type");
+    auto const type = config.get<std::string>("database_normal.type");
 
     if (not boost::iequals(type, "cassandra")) {
         LOG(log.error()) << "Unknown database type to migrate: " << type;
         return std::unexpected(std::string("Invalid database type"));
     }
 
-    auto const cfg = config.getObject("database." + type);
+    auto const cfg = config.getObject("database_normal." + type);
 
     auto migrationCfg = config.getObject("migration");
 
     return std::make_shared<cassandra::CassandraMigrationManager>(
-        std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}),
+        std::make_shared<cassandra::CassandraMigrationBackend>(data::cassandra::SettingsProvider{cfg}, cache),
         std::move(migrationCfg)
     );
 }

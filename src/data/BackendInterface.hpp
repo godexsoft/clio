@@ -139,11 +139,14 @@ class BackendInterface {
 protected:
     mutable std::shared_mutex rngMtx_;
     std::optional<LedgerRange> range;
-    LedgerCache cache_;
+    LedgerCache& cache_;
     std::optional<etl::CorruptionDetector<LedgerCache>> corruptionDetector_;
 
 public:
-    BackendInterface() = default;
+    BackendInterface(LedgerCache& cache) : cache_(cache)
+    {
+    }
+
     virtual ~BackendInterface() = default;
 
     // TODO: Remove this hack. Cache should not be exposed thru BackendInterface

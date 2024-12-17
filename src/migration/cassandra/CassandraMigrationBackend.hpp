@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/CassandraBackend.hpp"
+#include "data/LedgerCache.hpp"
 #include "data/cassandra/SettingsProvider.hpp"
 #include "data/cassandra/Types.hpp"
 #include "migration/MigratiorStatus.hpp"
@@ -50,8 +51,8 @@ public:
      *
      * @param settingsProvider The settings provider
      */
-    explicit CassandraMigrationBackend(data::cassandra::SettingsProvider settingsProvider)
-        : data::cassandra::CassandraBackend{auto{settingsProvider}, false /* not readonly */}
+    explicit CassandraMigrationBackend(data::cassandra::SettingsProvider settingsProvider, data::LedgerCache& cache)
+        : data::cassandra::CassandraBackend{auto{settingsProvider}, false /* not readonly */, cache}
         , settingsProvider_(std::move(settingsProvider))
         , migrationSchema_{settingsProvider_}
     {

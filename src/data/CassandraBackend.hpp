@@ -21,6 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
+#include "data/LedgerCache.hpp"
 #include "data/Types.hpp"
 #include "data/cassandra/Handle.hpp"
 #include "data/cassandra/Schema.hpp"
@@ -88,8 +89,9 @@ public:
      * @param settingsProvider The settings provider to use
      * @param readOnly Whether the database should be in readonly mode
      */
-    BasicCassandraBackend(SettingsProviderType settingsProvider, bool readOnly)
-        : settingsProvider_{std::move(settingsProvider)}
+    BasicCassandraBackend(SettingsProviderType settingsProvider, bool readOnly, LedgerCache& cache)
+        : BackendInterface(cache)
+        , settingsProvider_{std::move(settingsProvider)}
         , schema_{settingsProvider_}
         , handle_{settingsProvider_.getSettings()}
         , executor_{settingsProvider_.getSettings(), handle_}

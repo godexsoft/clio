@@ -1,0 +1,80 @@
+{
+    "database_normal":
+    {
+        "type":"cassandra",
+        "cassandra":
+        {
+            "contact_points":"127.0.0.1",
+            "port":9042,
+            "keyspace":"clio_new",
+            "replication_factor":1,
+            "table_prefix":"",
+            "max_write_requests_outstanding":5000,
+            "max_read_requests_outstanding":50000,
+            "threads": 4
+        }
+    },
+    "database_etl":
+    {
+        "type":"cassandra",
+        "cassandra":
+        {
+            "contact_points":"127.0.0.1",
+            "port":9042,
+            "keyspace":"clio_new",
+            "replication_factor":1,
+            "table_prefix":"",
+            "max_write_requests_outstanding":20000,
+            "max_read_requests_outstanding":100000,
+            "threads": 8
+        }
+    },
+    "forwarding_cache_timeout": 0.5,
+    "cache": {
+        "num_diffs": 48
+    },
+    "allow_no_etl": true,
+    "etlng": true,
+    "etl_sources":
+    [
+        {
+            "ip":"127.0.0.1",
+            "ws_port":"6006",
+            "grpc_port":"50051"
+        }
+    ],
+    "dos_guard":
+    {
+        "whitelist":["127.0.0.1"]
+    },
+    "server":{
+        "ip":"0.0.0.0",
+        "port":51233
+    },
+    "log_channels":
+    [
+        { "channel":"Performance", "log_level":"info" },
+        { "channel":"WebServer", "log_level":"info" },
+        { "channel":"Backend", "log_level":"info" },
+        { "channel":"RPC", "log_level":"info" },
+        { "channel":"ETL", "log_level":"info" },
+        { "channel":"General", "log_level":"trace" }
+    ],
+    "log_format":"\u001b[35m%ThreadID%\u001b[0m [\u001b[32m%TimeStamp%\u001b[0m] \u001b[1m\u001b[31m%Channel%:%Severity%\u001b[0m %Message%",
+    "log_level":"info",
+    "log_to_console": true,
+    // "log_directory":"/tmp/clio_log",
+    "log_rotation_size": 2048,
+    "log_directory_max_size": 51200,
+    "log_rotation_hour_interval": 12,
+    "log_tag_style": "uuid",
+    "extractor_threads": 4,
+    "workers": 4,
+    "io_threads": 4,
+    "read_only": false,
+    "api_version": {
+       "min": 1, // need to be at 1 so forwarding to rippled works for v1 reqs
+       "max": 3,
+       "default": 1
+    } 
+}

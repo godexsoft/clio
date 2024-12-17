@@ -21,12 +21,14 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/CassandraBackend.hpp"
+#include "data/LedgerCache.hpp"
 #include "data/cassandra/SettingsProvider.hpp"
 #include "util/log/Logger.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <fmt/core.h>
 
 #include <memory>
 #include <stdexcept>
@@ -41,19 +43,21 @@ namespace data {
  * @return A shared_ptr<BackendInterface> with the selected implementation
  */
 inline std::shared_ptr<BackendInterface>
-make_Backend(util::config::ClioConfigDefinition const& config)
+make_Backend(util::config::ClioConfigDefinition const& config, LedgerCache& cache, std::string cfgSection)
 {
     static util::Logger const log{"Backend"};
     LOG(log.info()) << "Constructing BackendInterface";
 
     auto const readOnly = config.get<bool>("read_only");
 
-    auto const type = config.get<std::string>("database.type");
+    auto const type = config.get<std::string>(fmt::format("database_{}.type", cfgSection));
     std::shared_ptr<BackendInterface> backend = nullptr;
 
     if (boost::iequals(type, "cassandra")) {
-        auto const cfg = config.getObject("database." + type);
-        backend = std::make_shared<data::cassandra::CassandraBackend>(data::cassandra::SettingsProvider{cfg}, readOnly);
+        auto const cfg = config.getObject(fmt::format("database_{}.{}", cfgSection, type));
+        backend = std::make_shared<data::cassandra::CassandraBackend>(
+            data::cassandra::SettingsProvider{cfg}, readOnly, cache
+        );
     }
 
     if (!backend)

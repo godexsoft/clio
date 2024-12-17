@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "data/LedgerCache.hpp"
 #include "migration/MigrationManagerInterface.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
 
@@ -74,6 +75,7 @@ struct MigrateSubCmd {
  */
 class MigratorApplication {
     std::string option_;
+    data::LedgerCache cache_;
     std::shared_ptr<migration::MigrationManagerInterface> migrationManager_;
     MigrateSubCmd cmd_;
 

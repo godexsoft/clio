@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "data/LedgerCache.hpp"
 #include "migration/MigrationManagerInterface.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
 
@@ -36,6 +37,6 @@ namespace migration::impl {
  * @return A shared pointer to the MigrationManagerInterface if the creation was successful, otherwise an error message
  */
 std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
-makeMigrationManager(util::config::ClioConfigDefinition const& config);
+makeMigrationManager(util::config::ClioConfigDefinition const& config, data::LedgerCache& cache);
 
 }  // namespace migration::impl

@@ -22,6 +22,7 @@
 #include "app/WebHandlers.hpp"
 #include "data/AmendmentCenter.hpp"
 #include "data/BackendFactory.hpp"
+#include "data/LedgerCache.hpp"
 #include "etl/ETLService.hpp"
 #include "etl/LoadBalancer.hpp"
 #include "etl/NetworkValidatedLedgers.hpp"
@@ -101,10 +102,12 @@ ClioApplication::run(bool const useNgWebServer)
     auto sweepHandler = web::dosguard::IntervalSweepHandler{config_, ioc, dosGuard};
 
     // Interface to the database
-    auto backend = data::make_Backend(config_);
+    data::LedgerCache sharedCache;
+    auto etlBackend = data::make_Backend(config_, sharedCache, "etl");
+    auto otherBackend = data::make_Backend(config_, sharedCache, "normal");
 
     // Manages clients subscribed to streams
-    auto subscriptions = feed::SubscriptionManager::make_SubscriptionManager(config_, backend);
+    auto subscriptions = feed::SubscriptionManager::make_SubscriptionManager(config_, otherBackend);
 
     // Tracks which ledgers have been validated by the network
     auto ledgers = etl::NetworkValidatedLedgers::make_ValidatedLedgers();
@@ -113,24 +116,24 @@ ClioApplication::run(bool const useNgWebServer)
     // ETL uses the balancer to extract data.
     // The server uses the balancer to forward RPCs to a rippled node.
     // The balancer itself publishes to streams (transactions_proposed and accounts_proposed)
-    auto balancer = etl::LoadBalancer::make_LoadBalancer(config_, ioc, backend, subscriptions, ledgers);
+    auto balancer = etl::LoadBalancer::make_LoadBalancer(config_, ioc, otherBackend, subscriptions, ledgers);
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
-    auto etl = etl::ETLService::make_ETLService(config_, ioc, backend, subscriptions, balancer, ledgers);
+    auto etl = etl::ETLService::make_ETLService(config_, ioc, etlBackend, subscriptions, balancer, ledgers);
 
     auto workQueue = rpc::WorkQueue::make_WorkQueue(config_);
     auto counters = rpc::Counters::make_Counters(workQueue);
-    auto const amendmentCenter = std::make_shared<data::AmendmentCenter const>(backend);
+    auto const amendmentCenter = std::make_shared<data::AmendmentCenter const>(otherBackend);
     auto const handlerProvider = std::make_shared<rpc::impl::ProductionHandlerProvider const>(
-        config_, backend, subscriptions, balancer, etl, amendmentCenter, counters
+        config_, otherBackend, subscriptions, balancer, etl, amendmentCenter, counters
     );
 
     using RPCEngineType = rpc::RPCEngine<etl::LoadBalancer, rpc::Counters>;
     auto const rpcEngine =
-        RPCEngineType::make_RPCEngine(config_, backend, balancer, dosGuard, workQueue, counters, handlerProvider);
+        RPCEngineType::make_RPCEngine(config_, otherBackend, balancer, dosGuard, workQueue, counters, handlerProvider);
 
     if (useNgWebServer or config_.get<bool>("server.__ng_web_server")) {
-        web::ng::RPCServerHandler<RPCEngineType, etl::ETLService> handler{config_, backend, rpcEngine, etl};
+        web::ng::RPCServerHandler<RPCEngineType, etl::ETLService> handler{config_, otherBackend, rpcEngine, etl};
 
         auto expectedAdminVerifier = web::make_AdminVerificationStrategy(config_);
         if (not expectedAdminVerifier.has_value()) {
@@ -168,7 +171,7 @@ ClioApplication::run(bool const useNgWebServer)
 
     // Init the web server
     auto handler =
-        std::make_shared<web::RPCServerHandler<RPCEngineType, etl::ETLService>>(config_, backend, rpcEngine, etl);
+        std::make_shared<web::RPCServerHandler<RPCEngineType, etl::ETLService>>(config_, otherBackend, rpcEngine, etl);
 
     auto const httpServer = web::make_HttpServer(config_, ioc, dosGuard, handler);
 
