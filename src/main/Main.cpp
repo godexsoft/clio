@@ -19,6 +19,7 @@
 
 #include "app/CliArgs.hpp"
 #include "app/ClioApplication.hpp"
+#include "migration/MigrationApplication.hpp"
 #include "rpc/common/impl/HandlerProvider.hpp"
 #include "util/TerminationHandler.hpp"
 #include "util/log/Logger.hpp"
@@ -54,6 +55,22 @@ try {
             util::LogService::init(ClioConfig);
             app::ClioApplication clio{ClioConfig};
             return clio.run(run.useNgWebServer);
+        },
+        [](app::CliArgs::Action::Migrate const& migrate) {
+            auto const json = ConfigFileJson::make_ConfigFileJson(migrate.configPath);
+            if (!json.has_value()) {
+                std::cerr << json.error().error << std::endl;
+                return EXIT_FAILURE;
+            }
+            auto const errors = ClioConfig.parse(json.value());
+            if (errors.has_value()) {
+                for (auto const& err : errors.value())
+                    std::cerr << err.error << std::endl;
+                return EXIT_FAILURE;
+            }
+            util::LogService::init(ClioConfig);
+            app::MigratorApplication migrator{ClioConfig, migrate.subCmd};
+            return migrator.run();
         }
     );
 } catch (std::exception const& e) {
