@@ -96,7 +96,12 @@ private:
         void
         wait() noexcept override
         {
-            return operation.wait();
+            if constexpr (not SomeAwaitable<OpType>) {
+                ASSERT(false, "Called wait() on an operation that does not support it");
+                std::unreachable();
+            } else {
+                operation.wait();
+            }
         }
 
         std::expected<std::any, ExecutionError>
@@ -114,13 +119,18 @@ private:
         void
         abort() override
         {
-            if constexpr (not SomeCancellableOperation<OpType> and not SomeStoppableOperation<OpType>) {
-                ASSERT(false, "Called abort() on an operation that can't be cancelled nor stopped");
+            if constexpr (not SomeCancellableOperation<OpType> and not SomeStoppableOperation<OpType> and
+                          not SomeAbortable<OpType>) {
+                ASSERT(false, "Called abort() on an operation that can't be aborted, cancelled nor stopped");
             } else {
-                if constexpr (SomeCancellableOperation<OpType>)
-                    operation.cancel();
-                if constexpr (SomeStoppableOperation<OpType>)
-                    operation.requestStop();
+                if constexpr (SomeAbortable<OpType>) {
+                    operation.abort();
+                } else {
+                    if constexpr (SomeCancellableOperation<OpType>)
+                        operation.cancel();
+                    if constexpr (SomeStoppableOperation<OpType>)
+                        operation.requestStop();
+                }
             }
         }
     };

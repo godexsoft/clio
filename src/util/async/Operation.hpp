@@ -199,9 +199,6 @@ using ScheduledOperation = impl::BasicScheduledOperation<CtxType, OpType>;
  */
 template <typename CtxType>
 class RepeatingOperation {
-    using DataType = std::expected<void, ExecutionError>;
-    using StopSourceType = typename CtxType::StopSource;
-
     util::Repeat repeat_;
 
 public:
@@ -221,21 +218,13 @@ public:
 
     /**
      * @brief Aborts the operation and the repeating timer
+     * @note This call blocks until the underlying timer is cancelled
      * @warning Calling this from inside of the repeating operation yields a deadlock
      */
     void
     abort() noexcept
     {
         repeat_.stop();
-    }
-
-    /**
-     * @brief Wait for the operation to get cancelled
-     * @warning Calling this from inside of the repeating operation yields a deadlock
-     */
-    void
-    wait() noexcept
-    {
     }
 };
 

@@ -38,6 +38,12 @@ template <typename T>
 struct ExecutionContextTests : public ::testing::Test {
     using ExecutionContextType = T;
     ExecutionContextType ctx{2};
+
+    ~ExecutionContextTests() override
+    {
+        ctx.stop();
+        ctx.join();
+    }
 };
 
 TYPED_TEST_CASE(ExecutionContextTests, ExecutionContextTypes);
