@@ -21,7 +21,9 @@
 #include "util/Taggable.hpp"
 #include "util/TestHttpServer.hpp"
 #include "util/TestWebSocketClient.hpp"
-#include "util/config/Config.hpp"
+#include "util/newconfig/ConfigDefinition.hpp"
+#include "util/newconfig/ConfigValue.hpp"
+#include "util/newconfig/Types.hpp"
 #include "web/ng/Error.hpp"
 #include "web/ng/Request.hpp"
 #include "web/ng/Response.hpp"
@@ -33,7 +35,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/status.hpp>
-#include <boost/json/object.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -46,9 +47,12 @@
 
 using namespace web::ng::impl;
 using namespace web::ng;
+using namespace util;
 
 struct web_WsConnectionTests : SyncAsioContextTest {
-    util::TagDecoratorFactory tagDecoratorFactory_{util::Config{boost::json::object{{"log_tag_style", "int"}}}};
+    util::TagDecoratorFactory tagDecoratorFactory_{config::ClioConfigDefinition{
+        {"log_tag_style", config::ConfigValue{config::ConfigType::String}.defaultValue("int")}
+    }};
     TestHttpServer httpServer_{ctx, "localhost"};
     WebSocketAsyncClient wsClient_{ctx};
     Request::HttpHeaders const headers_;
