@@ -179,7 +179,7 @@ public:
     }
 
     /**
-     * @brief Stops and joins the underlying thread pool.
+     * @brief Stops the underlying thread pool.
      */
     ~BasicExecutionContext()
     {

@@ -21,16 +21,13 @@
 
 namespace util {
 
-Repeat::~Repeat()
-{
-    *stopped_ = true;
-}
-
 void
 Repeat::stop()
 {
-    *stopped_ = true;
-    timer_.cancel();
+    control_->stopping = true;
+    control_->timer.cancel();
+    control_->semaphore.acquire();
+    control_->stopping = false;
 }
 
 }  // namespace util

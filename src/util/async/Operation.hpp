@@ -26,6 +26,8 @@
 #include "util/async/context/impl/Cancellation.hpp"
 #include "util/async/context/impl/Timer.hpp"
 
+#include <fmt/core.h>
+
 #include <chrono>
 #include <concepts>
 #include <condition_variable>
@@ -34,6 +36,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <thread>
 
 namespace util::async {
 namespace impl {
@@ -199,9 +202,7 @@ class RepeatingOperation {
     using DataType = std::expected<void, ExecutionError>;
     using StopSourceType = typename CtxType::StopSource;
 
-    std::unique_ptr<util::Repeat> repeat_;
-    StoppableOutcome<DataType, StopSourceType> outcome_;
-    StoppableOperation<DataType, StopSourceType> op_;
+    util::Repeat repeat_;
 
 public:
     /**
@@ -213,9 +214,9 @@ public:
      * @param fn The function to execute repeatedly
      */
     RepeatingOperation(auto& executor, std::chrono::steady_clock::duration interval, std::invocable auto&& fn)
-        : repeat_(std::make_unique<util::Repeat>(executor)), op_(&outcome_)
+        : repeat_(executor)
     {
-        repeat_->start(interval, std::forward<decltype(fn)>(fn));
+        repeat_.start(interval, std::forward<decltype(fn)>(fn));
     }
 
     /**
@@ -225,8 +226,7 @@ public:
     void
     abort() noexcept
     {
-        op_.requestStop();
-        repeat_->stop();
+        repeat_.stop();
     }
 
     /**
@@ -236,7 +236,6 @@ public:
     void
     wait() noexcept
     {
-        op_.wait();
     }
 };
 
