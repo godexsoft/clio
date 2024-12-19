@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "util/Assert.hpp"
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -38,7 +40,7 @@ namespace util {
 class Repeat {
     struct Control {
         boost::asio::steady_timer timer;
-        std::atomic_bool stopping{false};
+        std::atomic_bool stopping{true};
         std::binary_semaphore semaphore{0};
 
         Control(auto& ctx) : timer(ctx)
@@ -57,6 +59,11 @@ public:
      */
     Repeat(auto& ctx) : control_(std::make_unique<Control>(ctx))
     {
+    }
+
+    ~Repeat()
+    {
+        stop();
     }
 
     Repeat(Repeat const&) = delete;
@@ -85,6 +92,8 @@ public:
     void
     start(std::chrono::steady_clock::duration interval, Action&& action)
     {
+        ASSERT(control_->stopping, "Should be stopped before starting");
+        control_->stopping = false;
         startImpl(interval, std::forward<Action>(action));
     }
 

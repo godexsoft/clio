@@ -216,6 +216,13 @@ public:
         repeat_.start(interval, std::forward<decltype(fn)>(fn));
     }
 
+    RepeatingOperation(RepeatingOperation const&) = delete;
+    RepeatingOperation&
+    operator=(RepeatingOperation const&) = delete;
+    RepeatingOperation(RepeatingOperation&&) = default;
+    RepeatingOperation&
+    operator=(RepeatingOperation&&) = default;
+
     /**
      * @brief Aborts the operation and the repeating timer
      * @note This call blocks until the underlying timer is cancelled
