@@ -61,11 +61,6 @@ public:
     {
     }
 
-    ~Repeat()
-    {
-        stop();
-    }
-
     Repeat(Repeat const&) = delete;
     Repeat&
     operator=(Repeat const&) = delete;
@@ -103,8 +98,8 @@ private:
     startImpl(std::chrono::steady_clock::duration interval, Action&& action)
     {
         control_->timer.expires_after(interval);
-        control_->timer.async_wait([this, interval, action = std::forward<Action>(action)](auto const&) mutable {
-            if (control_->stopping) {
+        control_->timer.async_wait([this, interval, action = std::forward<Action>(action)](auto const& ec) mutable {
+            if (ec or control_->stopping) {
                 control_->semaphore.release();
                 return;
             }
