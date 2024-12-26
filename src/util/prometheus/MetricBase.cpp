@@ -55,7 +55,7 @@ toString(MetricType type)
             [[fallthrough]];
         case MetricType::HistogramDouble:
             return "histogram";
-        case MetricType::SUMMARY:
+        case MetricType::Summary:
             return "summary";
         default:
             ASSERT(false, "Unknown metric {}.", static_cast<int>(type));

@@ -78,7 +78,7 @@ MetricBuilder::makeMetric(std::string name, std::string labelsString, MetricType
             [[fallthrough]];
         case MetricType::HistogramDouble:
             [[fallthrough]];
-        case MetricType::SUMMARY:
+        case MetricType::Summary:
             [[fallthrough]];
         default:
             ASSERT(false, "Unknown metric type: {}", static_cast<int>(type));
@@ -120,7 +120,7 @@ MetricBuilder::makeHistogram(
             [[fallthrough]];
         case MetricType::GaugeDouble:
             [[fallthrough]];
-        case MetricType::SUMMARY:
+        case MetricType::Summary:
             [[fallthrough]];
         default:
             ASSERT(false, "Unknown metric type: {}", static_cast<int>(type));

@@ -37,13 +37,13 @@ namespace migration::impl {
 std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
 makeMigrationManager(util::config::ClioConfigDefinition const& config)
 {
-    static util::Logger const kLOG{"Migration"};
-    LOG(kLOG.info()) << "Constructing MigrationManager";
+    static util::Logger const log{"Migration"};  // NOLINT(readability-identifier-naming)
+    LOG(log.info()) << "Constructing MigrationManager";
 
     auto const type = config.get<std::string>("database.type");
 
     if (not boost::iequals(type, "cassandra")) {
-        LOG(kLOG.error()) << "Unknown database type to migrate: " << type;
+        LOG(log.error()) << "Unknown database type to migrate: " << type;
         return std::unexpected(std::string("Invalid database type"));
     }
 

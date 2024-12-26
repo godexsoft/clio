@@ -80,5 +80,5 @@ TEST(MetricBuilderDeathTest, build)
             EXPECT_EQ(metric->labelsString(), labelsString);
         }
     }
-    EXPECT_DEATH({ builder(name, labelsString, MetricType::SUMMARY, std::vector<std::int64_t>{}); }, "");
+    EXPECT_DEATH({ builder(name, labelsString, MetricType::Summary, std::vector<std::int64_t>{}); }, "");
 }
