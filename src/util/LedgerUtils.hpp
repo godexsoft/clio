@@ -128,9 +128,7 @@ public:
     getLedgerEntryTypeStrList()
     {
         std::array<char const*, std::size(kLEDGER_TYPES)> res{};
-        std::transform(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), std::begin(res), [](auto const& item) {
-            return item.name_;
-        });
+        std::ranges::transform(kLEDGER_TYPES, std::begin(res), [](auto const& item) { return item.name_; });
         return res;
     }
 
@@ -150,7 +148,7 @@ public:
             std::count_if(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), kFILTER);
         std::array<char const*, kACCOUNT_OWNED_COUNT> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), [&](auto const& item) {
+        std::ranges::for_each(kLEDGER_TYPES, [&](auto const& item) {
             if (kFILTER(item)) {
                 *it = item.name_;
                 ++it;
@@ -175,7 +173,7 @@ public:
             std::count_if(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), kFILTER);
         std::array<ripple::LedgerEntryType, kDELETION_BLOCKERS_COUNT> res{};
         auto it = std::begin(res);
-        std::for_each(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), [&](auto const& item) {
+        std::ranges::for_each(kLEDGER_TYPES, [&](auto const& item) {
             if (kFILTER(item)) {
                 *it = item.type_;
                 ++it;

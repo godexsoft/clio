@@ -72,7 +72,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonHexLedgerHash)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -92,7 +92,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitNotInt)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -111,7 +111,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitNegative)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -130,7 +130,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, LimitZero)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -149,7 +149,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NonStringLedgerHash)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -169,7 +169,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, InvalidLedgerIndexString)
             }})",
             kNFT_ID
         ));
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -186,7 +186,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NFTIDInvalidFormat)
         auto const input = json::parse(R"({ 
             "nft_id": "00080000B4F4AFC5FBCBD76873F18006173D2193467D3EE7"
         })");
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -202,7 +202,7 @@ TEST_F(RPCNFTBuyOffersHandlerTest, NFTIDNotString)
         auto const input = json::parse(R"({ 
             "nft_id": 12
         })");
-        auto const output = handler.process(input, Context{yield});
+        auto const output = handler.process(input, Context{.yield = yield});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());

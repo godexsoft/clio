@@ -95,7 +95,7 @@ TEST_P(RPCBookOffersParameterTest, CheckError)
     auto bundle = GetParam();
     auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(json::parse(bundle.testJson), Context{yield});
+        auto const output = handler.process(json::parse(bundle.testJson), Context{.yield = yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), bundle.expectedError);
@@ -103,85 +103,85 @@ TEST_P(RPCBookOffersParameterTest, CheckError)
     });
 }
 
-auto
+static auto
 generateParameterBookOffersTestBundles()
 {
     return std::vector<ParameterTestBundle>{
         ParameterTestBundle{
-            "MissingTakerGets",
-            R"({
+            .testName = "MissingTakerGets",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "USD",
                     "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
                 }
             })",
-            "invalidParams",
-            "Required field 'taker_gets' missing"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Required field 'taker_gets' missing"
         },
         ParameterTestBundle{
-            "MissingTakerPays",
-            R"({
+            .testName = "MissingTakerPays",
+            .testJson = R"({
                 "taker_gets" : 
                 {
                     "currency" : "USD",
                     "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
                 }
             })",
-            "invalidParams",
-            "Required field 'taker_pays' missing"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Required field 'taker_pays' missing"
         },
         ParameterTestBundle{
-            "WrongTypeTakerPays",
-            R"({
+            .testName = "WrongTypeTakerPays",
+            .testJson = R"({
                 "taker_pays" : "wrong",
                 "taker_gets" : 
                 {
                     "currency" : "XRP"
                 }
             })",
-            "invalidParams",
-            "Invalid parameters."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid parameters."
         },
         ParameterTestBundle{
-            "WrongTypeTakerGets",
-            R"({
+            .testName = "WrongTypeTakerGets",
+            .testJson = R"({
                 "taker_gets" : "wrong",
                 "taker_pays" : 
                 {
                     "currency" : "XRP"
                 }
             })",
-            "invalidParams",
-            "Invalid parameters."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid parameters."
         },
         ParameterTestBundle{
-            "TakerPaysMissingCurrency",
-            R"({
+            .testName = "TakerPaysMissingCurrency",
+            .testJson = R"({
                 "taker_pays" : {},
                 "taker_gets" : 
                 {
                     "currency" : "XRP"
                 }
             })",
-            "invalidParams",
-            "Required field 'currency' missing"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Required field 'currency' missing"
         },
         ParameterTestBundle{
-            "TakerGetsMissingCurrency",
-            R"({
+            .testName = "TakerGetsMissingCurrency",
+            .testJson = R"({
                 "taker_gets" : {},
                 "taker_pays" : 
                 {
                     "currency" : "XRP"
                 }
             })",
-            "invalidParams",
-            "Required field 'currency' missing"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Required field 'currency' missing"
         },
         ParameterTestBundle{
-            "TakerGetsWrongCurrency",
-            R"({
+            .testName = "TakerGetsWrongCurrency",
+            .testJson = R"({
                 "taker_gets" : 
                 {
                     "currency" : "CNYY",
@@ -192,12 +192,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "dstAmtMalformed",
-            "Destination amount/currency/issuer is malformed."
+            .expectedError = "dstAmtMalformed",
+            .expectedErrorMessage = "Destination amount/currency/issuer is malformed."
         },
         ParameterTestBundle{
-            "TakerPaysWrongCurrency",
-            R"({
+            .testName = "TakerPaysWrongCurrency",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNYY",
@@ -208,12 +208,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "srcCurMalformed",
-            "Source currency is malformed."
+            .expectedError = "srcCurMalformed",
+            .expectedErrorMessage = "Source currency is malformed."
         },
         ParameterTestBundle{
-            "TakerGetsCurrencyNotString",
-            R"({
+            .testName = "TakerGetsCurrencyNotString",
+            .testJson = R"({
                 "taker_gets" : 
                 {
                     "currency" : 123,
@@ -224,12 +224,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "dstAmtMalformed",
-            "Destination amount/currency/issuer is malformed."
+            .expectedError = "dstAmtMalformed",
+            .expectedErrorMessage = "Destination amount/currency/issuer is malformed."
         },
         ParameterTestBundle{
-            "TakerPaysCurrencyNotString",
-            R"({
+            .testName = "TakerPaysCurrencyNotString",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : 123,
@@ -240,12 +240,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "srcCurMalformed",
-            "Source currency is malformed."
+            .expectedError = "srcCurMalformed",
+            .expectedErrorMessage = "Source currency is malformed."
         },
         ParameterTestBundle{
-            "TakerGetsWrongIssuer",
-            R"({
+            .testName = "TakerGetsWrongIssuer",
+            .testJson = R"({
                 "taker_gets" : 
                 {
                     "currency" : "CNY",
@@ -256,12 +256,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "dstIsrMalformed",
-            "Destination issuer is malformed."
+            .expectedError = "dstIsrMalformed",
+            .expectedErrorMessage = "Destination issuer is malformed."
         },
         ParameterTestBundle{
-            "TakerPaysWrongIssuer",
-            R"({
+            .testName = "TakerPaysWrongIssuer",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -272,12 +272,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "XRP"
                 }
             })",
-            "srcIsrMalformed",
-            "Source issuer is malformed."
+            .expectedError = "srcIsrMalformed",
+            .expectedErrorMessage = "Source issuer is malformed."
         },
         ParameterTestBundle{
-            "InvalidTaker",
-            R"({
+            .testName = "InvalidTaker",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -289,12 +289,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "taker": "123"
             })",
-            "invalidParams",
-            "Invalid field 'taker'."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid field 'taker'."
         },
         ParameterTestBundle{
-            "TakerNotString",
-            R"({
+            .testName = "TakerNotString",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -306,12 +306,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "taker": 123
             })",
-            "invalidParams",
-            "Invalid field 'taker'."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid field 'taker'."
         },
         ParameterTestBundle{
-            "LimitNotInt",
-            R"({
+            .testName = "LimitNotInt",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -323,12 +323,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "limit": "123"
             })",
-            "invalidParams",
-            "Invalid parameters."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid parameters."
         },
         ParameterTestBundle{
-            "LimitNagetive",
-            R"({
+            .testName = "LimitNagetive",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -340,12 +340,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "limit": -1
             })",
-            "invalidParams",
-            "Invalid parameters."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid parameters."
         },
         ParameterTestBundle{
-            "LimitZero",
-            R"({
+            .testName = "LimitZero",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -357,12 +357,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "limit": 0
             })",
-            "invalidParams",
-            "Invalid parameters."
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Invalid parameters."
         },
         ParameterTestBundle{
-            "LedgerIndexInvalid",
-            R"({
+            .testName = "LedgerIndexInvalid",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -374,12 +374,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "ledger_index": "xxx"
             })",
-            "invalidParams",
-            "ledgerIndexMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledgerIndexMalformed"
         },
         ParameterTestBundle{
-            "LedgerHashInvalid",
-            R"({
+            .testName = "LedgerHashInvalid",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -391,12 +391,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "ledger_hash": "xxx"
             })",
-            "invalidParams",
-            "ledger_hashMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledger_hashMalformed"
         },
         ParameterTestBundle{
-            "LedgerHashNotString",
-            R"({
+            .testName = "LedgerHashNotString",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -408,12 +408,12 @@ generateParameterBookOffersTestBundles()
                 },
                 "ledger_hash": 123
             })",
-            "invalidParams",
-            "ledger_hashNotString"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledger_hashNotString"
         },
         ParameterTestBundle{
-            "GetsPaysXRPWithIssuer",
-            R"({
+            .testName = "GetsPaysXRPWithIssuer",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "XRP",
@@ -425,12 +425,12 @@ generateParameterBookOffersTestBundles()
                     "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
                 }
             })",
-            "srcIsrMalformed",
-            "Unneeded field 'taker_pays.issuer' for XRP currency specification."
+            .expectedError = "srcIsrMalformed",
+            .expectedErrorMessage = "Unneeded field 'taker_pays.issuer' for XRP currency specification."
         },
         ParameterTestBundle{
-            "PaysCurrencyWithXRPIssuer",
-            R"({
+            .testName = "PaysCurrencyWithXRPIssuer",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "JPY"                    
@@ -441,12 +441,12 @@ generateParameterBookOffersTestBundles()
                     "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
                 }
             })",
-            "srcIsrMalformed",
-            "Invalid field 'taker_pays.issuer', expected non-XRP issuer."
+            .expectedError = "srcIsrMalformed",
+            .expectedErrorMessage = "Invalid field 'taker_pays.issuer', expected non-XRP issuer."
         },
         ParameterTestBundle{
-            "GetsCurrencyWithXRPIssuer",
-            R"({
+            .testName = "GetsCurrencyWithXRPIssuer",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "XRP"                    
@@ -456,12 +456,12 @@ generateParameterBookOffersTestBundles()
                     "currency" : "CNY"                    
                 }            
             })",
-            "dstIsrMalformed",
-            "Invalid field 'taker_gets.issuer', expected non-XRP issuer."
+            .expectedError = "dstIsrMalformed",
+            .expectedErrorMessage = "Invalid field 'taker_gets.issuer', expected non-XRP issuer."
         },
         ParameterTestBundle{
-            "GetsXRPWithIssuer",
-            R"({
+            .testName = "GetsXRPWithIssuer",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -473,12 +473,12 @@ generateParameterBookOffersTestBundles()
                     "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"                    
                 }            
             })",
-            "dstIsrMalformed",
-            "Unneeded field 'taker_gets.issuer' for XRP currency specification."
+            .expectedError = "dstIsrMalformed",
+            .expectedErrorMessage = "Unneeded field 'taker_gets.issuer' for XRP currency specification."
         },
         ParameterTestBundle{
-            "BadMarket",
-            R"({
+            .testName = "BadMarket",
+            .testJson = R"({
                 "taker_pays" : 
                 {
                     "currency" : "CNY",
@@ -490,8 +490,8 @@ generateParameterBookOffersTestBundles()
                     "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"                   
                 }            
             })",
-            "badMarket",
-            "badMarket"
+            .expectedError = "badMarket",
+            .expectedErrorMessage = "badMarket"
         }
     };
 }
@@ -539,9 +539,9 @@ TEST_P(RPCBookOffersNormalPathTest, CheckOutput)
     }
 
     std::vector<Blob> bbs;
-    std::transform(
-        bundle.mockedOffers.begin(),
-        bundle.mockedOffers.end(),
+    std::ranges::transform(
+        bundle.mockedOffers,
+
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );
@@ -550,13 +550,13 @@ TEST_P(RPCBookOffersNormalPathTest, CheckOutput)
 
     auto const handler = AnyHandler{BookOffersHandler{backend_}};
     runSpawn([&](boost::asio::yield_context yield) {
-        auto const output = handler.process(json::parse(bundle.inputJson), Context{yield});
+        auto const output = handler.process(json::parse(bundle.inputJson), Context{.yield = yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), json::parse(bundle.expectedJson));
     });
 }
 
-auto
+static auto
 generateNormalPathBookOffersTestBundles()
 {
     auto const account = getAccountIdWithString(kACCOUNT);

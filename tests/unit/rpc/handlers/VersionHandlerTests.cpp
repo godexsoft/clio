@@ -21,7 +21,10 @@
 #include "rpc/common/Types.hpp"
 #include "rpc/handlers/VersionHandler.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
-#include "util/config/Config.hpp"
+#include "util/log/Logger.hpp"
+#include "util/newconfig/ConfigDefinition.hpp"
+#include "util/newconfig/ConfigValue.hpp"
+#include "util/newconfig/Types.hpp"
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
@@ -37,26 +40,32 @@ constexpr auto kMAX_API_VERSION = 10u;
 }  // namespace
 
 using namespace rpc;
-namespace json = boost::json;
+using namespace util::config;
 
 class RPCVersionHandlerTest : public HandlerBaseTest {};
 
 TEST_F(RPCVersionHandlerTest, Default)
 {
-    util::Config cfg{json::parse(fmt::format(
+    ClioConfigDefinition cfg{
+        {"api_version.min", ConfigValue{ConfigType::Integer}.defaultValue(kMIN_API_VERSION)},
+        {"api_version.max", ConfigValue{ConfigType::Integer}.defaultValue(kMAX_API_VERSION)},
+        {"api_version.default", ConfigValue{ConfigType::Integer}.defaultValue(kDEFAULT_API_VERSION)}
+    };
+
+    boost::json::value jsonData = boost::json::parse(fmt::format(
         R"({{
-            "min": {},
-            "max": {},
-            "default": {}
+            "api_version.min": {},
+            "api_version.max": {},
+            "api_version.default": {}
         }})",
         kMIN_API_VERSION,
         kMAX_API_VERSION,
         kDEFAULT_API_VERSION
-    ))};
+    ));
 
     runSpawn([&](auto yield) {
         auto const handler = AnyHandler{VersionHandler{cfg}};
-        auto const output = handler.process(static_cast<json::value>(cfg), Context{yield});
+        auto const output = handler.process(jsonData, Context{yield});
         ASSERT_TRUE(output);
 
         // check all against all the correct values

@@ -20,8 +20,8 @@
 #include "util/SignalsHandler.hpp"
 
 #include "util/Assert.hpp"
-#include "util/config/Config.hpp"
 #include "util/log/Logger.hpp"
+#include "util/newconfig/ConfigDefinition.hpp"
 
 #include <chrono>
 #include <csignal>
@@ -69,7 +69,7 @@ SignalsHandler* SignalsHandlerStatic::installedHandler = nullptr;
 
 }  // namespace impl
 
-SignalsHandler::SignalsHandler(Config const& config, std::function<void()> forceExitHandler)
+SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::function<void()> forceExitHandler)
     : gracefulPeriod_(0)
     , context_(1)
     , stopHandler_([this, forceExitHandler](int) mutable {
@@ -98,9 +98,7 @@ SignalsHandler::SignalsHandler(Config const& config, std::function<void()> force
 {
     impl::SignalsHandlerStatic::registerHandler(*this);
 
-    gracefulPeriod_ = Config::toMilliseconds(config.valueOr("graceful_period", 10.f));
-    ASSERT(gracefulPeriod_.count() >= 0, "Graceful period must be non-negative");
-
+    gracefulPeriod_ = util::config::ClioConfigDefinition::toMilliseconds(config.get<float>("graceful_period"));
     setHandler(impl::SignalsHandlerStatic::handleSignal);
 }
 

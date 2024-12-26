@@ -308,11 +308,11 @@ private:
 
                 auto lb = backend_->cache().getPredecessor(obj.key, lgrInfo.seq);
                 if (!lb)
-                    lb = {data::kFIRST_KEY, {}};
+                    lb = {.key = data::kFIRST_KEY, .blob = {}};
 
                 auto ub = backend_->cache().getSuccessor(obj.key, lgrInfo.seq);
                 if (!ub)
-                    ub = {data::kLAST_KEY, {}};
+                    ub = {.key = data::kLAST_KEY, .blob = {}};
 
                 if (obj.blob.empty()) {
                     LOG(log_.debug()) << "writing successor for deleted object " << ripple::strHex(obj.key) << " - "

@@ -155,7 +155,7 @@ private:
 };
 
 template <typename Handler>
-Handler::Input
+static Handler::Input
 createInput()
 {
     return typename Handler::Input{};
@@ -236,8 +236,9 @@ createInput<SubscribeHandler>()
 {
     SubscribeHandler::Input input{};
 
-    input.books =
-        std::vector<SubscribeHandler::OrderBook>{SubscribeHandler::OrderBook{ripple::Book{}, kACCOUNT, true, true}};
+    input.books = std::vector<SubscribeHandler::OrderBook>{
+        SubscribeHandler::OrderBook{.book = ripple::Book{}, .taker = kACCOUNT, .snapshot = true, .both = true}
+    };
     return input;
 }
 

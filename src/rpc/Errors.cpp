@@ -55,7 +55,7 @@ getWarningInfo(WarningCode code)
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
+    if (auto it = std::ranges::find_if(kINFOS, matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid WarningCode"));
@@ -74,33 +74,43 @@ makeWarning(WarningCode code)
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    static constexpr ClioErrorInfo kINFOS[]{
-        {ClioError::RpcMalformedCurrency, "malformedCurrency", "Malformed currency."},
-        {ClioError::RpcMalformedRequest, "malformedRequest", "Malformed request."},
-        {ClioError::RpcMalformedOwner, "malformedOwner", "Malformed owner."},
-        {ClioError::RpcMalformedAddress, "malformedAddress", "Malformed address."},
-        {ClioError::RpcInvalidHotWallet, "invalidHotWallet", "Invalid hot wallet."},
-        {ClioError::RpcUnknownOption, "unknownOption", "Unknown option."},
-        {ClioError::RpcFieldNotFoundTransaction, "fieldNotFoundTransaction", "Missing field."},
-        {ClioError::RpcMalformedOracleDocumentId, "malformedDocumentID", "Malformed oracle_document_id."},
-        {ClioError::RpcMalformedAuthorizedCredentials,
-         "malformedAuthorizedCredentials",
-         "Malformed authorized credentials."},
+    constexpr static ClioErrorInfo kINFOS[]{
+        {.code = ClioError::RpcMalformedCurrency, .error = "malformedCurrency", .message = "Malformed currency."},
+        {.code = ClioError::RpcMalformedRequest, .error = "malformedRequest", .message = "Malformed request."},
+        {.code = ClioError::RpcMalformedOwner, .error = "malformedOwner", .message = "Malformed owner."},
+        {.code = ClioError::RpcMalformedAddress, .error = "malformedAddress", .message = "Malformed address."},
+        {.code = ClioError::RpcInvalidHotWallet, .error = "invalidHotWallet", .message = "Invalid hot wallet."},
+        {.code = ClioError::RpcUnknownOption, .error = "unknownOption", .message = "Unknown option."},
+        {.code = ClioError::RpcFieldNotFoundTransaction,
+         .error = "fieldNotFoundTransaction",
+         .message = "Missing field."},
+        {.code = ClioError::RpcMalformedOracleDocumentId,
+         .error = "malformedDocumentID",
+         .message = "Malformed oracle_document_id."},
+        {.code = ClioError::RpcMalformedAuthorizedCredentials,
+         .error = "malformedAuthorizedCredentials",
+         .message = "Malformed authorized credentials."},
         // special system errors
-        {ClioError::RpcInvalidApiVersion, JS(invalid_API_version), "Invalid API version."},
-        {ClioError::RpcCommandIsMissing, JS(missingCommand), "Method is not specified or is not a string."},
-        {ClioError::RpcCommandNotString, "commandNotString", "Method is not a string."},
-        {ClioError::RpcCommandIsEmpty, "emptyCommand", "Method is an empty string."},
-        {ClioError::RpcParamsUnparseable, "paramsUnparseable", "Params must be an array holding exactly one object."},
+        {.code = ClioError::RpcInvalidApiVersion, .error = JS(invalid_API_version), .message = "Invalid API version."},
+        {.code = ClioError::RpcCommandIsMissing,
+         .error = JS(missingCommand),
+         .message = "Method is not specified or is not a string."},
+        {.code = ClioError::RpcCommandNotString, .error = "commandNotString", .message = "Method is not a string."},
+        {.code = ClioError::RpcCommandIsEmpty, .error = "emptyCommand", .message = "Method is an empty string."},
+        {.code = ClioError::RpcParamsUnparseable,
+         .error = "paramsUnparseable",
+         .message = "Params must be an array holding exactly one object."},
         // etl related errors
-        {ClioError::EtlConnectionError, "connectionError", "Couldn't connect to rippled."},
-        {ClioError::EtlRequestError, "requestError", "Error sending request to rippled."},
-        {ClioError::EtlRequestTimeout, "timeout", "Request to rippled timed out."},
-        {ClioError::EtlInvalidResponse, "invalidResponse", "Rippled returned an invalid response."}
+        {.code = ClioError::EtlConnectionError, .error = "connectionError", .message = "Couldn't connect to rippled."},
+        {.code = ClioError::EtlRequestError, .error = "requestError", .message = "Error sending request to rippled."},
+        {.code = ClioError::EtlRequestTimeout, .error = "timeout", .message = "Request to rippled timed out."},
+        {.code = ClioError::EtlInvalidResponse,
+         .error = "invalidResponse",
+         .message = "Rippled returned an invalid response."}
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
+    if (auto it = ranges::find_if(begin(kINFOS), end(kINFOS), matchByCode); it != end(kINFOS))
         return *it;
 
     throw(out_of_range("Invalid error code"));

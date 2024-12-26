@@ -176,9 +176,9 @@ BackendInterface::fetchSuccessorObject(
     if (succ) {
         auto obj = fetchLedgerObject(*succ, ledgerSequence, yield);
         if (!obj)
-            return {{*succ, {}}};
+            return {{.key = *succ, .blob = {}}};
 
-        return {{*succ, *obj}};
+        return {{.key = *succ, .blob = *obj}};
     }
     return {};
 }
@@ -283,7 +283,7 @@ BackendInterface::updateRange(uint32_t newMax)
     );
 
     if (!range_) {
-        range_ = {newMax, newMax};
+        range_ = {.minSequence = newMax, .maxSequence = newMax};
     } else {
         range_->maxSequence = newMax;
     }
@@ -299,7 +299,7 @@ BackendInterface::setRange(uint32_t min, uint32_t max, bool force)
         ASSERT(not range_.has_value(), "Range was already set");
     }
 
-    range_ = {min, max};
+    range_ = {.minSequence = min, .maxSequence = max};
 }
 
 LedgerPage

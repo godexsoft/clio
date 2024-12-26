@@ -54,7 +54,7 @@ public:
      */
     template <typename... Args>
     explicit Statement(std::string_view query, Args&&... args)
-        : ManagedObject{cass_statement_new(query.data(), sizeof...(args)), kDELETER}
+        : ManagedObject{cass_statement_new_n(query.data(), query.size(), sizeof...(args)), kDELETER}
     {
         cass_statement_set_consistency(*this, CASS_CONSISTENCY_QUORUM);
         cass_statement_set_is_idempotent(*this, cass_true);
@@ -119,6 +119,9 @@ public:
             // reinterpret_cast is needed here :'(
             auto const rc = bindBytes(reinterpret_cast<unsigned char const*>(value.data()), value.size());
             throwErrorIfNeeded(rc, "Bind string (as bytes)");
+        } else if constexpr (std::is_convertible_v<DecayedType, Text>) {
+            auto const rc = cass_statement_bind_string_n(*this, idx, value.text.c_str(), value.text.size());
+            throwErrorIfNeeded(rc, "Bind string (as TEXT)");
         } else if constexpr (std::is_same_v<DecayedType, UintTupleType> ||
                              std::is_same_v<DecayedType, UintByteTupleType>) {
             auto const rc = cass_statement_bind_tuple(*this, idx, Tuple{std::forward<Type>(value)});

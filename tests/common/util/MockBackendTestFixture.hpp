@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "util/LoggerFixtures.hpp"
 #include "util/MockBackend.hpp"
+#include "util/newconfig/ConfigDefinition.hpp"
 
 #include <gmock/gmock.h>
 
@@ -30,7 +31,8 @@
 template <template <typename> typename MockType = ::testing::NiceMock>
 struct MockBackendTestBase : virtual public NoLoggerFixture {
     class BackendProxy {
-        std::shared_ptr<MockType<MockBackend>> backend_ = std::make_shared<MockType<MockBackend>>(util::Config{});
+        std::shared_ptr<MockType<MockBackend>> backend_ =
+            std::make_shared<MockType<MockBackend>>(util::config::ClioConfigDefinition{{}});
 
     public:
         auto

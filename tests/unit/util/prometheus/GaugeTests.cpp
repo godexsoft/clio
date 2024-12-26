@@ -124,8 +124,8 @@ TEST_F(GaugeIntTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_EQ(
         gauge.value(),
-        kNUM_ADDITIONS + kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD - kNUM_SUBSTRACTIONS -
-            kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT
+        kNUM_ADDITIONS + (kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD) - kNUM_SUBSTRACTIONS -
+            (kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT)
     );
 }
 
@@ -198,8 +198,8 @@ TEST_F(GaugeDoubleTests, multithreadAddAndSubstract)
     thread4.join();
     EXPECT_NEAR(
         gauge.value(),
-        kNUM_ADDITIONS + kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD - kNUM_SUBSTRACTIONS -
-            kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT,
+        kNUM_ADDITIONS + (kNUM_NUMBER_ADDITIONS * kNUMBER_TO_ADD) - kNUM_SUBSTRACTIONS -
+            (kNUM_NUMBER_SUBSTRACTIONS * kNUMBER_TO_SUBSTRACT),
         1e-9
     );
 }

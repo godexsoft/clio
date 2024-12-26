@@ -25,7 +25,9 @@
 #include "util/MockPrometheus.hpp"
 #include "util/MockRPCEngine.hpp"
 #include "util/Taggable.hpp"
-#include "util/config/Config.hpp"
+#include "util/newconfig/ConfigDefinition.hpp"
+#include "util/newconfig/ConfigValue.hpp"
+#include "util/newconfig/Types.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 #include "web/ng/MockConnection.hpp"
 #include "web/ng/RPCServerHandler.hpp"
@@ -54,24 +56,32 @@
 using namespace web::ng;
 using testing::Return;
 using testing::StrictMock;
+using namespace util::config;
 
 namespace http = boost::beast::http;
 
 struct NgRpcServerHandlerTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
-    static Request
-    makeHttpRequest(std::string_view body)
-    {
-        return Request{http::request<http::string_body>{http::verb::post, "/", 11, body}};
-    }
+    ClioConfigDefinition config{ClioConfigDefinition{
+        {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
+        {"api_version.min", ConfigValue{ConfigType::Integer}.defaultValue(1)},
+        {"api_version.max", ConfigValue{ConfigType::Integer}.defaultValue(2)},
+        {"api_version.default", ConfigValue{ConfigType::Integer}.defaultValue(1)}
+    }};
 
 protected:
     std::shared_ptr<testing::StrictMock<MockRPCEngine>> rpcEngine_ =
         std::make_shared<testing::StrictMock<MockRPCEngine>>();
     std::shared_ptr<StrictMock<MockETLService>> etl_ = std::make_shared<StrictMock<MockETLService>>();
-    RPCServerHandler<MockRPCEngine, MockETLService> rpcServerHandler_{util::Config{}, backend_, rpcEngine_, etl_};
+    RPCServerHandler<MockRPCEngine, MockETLService> rpcServerHandler_{config, backend_, rpcEngine_, etl_};
 
-    util::TagDecoratorFactory tagFactory_{util::Config{}};
+    util::TagDecoratorFactory tagFactory_{config};
     StrictMockConnectionMetadata connectionMetadata_{"some ip", tagFactory_};
+
+    static Request
+    makeHttpRequest(std::string_view body)
+    {
+        return Request{http::request<http::string_body>{http::verb::post, "/", 11, body}};
+    }
 };
 
 TEST_F(NgRpcServerHandlerTest, PostToRpcEngineFailed)

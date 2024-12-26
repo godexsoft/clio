@@ -32,9 +32,7 @@ LedgerTypes::getLedgerEntryTypeFromStr(std::string const& entryName)
 {
     static std::unordered_map<std::string, ripple::LedgerEntryType> kTYPE_MAP = []() {
         std::unordered_map<std::string, ripple::LedgerEntryType> map;
-        std::for_each(std::begin(kLEDGER_TYPES), std::end(kLEDGER_TYPES), [&map](auto const& item) {
-            map[item.name_] = item.type_;
-        });
+        std::ranges::for_each(kLEDGER_TYPES, [&map](auto const& item) { map[item.name_] = item.type_; });
         return map;
     }();
 

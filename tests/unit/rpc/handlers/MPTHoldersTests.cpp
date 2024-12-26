@@ -87,7 +87,7 @@ TEST_F(RPCMPTHoldersHandlerTest, NonHexLedgerHash)
             }})",
             kMPT_ID
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -107,7 +107,7 @@ TEST_F(RPCMPTHoldersHandlerTest, NonStringLedgerHash)
             }})",
             kMPT_ID
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -127,7 +127,7 @@ TEST_F(RPCMPTHoldersHandlerTest, InvalidLedgerIndexString)
             }})",
             kMPT_ID
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -144,7 +144,7 @@ TEST_F(RPCMPTHoldersHandlerTest, MPTIDInvalidFormat)
         auto const input = json::parse(R"({ 
             "mpt_issuance_id": "xxx"
         })");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -158,7 +158,7 @@ TEST_F(RPCMPTHoldersHandlerTest, MPTIDMissing)
     runSpawn([this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{MPTHoldersHandler{backend_}};
         auto const input = json::parse(R"({})");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -174,7 +174,7 @@ TEST_F(RPCMPTHoldersHandlerTest, MPTIDNotString)
         auto const input = json::parse(R"({ 
             "mpt_issuance_id": 12
         })");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -195,7 +195,7 @@ TEST_F(RPCMPTHoldersHandlerTest, MarkerInvalidFormat)
         }})",
             kMPT_ID
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -215,7 +215,7 @@ TEST_F(RPCMPTHoldersHandlerTest, MarkerNotString)
         }})",
             kMPT_ID
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -241,7 +241,7 @@ TEST_F(RPCMPTHoldersHandlerTest, NonExistLedgerViaLedgerHash)
     ));
     runSpawn([&, this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{MPTHoldersHandler{backend_}};
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());

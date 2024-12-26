@@ -91,116 +91,116 @@ TEST_P(ParameterTest, CheckError)
     });
 }
 
-auto
+static auto
 generateParameterTestBundles()
 {
     return std::vector<ParameterTestBundle>{
         ParameterTestBundle{
-            "AccountNotString",
-            R"({
+            .testName = "AccountNotString",
+            .testJson = R"({
                 "account": 1213
             })",
-            "invalidParams",
-            "accountNotString"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "accountNotString"
         },
         ParameterTestBundle{
-            "AccountMissing",
-            R"({
+            .testName = "AccountMissing",
+            .testJson = R"({
             })",
-            "invalidParams",
-            "Required field 'account' missing"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "Required field 'account' missing"
         },
         ParameterTestBundle{
-            "AccountInvalid",
-            R"({
+            .testName = "AccountInvalid",
+            .testJson = R"({
                 "account": "1213"
             })",
-            "actMalformed",
-            "accountMalformed"
+            .expectedError = "actMalformed",
+            .expectedErrorMessage = "accountMalformed"
         },
         ParameterTestBundle{
-            "LedgerIndexInvalid",
-            fmt::format(
+            .testName = "LedgerIndexInvalid",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "ledger_index": "meh"
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "ledgerIndexMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledgerIndexMalformed"
         },
         ParameterTestBundle{
-            "LedgerHashInvalid",
-            fmt::format(
+            .testName = "LedgerHashInvalid",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "ledger_hash": "meh"
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "ledger_hashMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledger_hashMalformed"
         },
         ParameterTestBundle{
-            "LedgerHashNotString",
-            fmt::format(
+            .testName = "LedgerHashNotString",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "ledger_hash": 12
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "ledger_hashNotString"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "ledger_hashNotString"
         },
         ParameterTestBundle{
-            "WalletsNotStringOrArray",
-            fmt::format(
+            .testName = "WalletsNotStringOrArray",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "hotwallet": 12
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "hotwalletNotStringOrArray"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "hotwalletNotStringOrArray"
         },
         ParameterTestBundle{
-            "WalletsNotStringAccount",
-            fmt::format(
+            .testName = "WalletsNotStringAccount",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "hotwallet": [12]
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "hotwalletMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "hotwalletMalformed"
         },
         ParameterTestBundle{
-            "WalletsInvalidAccount",
-            fmt::format(
+            .testName = "WalletsInvalidAccount",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "hotwallet": ["12"]
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "hotwalletMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "hotwalletMalformed"
         },
         ParameterTestBundle{
-            "WalletInvalidAccount",
-            fmt::format(
+            .testName = "WalletInvalidAccount",
+            .testJson = fmt::format(
                 R"({{
                     "account": "{}",
                     "hotwallet": "12"
                 }})",
                 kACCOUNT
             ),
-            "invalidParams",
-            "hotwalletMalformed"
+            .expectedError = "invalidParams",
+            .expectedErrorMessage = "hotwalletMalformed"
         },
     };
 }
@@ -406,9 +406,9 @@ TEST_P(NormalPathTest, CheckOutput)
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
     std::vector<Blob> bbs;
-    std::transform(
-        bundle.mockedObjects.begin(),
-        bundle.mockedObjects.end(),
+    std::ranges::transform(
+        bundle.mockedObjects,
+
         std::back_inserter(bbs),
         [](auto const& obj) { return obj.getSerializer().peekData(); }
     );
@@ -433,7 +433,7 @@ TEST_P(NormalPathTest, CheckOutput)
     });
 }
 
-auto
+static auto
 generateNormalPathTestBundles()
 {
     auto frozenState = createRippleStateLedgerObject("JPY", kISSUER, -50, kACCOUNT, 10, kACCOUNT3, 20, kTXN_ID, 123);
@@ -530,7 +530,7 @@ generateNormalPathTestBundles()
                 }})",
                 kACCOUNT
             ),
-            R"("ledger_index" : "validated")"
+            .hotwallet = R"("ledger_index" : "validated")"
         },
         NormalTestBundle{
             "ObligationOverflow",
@@ -547,7 +547,7 @@ generateNormalPathTestBundles()
                 }})",
                 kACCOUNT
             ),
-            R"("ledger_index" : "validated")"
+            .hotwallet = R"("ledger_index" : "validated")"
         },
         NormalTestBundle{
             "HighID",
@@ -609,7 +609,7 @@ generateNormalPathTestBundles()
                 createRippleStateLedgerObject("EUR", kISSUER, -30, kACCOUNT, 100, kACCOUNT3, 200, kTXN_ID, 123)
 
             },
-            fmt::format(
+            .expectedJson = fmt::format(
                 R"({{
                     "balances":{{
                         "{}":[

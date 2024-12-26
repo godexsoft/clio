@@ -30,14 +30,14 @@
 #include "util/MockPrometheus.hpp"
 #include "util/Random.hpp"
 #include "util/StringUtils.hpp"
-#include "util/config/Config.hpp"
+#include "util/newconfig/ConfigValue.hpp"
+#include "util/newconfig/ObjectView.hpp"
+#include "util/newconfig/Types.hpp"
 
 #include <TestGlobals.hpp>
 #include <boost/asio/impl/spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/json/parse.hpp>
-#include <fmt/core.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -58,31 +58,50 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 using namespace util;
+using namespace util::config;
 using namespace std;
 using namespace rpc;
 using namespace prometheus;
-namespace json = boost::json;
 
 using namespace data::cassandra;
 
 class BackendCassandraTest : public SyncAsioContextTest, public WithPrometheus {
 protected:
-    Config cfg_{json::parse(fmt::format(
-        R"JSON({{
-            "contact_points": "{}",
-            "keyspace": "{}",
-            "replication_factor": 1
-        }})JSON",
-        TestGlobals::instance().backendHost,
-        TestGlobals::instance().backendKeyspace
-    ))};
-    SettingsProvider settingsProvider_{cfg_};
+    ClioConfigDefinition cfg_{
+        {"database.type", ConfigValue{ConfigType::String}.defaultValue("cassandra")},
+        {"database.cassandra.contact_points",
+         ConfigValue{ConfigType::String}.defaultValue(TestGlobals::instance().backendHost)},
+        {"database.cassandra.secure_connect_bundle", ConfigValue{ConfigType::String}.optional()},
+        {"database.cassandra.port", ConfigValue{ConfigType::Integer}.optional()},
+        {"database.cassandra.keyspace",
+         ConfigValue{ConfigType::String}.defaultValue(TestGlobals::instance().backendKeyspace)},
+        {"database.cassandra.replication_factor", ConfigValue{ConfigType::Integer}.defaultValue(1)},
+        {"database.cassandra.table_prefix", ConfigValue{ConfigType::String}.optional()},
+        {"database.cassandra.max_write_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(10'000)},
+        {"database.cassandra.max_read_requests_outstanding", ConfigValue{ConfigType::Integer}.defaultValue(100'000)},
+        {"database.cassandra.threads",
+         ConfigValue{ConfigType::Integer}.defaultValue(static_cast<uint32_t>(std::thread::hardware_concurrency()))},
+        {"database.cassandra.core_connections_per_host", ConfigValue{ConfigType::Integer}.defaultValue(1)},
+        {"database.cassandra.queue_size_io", ConfigValue{ConfigType::Integer}.optional()},
+        {"database.cassandra.write_batch_size", ConfigValue{ConfigType::Integer}.defaultValue(20)},
+        {"database.cassandra.connect_timeout", ConfigValue{ConfigType::Integer}.defaultValue(1).optional()},
+        {"database.cassandra.request_timeout", ConfigValue{ConfigType::Integer}.defaultValue(1).optional()},
+        {"database.cassandra.username", ConfigValue{ConfigType::String}.optional()},
+        {"database.cassandra.password", ConfigValue{ConfigType::String}.optional()},
+        {"database.cassandra.certfile", ConfigValue{ConfigType::String}.optional()},
+
+        {"read_only", ConfigValue{ConfigType::Boolean}.defaultValue(false)}
+    };
+
+    ObjectView obj_ = cfg_.getObject("database.cassandra");
+    SettingsProvider settingsProvider_{obj_};
 
     // recreated for each test
     std::unique_ptr<BackendInterface> backend_;
@@ -779,7 +798,7 @@ TEST_F(BackendCassandraTest, Basic)
             EXPECT_NE(objs[0], objs[1]);
             EXPECT_EQ(txns.size(), 10);
             EXPECT_NE(txns[0], txns[1]);
-            std::sort(objs.begin(), objs.end());
+            std::ranges::sort(objs);
             state[lgrInfoNext.seq] = objs;
             writeLedger(lgrInfoNext, txns, objs, accountTx, state);
             allTxns[lgrInfoNext.seq] = txns;
@@ -810,7 +829,7 @@ TEST_F(BackendCassandraTest, Basic)
             EXPECT_NE(objs[0], objs[1]);
             EXPECT_EQ(txns.size(), 10);
             EXPECT_NE(txns[0], txns[1]);
-            std::sort(objs.begin(), objs.end());
+            std::ranges::sort(objs);
             state[lgrInfoNext.seq] = objs;
             writeLedger(lgrInfoNext, txns, objs, accountTx, state);
             allTxns[lgrInfoNext.seq] = txns;
@@ -854,7 +873,7 @@ TEST_F(BackendCassandraTest, Basic)
                 }
             }
             for (auto& [account, data] : accountTx)
-                std::reverse(data.begin(), data.end());
+                std::ranges::reverse(data);
             return accountTx;
         };
 
@@ -974,7 +993,9 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             backend_->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend_->cache().update({{*key, {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
+            backend_->cache().update(
+                {{.key = *key, .blob = {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq
+            );
             backend_->writeSuccessor(uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, std::string{accountIndexBlob});
             backend_->writeSuccessor(std::string{accountIndexBlob}, lgrInfoNext.seq, uint256ToString(data::kLAST_KEY));
 
@@ -1011,7 +1032,9 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             backend_->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             std::shuffle(accountBlob.begin(), accountBlob.end(), randomEngine_);
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend_->cache().update({{*key, {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq);
+            backend_->cache().update(
+                {{.key = *key, .blob = {accountBlob.begin(), accountBlob.end()}}}, lgrInfoNext.seq
+            );
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{accountBlob});
 
             ASSERT_TRUE(backend_->finishWrites(lgrInfoNext.seq));
@@ -1048,7 +1071,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
 
             backend_->writeLedger(lgrInfoNext, ledgerHeaderToBinaryString(lgrInfoNext));
             auto key = ripple::uint256::fromVoidChecked(accountIndexBlob);
-            backend_->cache().update({{*key, {}}}, lgrInfoNext.seq);
+            backend_->cache().update({{.key = *key, .blob = {}}}, lgrInfoNext.seq);
             backend_->writeLedgerObject(std::string{accountIndexBlob}, lgrInfoNext.seq, std::string{});
             backend_->writeSuccessor(
                 uint256ToString(data::kFIRST_KEY), lgrInfoNext.seq, uint256ToString(data::kLAST_KEY)
@@ -1217,7 +1240,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             auto objs = generateObjects(25, lgrInfoNext.seq);
             EXPECT_EQ(objs.size(), 25);
             EXPECT_NE(objs[0], objs[1]);
-            std::sort(objs.begin(), objs.end());
+            std::ranges::sort(objs);
             state[lgrInfoNext.seq] = objs;
             writeLedger(lgrInfoNext, objs, state);
             lgrInfos[lgrInfoNext.seq] = lgrInfoNext;
@@ -1233,7 +1256,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
             }
             EXPECT_EQ(objs.size(), 25);
             EXPECT_NE(objs[0], objs[1]);
-            std::sort(objs.begin(), objs.end());
+            std::ranges::sort(objs);
             state[lgrInfoNext.seq] = objs;
             writeLedger(lgrInfoNext, objs, state);
             lgrInfos[lgrInfoNext.seq] = lgrInfoNext;

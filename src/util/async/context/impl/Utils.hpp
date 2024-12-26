@@ -39,7 +39,7 @@ inline constexpr struct AssociatedExecutorExtractor {
     {
         return ctx.context_.getExecutor();
     }
-} kEXTRACT_ASSOCIATED_EXECUTOR;
+} extractAssociatedExecutor;  // NOLINT(readability-identifier-naming)
 
 template <typename CtxType>
 [[nodiscard]] constexpr auto
@@ -48,7 +48,7 @@ getTimeoutHandleIfNeeded(CtxType& ctx, SomeOptStdDuration auto timeout, SomeStop
     using TimerType = typename CtxType::Timer;
     std::optional<TimerType> timer;
     if (timeout) {
-        timer.emplace(kEXTRACT_ASSOCIATED_EXECUTOR(ctx), *timeout, [&stopSource](auto cancelled) {
+        timer.emplace(extractAssociatedExecutor(ctx), *timeout, [&stopSource](auto cancelled) {
             if (not cancelled)
                 stopSource.requestStop();
         });

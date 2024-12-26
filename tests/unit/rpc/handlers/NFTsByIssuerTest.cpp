@@ -111,7 +111,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NonHexLedgerHash)
             }})",
             kACCOUNT
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -131,7 +131,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NonStringLedgerHash)
             }})",
             kACCOUNT
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -151,7 +151,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, InvalidLedgerIndexString)
             }})",
             kACCOUNT
         ));
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());
@@ -168,7 +168,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NFTIssuerInvalidFormat)
         auto const input = json::parse(R"({ 
             "issuer": "xxx"
         })");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "actMalformed");
@@ -182,7 +182,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NFTIssuerMissing)
     runSpawn([this](boost::asio::yield_context yield) {
         auto const handler = AnyHandler{NFTsByIssuerHandler{backend_}};
         auto const input = json::parse(R"({})");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
@@ -198,7 +198,7 @@ TEST_F(RPCNFTsByIssuerHandlerTest, NFTIssuerNotString)
         auto const input = json::parse(R"({ 
             "issuer": 12
         })");
-        auto const output = handler.process(input, Context{std::ref(yield)});
+        auto const output = handler.process(input, Context{.yield = std::ref(yield)});
         ASSERT_FALSE(output);
 
         auto const err = rpc::makeError(output.result.error());

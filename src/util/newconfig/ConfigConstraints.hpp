@@ -80,6 +80,11 @@ static constexpr std::array<char const*, 3> kLOAD_CACHE_MODE = {
 static constexpr std::array<char const*, 1> kDATABASE_TYPE = {"cassandra"};
 
 /**
+ * @brief specific values that are accepted for server's processing_policy in config.
+ */
+static constexpr std::array<char const*, 2> kPROCESSING_POLICY = {"parallel", "sequent"};
+
+/**
  * @brief An interface to enforce constraints on certain values within ClioConfigDefinition.
  */
 class Constraint {
@@ -346,8 +351,12 @@ static constinit OneOf gValidateLogLevelName{"log_level", kLOG_LEVELS};
 static constinit OneOf gValidateCassandraName{"database.type", kDATABASE_TYPE};
 static constinit OneOf gValidateLoadMode{"cache.load", kLOAD_CACHE_MODE};
 static constinit OneOf gValidateLogTag{"log_tag_style", kLOG_TAGS};
+static constinit OneOf gValidateProcessingPolicy{"server.processing_policy", kPROCESSING_POLICY};
 
 static constinit PositiveDouble gValidatePositiveDouble{};
+
+static constinit NumberValueConstraint<uint32_t> gValidateNumMarkers{1, 256};
+static constinit NumberValueConstraint<uint32_t> gValidateIOThreads{1, std::numeric_limits<uint16_t>::max()};
 
 static constinit NumberValueConstraint<uint16_t> gValidateUint16{
     std::numeric_limits<uint16_t>::min(),
