@@ -49,8 +49,8 @@ struct NgErrorHandlingTests : NoLoggerFixture {
     {
         if (isHttp)
             return Request{http::request<http::string_body>{http::verb::post, "/", 11, body.value_or("")}};
-        static Request::HttpHeaders const headers_;
-        return Request{body.value_or(""), headers_};
+        static Request::HttpHeaders const kHEADERS;
+        return Request{body.value_or(""), kHEADERS};
     }
 };
 

@@ -130,12 +130,12 @@ public:
     {
         // start from 2024-06-25T12:23:10Z to 2024-06-25T12:23:50Z with step 2
         return std::vector<LedgerIndexTestsCaseBundle>{
-            {"LaterThanMaxLedger", R"({"date": "2024-06-25T12:23:55Z"})", kRANGE_MAX, "2024-06-25T12:23:50Z"},
-            {"GreaterThanMinLedger", R"({"date": "2024-06-25T12:23:11Z"})", kRANGE_MIN, "2024-06-25T12:23:10Z"},
-            {"IsMinLedger", R"({"date": "2024-06-25T12:23:10Z"})", kRANGE_MIN, "2024-06-25T12:23:10Z"},
-            {"IsMaxLedger", R"({"date": "2024-06-25T12:23:50Z"})", kRANGE_MAX, "2024-06-25T12:23:50Z"},
-            {"IsMidLedger", R"({"date": "2024-06-25T12:23:30Z"})", 20, "2024-06-25T12:23:30Z"},
-            {"BetweenLedgers", R"({"date": "2024-06-25T12:23:29Z"})", 19, "2024-06-25T12:23:28Z"}
+            {.testName="LaterThanMaxLedger", .json=R"({"date": "2024-06-25T12:23:55Z"})", .expectedLedgerIndex=kRANGE_MAX, .closeTimeIso="2024-06-25T12:23:50Z"},
+            {.testName="GreaterThanMinLedger", .json=R"({"date": "2024-06-25T12:23:11Z"})", .expectedLedgerIndex=kRANGE_MIN, .closeTimeIso="2024-06-25T12:23:10Z"},
+            {.testName="IsMinLedger", .json=R"({"date": "2024-06-25T12:23:10Z"})", .expectedLedgerIndex=kRANGE_MIN, .closeTimeIso="2024-06-25T12:23:10Z"},
+            {.testName="IsMaxLedger", .json=R"({"date": "2024-06-25T12:23:50Z"})", .expectedLedgerIndex=kRANGE_MAX, .closeTimeIso="2024-06-25T12:23:50Z"},
+            {.testName="IsMidLedger", .json=R"({"date": "2024-06-25T12:23:30Z"})", .expectedLedgerIndex=20, .closeTimeIso="2024-06-25T12:23:30Z"},
+            {.testName="BetweenLedgers", .json=R"({"date": "2024-06-25T12:23:29Z"})", .expectedLedgerIndex=19, .closeTimeIso="2024-06-25T12:23:28Z"}
         };
     }
 };

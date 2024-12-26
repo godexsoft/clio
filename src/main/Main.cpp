@@ -46,14 +46,14 @@ try {
                 std::cerr << json.error().error << std::endl;
                 return EXIT_FAILURE;
             }
-            auto const errors = ClioConfig.parse(json.value());
+            auto const errors = gClioConfig.parse(json.value());
             if (errors.has_value()) {
                 for (auto const& err : errors.value())
                     std::cerr << err.error << std::endl;
                 return EXIT_FAILURE;
             }
-            util::LogService::init(ClioConfig);
-            app::ClioApplication clio{ClioConfig};
+            util::LogService::init(gClioConfig);
+            app::ClioApplication clio{gClioConfig};
             return clio.run(run.useNgWebServer);
         },
         [](app::CliArgs::Action::Migrate const& migrate) {
@@ -62,14 +62,14 @@ try {
                 std::cerr << json.error().error << std::endl;
                 return EXIT_FAILURE;
             }
-            auto const errors = ClioConfig.parse(json.value());
+            auto const errors = gClioConfig.parse(json.value());
             if (errors.has_value()) {
                 for (auto const& err : errors.value())
                     std::cerr << err.error << std::endl;
                 return EXIT_FAILURE;
             }
-            util::LogService::init(ClioConfig);
-            app::MigratorApplication migrator{ClioConfig, migrate.subCmd};
+            util::LogService::init(gClioConfig);
+            app::MigratorApplication migrator{gClioConfig, migrate.subCmd};
             return migrator.run();
         }
     );

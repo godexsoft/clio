@@ -376,7 +376,7 @@ TEST_F(ServerHttpTest, OnDisconnectHook)
         ClioConfigDefinition{{"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
     };
 
-    testing::StrictMock<testing::MockFunction<void(Connection const&)>> OnDisconnectHookMock;
+    testing::StrictMock<testing::MockFunction<void(Connection const&)>> onDisconnectHookMock;
 
     Server server{
         ctx_,
@@ -387,7 +387,7 @@ TEST_F(ServerHttpTest, OnDisconnectHook)
         tagDecoratorFactory,
         std::nullopt,
         emptyOnConnectCheck_,
-        OnDisconnectHookMock.AsStdFunction()
+        onDisconnectHookMock.AsStdFunction()
     };
 
     HttpAsyncClient client{ctx_};
@@ -395,7 +395,7 @@ TEST_F(ServerHttpTest, OnDisconnectHook)
     boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
         boost::asio::steady_timer timer{ctx_.get_executor(), std::chrono::milliseconds{100}};
 
-        EXPECT_CALL(OnDisconnectHookMock, Call).WillOnce([&timer](auto&&) { timer.cancel(); });
+        EXPECT_CALL(onDisconnectHookMock, Call).WillOnce([&timer](auto&&) { timer.cancel(); });
 
         auto maybeError =
             client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});

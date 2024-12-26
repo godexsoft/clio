@@ -2274,8 +2274,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createAccountRootObject(kACCOUNT2, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createAccountRootObject(kACCOUNT2, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3)
         },
         NormalPathTestBundle{
             .testName = "Payment_channel",
@@ -2286,8 +2286,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createPaymentChannelLedgerObject(kACCOUNT, kACCOUNT2, 100, 200, 300, kINDEX1, 400)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createPaymentChannelLedgerObject(kACCOUNT, kACCOUNT2, 100, 200, 300, kINDEX1, 400)
         },
         NormalPathTestBundle{
             .testName = "Nft_page",
@@ -2298,8 +2298,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createNftTokenPage(
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createNftTokenPage(
                 std::vector{std::make_pair<std::string, std::string>(kTOKEN_ID, "www.ok.com")}, std::nullopt
             )
         },
@@ -2312,8 +2312,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createCheckLedgerObject(kACCOUNT, kACCOUNT2)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createCheckLedgerObject(kACCOUNT, kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "DirectoryIndex",
@@ -2324,8 +2324,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
         },
         NormalPathTestBundle{
             .testName = "OfferIndex",
@@ -2336,8 +2336,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createOfferLedgerObject(
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createOfferLedgerObject(
                 kACCOUNT, 100, 200, "USD", "XRP", kACCOUNT2, ripple::toBase58(ripple::xrpAccount()), kINDEX1
             )
         },
@@ -2350,8 +2350,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createEscrowLedgerObject(kACCOUNT, kACCOUNT2)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createEscrowLedgerObject(kACCOUNT, kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "TicketIndex",
@@ -2362,8 +2362,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createTicketLedgerObject(kACCOUNT, 0)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createTicketLedgerObject(kACCOUNT, 0)
         },
         NormalPathTestBundle{
             .testName = "DepositPreauthIndex",
@@ -2374,8 +2374,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createDepositPreauthLedgerObjectByAuth(kACCOUNT, kACCOUNT2)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createDepositPreauthLedgerObjectByAuth(kACCOUNT, kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "AccountRoot",
@@ -2386,8 +2386,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::account(getAccountIdWithString(kACCOUNT)).key,
-            createAccountRootObject(kACCOUNT, 0, 1, 1, 1, kINDEX1, 1)
+            .expectedIndex = ripple::keylet::account(getAccountIdWithString(kACCOUNT)).key,
+            .mockedEntity = createAccountRootObject(kACCOUNT, 0, 1, 1, 1, kINDEX1, 1)
         },
         NormalPathTestBundle{
             .testName = "DID",
@@ -2398,8 +2398,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::did(getAccountIdWithString(kACCOUNT)).key,
-            createDidObject(kACCOUNT, "mydocument", "myURI", "mydata")
+            .expectedIndex = ripple::keylet::did(getAccountIdWithString(kACCOUNT)).key,
+            .mockedEntity = createDidObject(kACCOUNT, "mydocument", "myURI", "mydata")
         },
         NormalPathTestBundle{
             .testName = "DirectoryViaDirRoot",
@@ -2413,8 +2413,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::keylet::page(ripple::uint256{kINDEX1}, 2).key,
-            createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
+            .expectedIndex = ripple::keylet::page(ripple::uint256{kINDEX1}, 2).key,
+            .mockedEntity = createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
         },
         NormalPathTestBundle{
             .testName = "DirectoryViaOwner",
@@ -2428,8 +2428,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::page(ripple::keylet::ownerDir(account1), 2).key,
-            createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
+            .expectedIndex = ripple::keylet::page(ripple::keylet::ownerDir(account1), 2).key,
+            .mockedEntity = createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
         },
         NormalPathTestBundle{
             .testName = "DirectoryViaDefaultSubIndex",
@@ -2443,8 +2443,8 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT
             ),
             // default sub_index is 0
-            ripple::keylet::page(ripple::keylet::ownerDir(account1), 0).key,
-            createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
+            .expectedIndex = ripple::keylet::page(ripple::keylet::ownerDir(account1), 0).key,
+            .mockedEntity = createOwnerDirLedgerObject(std::vector<ripple::uint256>{ripple::uint256{kINDEX1}}, kINDEX1)
         },
         NormalPathTestBundle{
             .testName = "Escrow",
@@ -2458,8 +2458,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::escrow(account1, 1).key,
-            createEscrowLedgerObject(kACCOUNT, kACCOUNT2)
+            .expectedIndex = ripple::keylet::escrow(account1, 1).key,
+            .mockedEntity = createEscrowLedgerObject(kACCOUNT, kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "DepositPreauthByAuth",
@@ -2474,8 +2474,8 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 kACCOUNT2
             ),
-            ripple::keylet::depositPreauth(account1, account2).key,
-            createDepositPreauthLedgerObjectByAuth(kACCOUNT, kACCOUNT2)
+            .expectedIndex = ripple::keylet::depositPreauth(account1, account2).key,
+            .mockedEntity = createDepositPreauthLedgerObjectByAuth(kACCOUNT, kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "DepositPreauthByAuthCredentials",
@@ -2496,14 +2496,15 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kCREDENTIAL_TYPE
             ),
-            ripple::keylet::depositPreauth(
-                account1,
-                credentials::createAuthCredentials(createAuthCredentialArray(
-                    std::vector<std::string_view>{kACCOUNT2}, std::vector<std::string_view>{kCREDENTIAL_TYPE}
-                ))
-            )
-                .key,
-            createDepositPreauthLedgerObjectByAuthCredentials(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE)
+            .expectedIndex =
+                ripple::keylet::depositPreauth(
+                    account1,
+                    credentials::createAuthCredentials(createAuthCredentialArray(
+                        std::vector<std::string_view>{kACCOUNT2}, std::vector<std::string_view>{kCREDENTIAL_TYPE}
+                    ))
+                )
+                    .key,
+            .mockedEntity = createDepositPreauthLedgerObjectByAuthCredentials(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE)
         },
         NormalPathTestBundle{
             .testName = "Credentials",
@@ -2520,13 +2521,16 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kCREDENTIAL_TYPE
             ),
-            ripple::keylet::credential(
-                account1,
-                account2,
-                ripple::Slice(ripple::strUnHex(kCREDENTIAL_TYPE)->data(), ripple::strUnHex(kCREDENTIAL_TYPE)->size())
-            )
-                .key,
-            createCredentialObject(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE)
+            .expectedIndex =
+                ripple::keylet::credential(
+                    account1,
+                    account2,
+                    ripple::Slice(
+                        ripple::strUnHex(kCREDENTIAL_TYPE)->data(), ripple::strUnHex(kCREDENTIAL_TYPE)->size()
+                    )
+                )
+                    .key,
+            .mockedEntity = createCredentialObject(kACCOUNT, kACCOUNT2, kCREDENTIAL_TYPE)
         },
         NormalPathTestBundle{
             .testName = "RippleState",
@@ -2541,8 +2545,9 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 kACCOUNT2
             ),
-            ripple::keylet::line(account1, account2, currency).key,
-            createRippleStateLedgerObject("USD", kACCOUNT2, 100, kACCOUNT, 10, kACCOUNT2, 20, kINDEX1, 123, 0)
+            .expectedIndex = ripple::keylet::line(account1, account2, currency).key,
+            .mockedEntity =
+                createRippleStateLedgerObject("USD", kACCOUNT2, 100, kACCOUNT, 10, kACCOUNT2, 20, kINDEX1, 123, 0)
         },
         NormalPathTestBundle{
             .testName = "Ticket",
@@ -2556,8 +2561,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::getTicketIndex(account1, 2),
-            createTicketLedgerObject(kACCOUNT, 0)
+            .expectedIndex = ripple::getTicketIndex(account1, 2),
+            .mockedEntity = createTicketLedgerObject(kACCOUNT, 0)
         },
         NormalPathTestBundle{
             .testName = "Offer",
@@ -2571,8 +2576,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::offer(account1, 2).key,
-            createOfferLedgerObject(
+            .expectedIndex = ripple::keylet::offer(account1, 2).key,
+            .mockedEntity = createOfferLedgerObject(
                 kACCOUNT, 100, 200, "USD", "XRP", kACCOUNT2, ripple::toBase58(ripple::xrpAccount()), kINDEX1
             )
         },
@@ -2585,8 +2590,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createAmmObject(kACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kACCOUNT2)
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createAmmObject(kACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "AMMViaJson",
@@ -2606,9 +2611,10 @@ generateTestValuesForNormalPathTest()
                 "JPY",
                 kACCOUNT2
             ),
-            ripple::keylet::amm(getIssue("XRP", ripple::toBase58(ripple::xrpAccount())), getIssue("JPY", kACCOUNT2))
-                .key,
-            createAmmObject(kACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kACCOUNT2)
+            .expectedIndex =
+                ripple::keylet::amm(getIssue("XRP", ripple::toBase58(ripple::xrpAccount())), getIssue("JPY", kACCOUNT2))
+                    .key,
+            .mockedEntity = createAmmObject(kACCOUNT, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kACCOUNT2)
         },
         NormalPathTestBundle{
             .testName = "BridgeLocking",
@@ -2633,17 +2639,17 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kACCOUNT3
             ),
-            ripple::keylet::bridge(
-                ripple::STXChainBridge(
-                    getAccountIdWithString(kACCOUNT),
-                    ripple::xrpIssue(),
-                    getAccountIdWithString(kACCOUNT2),
-                    getIssue("JPY", kACCOUNT3)
-                ),
-                ripple::STXChainBridge::ChainType::locking
+            .expectedIndex = ripple::keylet::bridge(
+                                 ripple::STXChainBridge(
+                                     getAccountIdWithString(kACCOUNT),
+                                     ripple::xrpIssue(),
+                                     getAccountIdWithString(kACCOUNT2),
+                                     getIssue("JPY", kACCOUNT3)
+                                 ),
+                                 ripple::STXChainBridge::ChainType::locking
             )
-                .key,
-            createBridgeObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3)
+                                 .key,
+            .mockedEntity = createBridgeObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3)
         },
         NormalPathTestBundle{
             .testName = "BridgeIssuing",
@@ -2668,17 +2674,17 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kACCOUNT3
             ),
-            ripple::keylet::bridge(
-                ripple::STXChainBridge(
-                    getAccountIdWithString(kACCOUNT),
-                    ripple::xrpIssue(),
-                    getAccountIdWithString(kACCOUNT2),
-                    getIssue("JPY", kACCOUNT3)
-                ),
-                ripple::STXChainBridge::ChainType::issuing
+            .expectedIndex = ripple::keylet::bridge(
+                                 ripple::STXChainBridge(
+                                     getAccountIdWithString(kACCOUNT),
+                                     ripple::xrpIssue(),
+                                     getAccountIdWithString(kACCOUNT2),
+                                     getIssue("JPY", kACCOUNT3)
+                                 ),
+                                 ripple::STXChainBridge::ChainType::issuing
             )
-                .key,
-            createBridgeObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3)
+                                 .key,
+            .mockedEntity = createBridgeObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3)
         },
         NormalPathTestBundle{
             .testName = "XChainOwnedClaimId",
@@ -2702,17 +2708,17 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kACCOUNT3
             ),
-            ripple::keylet::xChainClaimID(
-                ripple::STXChainBridge(
-                    getAccountIdWithString(kACCOUNT),
-                    ripple::xrpIssue(),
-                    getAccountIdWithString(kACCOUNT2),
-                    getIssue("JPY", kACCOUNT3)
-                ),
-                10
+            .expectedIndex = ripple::keylet::xChainClaimID(
+                                 ripple::STXChainBridge(
+                                     getAccountIdWithString(kACCOUNT),
+                                     ripple::xrpIssue(),
+                                     getAccountIdWithString(kACCOUNT2),
+                                     getIssue("JPY", kACCOUNT3)
+                                 ),
+                                 10
             )
-                .key,
-            createChainOwnedClaimIdObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3, kACCOUNT)
+                                 .key,
+            .mockedEntity = createChainOwnedClaimIdObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3, kACCOUNT)
         },
         NormalPathTestBundle{
             .testName = "XChainOwnedCreateAccountClaimId",
@@ -2736,17 +2742,17 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT2,
                 kACCOUNT3
             ),
-            ripple::keylet::xChainCreateAccountClaimID(
-                ripple::STXChainBridge(
-                    getAccountIdWithString(kACCOUNT),
-                    ripple::xrpIssue(),
-                    getAccountIdWithString(kACCOUNT2),
-                    getIssue("JPY", kACCOUNT3)
-                ),
-                10
+            .expectedIndex = ripple::keylet::xChainCreateAccountClaimID(
+                                 ripple::STXChainBridge(
+                                     getAccountIdWithString(kACCOUNT),
+                                     ripple::xrpIssue(),
+                                     getAccountIdWithString(kACCOUNT2),
+                                     getIssue("JPY", kACCOUNT3)
+                                 ),
+                                 10
             )
-                .key,
-            createChainOwnedClaimIdObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3, kACCOUNT)
+                                 .key,
+            .mockedEntity = createChainOwnedClaimIdObject(kACCOUNT, kACCOUNT, kACCOUNT2, "JPY", kACCOUNT3, kACCOUNT)
         },
         NormalPathTestBundle{
             .testName = "OracleEntryFoundViaIntOracleDocumentId",
@@ -2760,8 +2766,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
-            createOracleObject(
+            .expectedIndex = ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
+            .mockedEntity = createOracleObject(
                 kACCOUNT,
                 "70726F7669646572",
                 32u,
@@ -2787,8 +2793,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kACCOUNT
             ),
-            ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
-            createOracleObject(
+            .expectedIndex = ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
+            .mockedEntity = createOracleObject(
                 kACCOUNT,
                 "70726F7669646572",
                 32u,
@@ -2811,8 +2817,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 ripple::to_string(ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key)
             ),
-            ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
-            createOracleObject(
+            .expectedIndex = ripple::keylet::oracle(getAccountIdWithString(kACCOUNT), 1).key,
+            .mockedEntity = createOracleObject(
                 kACCOUNT,
                 "70726F7669646572",
                 64u,
@@ -2835,8 +2841,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 ripple::to_string(ripple::makeMptID(2, account1))
             ),
-            ripple::keylet::mptIssuance(ripple::makeMptID(2, account1)).key,
-            createMptIssuanceObject(kACCOUNT, 2, "metadata")
+            .expectedIndex = ripple::keylet::mptIssuance(ripple::makeMptID(2, account1)).key,
+            .mockedEntity = createMptIssuanceObject(kACCOUNT, 2, "metadata")
         },
         NormalPathTestBundle{
             .testName = "MPTokenViaIndex",
@@ -2847,8 +2853,8 @@ generateTestValuesForNormalPathTest()
                 }})",
                 kINDEX1
             ),
-            ripple::uint256{kINDEX1},
-            createMpTokenObject(kACCOUNT, ripple::makeMptID(2, account1))
+            .expectedIndex = ripple::uint256{kINDEX1},
+            .mockedEntity = createMpTokenObject(kACCOUNT, ripple::makeMptID(2, account1))
         },
         NormalPathTestBundle{
             .testName = "MPTokenViaObject",
@@ -2863,8 +2869,8 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 ripple::to_string(ripple::makeMptID(2, account1))
             ),
-            ripple::keylet::mptoken(ripple::makeMptID(2, account1), account1).key,
-            createMpTokenObject(kACCOUNT, ripple::makeMptID(2, account1))
+            .expectedIndex = ripple::keylet::mptoken(ripple::makeMptID(2, account1), account1).key,
+            .mockedEntity = createMpTokenObject(kACCOUNT, ripple::makeMptID(2, account1))
         },
     };
 }

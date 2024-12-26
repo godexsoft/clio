@@ -201,7 +201,7 @@ TEST_F(HttpConnectionTests, SendMultipleTimes)
     runSpawn([this, &response](boost::asio::yield_context yield) {
         auto connection = acceptConnection(yield);
 
-        for ([[maybe_unused]] auto _i : std::ranges::iota_view{0, 3}) {
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
             auto maybeError = connection.send(response, yield);
             [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
         }

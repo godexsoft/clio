@@ -60,7 +60,7 @@ using namespace etl;
 using namespace util::config;
 using testing::Return;
 
-constexpr static auto const TwoSourcesLedgerResponse = R"({
+constexpr static auto const kTWO_SOURCES_LEDGER_RESPONSE = R"({
     "etl_sources": [
         {
             "ip": "127.0.0.1",
@@ -75,7 +75,7 @@ constexpr static auto const TwoSourcesLedgerResponse = R"({
     ]
 })";
 
-constexpr static auto const ThreeSourcesLedgerResponse = R"({
+constexpr static auto const kTHREE_SOURCES_LEDGER_RESPONSE = R"({
     "etl_sources": [
         {
             "ip": "127.0.0.1",
@@ -136,7 +136,7 @@ protected:
     StrictMockNetworkValidatedLedgersPtr networkManager_;
     StrictMockSourceFactory sourceFactory_{2};
     boost::asio::io_context ioContext_;
-    boost::json::value configJson_ = boost::json::parse(TwoSourcesLedgerResponse);
+    boost::json::value configJson_ = boost::json::parse(kTWO_SOURCES_LEDGER_RESPONSE);
 };
 
 TEST_F(LoadBalancerConstructorTests, construct)
@@ -383,7 +383,7 @@ struct LoadBalancer3SourcesTests : LoadBalancerConstructorTests {
     LoadBalancer3SourcesTests()
     {
         sourceFactory_.setSourcesNumber(3);
-        configJson_ = boost::json::parse(ThreeSourcesLedgerResponse);
+        configJson_ = boost::json::parse(kTHREE_SOURCES_LEDGER_RESPONSE);
 
         EXPECT_CALL(sourceFactory_, makeSource).Times(3);
         EXPECT_CALL(sourceFactory_.sourceAt(0), forwardToRippled).WillOnce(Return(boost::json::object{}));

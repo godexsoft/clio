@@ -285,7 +285,7 @@ private:
  * Specifies which keys are valid in Clio Config and provides default values if user's do not specify one. Those
  * without default values must be present in the user's config file.
  */
-static ClioConfigDefinition ClioConfig = ClioConfigDefinition{
+static ClioConfigDefinition gClioConfig = ClioConfigDefinition{
     {{"database.type", ConfigValue{ConfigType::String}.defaultValue("cassandra").withConstraint(gValidateCassandraName)
      },
      {"database.cassandra.contact_points", ConfigValue{ConfigType::String}.defaultValue("localhost")},
