@@ -19,15 +19,43 @@
 
 #pragma once
 
-#include <gmock/gmock.h>
+#include "etl/SystemState.hpp"
+#include "etlng/AmendmentBlockHandlerInterface.hpp"
+#include "util/Repeat.hpp"
+#include "util/async/AnyExecutionContext.hpp"
+
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 #include <chrono>
+#include <functional>
 
-struct MockStopSource {
-    MOCK_METHOD(void, requestStop, (), ());
+namespace etlng::impl {
+
+class AmendmentBlockHandler : public AmendmentBlockHandlerInterface {
+public:
+    using ActionType = std::function<void()>;
+
+private:
+    std::reference_wrapper<etl::SystemState> state_;
+    // util::Repeat2 repeat_;
+    std::chrono::steady_clock::duration interval_;
+
+    ActionType action_;
+
+public:
+    static ActionType const defaultAmendmentBlockAction;
+
+    AmendmentBlockHandler(
+        util::async::AnyExecutionContext&& ctx,
+        etl::SystemState& state,
+        std::chrono::steady_clock::duration interval = std::chrono::seconds{1},
+        ActionType action = defaultAmendmentBlockAction
+    );
+
+    void
+    onAmendmentBlock() override;
 };
 
-struct MockStopToken {
-    MOCK_METHOD(bool, isStopRequested, (), (const));
-    MOCK_METHOD(void, sleep, (std::chrono::steady_clock::duration), (const));
-};
+}  // namespace etlng::impl

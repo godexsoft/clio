@@ -17,17 +17,39 @@
 */
 //==============================================================================
 
-#pragma once
+#include "etlng/impl/AmendmentBlockHandler.hpp"
 
-#include <gmock/gmock.h>
+#include "etl/SystemState.hpp"
+#include "util/async/AnyExecutionContext.hpp"
+#include "util/log/Logger.hpp"
 
 #include <chrono>
+#include <functional>
+#include <utility>
 
-struct MockStopSource {
-    MOCK_METHOD(void, requestStop, (), ());
+namespace etlng::impl {
+
+AmendmentBlockHandler::ActionType const AmendmentBlockHandler::defaultAmendmentBlockAction = []() {
+    static util::Logger const log{"ETL"};
+    LOG(log.fatal()) << "Can't process new ledgers: The current ETL source is not compatible with the version of "
+                     << "the libxrpl Clio is currently using. Please upgrade Clio to a newer version.";
 };
 
-struct MockStopToken {
-    MOCK_METHOD(bool, isStopRequested, (), (const));
-    MOCK_METHOD(void, sleep, (std::chrono::steady_clock::duration), (const));
-};
+AmendmentBlockHandler::AmendmentBlockHandler(
+    [[maybe_unused]] util::async::AnyExecutionContext&& ctx,
+    etl::SystemState& state,
+    std::chrono::steady_clock::duration interval,
+    ActionType action
+)
+    : state_{std::ref(state)}, interval_{interval}, action_{std::move(action)}
+{
+}
+
+void
+AmendmentBlockHandler::onAmendmentBlock()
+{
+    state_.get().isAmendmentBlocked = true;
+    // repeat_.start(interval_, action_);
+}
+
+}  // namespace etlng::impl

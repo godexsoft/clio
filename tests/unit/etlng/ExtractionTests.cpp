@@ -43,9 +43,9 @@ namespace {
 constinit auto const Seq = 30;
 }  // namespace
 
-struct ExtractionTests : NoLoggerFixture {};
+struct ExtractionNgTests : NoLoggerFixture {};
 
-TEST_F(ExtractionTests, ModType)
+TEST_F(ExtractionNgTests, ModType)
 {
     using namespace etlng::impl;
     using ModType = etlng::model::Object::ModType;
@@ -56,7 +56,7 @@ TEST_F(ExtractionTests, ModType)
     EXPECT_EQ(extractModType(PBObjType::UNSPECIFIED), ModType::Unspecified);
 }
 
-TEST_F(ExtractionTests, OneTransaction)
+TEST_F(ExtractionNgTests, OneTransaction)
 {
     using namespace etlng::impl;
 
@@ -74,7 +74,7 @@ TEST_F(ExtractionTests, OneTransaction)
     EXPECT_EQ(res.sttx.getTxnType(), expected.sttx.getTxnType());
 }
 
-TEST_F(ExtractionTests, MultipleTransactions)
+TEST_F(ExtractionNgTests, MultipleTransactions)
 {
     using namespace etlng::impl;
 
@@ -102,7 +102,7 @@ TEST_F(ExtractionTests, MultipleTransactions)
     }
 }
 
-TEST_F(ExtractionTests, OneObject)
+TEST_F(ExtractionNgTests, OneObject)
 {
     using namespace etlng::impl;
 
@@ -119,7 +119,7 @@ TEST_F(ExtractionTests, OneObject)
     EXPECT_EQ(res.type, expected.type);
 }
 
-TEST_F(ExtractionTests, OneObjectWithSuccessorAndPredecessor)
+TEST_F(ExtractionNgTests, OneObjectWithSuccessorAndPredecessor)
 {
     using namespace etlng::impl;
 
@@ -138,7 +138,7 @@ TEST_F(ExtractionTests, OneObjectWithSuccessorAndPredecessor)
     EXPECT_EQ(res.type, expected.type);
 }
 
-TEST_F(ExtractionTests, MultipleObjects)
+TEST_F(ExtractionNgTests, MultipleObjects)
 {
     using namespace etlng::impl;
 
@@ -165,7 +165,7 @@ TEST_F(ExtractionTests, MultipleObjects)
     }
 }
 
-TEST_F(ExtractionTests, OneSuccessor)
+TEST_F(ExtractionNgTests, OneSuccessor)
 {
     using namespace etlng::impl;
 
@@ -179,7 +179,7 @@ TEST_F(ExtractionTests, OneSuccessor)
     EXPECT_EQ(ripple::strHex(res.bookBase), ripple::strHex(expected.bookBase));
 }
 
-TEST_F(ExtractionTests, MultipleSuccessors)
+TEST_F(ExtractionNgTests, MultipleSuccessors)
 {
     using namespace etlng::impl;
 
@@ -205,7 +205,7 @@ TEST_F(ExtractionTests, MultipleSuccessors)
     }
 }
 
-TEST_F(ExtractionTests, SuccessorsWithNoNeighborsIncluded)
+TEST_F(ExtractionNgTests, SuccessorsWithNoNeighborsIncluded)
 {
     using namespace etlng::impl;
 
@@ -238,7 +238,7 @@ struct MockFetcher : etl::LedgerFetcherInterface {
     MOCK_METHOD(std::optional<GetLedgerResponseType>, fetchDataAndDiff, (uint32_t), (override));
 };
 
-struct ExtractorTests : ExtractionTests {
+struct ExtractorTests : ExtractionNgTests {
     std::shared_ptr<MockFetcher> fetcher = std::make_shared<MockFetcher>();
     etlng::impl::Extractor extractor{fetcher};
 };

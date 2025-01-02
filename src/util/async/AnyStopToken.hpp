@@ -24,6 +24,7 @@
 
 #include <boost/asio/spawn.hpp>
 
+#include <chrono>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -80,6 +81,12 @@ public:
         return pimpl_->isStopRequested();
     }
 
+    void
+    sleep(std::chrono::steady_clock::duration delay) const noexcept
+    {
+        pimpl_->sleep(delay);
+    }
+
     /**
      * @brief Check if stop is requested
      *
@@ -108,6 +115,8 @@ private:
         [[nodiscard]] virtual bool
         isStopRequested() const noexcept = 0;
 
+        virtual void sleep(std::chrono::steady_clock::duration) const noexcept = 0;
+
         [[nodiscard]] virtual std::unique_ptr<Concept>
         clone() const = 0;
 
@@ -127,6 +136,12 @@ private:
         isStopRequested() const noexcept override
         {
             return token.isStopRequested();
+        }
+
+        void
+        sleep(std::chrono::steady_clock::duration delay) const noexcept override
+        {
+            token.sleep(delay);
         }
 
         [[nodiscard]] std::unique_ptr<Concept>

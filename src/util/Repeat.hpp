@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include "util/Assert.hpp"
+#include "util/async/AnyExecutionContext.hpp"
+#include "util/async/AnyOperation.hpp"
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -26,6 +30,7 @@
 #include <atomic>
 #include <chrono>
 #include <concepts>
+#include <optional>
 #include <semaphore>
 
 namespace util {

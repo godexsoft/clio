@@ -32,6 +32,7 @@ target_sources(
           etl/SubscriptionSourceTests.cpp
           etl/TransformerTests.cpp
           # ETLng
+          etlng/AmendmentBlockHandlerTests.cpp
           etlng/ExtractionTests.cpp
           etlng/GrpcSourceTests.cpp
           etlng/RegistryTests.cpp

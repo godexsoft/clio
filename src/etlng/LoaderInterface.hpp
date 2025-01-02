@@ -19,15 +19,22 @@
 
 #pragma once
 
-#include <gmock/gmock.h>
+#include "etlng/Models.hpp"
 
-#include <chrono>
+#include <xrpl/protocol/LedgerHeader.h>
 
-struct MockStopSource {
-    MOCK_METHOD(void, requestStop, (), ());
+#include <optional>
+
+namespace etlng {
+
+struct LoaderInterface {
+    virtual ~LoaderInterface() = default;
+
+    virtual void
+    load(model::LedgerData const& data) = 0;
+
+    virtual std::optional<ripple::LedgerHeader>
+    loadInitialLedger(model::LedgerData const& data) = 0;
 };
 
-struct MockStopToken {
-    MOCK_METHOD(bool, isStopRequested, (), (const));
-    MOCK_METHOD(void, sleep, (std::chrono::steady_clock::duration), (const));
-};
+}  // namespace etlng

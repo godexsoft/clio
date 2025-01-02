@@ -19,15 +19,13 @@
 
 #pragma once
 
-#include <gmock/gmock.h>
+namespace etlng {
 
-#include <chrono>
+struct AmendmentBlockHandlerInterface {
+    virtual ~AmendmentBlockHandlerInterface() = default;
 
-struct MockStopSource {
-    MOCK_METHOD(void, requestStop, (), ());
+    virtual void
+    onAmendmentBlock() = 0;
 };
 
-struct MockStopToken {
-    MOCK_METHOD(bool, isStopRequested, (), (const));
-    MOCK_METHOD(void, sleep, (std::chrono::steady_clock::duration), (const));
-};
+}  // namespace etlng
