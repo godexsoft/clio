@@ -73,7 +73,7 @@ AccountObjectsHandler::process(AccountObjectsHandler::Input input, Context const
 
     if (input.deletionBlockersOnly) {
         typeFilter.emplace();
-        auto const& deletionBlockers = util::LedgerTypes::GetDeletionBlockerLedgerTypes();
+        auto const& deletionBlockers = util::LedgerTypes::getDeletionBlockerLedgerTypes();
         typeFilter->reserve(deletionBlockers.size());
 
         for (auto type : deletionBlockers) {
@@ -121,9 +121,9 @@ void
 tag_invoke(boost::json::value_from_tag, boost::json::value& jv, AccountObjectsHandler::Output const& output)
 {
     auto objects = boost::json::array{};
-    std::transform(
-        std::cbegin(output.accountObjects),
-        std::cend(output.accountObjects),
+    std::ranges::transform(
+        output.accountObjects,
+
         std::back_inserter(objects),
         [](auto const& sle) { return toJson(sle); }
     );
@@ -161,7 +161,7 @@ tag_invoke(boost::json::value_to_tag<AccountObjectsHandler::Input>, boost::json:
     }
 
     if (jsonObject.contains(JS(type)))
-        input.type = util::LedgerTypes::GetLedgerEntryTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
+        input.type = util::LedgerTypes::getLedgerEntryTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
 
     if (jsonObject.contains(JS(limit)))
         input.limit = jv.at(JS(limit)).as_int64();
