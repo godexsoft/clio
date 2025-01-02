@@ -63,7 +63,7 @@ struct DefaultAmendmentBlockActionNgTest : LoggerFixture {};
 
 TEST_F(DefaultAmendmentBlockActionNgTest, Call)
 {
-    AmendmentBlockHandler::defaultAmendmentBlockAction();
+    AmendmentBlockHandler::kDEFAULT_AMENDMENT_BLOCK_ACTION();
     auto const loggerString = getLoggerString();
     EXPECT_TRUE(loggerString.starts_with("ETL:FTL Can't process new ledgers")) << "LoggerString " << loggerString;
 }

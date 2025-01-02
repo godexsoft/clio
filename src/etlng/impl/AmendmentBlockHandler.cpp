@@ -29,10 +29,10 @@
 
 namespace etlng::impl {
 
-AmendmentBlockHandler::ActionType const AmendmentBlockHandler::defaultAmendmentBlockAction = []() {
-    static util::Logger const log{"ETL"};
-    LOG(log.fatal()) << "Can't process new ledgers: The current ETL source is not compatible with the version of "
-                     << "the libxrpl Clio is currently using. Please upgrade Clio to a newer version.";
+AmendmentBlockHandler::ActionType const AmendmentBlockHandler::kDEFAULT_AMENDMENT_BLOCK_ACTION = []() {
+    static util::Logger const kLOG{"ETL"};
+    LOG(kLOG.fatal()) << "Can't process new ledgers: The current ETL source is not compatible with the version of "
+                      << "the libxrpl Clio is currently using. Please upgrade Clio to a newer version.";
 };
 
 AmendmentBlockHandler::AmendmentBlockHandler(
