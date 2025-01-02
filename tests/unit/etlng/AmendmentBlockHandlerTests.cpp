@@ -28,7 +28,6 @@
 
 #include <chrono>
 #include <cstddef>
-#include <iostream>
 
 using namespace etlng::impl;
 
@@ -43,17 +42,15 @@ protected:
 TEST_F(AmendmentBlockHandlerNgTests, CallToOnAmendmentBlockSetsStateAndRepeatedlyCallsAction)
 {
     constexpr static auto kMAX_ITERATIONS = 10uz;
-    auto counter = 0uz;
     etlng::impl::AmendmentBlockHandler handler{ctx_, state_, std::chrono::nanoseconds{1}, actionMock_.AsStdFunction()};
+    auto counter = 0uz;
 
     EXPECT_FALSE(state_.isAmendmentBlocked);
     EXPECT_CALL(actionMock_, Call()).Times(testing::AtLeast(10)).WillRepeatedly([&]() {
-        std::cout << "1\n";
-        if (++counter > kMAX_ITERATIONS) {
-            std::cout << "stopping!!!\n";
+        if (++counter; counter > kMAX_ITERATIONS)
             ctx_.stop();
-        }
     });
+
     handler.onAmendmentBlock();
     EXPECT_TRUE(state_.isAmendmentBlocked);
     ctx_.join();

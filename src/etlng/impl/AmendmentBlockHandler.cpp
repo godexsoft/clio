@@ -30,18 +30,18 @@
 namespace etlng::impl {
 
 AmendmentBlockHandler::ActionType const AmendmentBlockHandler::kDEFAULT_AMENDMENT_BLOCK_ACTION = []() {
-    static util::Logger const kLOG{"ETL"};
-    LOG(kLOG.fatal()) << "Can't process new ledgers: The current ETL source is not compatible with the version of "
-                      << "the libxrpl Clio is currently using. Please upgrade Clio to a newer version.";
+    static util::Logger const log{"ETL"};  // NOLINT(readability-identifier-naming)
+    LOG(log.fatal()) << "Can't process new ledgers: The current ETL source is not compatible with the version of "
+                     << "the libxrpl Clio is currently using. Please upgrade Clio to a newer version.";
 };
 
 AmendmentBlockHandler::AmendmentBlockHandler(
-    [[maybe_unused]] util::async::AnyExecutionContext&& ctx,
+    util::async::AnyExecutionContext&& ctx,
     etl::SystemState& state,
     std::chrono::steady_clock::duration interval,
     ActionType action
 )
-    : state_{std::ref(state)}, interval_{interval}, action_{std::move(action)}
+    : ctx_{std::move(ctx)}, state_{std::ref(state)}, interval_{interval}, action_{std::move(action)}
 {
 }
 
@@ -49,7 +49,8 @@ void
 AmendmentBlockHandler::onAmendmentBlock()
 {
     state_.get().isAmendmentBlocked = true;
-    // repeat_.start(interval_, action_);
+    if (not operation_.has_value())
+        operation_.emplace(ctx_.executeRepeatedly(interval_, action_));
 }
 
 }  // namespace etlng::impl

@@ -21,8 +21,8 @@
 
 #include "etl/SystemState.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
-#include "util/Repeat.hpp"
 #include "util/async/AnyExecutionContext.hpp"
+#include "util/async/AnyOperation.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
@@ -30,6 +30,7 @@
 
 #include <chrono>
 #include <functional>
+#include <optional>
 
 namespace etlng::impl {
 
@@ -38,9 +39,10 @@ public:
     using ActionType = std::function<void()>;
 
 private:
+    util::async::AnyExecutionContext ctx_;
     std::reference_wrapper<etl::SystemState> state_;
-    // util::Repeat2 repeat_;
     std::chrono::steady_clock::duration interval_;
+    std::optional<util::async::AnyOperation<void>> operation_;
 
     ActionType action_;
 

@@ -27,12 +27,24 @@
 
 namespace etlng {
 
+/**
+ * @brief An interface for a ETL Loader
+ */
 struct LoaderInterface {
     virtual ~LoaderInterface() = default;
 
+    /**
+     * @brief Load ledger data
+     * @param data The data to load
+     */
     virtual void
     load(model::LedgerData const& data) = 0;
 
+    /**
+     * @brief Load the initial ledger
+     * @param data The data to load
+     * @return Optional ledger header
+     */
     virtual std::optional<ripple::LedgerHeader>
     loadInitialLedger(model::LedgerData const& data) = 0;
 };
