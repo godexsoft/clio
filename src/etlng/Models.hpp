@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "rpc/RPCHelpers.hpp"
 #include "util/Concepts.hpp"
 
 #include <boost/json/object.hpp>
@@ -79,6 +80,19 @@ struct Transaction {
     ripple::uint256 id;
     std::string key;  // key is the above id as a string of 32 characters
     ripple::TxType type;
+
+    /**
+     * @brief Compares Transaction objects to each other without considering sttx and meta fields
+     * @param other The Transaction to compare to
+     * @return true if transaction is equivalent; false otherwise
+     */
+    bool
+    operator==(Transaction const& other) const
+    {
+        // we ignore sttx and meta as they are doubled by raw and metaRaw
+        return raw == other.raw and metaRaw == other.metaRaw and id == other.id and key == other.key and
+            type == other.type;
+    }
 };
 
 /**
@@ -103,6 +117,9 @@ struct Object {
     std::string predecessor;
 
     ModType type;
+
+    bool
+    operator==(Object const&) const = default;
 };
 
 /**
@@ -111,6 +128,9 @@ struct Object {
 struct BookSuccessor {
     std::string firstBook;
     std::string bookBase;
+
+    bool
+    operator==(BookSuccessor const&) const = default;
 };
 
 /**
@@ -125,6 +145,19 @@ struct LedgerData {
     ripple::LedgerHeader header;
     std::string rawHeader;
     uint32_t seq;
+
+    /**
+     * @brief Compares LedgerData objects to each other without considering the header field
+     * @param other The LedgerData to compare to
+     * @return true if data is equivalent; false otherwise
+     */
+    bool
+    operator==(LedgerData const& other) const
+    {
+        // we ignore header as it's doubled by rawHeader
+        return transactions == other.transactions and objects == other.objects and successors == other.successors and
+            edgeKeys == other.edgeKeys and rawHeader == other.rawHeader and seq == other.seq;
+    }
 };
 
 }  // namespace etlng::model
