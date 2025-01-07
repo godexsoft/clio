@@ -39,9 +39,9 @@ public:
     using ActionType = std::function<void()>;
 
 private:
-    util::async::AnyExecutionContext ctx_;
     std::reference_wrapper<etl::SystemState> state_;
     std::chrono::steady_clock::duration interval_;
+    util::async::AnyExecutionContext ctx_;
     std::optional<util::async::AnyOperation<void>> operation_;
 
     ActionType action_;
@@ -55,6 +55,12 @@ public:
         std::chrono::steady_clock::duration interval = std::chrono::seconds{1},
         ActionType action = kDEFAULT_AMENDMENT_BLOCK_ACTION
     );
+
+    ~AmendmentBlockHandler() override
+    {
+        if (operation_.has_value())
+            operation_.value().abort();
+    }
 
     void
     onAmendmentBlock() override;

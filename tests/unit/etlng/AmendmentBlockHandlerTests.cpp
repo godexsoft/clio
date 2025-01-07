@@ -28,6 +28,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <semaphore>
 
 using namespace etlng::impl;
 
@@ -44,16 +45,18 @@ TEST_F(AmendmentBlockHandlerNgTests, CallToOnAmendmentBlockSetsStateAndRepeatedl
     constexpr static auto kMAX_ITERATIONS = 10uz;
     etlng::impl::AmendmentBlockHandler handler{ctx_, state_, std::chrono::nanoseconds{1}, actionMock_.AsStdFunction()};
     auto counter = 0uz;
+    std::binary_semaphore stop{0};
 
     EXPECT_FALSE(state_.isAmendmentBlocked);
     EXPECT_CALL(actionMock_, Call()).Times(testing::AtLeast(10)).WillRepeatedly([&]() {
         if (++counter; counter > kMAX_ITERATIONS)
-            ctx_.stop();
+            stop.release();
     });
 
     handler.onAmendmentBlock();
+    stop.acquire();  // wait for the counter to reach over kMAX_ITERATIONS
+
     EXPECT_TRUE(state_.isAmendmentBlocked);
-    ctx_.join();
 }
 
 struct DefaultAmendmentBlockActionNgTest : LoggerFixture {};

@@ -41,7 +41,7 @@ AmendmentBlockHandler::AmendmentBlockHandler(
     std::chrono::steady_clock::duration interval,
     ActionType action
 )
-    : ctx_{std::move(ctx)}, state_{std::ref(state)}, interval_{interval}, action_{std::move(action)}
+    : state_{std::ref(state)}, interval_{interval}, ctx_{std::move(ctx)}, action_{std::move(action)}
 {
 }
 

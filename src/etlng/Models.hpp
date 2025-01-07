@@ -89,9 +89,13 @@ struct Transaction {
     bool
     operator==(Transaction const& other) const
     {
-        // we ignore sttx and meta as they are doubled by raw and metaRaw
-        return raw == other.raw and metaRaw == other.metaRaw and id == other.id and key == other.key and
-            type == other.type;
+        return raw == other.raw                                           //
+            and metaRaw == other.metaRaw                                  //
+            and sttx.getTransactionID() == other.sttx.getTransactionID()  //
+            and meta.getTxID() == other.meta.getTxID()                    //
+            and id == other.id                                            //
+            and key == other.key                                          //
+            and type == other.type;
     }
 };
 
@@ -155,8 +159,12 @@ struct LedgerData {
     operator==(LedgerData const& other) const
     {
         // we ignore header as it's doubled by rawHeader
-        return transactions == other.transactions and objects == other.objects and successors == other.successors and
-            edgeKeys == other.edgeKeys and rawHeader == other.rawHeader and seq == other.seq;
+        return transactions == other.transactions  //
+            and objects == other.objects           //
+            and successors == other.successors     //
+            and edgeKeys == other.edgeKeys         //
+            and rawHeader == other.rawHeader       //
+            and seq == other.seq;
     }
 };
 
