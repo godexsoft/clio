@@ -24,6 +24,7 @@
 #include "etlng/impl/Extraction.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/LoggerFixtures.hpp"
+#include "util/TestObject.hpp"
 
 #include <gmock/gmock.h>
 #include <google/protobuf/repeated_ptr_field.h>
@@ -38,10 +39,55 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace {
+constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 constinit auto const kSEQ = 30;
 }  // namespace
+
+struct ExtractionModelNgTests : NoLoggerFixture {};
+
+TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
+{
+    auto const first = etlng::model::LedgerData{
+        .transactions =
+            {util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+             util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+             util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER)},
+        .objects = {util::createObject(), util::createObject(), util::createObject()},
+        .successors = {std::vector<etlng::model::BookSuccessor>{{.firstBook = "first", .bookBase = "base"}}},
+        .edgeKeys = {std::vector<std::string>{"key1", "key2"}},
+        .header = createLedgerHeader(kLEDGER_HASH, kSEQ),
+        .rawHeader = {1, 2, 3},
+        .seq = kSEQ
+    };
+
+    auto const second = first;
+    EXPECT_EQ(first, second);
+}
+
+TEST_F(ExtractionModelNgTests, TransactionCopyableAndEquatable)
+{
+    auto const tx = std::vector{util::createTransaction(ripple::TxType::ttNFTOKEN_BURN)};
+    auto const other = tx;
+    EXPECT_EQ(tx, other);
+}
+
+TEST_F(ExtractionModelNgTests, ObjectCopyableAndEquatable)
+{
+    auto const obj = util::createObject();
+    auto const other = obj;
+    EXPECT_EQ(obj, other);
+}
+
+TEST_F(ExtractionModelNgTests, BookSuccessorCopyableAndEquatable)
+{
+    auto const succ = etlng::model::BookSuccessor{.firstBook = "first", .bookBase = "base"};
+    auto const other = succ;
+    EXPECT_EQ(succ, other);
+}
 
 struct ExtractionNgTests : NoLoggerFixture {};
 
