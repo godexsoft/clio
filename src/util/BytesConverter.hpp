@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2025, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -19,21 +19,19 @@
 
 #pragma once
 
-#include "migration/cassandra/CassandraMigrationTestBackend.hpp"
-#include "util/newconfig/ObjectView.hpp"
+#include <cstdint>
 
-#include <memory>
+namespace util {
 
 /**
- * @brief Example migrator for dropping the table. In this example, our migrator will drop the table. The table removal
- * is not reversible.
+ * @brief Convert megabytes to bytes
+ * @param mb Number of megabytes to convert
+ * @return The equivalent number of bytes
  */
-struct ExampleDropTableMigrator {
-    using Backend = CassandraMigrationTestBackend;
+constexpr std::uint64_t
+mbToBytes(std::uint32_t mb)
+{
+    return mb * 1024ul * 1024ul;
+}
 
-    static constexpr char const* kNAME = "ExampleDropTableMigrator";
-    static constexpr char const* kDESCRIPTION = "The migrator for dropping the table";
-
-    static void
-    runMigration(std::shared_ptr<Backend> const& backend, util::config::ObjectView const& config);
-};
+};  // namespace util
