@@ -104,6 +104,24 @@ TYPED_TEST(ExecutionContextTests, executeWithTimeout)
     EXPECT_EQ(res.get().value(), 42);
 }
 
+TYPED_TEST(ExecutionContextTests, executeAutoAborts)
+{
+    auto value = 0;
+    std::binary_semaphore sem{0};
+
+    {
+        auto res = this->ctx.execute([&](auto stopRequested) {
+            while (not stopRequested)
+                ;
+            value = 42;
+            sem.release();
+        });
+    }  // res goes out of scope and aborts operation
+
+    sem.acquire();
+    EXPECT_EQ(value, 42);
+}
+
 TYPED_TEST(ExecutionContextTests, timer)
 {
     auto res =
@@ -145,6 +163,26 @@ TYPED_TEST(ExecutionContextTests, timerCancel)
     );
 
     res.cancel();
+    sem.acquire();
+    EXPECT_EQ(value, 42);
+}
+
+TYPED_TEST(ExecutionContextTests, timerAutomaticallyCancel)
+{
+    auto value = 0;
+    std::binary_semaphore sem{0};
+    {
+        auto res = this->ctx.scheduleAfter(
+            std::chrono::milliseconds(1),
+            [&value, &sem]([[maybe_unused]] auto stopRequested, auto cancelled) {
+                if (cancelled)
+                    value = 42;
+
+                sem.release();
+            }
+        );
+    }  // res goes out of scope and cancels the timer
+
     sem.acquire();
     EXPECT_EQ(value, 42);
 }

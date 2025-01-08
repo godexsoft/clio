@@ -52,6 +52,7 @@ public:
     {
         other.wasMoved_ = true;
     }
+
     /**
      * @brief Move operator sets the internal flag to true on the moved-from object
      * @param other the moved-from object
