@@ -25,9 +25,7 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <atomic>
-#include <chrono>
 #include <memory>
-#include <thread>
 #include <utility>
 
 namespace util::async::impl {
@@ -77,14 +75,6 @@ public:
             return shared_->isStopRequested();
         }
 
-        void
-        sleep(std::chrono::steady_clock::duration delay) const noexcept
-        {
-            boost::asio::steady_timer timer(boost::asio::get_associated_executor(yield_));
-            timer.expires_after(delay);
-            timer.async_wait(yield_);
-        }
-
         [[nodiscard]] operator bool() const noexcept
         {
             return isStopRequested();
@@ -129,13 +119,6 @@ public:
         isStopRequested() const noexcept
         {
             return shared_->isStopRequested();
-        }
-
-        void
-        // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-        sleep(std::chrono::steady_clock::duration delay) const noexcept
-        {
-            std::this_thread::sleep_for(delay);
         }
 
         [[nodiscard]] operator bool() const noexcept

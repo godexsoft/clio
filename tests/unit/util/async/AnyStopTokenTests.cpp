@@ -22,8 +22,6 @@
 #include <boost/asio/spawn.hpp>
 #include <gtest/gtest.h>
 
-#include <chrono>
-
 using namespace util::async;
 using namespace ::testing;
 
@@ -35,11 +33,6 @@ struct FakeStopToken {
     isStopRequested() const
     {
         return stopRequested;
-    }
-    void
-    sleep(std::chrono::steady_clock::duration) const
-    {
-        // nop
     }
 };
 }  // namespace

@@ -21,13 +21,10 @@
 
 #include <gmock/gmock.h>
 
-#include <chrono>
-
 struct MockStopSource {
     MOCK_METHOD(void, requestStop, (), ());
 };
 
 struct MockStopToken {
     MOCK_METHOD(bool, isStopRequested, (), (const));
-    MOCK_METHOD(void, sleep, (std::chrono::steady_clock::duration), (const));
 };
