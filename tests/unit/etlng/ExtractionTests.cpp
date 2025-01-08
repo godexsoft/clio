@@ -81,12 +81,12 @@ TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
     }
     {
         auto third = second;
-        third.successors = {{.firstBook = "second", .bookBase = "base"}};
+        third.successors = std::vector<etlng::model::BookSuccessor>{{.firstBook = "second", .bookBase = "base"}};
         EXPECT_NE(first, third);
     }
     {
         auto third = second;
-        third.edgeKeys = {"key1"};
+        third.edgeKeys = std::vector<std::string>{"key1"};
         EXPECT_NE(first, third);
     }
     {
