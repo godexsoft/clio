@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "rpc/RPCHelpers.hpp"
 #include "util/Concepts.hpp"
 
 #include <boost/json/object.hpp>
@@ -30,6 +29,7 @@
 #include <xrpl/proto/org/xrpl/rpc/v1/ledger.pb.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
@@ -158,12 +158,19 @@ struct LedgerData {
     bool
     operator==(LedgerData const& other) const
     {
-        // we ignore header as it's doubled by rawHeader
-        return transactions == other.transactions  //
-            and objects == other.objects           //
-            and successors == other.successors     //
-            and edgeKeys == other.edgeKeys         //
-            and rawHeader == other.rawHeader       //
+        // NOLINTNEXTLINE(readability-identifier-naming)
+        constexpr auto serialized = [](auto const& header) {
+            ripple::Serializer ser;
+            ripple::addRaw(header, ser);
+            return ser.getString();
+        };
+
+        return transactions == other.transactions               //
+            and objects == other.objects                        //
+            and successors == other.successors                  //
+            and edgeKeys == other.edgeKeys                      //
+            and serialized(header) == serialized(other.header)  //
+            and rawHeader == other.rawHeader                    //
             and seq == other.seq;
     }
 };
