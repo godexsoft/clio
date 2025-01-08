@@ -63,7 +63,7 @@ public:
     }
 
     void
-    onAmendmentBlock() override;
+    notifyAmendmentBlocked() override;
 };
 
 }  // namespace etlng::impl

@@ -64,13 +64,11 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
 
 struct LoadingTests : util::prometheus::WithPrometheus,
                       MockBackendTest,
-                      MockNgLoadBalancerTest,
                       MockLedgerFetcherTest,
                       MockAmendmentBlockHandlerTest {
 protected:
     std::shared_ptr<MockRegistry> mockRegistryPtr_ = std::make_shared<MockRegistry>();
-    Loader
-        loader_{backend_, mockLoadBalancerPtr_, mockLedgerFetcherPtr_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
+    Loader loader_{backend_, mockLedgerFetcherPtr_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
 };
 
 struct LoadingDeathTest : LoadingTests {};
@@ -123,7 +121,7 @@ TEST_F(LoadingTests, LoadFailure)
     EXPECT_CALL(*mockRegistryPtr_, dispatch(data)).WillOnce([](auto const&) {
         throw std::runtime_error("some error");
     });
-    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, onAmendmentBlock());
+    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, notifyAmendmentBlocked());
 
     loader_.load(data);
 }

@@ -24,5 +24,5 @@
 #include <gmock/gmock.h>
 
 struct MockAmendmentBlockHandler : etlng::AmendmentBlockHandlerInterface {
-    MOCK_METHOD(void, onAmendmentBlock, (), (override));
+    MOCK_METHOD(void, notifyAmendmentBlocked, (), (override));
 };

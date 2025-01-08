@@ -24,7 +24,6 @@
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/RegistryInterface.hpp"
@@ -51,7 +50,6 @@ namespace etlng::impl {
 
 class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etlng::LoadBalancerInterface> balancer_;
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
     std::shared_ptr<RegistryInterface> registry_;
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
@@ -65,7 +63,6 @@ public:
 
     Loader(
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etlng::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
         std::shared_ptr<RegistryInterface> registry,
         std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler

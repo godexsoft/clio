@@ -46,7 +46,7 @@ AmendmentBlockHandler::AmendmentBlockHandler(
 }
 
 void
-AmendmentBlockHandler::onAmendmentBlock()
+AmendmentBlockHandler::notifyAmendmentBlocked()
 {
     state_.get().isAmendmentBlocked = true;
     if (not operation_.has_value())

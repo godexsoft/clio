@@ -23,7 +23,6 @@
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/RegistryInterface.hpp"
 #include "util/Assert.hpp"
@@ -55,13 +54,11 @@ namespace etlng::impl {
 
 Loader::Loader(
     std::shared_ptr<BackendInterface> backend,
-    std::shared_ptr<etlng::LoadBalancerInterface> balancer,
     std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
     std::shared_ptr<RegistryInterface> registry,
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
 )
     : backend_(std::move(backend))
-    , balancer_(std::move(balancer))
     , fetcher_(std::move(fetcher))
     , registry_(std::move(registry))
     , amendmentBlockHandler_(std::move(amendmentBlockHandler))
@@ -81,7 +78,7 @@ Loader::load(model::LedgerData const& data)
                          << duration;
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load " << data.seq << ": " << e.what();
-        amendmentBlockHandler_->onAmendmentBlock();
+        amendmentBlockHandler_->notifyAmendmentBlocked();
     }
 };
 

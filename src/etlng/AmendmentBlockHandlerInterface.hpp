@@ -31,7 +31,7 @@ struct AmendmentBlockHandlerInterface {
      * @brief The function to call once an amendment block has been discovered
      */
     virtual void
-    onAmendmentBlock() = 0;
+    notifyAmendmentBlocked() = 0;
 };
 
 }  // namespace etlng
