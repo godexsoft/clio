@@ -17,25 +17,24 @@
 */
 //==============================================================================
 
-#include "util/BytesConverter.hpp"
+#include "util/WasMoved.hpp"
 
 #include <gtest/gtest.h>
 
-#include <cstdint>
-#include <limits>
+#include <utility>
 
-using namespace util;
+namespace {
+struct MoveMe : util::WasMoved {
+    using WasMoved::wasMoved;  // expose as public for tests
+};
+}  // namespace
 
-TEST(MBToBytesTest, SimpleValues)
+TEST(WasMovedTests, SimpleChecks)
 {
-    EXPECT_EQ(mbToBytes(0), 0);
-    EXPECT_EQ(mbToBytes(1), 1024 * 1024);
-    EXPECT_EQ(mbToBytes(2), 2 * 1024 * 1024);
-}
+    auto moveMe = MoveMe();
+    EXPECT_FALSE(moveMe.wasMoved());
 
-TEST(MBToBytesTest, LimitValues)
-{
-    auto const maxNum = std::numeric_limits<std::uint32_t>::max();
-    EXPECT_NE(mbToBytes(maxNum), maxNum * 1024 * 1024);
-    EXPECT_EQ(mbToBytes(maxNum), maxNum * 1024ul * 1024ul);
+    auto other = std::move(moveMe);
+    EXPECT_TRUE(moveMe.wasMoved());
+    EXPECT_FALSE(other.wasMoved());
 }
