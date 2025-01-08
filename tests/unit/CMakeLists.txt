@@ -39,6 +39,7 @@ target_sources(
           etlng/RegistryTests.cpp
           etlng/LoadingTests.cpp
           # Feed
+          util/BytesConverterTests.cpp
           feed/BookChangesFeedTests.cpp
           feed/ForwardFeedTests.cpp
           feed/LedgerFeedTests.cpp
