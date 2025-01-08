@@ -159,9 +159,9 @@ struct LedgerData {
     operator==(LedgerData const& other) const
     {
         // NOLINTNEXTLINE(readability-identifier-naming)
-        constexpr auto serialized = [](auto const& header) {
+        constexpr auto serialized = [](auto const& hdr) {
             ripple::Serializer ser;
-            ripple::addRaw(header, ser);
+            ripple::addRaw(hdr, ser);
             return ser.getString();
         };
 
