@@ -38,3 +38,12 @@ TEST(WasMovedTests, SimpleChecks)
     EXPECT_TRUE(moveMe.wasMoved());
     EXPECT_FALSE(other.wasMoved());
 }
+
+TEST(WasMovedTests, SupportReuse)
+{
+    auto original = MoveMe();
+    auto other = std::move(original);
+
+    original = std::move(other);
+    EXPECT_FALSE(original.wasMoved());
+}

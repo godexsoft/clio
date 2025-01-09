@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace util {
 
 /**
@@ -38,11 +40,10 @@ protected:
         return wasMoved_;
     }
 
-protected:
     WasMoved() = default;  // should only be used via inheritance
 
 public:
-    ~WasMoved() = default;
+    virtual ~WasMoved() = default;
 
     /**
      * @brief Move constructor sets the internal flag to true on the moved-from object
@@ -50,7 +51,7 @@ public:
      */
     WasMoved(WasMoved&& other)
     {
-        other.wasMoved_ = true;
+        *this = std::move(other);
     }
 
     /**
@@ -62,6 +63,7 @@ public:
     operator=(WasMoved&& other)
     {
         other.wasMoved_ = true;
+        wasMoved_ = false;
         return *this;
     }
 
