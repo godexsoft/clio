@@ -139,6 +139,7 @@ target_sources(
           # Common utils
           util/AccountUtilsTests.cpp
           util/AssertTests.cpp
+          util/MoveTrackerTests.cpp
           util/RandomTests.cpp
           util/RetryTests.cpp
           util/RepeatTests.cpp
@@ -146,7 +147,6 @@ target_sources(
           util/SignalsHandlerTests.cpp
           util/TimeUtilsTests.cpp
           util/TxUtilTests.cpp
-          util/WasMovedTests.cpp
           util/WithTimeout.cpp
           # Webserver
           web/AdminVerificationTests.cpp

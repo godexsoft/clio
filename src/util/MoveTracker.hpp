@@ -26,7 +26,7 @@ namespace util {
 /**
  * @brief A base-class that can be used to check whether the current instance was moved from
  */
-class WasMoved {
+class MoveTracker {
     bool wasMoved_ = false;
 
 protected:
@@ -40,36 +40,36 @@ protected:
         return wasMoved_;
     }
 
-    WasMoved() = default;  // should only be used via inheritance
+    MoveTracker() = default;  // should only be used via inheritance
 
 public:
-    virtual ~WasMoved() = default;
+    virtual ~MoveTracker() = default;
 
     /**
-     * @brief Move constructor sets the internal flag to true on the moved-from object
-     * @param other the moved-from object
+     * @brief Move constructor sets the moved-from state on `other` and resets the state on `this`
+     * @param other The moved-from object
      */
-    WasMoved(WasMoved&& other)
+    MoveTracker(MoveTracker&& other)
     {
         *this = std::move(other);
     }
 
     /**
-     * @brief Move operator sets the internal flag to true on the moved-from object
-     * @param other the moved-from object
-     * @return reference to self
+     * @brief Move operator sets the moved-from state on `other` and resets the state on `this`
+     * @param other The moved-from object
+     * @return Reference to self
      */
-    WasMoved&
-    operator=(WasMoved&& other)
+    MoveTracker&
+    operator=(MoveTracker&& other)
     {
         other.wasMoved_ = true;
         wasMoved_ = false;
         return *this;
     }
 
-    WasMoved(WasMoved const&) = default;
-    WasMoved&
-    operator=(WasMoved const&) = default;
+    MoveTracker(MoveTracker const&) = default;
+    MoveTracker&
+    operator=(MoveTracker const&) = default;
 };
 
 }  // namespace util

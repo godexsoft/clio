@@ -19,8 +19,8 @@
 
 #pragma once
 
+#include "util/MoveTracker.hpp"
 #include "util/Repeat.hpp"
-#include "util/WasMoved.hpp"
 #include "util/async/Concepts.hpp"
 #include "util/async/Outcome.hpp"
 #include "util/async/context/impl/Cancellation.hpp"
@@ -70,7 +70,7 @@ public:
 };
 
 template <typename CtxType, typename OpType>
-struct BasicScheduledOperation : util::WasMoved {
+struct BasicScheduledOperation : util::MoveTracker {
     class State {
         std::mutex m_;
         std::condition_variable ready_;
@@ -162,7 +162,7 @@ struct BasicScheduledOperation : util::WasMoved {
  */
 template <typename RetType, typename StopSourceType>
 class StoppableOperation : public impl::BasicOperation<StoppableOutcome<RetType, StopSourceType>>,
-                           public util::WasMoved {
+                           public util::MoveTracker {
     using OutcomeType = StoppableOutcome<RetType, StopSourceType>;
 
     StopSourceType stopSource_;
@@ -225,7 +225,7 @@ using ScheduledOperation = impl::BasicScheduledOperation<CtxType, OpType>;
  * @tparam CtxType The type of the execution context
  */
 template <typename CtxType>
-class RepeatingOperation : public util::WasMoved {
+class RepeatingOperation : public util::MoveTracker {
     util::Repeat repeat_;
 
 public:
