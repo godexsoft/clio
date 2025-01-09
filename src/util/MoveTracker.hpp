@@ -62,8 +62,11 @@ public:
     MoveTracker&
     operator=(MoveTracker&& other)
     {
-        other.wasMoved_ = true;
-        wasMoved_ = false;
+        if (this != &other) {
+            other.wasMoved_ = true;
+            wasMoved_ = false;
+        }
+
         return *this;
     }
 

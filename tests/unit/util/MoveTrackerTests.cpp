@@ -48,3 +48,21 @@ TEST(MoveTrackerTests, SupportReuse)
     EXPECT_FALSE(original.wasMoved());
     EXPECT_TRUE(other.wasMoved());
 }
+
+TEST(MoveTrackerTests, SelfMove)
+{
+    auto original = MoveMe();
+    [&](MoveMe& from) { original = std::move(from); }(original);  // avoids the compiler catching self-move
+
+    EXPECT_FALSE(original.wasMoved());
+}
+
+TEST(MoveTrackerTests, SelfMoveAfterWasMoved)
+{
+    auto original = MoveMe();
+    [[maybe_unused]] auto fake = std::move(original);
+
+    [&](MoveMe& from) { original = std::move(from); }(original);  // avoids the compiler catching self-move
+
+    EXPECT_TRUE(original.wasMoved());
+}
