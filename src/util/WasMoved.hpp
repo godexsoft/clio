@@ -32,8 +32,8 @@ protected:
      * @brief The function to be used by clients in order to check whether the instance was moved from
      * @return true if moved from; false otherwise
      */
-    bool
-    wasMoved() const
+    [[nodiscard]] bool
+    wasMoved() const noexcept
     {
         return wasMoved_;
     }
