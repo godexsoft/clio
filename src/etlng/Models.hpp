@@ -174,4 +174,12 @@ struct LedgerData {
     }
 };
 
+/**
+ * @brief Represents a task for the extractors
+ */
+struct Task {
+    uint8_t priority;
+    uint32_t seq;
+};
+
 }  // namespace etlng::model
