@@ -178,7 +178,15 @@ struct LedgerData {
  * @brief Represents a task for the extractors
  */
 struct Task {
-    uint8_t priority;
+    /**
+     * @brief Represents the priority of the task
+     */
+    enum class Priority : uint8_t {
+        Lower = 0u,
+        Higher = 1u,
+    };
+
+    Priority priority;
     uint32_t seq;
 };
 

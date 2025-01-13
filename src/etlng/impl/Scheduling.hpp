@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -40,7 +41,7 @@ template <typename T>
 concept SomeScheduler = std::is_base_of_v<SchedulerInterface, std::decay_t<T>>;
 
 class ForwardScheduler : public SchedulerInterface {
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
+    std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers_;
 
     uint32_t startSeq_;
     std::optional<uint32_t> maxSeq_;
@@ -53,11 +54,11 @@ public:
     }
 
     ForwardScheduler(
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+        std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers,
         uint32_t startSeq,
         std::optional<uint32_t> maxSeq = std::nullopt
     )
-        : ledgers_(std::move(ledgers)), startSeq_(startSeq), maxSeq_(maxSeq), seq_(startSeq)
+        : ledgers_(ledgers), startSeq_(startSeq), maxSeq_(maxSeq), seq_(startSeq)
     {
     }
 
@@ -65,12 +66,12 @@ public:
     next() override
     {
         static constexpr auto kMAX = std::numeric_limits<uint32_t>::max();
-        uint32_t seq = seq_.load(std::memory_order_relaxed);
+        uint32_t currentSeq = seq_;
 
-        if (ledgers_->getMostRecent() >= seq) {
-            while (seq < maxSeq_.value_or(kMAX)) {
-                if (seq_.compare_exchange_weak(seq, seq + 1, std::memory_order_acq_rel)) {
-                    return {{.priority = 1u, .seq = seq}};
+        if (ledgers_.get().getMostRecent() >= currentSeq) {
+            while (currentSeq < maxSeq_.value_or(kMAX)) {
+                if (seq_.compare_exchange_weak(currentSeq, currentSeq + 1u, std::memory_order_acq_rel)) {
+                    return {{.priority = model::Task::Priority::Higher, .seq = currentSeq}};
                 }
             }
         }
@@ -99,10 +100,10 @@ public:
     [[nodiscard]] std::optional<model::Task>
     next() override
     {
-        auto seq = seq_.load(std::memory_order_relaxed);
-        while (seq > minSeq_) {
-            if (seq_.compare_exchange_weak(seq, seq - 1, std::memory_order_acq_rel)) {
-                return {{.priority = 0u, .seq = seq}};
+        uint32_t currentSeq = seq_;
+        while (currentSeq > minSeq_) {
+            if (seq_.compare_exchange_weak(currentSeq, currentSeq - 1u, std::memory_order_acq_rel)) {
+                return {{.priority = model::Task::Priority::Lower, .seq = currentSeq}};
             }
         }
 

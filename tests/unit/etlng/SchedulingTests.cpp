@@ -59,7 +59,7 @@ protected:
 
 TEST_F(ForwardSchedulerTests, ExhaustsSchedulerIfMostRecentLedgerIsNewerThanRequestedSequence)
 {
-    auto scheduler = impl::ForwardScheduler(networkValidatedLedgers_, 0u, 10u);
+    auto scheduler = impl::ForwardScheduler(*networkValidatedLedgers_, 0u, 10u);
     EXPECT_CALL(*networkValidatedLedgers_, getMostRecent()).Times(11).WillRepeatedly(testing::Return(11u));
 
     for (auto i = 0u; i < 10u; ++i) {
@@ -75,7 +75,7 @@ TEST_F(ForwardSchedulerTests, ExhaustsSchedulerIfMostRecentLedgerIsNewerThanRequ
 
 TEST_F(ForwardSchedulerTests, ReturnsNulloptIfMostRecentLedgerIsOlderThanRequestedSequence)
 {
-    auto scheduler = impl::ForwardScheduler(networkValidatedLedgers_, 0u, 10u);
+    auto scheduler = impl::ForwardScheduler(*networkValidatedLedgers_, 0u, 10u);
     EXPECT_CALL(*networkValidatedLedgers_, getMostRecent()).Times(10).WillRepeatedly(testing::Return(4u));
 
     for (auto i = 0u; i < 5u; ++i) {
@@ -124,7 +124,7 @@ TEST(SchedulerChainTests, ExhaustsOneGenerator)
     auto generate = [stop = 10u, seq = 0u]() mutable {
         std::optional<Task> task = std::nullopt;
         if (seq < stop)
-            task = Task{.priority = 0u, .seq = seq++};
+            task = Task{.priority = model::Task::Priority::Lower, .seq = seq++};
 
         return task;
     };
@@ -149,7 +149,7 @@ TEST(SchedulerChainTests, ExhaustsFirstSchedulerBeforeUsingSecond)
     auto generateFirst = [stop = 10u, seq = 0u]() mutable {
         std::optional<Task> task = std::nullopt;
         if (seq < stop)
-            task = Task{.priority = 0u, .seq = seq++};
+            task = Task{.priority = model::Task::Priority::Lower, .seq = seq++};
 
         return task;
     };
@@ -159,7 +159,7 @@ TEST(SchedulerChainTests, ExhaustsFirstSchedulerBeforeUsingSecond)
     auto generateSecond = [seq = 10u]() mutable {
         std::optional<Task> task = std::nullopt;
         if (seq > 0u)
-            task = Task{.priority = 0u, .seq = seq--};
+            task = Task{.priority = model::Task::Priority::Lower, .seq = seq--};
 
         return task;
     };
