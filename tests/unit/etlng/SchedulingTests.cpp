@@ -69,7 +69,7 @@ TEST_F(ForwardSchedulerTests, ExhaustsSchedulerIfMostRecentLedgerIsNewerThanRequ
         EXPECT_EQ(maybeTask->seq, i);
     }
 
-    auto empty = scheduler.next();
+    auto const empty = scheduler.next();
     EXPECT_FALSE(empty.has_value());
 }
 
@@ -79,7 +79,7 @@ TEST_F(ForwardSchedulerTests, ReturnsNulloptIfMostRecentLedgerIsOlderThanRequest
     EXPECT_CALL(*networkValidatedLedgers_, getMostRecent()).Times(10).WillRepeatedly(testing::Return(4u));
 
     for (auto i = 0u; i < 5u; ++i) {
-        auto maybeTask = scheduler.next();
+        auto const maybeTask = scheduler.next();
 
         EXPECT_TRUE(maybeTask.has_value());
         EXPECT_EQ(maybeTask->seq, i);
@@ -100,7 +100,7 @@ TEST(BackfillSchedulerTests, ExhaustsSchedulerUntilMinSeqReached)
         EXPECT_EQ(maybeTask->seq, i);
     }
 
-    auto empty = scheduler.next();
+    auto const empty = scheduler.next();
     EXPECT_FALSE(empty.has_value());
 }
 
@@ -109,13 +109,13 @@ TEST(BackfillSchedulerTests, ExhaustsSchedulerUntilDefaultMinValueReached)
     auto scheduler = impl::BackfillScheduler(10u);
 
     for (auto i = 10u; i > 0u; --i) {
-        auto maybeTask = scheduler.next();
+        auto const maybeTask = scheduler.next();
 
         EXPECT_TRUE(maybeTask.has_value());
         EXPECT_EQ(maybeTask->seq, i);
     }
 
-    auto empty = scheduler.next();
+    auto const empty = scheduler.next();
     EXPECT_FALSE(empty.has_value());
 }
 
@@ -134,13 +134,13 @@ TEST(SchedulerChainTests, ExhaustsOneGenerator)
     auto scheduler = impl::makeScheduler(FakeScheduler(upToTenGen.AsStdFunction()));
 
     for (auto i = 0u; i < 10u; ++i) {
-        auto maybeTask = scheduler->next();
+        auto const maybeTask = scheduler->next();
 
         EXPECT_TRUE(maybeTask.has_value());
         EXPECT_EQ(maybeTask->seq, i);
     }
 
-    auto empty = scheduler->next();
+    auto const empty = scheduler->next();
     EXPECT_FALSE(empty.has_value());
 }
 
@@ -170,18 +170,18 @@ TEST(SchedulerChainTests, ExhaustsFirstSchedulerBeforeUsingSecond)
         impl::makeScheduler(FakeScheduler(upToTenGen.AsStdFunction()), FakeScheduler(downToZeroGen.AsStdFunction()));
 
     for (auto i = 0u; i < 10u; ++i) {
-        auto maybeTask = scheduler->next();
+        auto const maybeTask = scheduler->next();
 
         EXPECT_TRUE(maybeTask.has_value());
         EXPECT_EQ(maybeTask->seq, i);
     }
     for (auto i = 10u; i > 0u; --i) {
-        auto maybeTask = scheduler->next();
+        auto const maybeTask = scheduler->next();
 
         EXPECT_TRUE(maybeTask.has_value());
         EXPECT_EQ(maybeTask->seq, i);
     }
 
-    auto empty = scheduler->next();
+    auto const empty = scheduler->next();
     EXPECT_FALSE(empty.has_value());
 }
