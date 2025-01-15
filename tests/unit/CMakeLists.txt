@@ -39,6 +39,7 @@ target_sources(
           etlng/GrpcSourceTests.cpp
           etlng/RegistryTests.cpp
           etlng/SchedulingTests.cpp
+          etlng/TaskManagerTests.cpp
           etlng/LoadingTests.cpp
           # Feed
           util/BytesConverterTests.cpp
