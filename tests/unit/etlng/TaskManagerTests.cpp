@@ -23,22 +23,34 @@
 #include "etlng/SchedulerInterface.hpp"
 #include "etlng/impl/Loading.hpp"
 #include "etlng/impl/TaskManager.hpp"
+#include "util/BinaryTestObject.hpp"
 #include "util/LoggerFixtures.hpp"
+#include "util/TestObject.hpp"
 #include "util/async/AnyExecutionContext.hpp"
+#include "util/async/AnyOperation.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
+#include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <semaphore>
+#include <thread>
+#include <vector>
 
 using namespace etlng::model;
 using namespace etlng::impl;
 
 namespace {
+
+constinit auto const kSEQ = 30;
+constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 struct MockScheduler : etlng::SchedulerInterface {
     MOCK_METHOD(std::optional<Task>, next, (), (override));
@@ -56,7 +68,7 @@ struct MockLoader : etlng::LoaderInterface {
 
 struct TaskManagerTests : NoLoggerFixture {
 protected:
-    util::async::CoroExecutionContext ctx_;
+    util::async::CoroExecutionContext ctx_{2};
     std::shared_ptr<MockScheduler> mockSchedulerPtr_ = std::make_shared<MockScheduler>();
     std::shared_ptr<MockExtractor> mockExtractorPtr_ = std::make_shared<MockExtractor>();
     std::shared_ptr<MockLoader> mockLoaderPtr_ = std::make_shared<MockLoader>();
@@ -64,8 +76,59 @@ protected:
     TaskManager taskManager_{ctx_, *mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_};
 };
 
+auto
+createTestData(uint32_t seq)
+{
+    auto const header = createLedgerHeader(kLEDGER_HASH, seq);
+    return LedgerData{
+        .transactions = {},
+        .objects = {util::createObject(), util::createObject(), util::createObject()},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = seq
+    };
+}
+
 }  // namespace
 
-TEST_F(TaskManagerTests, First)
+TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 {
+    static constexpr auto kTOTAL = 64uz;
+
+    std::atomic_uint32_t seq = kSEQ;
+    std::vector<uint32_t> loaded;
+    std::binary_semaphore done{0};
+
+    EXPECT_CALL(*mockSchedulerPtr_, next()).WillRepeatedly([&]() {
+        return Task{.priority = Task::Priority::Higher, .seq = seq++};
+    });
+
+    EXPECT_CALL(*mockExtractorPtr_, extractLedgerWithDiff(testing::_))
+        .WillRepeatedly([](uint32_t seq) -> std::optional<LedgerData> {
+            if (seq > kSEQ + kTOTAL - 1)
+                return std::nullopt;
+
+            return createTestData(seq);
+        });
+
+    EXPECT_CALL(*mockLoaderPtr_, load(testing::_)).Times(kTOTAL).WillRepeatedly([&](LedgerData data) {
+        loaded.push_back(data.seq);
+
+        if (loaded.size() == kTOTAL) {
+            done.release();
+        }
+    });
+
+    auto loop = ctx_.execute([&] { taskManager_.run(); });
+    done.acquire();
+
+    taskManager_.stop();
+    loop.wait();
+
+    EXPECT_EQ(loaded.size(), kTOTAL);
+    for (std::size_t i = 0; i < loaded.size(); ++i) {
+        EXPECT_EQ(loaded[i], kSEQ + i);
+    }
 }

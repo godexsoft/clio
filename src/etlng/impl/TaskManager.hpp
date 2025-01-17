@@ -23,7 +23,7 @@
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/SchedulerInterface.hpp"
-// #include "etlng/impl/Monitor.hpp"
+#include "etlng/impl/Monitor.hpp"
 #include "util/StrandedPriorityQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
@@ -32,11 +32,7 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
-#include <chrono>
 #include <functional>
-#include <ranges>
-#include <thread>
-#include <utility>
 #include <vector>
 
 namespace etlng::impl {
@@ -46,13 +42,15 @@ class TaskManager {
     std::reference_wrapper<SchedulerInterface> schedulers_;
     std::reference_wrapper<ExtractorInterface> extractor_;
     std::reference_wrapper<LoaderInterface> loader_;
-    // std::reference_wrapper<Monitor> monitor_;
+
+    std::vector<util::async::AnyOperation<void>> extractors_;
+    std::vector<util::async::AnyOperation<void>> loaders_;
 
     util::Logger log_{"ETL"};
 
     struct ReverseOrderComparator {
-        bool
-        operator()(model::LedgerData const& lhs, model::LedgerData const& rhs) const
+        [[nodiscard]] bool
+        operator()(model::LedgerData const& lhs, model::LedgerData const& rhs) const noexcept
         {
             return lhs.seq > rhs.seq;
         }
@@ -67,88 +65,25 @@ public:
         std::reference_wrapper<SchedulerInterface> scheduler,
         std::reference_wrapper<ExtractorInterface> extractor,
         std::reference_wrapper<LoaderInterface> loader
-        // std::shared_ptr<Monitor> monitor
-    )
-        : ctx_(std::move(ctx)), schedulers_(scheduler), extractor_(extractor), loader_(loader)
-    // , monitor_(std::move(monitor))
-    {
-    }
+    );
+
+    ~TaskManager();
 
     void
-    run()
-    {
-        constexpr static auto kEXTRACTION_WORKERS = 5;
-        constexpr static auto kLOADING_WORKERS = 1;  // loading should always be serial due to successors etc.
+    run();
 
-        std::vector<util::async::AnyOperation<void>> extractors;
-        std::vector<util::async::AnyOperation<void>> loaders;
-
-        auto schedulingStrand = ctx_.makeStrand();
-        PriorityQueue queue(ctx_.makeStrand());
-
-        LOG(log_.debug()) << "Starting task manager...\n";
-
-        // auto monitor = spawnMonitor();
-
-        extractors.reserve(kEXTRACTION_WORKERS);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, kEXTRACTION_WORKERS))
-            extractors.push_back(spawnExtractor(schedulingStrand, queue));
-
-        loaders.reserve(kLOADING_WORKERS);
-        for ([[maybe_unused]] auto _ : std::views::iota(0, kLOADING_WORKERS))
-            loaders.push_back(spawnLoader(queue));
-
-        // monitor.wait();
-
-        for (auto& w : extractors)
-            w.wait();
-        for (auto& w : loaders)
-            w.wait();
-
-        LOG(log_.debug()) << "All finished in task manager..\n";
-    }
+    void
+    stop();
 
 private:
-    util::async::AnyOperation<void>
-    spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue)
-    {
-        return strand.execute([this, &queue](auto stopRequested) {
-            while (not stopRequested) {
-                if (auto task = schedulers_.get().next(); task.has_value()) {
-                    if (auto maybeBatch = extractor_.get().extractLedgerWithDiff(task->seq); maybeBatch.has_value()) {
-                        LOG(log_.debug()) << "Adding data after extracting diff";
-                        queue.enqueue(std::move(*maybeBatch));
-                    } else {
-                        break;  // TODO: handle server shutdown or other node took over ETL
-                    }
-                } else {
-                    std::this_thread::sleep_for(std::chrono::milliseconds{100});  // TODO: use timer instead?
-                }
-            }
-        });
-    }
+    void
+    wait();
 
-    util::async::AnyOperation<void>
-    spawnLoader(PriorityQueue& queue)
-    {
-        return ctx_.execute([this, &queue](auto stopRequested) {
-            while (not stopRequested) {
-                // TODO: currently the data does not tell the loader whether it's out of order or not
-                if (auto data = queue.dequeue(); data.has_value())
-                    loader_.get().load(*data);
-            }
-        });
-    }
+    [[nodiscard]] util::async::AnyOperation<void>
+    spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue);
 
-    // util::async::AnyOperation<void>
-    // spawnMonitor() const
-    // {
-    //     return ctx_.execute([this](auto stopRequested) {
-    //         while (not stopRequested) {
-    //             monitor_->publishNextWhenAvailable();
-    //         }
-    //     });
-    // }
+    [[nodiscard]] util::async::AnyOperation<void>
+    spawnLoader(PriorityQueue& queue);
 };
 
 }  // namespace etlng::impl
