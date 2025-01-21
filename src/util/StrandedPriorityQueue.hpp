@@ -31,6 +31,7 @@ namespace util {
 
 /**
  * @brief A wrapper for std::priority_queue that serialises operations using a strand
+ * @note This may be a candidate for future improvements if performance proves to be poor (e.g. use a lock free queue)
  */
 template <typename T, typename Compare = std::less<T>>
 class StrandedPriorityQueue {
@@ -79,6 +80,18 @@ public:
             })
             .get()
             .value_or(std::nullopt);
+    }
+
+    /**
+     * @brief Check if the queue is empty
+     * @note This function blocks until the queue is checked
+     *
+     * @return true if the queue is empty; false otherwise
+     */
+    [[nodiscard]] bool
+    empty()
+    {
+        return strand_.execute([this] { return queue_.empty(); }).get().value();
     }
 };
 
