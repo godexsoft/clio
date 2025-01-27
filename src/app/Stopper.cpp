@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2024, the clio developers.
+    Copyright (c) 2025, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -17,25 +17,36 @@
 */
 //==============================================================================
 
-#pragma once
+#include "app/Stopper.hpp"
 
-#include "migration/MigrationManagerInterface.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
+#include <boost/asio/spawn.hpp>
 
-#include <expected>
-#include <memory>
-#include <string>
+#include <functional>
+#include <thread>
+#include <utility>
 
-namespace migration::impl {
+namespace app {
 
-/**
- * @brief The factory to create a MigrationManagerInferface
- *
- * @param config The configuration of the migration application, it contains the database connection configuration and
- * other migration specific configurations
- * @return A shared pointer to the MigrationManagerInterface if the creation was successful, otherwise an error message
- */
-std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
-makeMigrationManager(util::config::ClioConfigDefinition const& config);
+Stopper::~Stopper()
+{
+    if (worker_.joinable())
+        worker_.join();
+}
 
-}  // namespace migration::impl
+void
+Stopper::setOnStop(std::function<void(boost::asio::yield_context)> cb)
+{
+    boost::asio::spawn(ctx_, std::move(cb));
+}
+
+void
+Stopper::stop()
+{
+    // Do nothing if worker_ is already running
+    if (worker_.joinable())
+        return;
+
+    worker_ = std::thread{[this]() { ctx_.run(); }};
+}
+
+}  // namespace app
