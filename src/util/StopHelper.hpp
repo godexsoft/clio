@@ -19,23 +19,36 @@
 
 #pragma once
 
-#include "migration/MigrationManagerInterface.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
+#include <boost/asio/spawn.hpp>
+#include <boost/signals2/signal.hpp>
+#include <boost/signals2/variadic_signal.hpp>
 
-#include <expected>
+#include <atomic>
 #include <memory>
-#include <string>
 
-namespace migration::impl {
+namespace util {
 
 /**
- * @brief The factory to create a MigrationManagerInferface
- *
- * @param config The configuration of the migration application, it contains the database connection configuration and
- * other migration specific configurations
- * @return A shared pointer to the MigrationManagerInterface if the creation was successful, otherwise an error message
+ * @brief Helper class to stop a class asynchronously.
  */
-std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
-makeMigrationManager(util::config::ClioConfigDefinition const& config);
+class StopHelper {
+    boost::signals2::signal<void()> onStopReady_;
+    std::unique_ptr<std::atomic_bool> stopped_ = std::make_unique<std::atomic_bool>(false);
 
-}  // namespace migration::impl
+public:
+    /**
+     * @brief Notify that the class is ready to stop.
+     */
+    void
+    readyToStop();
+
+    /**
+     * @brief Wait for the class to stop.
+     *
+     * @param yield The coroutine context
+     */
+    void
+    asyncWaitForStop(boost::asio::yield_context yield);
+};
+
+}  // namespace util

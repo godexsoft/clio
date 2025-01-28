@@ -17,25 +17,30 @@
 */
 //==============================================================================
 
-#pragma once
+#include "util/StopHelper.hpp"
 
-#include "migration/MigrationManagerInterface.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
+#include <boost/asio/spawn.hpp>
+#include <boost/asio/steady_timer.hpp>
 
-#include <expected>
-#include <memory>
-#include <string>
+#include <chrono>
 
-namespace migration::impl {
+namespace util {
 
-/**
- * @brief The factory to create a MigrationManagerInferface
- *
- * @param config The configuration of the migration application, it contains the database connection configuration and
- * other migration specific configurations
- * @return A shared pointer to the MigrationManagerInterface if the creation was successful, otherwise an error message
- */
-std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
-makeMigrationManager(util::config::ClioConfigDefinition const& config);
+void
+StopHelper::readyToStop()
+{
+    onStopReady_();
+    *stopped_ = true;
+}
 
-}  // namespace migration::impl
+void
+StopHelper::asyncWaitForStop(boost::asio::yield_context yield)
+{
+    boost::asio::steady_timer timer{yield.get_executor(), std::chrono::steady_clock::duration::max()};
+    onStopReady_.connect([&timer]() { timer.cancel(); });
+    boost::system::error_code error;
+    if (!*stopped_)
+        timer.async_wait(yield[error]);
+}
+
+}  // namespace util
