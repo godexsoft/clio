@@ -31,6 +31,7 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
+#include <cstddef>
 #include <functional>
 #include <vector>
 
@@ -69,7 +70,7 @@ public:
     ~TaskManager();
 
     void
-    run();
+    run(size_t extractionWorkers, size_t loadingWorkers);
 
     void
     stop();

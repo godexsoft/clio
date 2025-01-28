@@ -25,7 +25,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstdint>
+#include <thread>
+#include <unordered_set>
 #include <vector>
 
 using namespace util;
@@ -46,8 +50,9 @@ TEST(StrandedPriorityQueueTests, DefaultPriority)
     util::async::CoroExecutionContext ctx;
     StrandedPriorityQueue<TestData> queue{ctx.makeStrand()};
 
-    for (auto i = 0u; i < 100u; ++i)
-        queue.enqueue(TestData{.seq = i});
+    for (auto i = 0u; i < 100u; ++i) {
+        [[maybe_unused]] auto unused = queue.enqueue(TestData{.seq = i});
+    }
 
     EXPECT_FALSE(queue.empty());
 
@@ -72,8 +77,9 @@ TEST(StrandedPriorityQueueTests, CustomPriority)
     util::async::CoroExecutionContext ctx;
     StrandedPriorityQueue<TestData, Comp> queue{ctx.makeStrand()};
 
-    for (auto i = 0u; i < 100u; ++i)
-        queue.enqueue(TestData{.seq = i});
+    for (auto i = 0u; i < 100u; ++i) {
+        [[maybe_unused]] auto unused = queue.enqueue(TestData{.seq = i});
+    }
 
     EXPECT_FALSE(queue.empty());
 
@@ -85,7 +91,7 @@ TEST(StrandedPriorityQueueTests, CustomPriority)
     EXPECT_TRUE(queue.empty());
 }
 
-TEST(StrandedPriorityQueueTests, MultipleThreads)
+TEST(StrandedPriorityQueueTests, MultipleThreadsUnlimitedQueue)
 {
     async::CoroExecutionContext realCtx{6};
     async::AnyExecutionContext ctx{realCtx};
@@ -95,13 +101,17 @@ TEST(StrandedPriorityQueueTests, MultipleThreads)
     static constexpr auto kTOTAL_THREADS = 5u;
     static constexpr auto kTOTAL_ITEMS_PER_THREAD = 100u;
 
+    std::atomic_size_t totalEnqueued = 0uz;
     std::vector<async::AnyOperation<void>> tasks;
     tasks.reserve(kTOTAL_THREADS);
+
     for (auto batchIdx = 0u; batchIdx < kTOTAL_THREADS; ++batchIdx) {
         // enqueue batches tasks running on multiple threads
-        tasks.push_back(ctx.execute([&queue, batchIdx] {
-            for (auto i = 0u; i < kTOTAL_ITEMS_PER_THREAD; ++i)
-                queue.enqueue(TestData{.seq = (batchIdx * kTOTAL_ITEMS_PER_THREAD) + i});
+        tasks.push_back(ctx.execute([&queue, batchIdx, &totalEnqueued] {
+            for (auto i = 0u; i < kTOTAL_ITEMS_PER_THREAD; ++i) {
+                if (queue.enqueue(TestData{.seq = (batchIdx * kTOTAL_ITEMS_PER_THREAD) + i}))
+                    ++totalEnqueued;
+            }
         }));
     }
 
@@ -114,6 +124,65 @@ TEST(StrandedPriorityQueueTests, MultipleThreads)
     }
 
     EXPECT_TRUE(queue.empty());
+    EXPECT_EQ(totalEnqueued, kTOTAL_ITEMS_PER_THREAD * kTOTAL_THREADS);
+}
+
+TEST(StrandedPriorityQueueTests, MultipleThreadsLimitedQueue)
+{
+    static constexpr auto kQUEUE_SIZE_LIMIT = 32uz;
+    static constexpr auto kTOTAL_THREADS = 5u;
+    static constexpr auto kTOTAL_ITEMS_PER_THREAD = 100u;
+
+    async::CoroExecutionContext realCtx{8};
+    async::AnyExecutionContext ctx{realCtx};
+    StrandedPriorityQueue<TestData> queue{ctx.makeStrand(), kQUEUE_SIZE_LIMIT};
+
+    EXPECT_TRUE(queue.empty());
+
+    std::atomic_size_t totalEnqueued = 0uz;
+    std::atomic_size_t totalSleepCycles = 0uz;
+    std::vector<async::AnyOperation<void>> tasks;
+    tasks.reserve(kTOTAL_THREADS);
+
+    std::unordered_set<uint32_t> expectedSequences;
+
+    for (auto batchIdx = 0u; batchIdx < kTOTAL_THREADS; ++batchIdx) {
+        for (auto i = 0u; i < kTOTAL_ITEMS_PER_THREAD; ++i) {
+            expectedSequences.insert((batchIdx * kTOTAL_ITEMS_PER_THREAD) + i);
+        }
+
+        // enqueue batches tasks running on multiple threads
+        tasks.push_back(ctx.execute([&queue, batchIdx, &totalEnqueued, &totalSleepCycles] {
+            for (auto i = 0u; i < kTOTAL_ITEMS_PER_THREAD; ++i) {
+                auto data = TestData{.seq = (batchIdx * kTOTAL_ITEMS_PER_THREAD) + i};
+                while (not queue.enqueue(data)) {
+                    std::this_thread::sleep_for(std::chrono::nanoseconds{1});
+                    ++totalSleepCycles;
+                }
+                ++totalEnqueued;
+            }
+        }));
+    }
+
+    EXPECT_FALSE(expectedSequences.empty());
+
+    auto loader = ctx.execute([&queue, &expectedSequences] {
+        while (not expectedSequences.empty()) {
+            while (auto maybeValue = queue.dequeue()) {
+                EXPECT_TRUE(expectedSequences.contains(maybeValue->seq));
+                expectedSequences.erase(maybeValue->seq);
+            }
+        }
+    });
+
+    for (auto& task : tasks)
+        task.wait();
+    loader.wait();
+
+    EXPECT_TRUE(queue.empty());
+    EXPECT_TRUE(expectedSequences.empty());
+    EXPECT_EQ(totalEnqueued, kTOTAL_ITEMS_PER_THREAD * kTOTAL_THREADS);
+    EXPECT_GE(totalSleepCycles, 1uz);
 }
 
 TEST(StrandedPriorityQueueTests, ReturnsNulloptIfQueueEmpty)

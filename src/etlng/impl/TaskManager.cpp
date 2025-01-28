@@ -31,6 +31,7 @@
 #include <xrpl/protocol/TxFormats.h>
 
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <ranges>
 #include <thread>
@@ -55,22 +56,21 @@ TaskManager::~TaskManager()
 }
 
 void
-TaskManager::run()
+TaskManager::run(size_t extractionWorkers, size_t loadingWorkers)
 {
-    static constexpr auto kEXTRACTION_WORKERS = 5;
-    static constexpr auto kLOADING_WORKERS = 1;  // loading should always be serial due to successors etc.
+    static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
 
     auto schedulingStrand = ctx_.makeStrand();
-    PriorityQueue queue(ctx_.makeStrand());
+    PriorityQueue queue(ctx_.makeStrand(), kQUEUE_SIZE_LIMIT);
 
     LOG(log_.debug()) << "Starting task manager...\n";
 
-    extractors_.reserve(kEXTRACTION_WORKERS);
-    for ([[maybe_unused]] auto _ : std::views::iota(0, kEXTRACTION_WORKERS))
+    extractors_.reserve(extractionWorkers);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, extractionWorkers))
         extractors_.push_back(spawnExtractor(schedulingStrand, queue));
 
-    loaders_.reserve(kLOADING_WORKERS);
-    for ([[maybe_unused]] auto _ : std::views::iota(0, kLOADING_WORKERS))
+    loaders_.reserve(loadingWorkers);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, loadingWorkers))
         loaders_.push_back(spawnLoader(queue));
 
     wait();
@@ -80,20 +80,28 @@ TaskManager::run()
 util::async::AnyOperation<void>
 TaskManager::spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue)
 {
+    // TODO: these values may be extracted to config later and/or need to be fine-tuned on a realistic system
     static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{100u};
+    static constexpr auto kDELAY_BETWEEN_ENQUEUE_ATTEMPTS = std::chrono::milliseconds{1u};
 
     return strand.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
             if (auto task = schedulers_.get().next(); task.has_value()) {
                 if (auto maybeBatch = extractor_.get().extractLedgerWithDiff(task->seq); maybeBatch.has_value()) {
                     LOG(log_.debug()) << "Adding data after extracting diff";
-                    queue.enqueue(std::move(*maybeBatch));
+                    while (not queue.enqueue(*maybeBatch)) {
+                        // TODO (https://github.com/XRPLF/clio/issues/1852)
+                        std::this_thread::sleep_for(kDELAY_BETWEEN_ENQUEUE_ATTEMPTS);
+
+                        if (stopRequested)
+                            break;
+                    }
                 } else {
                     // TODO: how do we signal to the loaders that it's time to shutdown? some special task?
                     break;  // TODO: handle server shutdown or other node took over ETL
                 }
             } else {
-                // TODO: ideally should be some sort of a timer instead
+                // TODO (https://github.com/XRPLF/clio/issues/1852)
                 std::this_thread::sleep_for(kDELAY_BETWEEN_ATTEMPTS);
             }
         }
@@ -105,7 +113,7 @@ TaskManager::spawnLoader(PriorityQueue& queue)
 {
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
-            // TODO: currently the data does not tell the loader whether it's out of order or not
+            // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
             if (auto data = queue.dequeue(); data.has_value())
                 loader_.get().load(*data);
         }

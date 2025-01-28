@@ -27,7 +27,6 @@
 #include "util/LoggerFixtures.hpp"
 #include "util/TestObject.hpp"
 #include "util/async/AnyExecutionContext.hpp"
-#include "util/async/AnyOperation.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 
 #include <gmock/gmock.h>
@@ -35,13 +34,11 @@
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <atomic>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <semaphore>
-#include <thread>
 #include <vector>
 
 using namespace etlng::model;
@@ -67,11 +64,15 @@ struct MockLoader : etlng::LoaderInterface {
 };
 
 struct TaskManagerTests : NoLoggerFixture {
+    using MockSchedulerType = testing::NiceMock<MockScheduler>;
+    using MockExtractorType = testing::NiceMock<MockExtractor>;
+    using MockLoaderType = testing::NiceMock<MockLoader>;
+
 protected:
     util::async::CoroExecutionContext ctx_{2};
-    std::shared_ptr<MockScheduler> mockSchedulerPtr_ = std::make_shared<MockScheduler>();
-    std::shared_ptr<MockExtractor> mockExtractorPtr_ = std::make_shared<MockExtractor>();
-    std::shared_ptr<MockLoader> mockLoaderPtr_ = std::make_shared<MockLoader>();
+    std::shared_ptr<MockSchedulerType> mockSchedulerPtr_ = std::make_shared<MockSchedulerType>();
+    std::shared_ptr<MockExtractorType> mockExtractorPtr_ = std::make_shared<MockExtractorType>();
+    std::shared_ptr<MockLoaderType> mockLoaderPtr_ = std::make_shared<MockLoaderType>();
 
     TaskManager taskManager_{ctx_, *mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_};
 };
@@ -96,6 +97,8 @@ createTestData(uint32_t seq)
 TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 {
     static constexpr auto kTOTAL = 64uz;
+    static constexpr auto kEXTRACTORS = 5uz;
+    static constexpr auto kLOADERS = 1uz;
 
     std::atomic_uint32_t seq = kSEQ;
     std::vector<uint32_t> loaded;
@@ -121,7 +124,7 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
         }
     });
 
-    auto loop = ctx_.execute([&] { taskManager_.run(); });
+    auto loop = ctx_.execute([&] { taskManager_.run(kEXTRACTORS, kLOADERS); });
     done.acquire();
 
     taskManager_.stop();
