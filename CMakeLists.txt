@@ -66,14 +66,14 @@ endif ()
 # Enable selected sanitizer if enabled via `san`
 if (san)
   target_compile_options(
-    clio PUBLIC # Sanitizers recommend minimum of -O1 for reasonable performance
-                $<$<CONFIG:Debug>:-O1> ${SAN_FLAG} -fno-omit-frame-pointer
+    clio_options INTERFACE # Sanitizers recommend minimum of -O1 for reasonable performance
+                           $<$<CONFIG:Debug>:-O1> ${SAN_FLAG} -fno-omit-frame-pointer
   )
   target_compile_definitions(
-    clio PUBLIC $<$<STREQUAL:${san},address>:SANITIZER=ASAN> $<$<STREQUAL:${san},thread>:SANITIZER=TSAN>
-                $<$<STREQUAL:${san},memory>:SANITIZER=MSAN> $<$<STREQUAL:${san},undefined>:SANITIZER=UBSAN>
+    clio_options INTERFACE $<$<STREQUAL:${san},address>:SANITIZER=ASAN> $<$<STREQUAL:${san},thread>:SANITIZER=TSAN>
+                           $<$<STREQUAL:${san},memory>:SANITIZER=MSAN> $<$<STREQUAL:${san},undefined>:SANITIZER=UBSAN>
   )
-  target_link_libraries(clio INTERFACE ${SAN_FLAG} ${SAN_LIB})
+  target_link_libraries(clio_options INTERFACE ${SAN_FLAG} ${SAN_LIB})
 endif ()
 
 # Generate `docs` target for doxygen documentation if enabled Note: use `make docs` to generate the documentation

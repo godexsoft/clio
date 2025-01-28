@@ -23,6 +23,8 @@ set(COMPILER_FLAGS
     -Wno-null-dereference
     -Wno-maybe-uninitialized
     -Wno-unknown-warning-option # and this to work with clang
+    -Wno-error=tsan # tsan warns about atomic_thread_fence in boost
+    -Wno-tsan
     # TODO: Address these and others in https://github.com/XRPLF/clio/issues/1273
 )
 
