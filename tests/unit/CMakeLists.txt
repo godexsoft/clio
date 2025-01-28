@@ -5,6 +5,7 @@ target_sources(
   PRIVATE # Common
           ConfigTests.cpp
           app/CliArgsTests.cpp
+          app/StopperTests.cpp
           app/VerifyConfigTests.cpp
           app/WebHandlersTests.cpp
           data/AmendmentCenterTests.cpp
@@ -38,6 +39,7 @@ target_sources(
           etlng/ExtractionTests.cpp
           etlng/GrpcSourceTests.cpp
           etlng/RegistryTests.cpp
+          etlng/SchedulingTests.cpp
           etlng/LoadingTests.cpp
           # Feed
           util/BytesConverterTests.cpp
@@ -59,6 +61,8 @@ target_sources(
           migration/cassandra/SpecTests.cpp
           migration/MigratorRegisterTests.cpp
           migration/MigratorStatusTests.cpp
+          migration/MigrationInspectorFactoryTests.cpp
+          migration/MigrationInspectorBaseTests.cpp
           migration/MigrationManagerBaseTests.cpp
           migration/MigrationManagerFactoryTests.cpp
           migration/SpecTests.cpp
@@ -148,6 +152,7 @@ target_sources(
           util/RepeatTests.cpp
           util/ResponseExpirationCacheTests.cpp
           util/SignalsHandlerTests.cpp
+          util/StopHelperTests.cpp
           util/TimeUtilsTests.cpp
           util/TxUtilTests.cpp
           util/WithTimeout.cpp
