@@ -1,0 +1,109 @@
+name: Run tests with sanitizers
+on:
+  schedule:
+    - cron:  '0 5 * * 1-5'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/sanitizers.yml'
+
+jobs:
+  build:
+    name: Build clio tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: heavy
+            sanitizer: tsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: asan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: ubsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+    runs-on: [self-hosted, "${{ matrix.os }}"]
+    container: ${{ matrix.container }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+
+      - name: Prepare runner
+        uses: ./.github/actions/prepare_runner
+        with:
+            disable_ccache: true
+
+      - name: Setup conan
+        uses: ./.github/actions/setup_conan
+        id: conan
+        with:
+          conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
+
+      - name: Run conan and cmake
+        uses: ./.github/actions/generate
+        with:
+          conan_profile: ${{ steps.conan.outputs.conan_profile }}
+          conan_cache_hit: false
+          build_type: Release
+          static: false
+          code_coverage: false
+
+      - name: Build clio_tests
+        uses: ./.github/actions/build_clio
+        with:
+          target: clio_tests
+
+      - name: Upload clio_tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: clio_tests_${{ matrix.compiler }}_${{ matrix.sanitizer }}
+          path: build/clio_tests
+
+  # consider combining this with the previous matrix instead
+  run_tests:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: heavy
+            sanitizer: tsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: asan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: ubsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+    runs-on: [self-hosted, "${{ matrix.os }}"]
+    container: ${{ matrix.container }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: clio_tests_${{ matrix.compiler }}_${{ matrix.sanitizer }}
+
+      - name: Run clio_tests [${{ matrix.compiler }} / ${{ matrix.sanitizer }}]
+        shell: bash
+        run: |
+          chmod +x ./clio_tests
+          ./.github/scripts/execute-tests-under-sanitizer ./clio_tests

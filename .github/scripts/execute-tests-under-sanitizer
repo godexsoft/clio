@@ -33,13 +33,13 @@ mkdir -p "$OUTPUT_DIR"
 
 for TEST in $TESTS; do
   OUTPUT_FILE="$OUTPUT_DIR/${TEST//\//_}"
-  export TSAN_OPTIONS="log_path=\"$OUTPUT_FILE.tsan\" die_after_fork=0 verbosity=1"
-  export ASAN_OPTIONS="log_path=\"$OUTPUT_FILE.asan\" verbosity=1"
-  export UBSAN_OPTIONS="log_path=\"$OUTPUT_FILE.ubsan\" verbosity=1" # somehow on mac this gets used by TSAN :O
+  export TSAN_OPTIONS="log_path=\"$OUTPUT_FILE\" die_after_fork=0"
+  export ASAN_OPTIONS="log_path=\"$OUTPUT_FILE\""
+  export UBSAN_OPTIONS="log_path=\"$OUTPUT_FILE\""
   export MallocNanoZone='0' # for MacOSX
   $TEST_BINARY --gtest_filter="$TEST" > /dev/null 2>&1
 
   if [ $? -ne 0 ]; then
-    echo "Test $TEST failed a sanitizer check."
+    echo "'$TEST' failed a sanitizer check."
   fi
 done
