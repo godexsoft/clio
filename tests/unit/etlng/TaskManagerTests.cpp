@@ -124,7 +124,7 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
         }
     });
 
-    auto loop = ctx_.execute([&] { taskManager_.run(kEXTRACTORS, kLOADERS); });
+    auto loop = ctx_.execute([&] { taskManager_.run({.numExtractors = kEXTRACTORS, .numLoaders = kLOADERS}); });
     done.acquire();
 
     taskManager_.stop();

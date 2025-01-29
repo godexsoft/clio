@@ -57,6 +57,11 @@ class TaskManager {
     };
 
 public:
+    struct Settings {
+        size_t numExtractors; /**< number of extraction tasks */
+        size_t numLoaders;    /**< number of loading tasks */
+    };
+
     // reverse order loading is needed (i.e. start with oldest seq in forward fill buffer)
     using PriorityQueue = util::StrandedPriorityQueue<model::LedgerData, ReverseOrderComparator>;
 
@@ -70,7 +75,7 @@ public:
     ~TaskManager();
 
     void
-    run(size_t extractionWorkers, size_t loadingWorkers);
+    run(Settings settings);
 
     void
     stop();

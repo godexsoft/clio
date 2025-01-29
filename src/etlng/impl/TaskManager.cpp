@@ -56,7 +56,7 @@ TaskManager::~TaskManager()
 }
 
 void
-TaskManager::run(size_t extractionWorkers, size_t loadingWorkers)
+TaskManager::run(Settings settings)
 {
     static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
 
@@ -65,12 +65,12 @@ TaskManager::run(size_t extractionWorkers, size_t loadingWorkers)
 
     LOG(log_.debug()) << "Starting task manager...\n";
 
-    extractors_.reserve(extractionWorkers);
-    for ([[maybe_unused]] auto _ : std::views::iota(0uz, extractionWorkers))
+    extractors_.reserve(settings.numExtractors);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numExtractors))
         extractors_.push_back(spawnExtractor(schedulingStrand, queue));
 
-    loaders_.reserve(loadingWorkers);
-    for ([[maybe_unused]] auto _ : std::views::iota(0uz, loadingWorkers))
+    loaders_.reserve(settings.numLoaders);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numLoaders))
         loaders_.push_back(spawnLoader(queue));
 
     wait();
