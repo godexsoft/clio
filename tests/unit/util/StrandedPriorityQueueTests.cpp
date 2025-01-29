@@ -51,7 +51,7 @@ TEST(StrandedPriorityQueueTests, DefaultPriority)
     StrandedPriorityQueue<TestData> queue{ctx.makeStrand()};
 
     for (auto i = 0u; i < 100u; ++i) {
-        [[maybe_unused]] auto unused = queue.enqueue(TestData{.seq = i});
+        EXPECT_TRUE(queue.enqueue(TestData{.seq = i}));
     }
 
     EXPECT_FALSE(queue.empty());
@@ -78,7 +78,7 @@ TEST(StrandedPriorityQueueTests, CustomPriority)
     StrandedPriorityQueue<TestData, Comp> queue{ctx.makeStrand()};
 
     for (auto i = 0u; i < 100u; ++i) {
-        [[maybe_unused]] auto unused = queue.enqueue(TestData{.seq = i});
+        EXPECT_TRUE(queue.enqueue(TestData{.seq = i}));
     }
 
     EXPECT_FALSE(queue.empty());
