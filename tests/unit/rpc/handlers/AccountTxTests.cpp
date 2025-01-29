@@ -766,7 +766,6 @@ TEST_F(RPCAccountTxHandlerTest, LimitAndMarker)
 {
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{.txns = transactions, .cursor = TransactionsCursor{12, 34}};
-    ON_CALL(*backend_, fetchAccountTransactions).WillByDefault(Return(transCursor));
     EXPECT_CALL(
         *backend_,
         fetchAccountTransactions(
