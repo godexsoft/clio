@@ -57,9 +57,9 @@ class AccountTxHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static auto constexpr kLIMIT_MIN = 1;
-    static auto constexpr kLIMIT_MAX = 1000;
-    static auto constexpr kLIMIT_DEFAULT = 200;
+    static constexpr auto kLIMIT_MIN = 1;
+    static constexpr auto kLIMIT_MAX = 1000;
+    static constexpr auto kLIMIT_DEFAULT = 200;
 
     /**
      * @brief A struct to hold the marker data
