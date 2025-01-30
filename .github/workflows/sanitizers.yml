@@ -1,7 +1,5 @@
 name: Run tests with sanitizers
 on:
-  schedule:
-    - cron:  '0 5 * * 1-5'
   workflow_dispatch:
   pull_request:
     paths:
