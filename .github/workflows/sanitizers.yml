@@ -54,6 +54,7 @@ jobs:
           build_type: Release
           static: false
           code_coverage: false
+          sanitizer: ${{ matrix.sanitizer }}
 
       - name: Build clio_tests
         uses: ./.github/actions/build_clio
