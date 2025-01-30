@@ -27,7 +27,7 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-    runs-on: [self-hosted, "${{ matrix.os }}"]
+    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
 
     steps:
@@ -88,7 +88,7 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-    runs-on: [self-hosted, "${{ matrix.os }}"]
+    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
 
     steps:
