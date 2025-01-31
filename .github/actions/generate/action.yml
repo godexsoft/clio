@@ -62,4 +62,4 @@ runs:
               '' }}
       run: |
         cd build
-        cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} ${{ env.SANITIZER_OPTION }} .. -G Ninja
+        cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} ${SANITIZER_OPTION} .. -G Ninja
