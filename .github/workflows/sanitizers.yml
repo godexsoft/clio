@@ -106,3 +106,20 @@ jobs:
         run: |
           chmod +x ./clio_tests
           ./.github/scripts/execute-tests-under-sanitizer ./clio_tests
+
+      - name: Check for sanitizer report
+        shell: bash
+        id: check_report
+        run: |
+          if ls .sanitizer-report/* 1> /dev/null 2>&1; then
+            echo "found_report=true" >> $GITHUB_OUTPUT
+          else
+            echo "found_report=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload report if needed
+        if: steps.check_report.outputs.found_report == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.compiler }}_${{ matrix.sanitizer }}_report
+          path: .sanitizer-report/
