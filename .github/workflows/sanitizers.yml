@@ -17,16 +17,16 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: asan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: ubsan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
+          # - os: heavy
+          #   sanitizer: asan
+          #   compiler: gcc
+          #   container:
+          #     image: rippleci/clio_ci:latest
+          # - os: heavy
+          #   sanitizer: ubsan
+          #   compiler: gcc
+          #   container:
+          #     image: rippleci/clio_ci:latest
     runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
 
@@ -79,18 +79,21 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: asan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: ubsan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
+          # - os: heavy
+          #   sanitizer: asan
+          #   compiler: gcc
+          #   container:
+          #     image: rippleci/clio_ci:latest
+          # - os: heavy
+          #   sanitizer: ubsan
+          #   compiler: gcc
+          #   container:
+          #     image: rippleci/clio_ci:latest
     runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
+    permissions:
+      contents: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -117,9 +120,23 @@ jobs:
             echo "found_report=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Upload report if needed
+      - name: Upload report
         if: steps.check_report.outputs.found_report == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.compiler }}_${{ matrix.sanitizer }}_report
           path: .sanitizer-report/
+
+      - name: Create an issue
+        if: steps.check_report.outputs.found_report == 'true'
+        uses: ./.github/actions/create_issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          labels: 'bug'
+          title: '[${{ matrix.sanitizer }}/${{ matrix.compiler }}] reported issues'
+          body: >
+            Clio tests failed one or more sanitizer checks when built with ${{ matrix.compiler }}`.
+
+            Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/
+            Reports are available as artifacts.
