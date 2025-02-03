@@ -25,20 +25,19 @@ jobs:
     container: 
       image: rippleci/clio_ci:latest
 
-    steps:
-      - uses: ./.github/workflows/reusable_build.yml
-        with:
-          disable_ccache: true
-          conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
-          conan_cache: false
-          build_type: Release
-          code_coverage: false
-          static: false
-          unit_tests: true
-          integration_tests: false
-          clio_server: false
-          target: clio_tests
-          sanitizer: ${{ matrix.sanitizer }}
+    uses: ./.github/workflows/reusable_build.yml
+      with:
+        disable_ccache: true
+        conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
+        conan_cache: false
+        build_type: Release
+        code_coverage: false
+        static: false
+        unit_tests: true
+        integration_tests: false
+        clio_server: false
+        target: clio_tests
+        sanitizer: ${{ matrix.sanitizer }}
 
   # consider combining this with the previous matrix instead
   run_tests:
