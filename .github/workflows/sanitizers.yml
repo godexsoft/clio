@@ -17,17 +17,17 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-          # - os: heavy
-          #   sanitizer: asan
-          #   compiler: gcc
-          #   container:
-          #     image: rippleci/clio_ci:latest
-          # - os: heavy
-          #   sanitizer: ubsan
-          #   compiler: gcc
-          #   container:
-          #     image: rippleci/clio_ci:latest
-    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
+          - os: heavy
+            sanitizer: asan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: ubsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+    runs-on: [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
 
     steps:
@@ -60,6 +60,7 @@ jobs:
         uses: ./.github/actions/build_clio
         with:
           target: clio_tests
+          substract_threads: 2 # 2 less threads than normal. see if this helps memory on selfhosted runners
 
       - name: Upload clio_tests
         uses: actions/upload-artifact@v4
@@ -79,17 +80,17 @@ jobs:
             compiler: gcc
             container:
               image: rippleci/clio_ci:latest
-          # - os: heavy
-          #   sanitizer: asan
-          #   compiler: gcc
-          #   container:
-          #     image: rippleci/clio_ci:latest
-          # - os: heavy
-          #   sanitizer: ubsan
-          #   compiler: gcc
-          #   container:
-          #     image: rippleci/clio_ci:latest
-    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
+          - os: heavy
+            sanitizer: asan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+          - os: heavy
+            sanitizer: ubsan
+            compiler: gcc
+            container:
+              image: rippleci/clio_ci:latest
+    runs-on: [self-hosted, "${{ matrix.os }}"]
     container: ${{ matrix.container }}
     permissions:
       contents: write
