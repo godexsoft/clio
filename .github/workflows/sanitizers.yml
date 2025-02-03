@@ -34,9 +34,6 @@ jobs:
       clio_server: false
       target: clio_tests
       sanitizer: ${{ matrix.sanitizer }}
-    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
-    container: 
-      image: rippleci/clio_ci:latest
 
   # consider combining this with the previous matrix instead
   run_tests:
