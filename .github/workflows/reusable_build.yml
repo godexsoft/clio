@@ -1,13 +1,7 @@
-name: Build
+name: Reusable build
 on:
   workflow_call:
     inputs:
-      runs_on:
-        description: Runs-on parameter for build job
-        required: true
-        type: string
-        default: false
-      
       disable_ccache:
         description: Whether ccache should be disabled
         required: true
@@ -65,10 +59,16 @@ on:
         type: string
         default: all
 
+      sanitizer:
+        description: Sanitizer to use
+        required: true
+        type: string
+        default: 'false'
+
 jobs:
   build:
     name: Build
-    runs-on: ${{ inputs.runs_on }}
+    runs-on: [ubuntu-latest] # todo: change to self-hosted stuff
     container: 
       image: rippleci/clio_ci:latest
 
@@ -111,6 +111,7 @@ jobs:
           build_type: ${{ inputs.build_type }}
           code_coverage: ${{ inputs.code_coverage }}
           static: ${{ inputs.static }}
+          sanitizer: ${{ inputs.sanitizer }}
 
       - name: Build Clio
         uses: ./.github/actions/build_clio

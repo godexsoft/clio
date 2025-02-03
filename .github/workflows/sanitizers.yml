@@ -15,58 +15,30 @@ jobs:
           - os: heavy
             sanitizer: tsan
             compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
           - os: heavy
             sanitizer: asan
             compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
           - os: heavy
             sanitizer: ubsan
             compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
     runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
-    container: ${{ matrix.container }}
+    container: 
+      image: rippleci/clio_ci:latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/reusable_build.yml
         with:
-            fetch-depth: 0
-
-      - name: Prepare runner
-        uses: ./.github/actions/prepare_runner
-        with:
-            disable_ccache: true
-
-      - name: Setup conan
-        uses: ./.github/actions/setup_conan
-        id: conan
-        with:
+          disable_ccache: true
           conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
-
-      - name: Run conan and cmake
-        uses: ./.github/actions/generate
-        with:
-          conan_profile: ${{ steps.conan.outputs.conan_profile }}
-          conan_cache_hit: false
+          conan_cache: false
           build_type: Release
-          static: false
           code_coverage: false
-          sanitizer: ${{ matrix.sanitizer }}
-
-      - name: Build clio_tests
-        uses: ./.github/actions/build_clio
-        with:
+          static: false
+          unit_tests: true
+          integration_tests: false
+          clio_server: false
           target: clio_tests
-          substract_threads: 0 # todo use for self-hosted runner later if needed 
-
-      - name: Upload clio_tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: clio_tests_${{ matrix.compiler }}_${{ matrix.sanitizer }}
-          path: build/clio_tests
+          sanitizer: ${{ matrix.sanitizer }}
 
   # consider combining this with the previous matrix instead
   run_tests:
@@ -103,7 +75,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: clio_tests_${{ matrix.compiler }}_${{ matrix.sanitizer }}
+          name: clio_tests_${{ runner.os }}_Release_${{ matrix.compiler }}.${{ matrix.sanitizer }}
 
       - name: Run clio_tests [${{ matrix.compiler }} / ${{ matrix.sanitizer }}]
         shell: bash
