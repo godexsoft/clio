@@ -2,6 +2,12 @@ name: Reusable build
 on:
   workflow_call:
     inputs:
+      runs_on:
+        description: Runner to run the job on
+        required: true
+        type: string
+        default: heavy
+
       disable_ccache:
         description: Whether ccache should be disabled
         required: true

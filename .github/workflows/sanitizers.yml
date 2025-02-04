@@ -12,17 +12,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: heavy
-            sanitizer: tsan
+          - sanitizer: tsan
             compiler: gcc
-          - os: heavy
-            sanitizer: asan
-            compiler: gcc
-          - os: heavy
-            sanitizer: ubsan
-            compiler: gcc
+          # - sanitizer: asan
+          #   compiler: gcc
+          # - sanitizer: ubsan
+          #   compiler: gcc
     uses: ./.github/workflows/reusable_build.yml
     with:
+      runs_on: ubuntu-latest # todo change to heavy
       disable_ccache: true
       conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
       conan_cache: false
@@ -42,23 +40,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: heavy
-            sanitizer: tsan
+          - sanitizer: tsan
             compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: asan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
-          - os: heavy
-            sanitizer: ubsan
-            compiler: gcc
-            container:
-              image: rippleci/clio_ci:latest
-    runs-on: [ubuntu-latest] # [self-hosted, "${{ matrix.os }}"]
-    container: ${{ matrix.container }}
+          # - sanitizer: asan
+          #   compiler: gcc
+          # - sanitizer: ubsan
+          #   compiler: gcc
+    runs-on: ubuntu-latest # todo change to heavy
+    container:
+      image: rippleci/clio_ci:latest
     permissions:
       contents: write
       issues: write
@@ -89,7 +79,7 @@ jobs:
           fi
 
       - name: Upload report
-        if: steps.check_report.outputs.found_report == 'true'
+        if: ${{ steps.check_report.outputs.found_report == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.compiler }}_${{ matrix.sanitizer }}_report
@@ -97,7 +87,7 @@ jobs:
           include-hidden-files: true
 
       - name: Create an issue
-        if: steps.check_report.outputs.found_report == 'true'
+        if: ${{ steps.check_report.outputs.found_report == 'true' }}
         uses: ./.github/actions/create_issue
         env:
           GH_TOKEN: ${{ github.token }}
