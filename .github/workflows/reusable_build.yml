@@ -8,6 +8,12 @@ on:
         type: string
         default: heavy
 
+      container:
+        description: "The container object as a JSON string (leave empty to run natively)"
+        required: true
+        type: string
+        default: ""
+
       conan_profile:
         description: Conan profile to use
         required: true
@@ -17,12 +23,6 @@ on:
         description: Build type
         required: true
         type: string
-
-      container:
-        description: "The container object as a JSON string (leave empty to run natively)"
-        required: true
-        type: string
-        default: ""
 
       disable_ccache:
         description: Whether ccache should be disabled
@@ -141,7 +141,7 @@ jobs:
           cat /tmp/ccache.stats
 
       - name: Strip unit_tests
-        if: ${{ inputs.unit_tests && !inputs.code_coverage }}
+        if: ${{ inputs.unit_tests && !inputs.code_coverage && inputs.sanitizer == 'false' }}
         run: strip build/clio_tests
       
       - name: Strip integration_tests

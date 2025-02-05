@@ -1,5 +1,7 @@
 name: Run tests with sanitizers
 on:
+  schedule:
+    - cron: "0 4 * * 1-5"
   workflow_dispatch:
   pull_request:
     paths:
@@ -14,13 +16,13 @@ jobs:
         include:
           - sanitizer: tsan
             compiler: gcc
-          # - sanitizer: asan
-          #   compiler: gcc
-          # - sanitizer: ubsan
+          - sanitizer: asan
+            compiler: gcc
+          # - sanitizer: ubsan # todo: enable when heavy runners are available
           #   compiler: gcc
     uses: ./.github/workflows/reusable_build.yml
     with:
-      runs_on: ubuntu-latest # todo change to heavy
+      runs_on: ubuntu-latest # todo: change to heavy
       container: '{ "image": "rippleci/clio_ci:latest" }'
       disable_ccache: true
       conan_profile: ${{ matrix.compiler }}.${{ matrix.sanitizer }}
@@ -43,11 +45,11 @@ jobs:
         include:
           - sanitizer: tsan
             compiler: gcc
-          # - sanitizer: asan
+          - sanitizer: asan
+            compiler: gcc
+          # - sanitizer: ubsan # todo: enable when heavy runners are available
           #   compiler: gcc
-          # - sanitizer: ubsan
-          #   compiler: gcc
-    runs-on: ubuntu-latest # todo change to heavy
+    runs-on: ubuntu-latest # todo: change to heavy
     container:
       image: rippleci/clio_ci:latest
     permissions:
@@ -87,16 +89,19 @@ jobs:
           path: .sanitizer-report/*
           include-hidden-files: true
 
-      - name: Create an issue
-        if: ${{ steps.check_report.outputs.found_report == 'true' }}
-        uses: ./.github/actions/create_issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          labels: 'bug'
-          title: '[${{ matrix.sanitizer }}/${{ matrix.compiler }}] reported issues'
-          body: >
-            Clio tests failed one or more sanitizer checks when built with ${{ matrix.compiler }}`.
+      #
+      # todo: enable when we have fixed all currently existing issues from sanitizers
+      #
+      # - name: Create an issue
+      #   if: ${{ steps.check_report.outputs.found_report == 'true' }}
+      #   uses: ./.github/actions/create_issue
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #   with:
+      #     labels: 'bug'
+      #     title: '[${{ matrix.sanitizer }}/${{ matrix.compiler }}] reported issues'
+      #     body: >
+      #       Clio tests failed one or more sanitizer checks when built with ${{ matrix.compiler }}`.
 
-            Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/
-            Reports are available as artifacts.
+      #       Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/
+      #       Reports are available as artifacts.
