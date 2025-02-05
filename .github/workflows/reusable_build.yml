@@ -68,7 +68,7 @@ on:
 
       target:
         description: Build target name
-        required: true
+        required: false
         type: string
         default: all
 
