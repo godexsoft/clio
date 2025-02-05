@@ -12,7 +12,7 @@ on:
 
 jobs:
   clang_tidy:
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest # [self-hosted, Linux]
     container:
       image: rippleci/clio_ci:latest
     permissions:

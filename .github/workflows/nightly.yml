@@ -18,11 +18,11 @@ jobs:
           - os: macos15
             build_type: Release
             static: false
-          - os: heavy
+          - os: ubuntu-latest # heavy
             build_type: Release
             static: true
             container: '{ "image": "rippleci/clio_ci:latest" }'
-          - os: heavy
+          - os: ubuntu-latest # heavy
             build_type: Debug
             static: true
             container: '{ "image": "rippleci/clio_ci:latest" }'
@@ -48,12 +48,12 @@ jobs:
           - os: macos15
             build_type: Release
             integration_tests: false
-          - os: heavy
+          - os: ubuntu-latest # heavy
             build_type: Release
             container:
               image: rippleci/clio_ci:latest
             integration_tests: true  
-          - os: heavy
+          - os: ubuntu-latest # heavy
             build_type: Debug
             container:
               image: rippleci/clio_ci:latest
