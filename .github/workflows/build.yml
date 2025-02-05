@@ -83,6 +83,7 @@ jobs:
       code_coverage: ${{ matrix.code_coverage }}
       static: ${{ matrix.static }}
       disable_ccache: false
+      conan_cache: true
       unit_tests: true
       integration_tests: true
       clio_server: true
