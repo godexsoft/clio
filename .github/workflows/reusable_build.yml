@@ -80,6 +80,7 @@ on:
 
 jobs:
   build_in_container:
+    if: ${{ inputs.container_image != '' }}
     name: Build in container
     runs-on: ${{ inputs.runs_on }} 
     container: 
@@ -191,6 +192,7 @@ jobs:
         uses: ./.github/actions/code_coverage
 
   build_native:
+    if: ${{ inputs.container_image == '' }}
     name: Build natively
     runs-on: ${{ inputs.runs_on }}
 
