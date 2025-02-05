@@ -8,6 +8,16 @@ on:
         type: string
         default: heavy
 
+      conan_profile:
+        description: Conan profile to use
+        required: true
+        type: string
+
+      build_type:
+        description: Build type
+        required: true
+        type: string
+
       container_image:
         description: "The container image to use (leave empty to run natively)"
         required: true
@@ -19,22 +29,12 @@ on:
         required: false
         type: boolean
         default: false
-      
-      conan_profile:
-        description: Conan profile to use
-        required: true
-        type: string
 
       conan_cache:
         description: Whether to use conan cache
         required: false
         type: boolean
         default: true
-
-      build_type:
-        description: Build type
-        required: true
-        type: string
 
       code_coverage:
         description: Whether to enable code coverage
