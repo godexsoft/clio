@@ -16,7 +16,7 @@ on:
 
       disable_ccache:
         description: Whether ccache should be disabled
-        required: true
+        required: false
         type: boolean
         default: false
       
@@ -27,7 +27,7 @@ on:
 
       conan_cache:
         description: Whether to use conan cache
-        required: true
+        required: false
         type: boolean
         default: true
 
@@ -74,7 +74,7 @@ on:
 
       sanitizer:
         description: Sanitizer to use
-        required: true
+        required: false
         type: string
         default: 'false'
 
