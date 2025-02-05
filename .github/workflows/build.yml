@@ -47,25 +47,25 @@ jobs:
       matrix:
         include:
           - os: heavy
-            container_image: rippleci/clio_ci:latest
+            container: '{ "image": "rippleci/clio_ci:latest" }'
             build_type: Release
             conan_profile: gcc
             code_coverage: false
             static: true
           - os: heavy
-            container_image: rippleci/clio_ci:latest
+            container: '{ "image": "rippleci/clio_ci:latest" }'
             build_type: Debug
             conan_profile: gcc
             code_coverage: true
             static: true
           - os: heavy
-            container_image: rippleci/clio_ci:latest
+            container: '{ "image": "rippleci/clio_ci:latest" }'
             build_type: Release
             conan_profile: clang
             code_coverage: false
             static: true
           - os: heavy
-            container_image: rippleci/clio_ci:latest
+            container: '{ "image": "rippleci/clio_ci:latest" }'
             build_type: Debug
             conan_profile: clang
             code_coverage: false
@@ -77,7 +77,7 @@ jobs:
     uses: ./.github/workflows/reusable_build.yml
     with:
       runs_on: ${{ matrix.os }}
-      container_image: ${{ matrix.container_image }}
+      container: ${{ matrix.container }}
       conan_profile: ${{ matrix.conan_profile }}
       build_type: ${{ matrix.build_type }}
       code_coverage: ${{ matrix.code_coverage }}
