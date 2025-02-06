@@ -46,14 +46,17 @@ jobs:
       matrix:
         include:
           - os: macos15
+            conan_profile: apple_clang_16
             build_type: Release
             integration_tests: false
           - os: heavy
+            conan_profile: gcc
             build_type: Release
             container:
               image: rippleci/clio_ci:latest
             integration_tests: true  
           - os: heavy
+            conan_profile: gcc
             build_type: Debug
             container:
               image: rippleci/clio_ci:latest
@@ -148,7 +151,7 @@ jobs:
       tags: |
           type=raw,value=nightly
           type=raw,value=${{ github.sha }}
-      artifact_name: clio_server_Linux_Release
+      artifact_name: clio_server_Linux_Release_gcc
       strip_binary: true
       publish_image: ${{ github.event_name != 'pull_request' }}
 
