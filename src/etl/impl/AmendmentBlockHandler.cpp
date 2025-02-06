@@ -47,7 +47,7 @@ AmendmentBlockHandler::AmendmentBlockHandler(
 }
 
 void
-AmendmentBlockHandler::onAmendmentBlock()
+AmendmentBlockHandler::notifyAmendmentBlocked()
 {
     state_.get().isAmendmentBlocked = true;
     repeat_.start(interval_, action_);

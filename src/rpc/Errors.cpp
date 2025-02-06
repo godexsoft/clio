@@ -79,7 +79,6 @@ getErrorInfo(ClioError code)
         {.code = ClioError::RpcMalformedRequest, .error = "malformedRequest", .message = "Malformed request."},
         {.code = ClioError::RpcMalformedOwner, .error = "malformedOwner", .message = "Malformed owner."},
         {.code = ClioError::RpcMalformedAddress, .error = "malformedAddress", .message = "Malformed address."},
-        {.code = ClioError::RpcInvalidHotWallet, .error = "invalidHotWallet", .message = "Invalid hot wallet."},
         {.code = ClioError::RpcUnknownOption, .error = "unknownOption", .message = "Unknown option."},
         {.code = ClioError::RpcFieldNotFoundTransaction,
          .error = "fieldNotFoundTransaction",
@@ -90,6 +89,7 @@ getErrorInfo(ClioError code)
         {.code = ClioError::RpcMalformedAuthorizedCredentials,
          .error = "malformedAuthorizedCredentials",
          .message = "Malformed authorized credentials."},
+
         // special system errors
         {.code = ClioError::RpcInvalidApiVersion, .error = JS(invalid_API_version), .message = "Invalid API version."},
         {.code = ClioError::RpcCommandIsMissing,

@@ -53,7 +53,7 @@ public:
     );
 
     void
-    onAmendmentBlock();
+    notifyAmendmentBlocked();
 };
 
 }  // namespace etl::impl

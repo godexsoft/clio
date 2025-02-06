@@ -5,6 +5,8 @@ target_sources(
   PRIVATE # Common
           ConfigTests.cpp
           app/CliArgsTests.cpp
+          app/StopperTests.cpp
+          app/VerifyConfigTests.cpp
           app/WebHandlersTests.cpp
           data/AmendmentCenterTests.cpp
           data/BackendCountersTests.cpp
@@ -33,9 +35,13 @@ target_sources(
           etl/SubscriptionSourceTests.cpp
           etl/TransformerTests.cpp
           # ETLng
+          etlng/AmendmentBlockHandlerTests.cpp
           etlng/ExtractionTests.cpp
           etlng/GrpcSourceTests.cpp
           etlng/RegistryTests.cpp
+          etlng/SchedulingTests.cpp
+          etlng/TaskManagerTests.cpp
+          etlng/LoadingTests.cpp
           # Feed
           util/BytesConverterTests.cpp
           feed/BookChangesFeedTests.cpp
@@ -56,6 +62,8 @@ target_sources(
           migration/cassandra/SpecTests.cpp
           migration/MigratorRegisterTests.cpp
           migration/MigratorStatusTests.cpp
+          migration/MigrationInspectorFactoryTests.cpp
+          migration/MigrationInspectorBaseTests.cpp
           migration/MigrationManagerBaseTests.cpp
           migration/MigrationManagerFactoryTests.cpp
           migration/SpecTests.cpp
@@ -112,8 +120,6 @@ target_sources(
           rpc/RPCHelpersTests.cpp
           rpc/WorkQueueTests.cpp
           test_data/SslCert.cpp
-          util/AccountUtilsTests.cpp
-          util/AssertTests.cpp
           # Async framework
           util/async/AnyExecutionContextTests.cpp
           util/async/AnyOperationTests.cpp
@@ -124,6 +130,7 @@ target_sources(
           util/ConceptsTests.cpp
           util/CoroutineGroupTests.cpp
           util/LedgerUtilsTests.cpp
+          util/StrandedPriorityQueueTests.cpp
           # Prometheus support
           util/prometheus/BoolTests.cpp
           util/prometheus/CounterTests.cpp
@@ -138,11 +145,16 @@ target_sources(
           util/requests/RequestBuilderTests.cpp
           util/requests/SslContextTests.cpp
           util/requests/WsConnectionTests.cpp
+          # Common utils
+          util/AccountUtilsTests.cpp
+          util/AssertTests.cpp
+          util/MoveTrackerTests.cpp
           util/RandomTests.cpp
           util/RetryTests.cpp
           util/RepeatTests.cpp
           util/ResponseExpirationCacheTests.cpp
           util/SignalsHandlerTests.cpp
+          util/StopHelperTests.cpp
           util/TimeUtilsTests.cpp
           util/TxUtilTests.cpp
           util/WithTimeout.cpp
