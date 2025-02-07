@@ -113,7 +113,7 @@ jobs:
         uses: ./.github/actions/generate
         with:
           conan_profile: ${{ steps.conan.outputs.conan_profile }}
-          conan_cache_hit: ${{ !inputs.restore_cache && steps.restore_cache.outputs.conan_cache_hit }}
+          conan_cache_hit: ${{ !inputs.disable_cache && steps.restore_cache.outputs.conan_cache_hit }}
           build_type: ${{ inputs.build_type }}
           code_coverage: ${{ inputs.code_coverage }}
           static: ${{ inputs.static }}
