@@ -65,6 +65,12 @@ endif ()
 
 # Enable selected sanitizer if enabled via `san`
 if (san)
+  set(SUPPORTED_SANITIZERS "address" "thread" "memory" "undefined")
+  list(FIND SUPPORTED_SANITIZERS "${san}" INDEX)
+  if (INDEX EQUAL -1)
+    message(FATAL_ERROR "Error: Unsupported sanitizer '${san}'. Supported values are: ${SUPPORTED_SANITIZERS}.")
+  endif ()
+
   target_compile_options(
     clio_options INTERFACE # Sanitizers recommend minimum of -O1 for reasonable performance
                            $<$<CONFIG:Debug>:-O1> ${SAN_FLAG} -fno-omit-frame-pointer
