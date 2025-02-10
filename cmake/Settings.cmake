@@ -40,7 +40,12 @@ if (is_appleclang)
 endif ()
 
 if (san)
-  # for the time being we want the builds to succeed and sanitizers to assess our runtime behaviour
+  # When building with sanitizers some compilers will actually produce extra warnings/errors. We don't want this yet, at
+  # least not until we have fixed all runtime issues reported by the sanitizers. Once that is done we can start removing
+  # some of these and trying to fix it in our codebase. We can never remove all of below because most of them are
+  # reported from deep inside libraries like boost or libxrpl.
+  #
+  # TODO: Address in https://github.com/XRPLF/clio/issues/1885
   list(
     APPEND
     COMPILER_FLAGS
