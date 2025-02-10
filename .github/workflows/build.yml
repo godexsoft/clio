@@ -150,14 +150,14 @@ jobs:
           path: build/clio_server
      
       - name: Upload clio_tests
-        if: ${{ inputs.unit_tests && !matrix.code_coverage }}
+        if: ${{ inputs.unit_tests && !inputs.code_coverage }}
         uses: actions/upload-artifact@v4
         with:
           name: clio_tests_${{ runner.os }}_${{ inputs.build_type }}_${{ steps.conan.outputs.conan_profile }}
           path: build/clio_tests
       
       - name: Upload clio_integration_tests
-        if: ${{ inputs.integration_tests && !matrix.code_coverage }}
+        if: ${{ inputs.integration_tests && !inputs.code_coverage }}
         uses: actions/upload-artifact@v4
         with:
           name: clio_integration_tests_${{ runner.os }}_${{ inputs.build_type }}_${{ steps.conan.outputs.conan_profile }}
