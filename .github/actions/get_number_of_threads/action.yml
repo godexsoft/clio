@@ -28,8 +28,8 @@ runs:
       id: number_of_threads_export
       shell: bash
       env:
-        NUM_OF_THREADS: steps.mac_threads.outputs.num || steps.linux_threads.outputs.num
-        SHIFT_BY: inputs.substract_threads
+        NUM_OF_THREADS: ${{ steps.mac_threads.outputs.num || steps.linux_threads.outputs.num }}
+        SHIFT_BY: ${{ inputs.substract_threads }}
       run: |
         shifted=$((NUM_OF_THREADS - SHIFT_BY))
         echo "num=$(( shifted > 1 ? shifted : 1 ))" >> $GITHUB_OUTPUT
