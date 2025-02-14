@@ -2,18 +2,11 @@ add_executable(clio_integration_tests)
 
 target_sources(
   clio_integration_tests
-  PRIVATE data/BackendFactoryTests.cpp
-          data/cassandra/BackendTests.cpp
-          data/cassandra/BaseTests.cpp
-          migration/cassandra/DBRawData.cpp
-          migration/cassandra/CassandraMigrationManagerTests.cpp
-          migration/cassandra/ExampleTransactionsMigrator.cpp
-          migration/cassandra/ExampleObjectsMigrator.cpp
-          migration/cassandra/ExampleLedgerMigrator.cpp
-          migration/cassandra/ExampleDropTableMigrator.cpp
-          util/CassandraDBHelper.cpp
-          # Test runner
-          TestGlobals.cpp
+  PRIVATE # data/BackendFactoryTests.cpp data/cassandra/BackendTests.cpp data/cassandra/BaseTests.cpp
+          # migration/cassandra/DBRawData.cpp migration/cassandra/CassandraMigrationManagerTests.cpp
+          # migration/cassandra/ExampleTransactionsMigrator.cpp migration/cassandra/ExampleObjectsMigrator.cpp
+          # migration/cassandra/ExampleLedgerMigrator.cpp migration/cassandra/ExampleDropTableMigrator.cpp
+          # util/CassandraDBHelper.cpp # Test runner TestGlobals.cpp
           Main.cpp
 )
 
