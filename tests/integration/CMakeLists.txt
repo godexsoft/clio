@@ -6,7 +6,8 @@ target_sources(
           # migration/cassandra/DBRawData.cpp migration/cassandra/CassandraMigrationManagerTests.cpp
           # migration/cassandra/ExampleTransactionsMigrator.cpp migration/cassandra/ExampleObjectsMigrator.cpp
           # migration/cassandra/ExampleLedgerMigrator.cpp migration/cassandra/ExampleDropTableMigrator.cpp
-          # util/CassandraDBHelper.cpp # Test runner TestGlobals.cpp
+          # util/CassandraDBHelper.cpp # Test runner
+          TestGlobals.cpp
           Main.cpp
 )
 
