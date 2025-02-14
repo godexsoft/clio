@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2024, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -38,7 +38,7 @@ namespace migration::impl {
 std::expected<std::shared_ptr<MigrationManagerInterface>, std::string>
 makeMigrationManager(util::config::ClioConfigDefinition const& config, data::LedgerCache& cache)
 {
-    static util::Logger const log{"Migration"};
+    static util::Logger const log{"Migration"};  // NOLINT(readability-identifier-naming)
     LOG(log.info()) << "Constructing MigrationManager";
 
     auto const type = config.get<std::string>("database_normal.type");

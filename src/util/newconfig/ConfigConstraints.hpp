@@ -33,6 +33,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -44,7 +45,7 @@ class ConfigValue;
 /**
  * @brief specific values that are accepted for logger levels in config.
  */
-static constexpr std::array<char const*, 7> LOG_LEVELS = {
+static constexpr std::array<char const*, 7> kLOG_LEVELS = {
     "trace",
     "debug",
     "info",
@@ -57,7 +58,7 @@ static constexpr std::array<char const*, 7> LOG_LEVELS = {
 /**
  * @brief specific values that are accepted for logger tag style in config.
  */
-static constexpr std::array<char const*, 5> LOG_TAGS = {
+static constexpr std::array<char const*, 5> kLOG_TAGS = {
     "int",
     "uint",
     "null",
@@ -68,7 +69,7 @@ static constexpr std::array<char const*, 5> LOG_TAGS = {
 /**
  * @brief specific values that are accepted for cache loading in config.
  */
-static constexpr std::array<char const*, 3> LOAD_CACHE_MODE = {
+static constexpr std::array<char const*, 3> kLOAD_CACHE_MODE = {
     "sync",
     "async",
     "none",
@@ -77,12 +78,12 @@ static constexpr std::array<char const*, 3> LOAD_CACHE_MODE = {
 /**
  * @brief specific values that are accepted for database type in config.
  */
-static constexpr std::array<char const*, 1> DATABASE_TYPE = {"cassandra"};
+static constexpr std::array<char const*, 1> kDATABASE_TYPE = {"cassandra"};
 
 /**
  * @brief specific values that are accepted for server's processing_policy in config.
  */
-static constexpr std::array<char const*, 2> PROCESSING_POLICY = {"parallel", "sequent"};
+static constexpr std::array<char const*, 2> kPROCESSING_POLICY = {"parallel", "sequent"};
 
 /**
  * @brief An interface to enforce constraints on certain values within ClioConfigDefinition.
@@ -116,9 +117,9 @@ protected:
      * @param arr The array with hard-coded values to add to error message
      * @return The error message specifying what the value of key must be
      */
-    template <std::size_t arrSize>
+    template <std::size_t ArrSize>
     constexpr std::string
-    makeErrorMsg(std::string_view key, Value const& value, std::array<char const*, arrSize> arr) const
+    makeErrorMsg(std::string_view key, Value const& value, std::array<char const*, ArrSize> arr) const
     {
         // Extract the value from the variant
         auto const valueStr = std::visit([](auto const& v) { return fmt::format("{}", v); }, value);
@@ -149,6 +150,28 @@ protected:
      */
     virtual std::optional<Error>
     checkValueImpl(Value const& val) const = 0;
+
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    virtual void
+    print(std::ostream& stream) const = 0;
+
+    /**
+     * @brief Custom output stream for constraint
+     *
+     * @param stream The output stream
+     * @param cons The constraint
+     * @return The same ostream we were given
+     */
+    friend std::ostream&
+    operator<<(std::ostream& stream, Constraint const& cons)
+    {
+        cons.print(stream);
+        return stream;
+    }
 };
 
 /**
@@ -177,8 +200,19 @@ private:
     [[nodiscard]] std::optional<Error>
     checkValueImpl(Value const& port) const override;
 
-    static constexpr uint32_t portMin = 1;
-    static constexpr uint32_t portMax = 65535;
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    void
+    print(std::ostream& stream) const override
+    {
+        stream << fmt::format("The minimum value is `{}`. The maximum value is `{}", kPORT_MIN, kPORT_MAX);
+    }
+
+    static constexpr uint32_t kPORT_MIN = 1;
+    static constexpr uint32_t kPORT_MAX = 65535;
 };
 
 /**
@@ -206,6 +240,17 @@ private:
      */
     [[nodiscard]] std::optional<Error>
     checkValueImpl(Value const& ip) const override;
+
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    void
+    print(std::ostream& stream) const override
+    {
+        stream << "The value must be a valid IP address";
+    }
 };
 
 /**
@@ -213,7 +258,7 @@ private:
  *
  * @tparam arrSize The size of the array containing the valid values for the constraint
  */
-template <std::size_t arrSize>
+template <std::size_t ArrSize>
 class OneOf final : public Constraint {
 public:
     /**
@@ -222,7 +267,7 @@ public:
      * @param key The key of the ConfigValue that has this constraint
      * @param arr The value that has this constraint must be of the values in arr
      */
-    constexpr OneOf(std::string_view key, std::array<char const*, arrSize> arr) : key_{key}, arr_{arr}
+    constexpr OneOf(std::string_view key, std::array<char const*, ArrSize> arr) : key_{key}, arr_{arr}
     {
     }
 
@@ -260,14 +305,25 @@ private:
         return Error{makeErrorMsg(key_, val, arr_)};
     }
 
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    void
+    print(std::ostream& stream) const override
+    {
+        stream << fmt::format("The value must be one of the following: `{}`", fmt::join(arr_, ", "));
+    }
+
     std::string_view key_;
-    std::array<char const*, arrSize> arr_;
+    std::array<char const*, ArrSize> arr_;
 };
 
 /**
  * @brief A constraint class to ensure an integer value is between two numbers (inclusive)
  */
-template <typename numType>
+template <typename NumType>
 class NumberValueConstraint final : public Constraint {
 public:
     /**
@@ -276,7 +332,7 @@ public:
      * @param min the minimum number it can be to satisfy this constraint
      * @param max the maximum number it can be to satisfy this constraint
      */
-    constexpr NumberValueConstraint(numType min, numType max) : min_{min}, max_{max}
+    constexpr NumberValueConstraint(NumType min, NumType max) : min_{min}, max_{max}
     {
     }
 
@@ -312,8 +368,19 @@ private:
         return Error{fmt::format("Number must be between {} and {}", min_, max_)};
     }
 
-    numType min_;
-    numType max_;
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    void
+    print(std::ostream& stream) const override
+    {
+        stream << fmt::format("The minimum value is `{}`. The maximum value is `{}`", min_, max_);
+    }
+
+    NumType min_;
+    NumType max_;
 };
 
 /**
@@ -341,31 +408,46 @@ private:
      */
     [[nodiscard]] std::optional<Error>
     checkValueImpl(Value const& num) const override;
+
+    /**
+     * @brief Prints to the output stream for this specific constraint.
+     *
+     * @param stream The output stream
+     */
+    void
+    print(std::ostream& stream) const override
+    {
+        stream << fmt::format("The value must be a positive double number");
+    }
 };
 
-static constinit PortConstraint validatePort{};
-static constinit ValidIPConstraint validateIP{};
+static constinit PortConstraint gValidatePort{};
+static constinit ValidIPConstraint gValidateIp{};
 
-static constinit OneOf validateChannelName{"channel", Logger::CHANNELS};
-static constinit OneOf validateLogLevelName{"log_level", LOG_LEVELS};
-static constinit OneOf validateCassandraName{"database.type", DATABASE_TYPE};
-static constinit OneOf validateLoadMode{"cache.load", LOAD_CACHE_MODE};
-static constinit OneOf validateLogTag{"log_tag_style", LOG_TAGS};
-static constinit OneOf validateProcessingPolicy{"server.processing_policy", PROCESSING_POLICY};
+static constinit OneOf gValidateChannelName{"channel", Logger::kCHANNELS};
+static constinit OneOf gValidateLogLevelName{"log_level", kLOG_LEVELS};
+static constinit OneOf gValidateCassandraName{"database.type", kDATABASE_TYPE};
+static constinit OneOf gValidateLoadMode{"cache.load", kLOAD_CACHE_MODE};
+static constinit OneOf gValidateLogTag{"log_tag_style", kLOG_TAGS};
+static constinit OneOf gValidateProcessingPolicy{"server.processing_policy", kPROCESSING_POLICY};
 
-static constinit PositiveDouble validatePositiveDouble{};
+static constinit PositiveDouble gValidatePositiveDouble{};
 
-static constinit NumberValueConstraint<uint32_t> validateNumMarkers{1, 256};
-static constinit NumberValueConstraint<uint32_t> validateIOThreads{1, std::numeric_limits<uint16_t>::max()};
+static constinit NumberValueConstraint<uint32_t> gValidateNumMarkers{1, 256};
+static constinit NumberValueConstraint<uint32_t> gValidateIOThreads{1, std::numeric_limits<uint16_t>::max()};
 
-static constinit NumberValueConstraint<uint16_t> validateUint16{
+static constinit NumberValueConstraint<uint16_t> gValidateUint16{
     std::numeric_limits<uint16_t>::min(),
     std::numeric_limits<uint16_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> validateUint32{
+
+// log file size minimum is 1mb, log rotation time minimum is 1hr
+static constinit NumberValueConstraint<uint32_t> gValidateLogSize{1, std::numeric_limits<uint32_t>::max()};
+static constinit NumberValueConstraint<uint32_t> gValidateLogRotationTime{1, std::numeric_limits<uint32_t>::max()};
+static constinit NumberValueConstraint<uint32_t> gValidateUint32{
     std::numeric_limits<uint32_t>::min(),
     std::numeric_limits<uint32_t>::max()
 };
-static constinit NumberValueConstraint<uint32_t> validateApiVersion{rpc::API_VERSION_MIN, rpc::API_VERSION_MAX};
+static constinit NumberValueConstraint<uint32_t> gValidateApiVersion{rpc::kAPI_VERSION_MIN, rpc::kAPI_VERSION_MAX};
 
 }  // namespace util::config

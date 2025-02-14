@@ -77,7 +77,7 @@ public:
      * @return A shared pointer to a new instance of SubscriptionManager
      */
     static std::shared_ptr<SubscriptionManager>
-    make_SubscriptionManager(
+    makeSubscriptionManager(
         util::config::ClioConfigDefinition const& config,
         std::shared_ptr<data::BackendInterface const> const& backend
     )
@@ -116,6 +116,15 @@ public:
      */
     ~SubscriptionManager() override
     {
+        stop();
+    }
+
+    /**
+     * @brief Stop the SubscriptionManager and wait for all jobs to finish.
+     */
+    void
+    stop() override
+    {
         ctx_.stop();
         ctx_.join();
     }
@@ -141,7 +150,7 @@ public:
      */
     void
     pubBookChanges(ripple::LedgerHeader const& lgrInfo, std::vector<data::TransactionAndMetadata> const& transactions)
-        const final;
+        final;
 
     /**
      * @brief Subscribe to the proposed transactions feed.
@@ -209,7 +218,7 @@ public:
         ripple::Fees const& fees,
         std::string const& ledgerRange,
         std::uint32_t txnCount
-    ) const final;
+    ) final;
 
     /**
      * @brief Subscribe to the manifest feed.
@@ -230,7 +239,7 @@ public:
      * @param manifestJson The manifest json to forward.
      */
     void
-    forwardManifest(boost::json::object const& manifestJson) const final;
+    forwardManifest(boost::json::object const& manifestJson) final;
 
     /**
      * @brief Subscribe to the validation feed.
@@ -251,7 +260,7 @@ public:
      * @param validationJson The validation feed json to forward.
      */
     void
-    forwardValidation(boost::json::object const& validationJson) const final;
+    forwardValidation(boost::json::object const& validationJson) final;
 
     /**
      * @brief Subscribe to the transactions feed.

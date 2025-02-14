@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2024, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -22,7 +22,6 @@
 #include "data/cassandra/impl/Result.hpp"
 
 #include <fmt/core.h>
-#include <fmt/format.h>
 
 #include <cstdint>
 #include <string>
@@ -30,7 +29,7 @@
 data::cassandra::ResultOrError
 writeTxFromCSVString(std::string const& space, std::string const& record, data::cassandra::Handle const& handler)
 {
-    std::string statement = fmt::format(
+    std::string const statement = fmt::format(
         "INSERT INTO {}.transactions (hash, date, ledger_sequence, metadata, transaction) VALUES ({})", space, record
     );
 
@@ -40,7 +39,8 @@ writeTxFromCSVString(std::string const& space, std::string const& record, data::
 data::cassandra::ResultOrError
 writeObjectFromCSVString(std::string const& space, std::string const& record, data::cassandra::Handle const& handler)
 {
-    std::string statement = fmt::format("INSERT INTO {}.objects (key, sequence, object) VALUES ({})", space, record);
+    std::string const statement =
+        fmt::format("INSERT INTO {}.objects (key, sequence, object) VALUES ({})", space, record);
 
     return handler.execute(statement);
 }
@@ -48,7 +48,7 @@ writeObjectFromCSVString(std::string const& space, std::string const& record, da
 data::cassandra::ResultOrError
 writeLedgerFromCSVString(std::string const& space, std::string const& record, data::cassandra::Handle const& handler)
 {
-    std::string statement = fmt::format("INSERT INTO {}.ledgers (sequence, header) VALUES ({})", space, record);
+    std::string const statement = fmt::format("INSERT INTO {}.ledgers (sequence, header) VALUES ({})", space, record);
     return handler.execute(statement);
 }
 

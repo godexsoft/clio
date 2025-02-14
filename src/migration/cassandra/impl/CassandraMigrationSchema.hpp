@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2024, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -84,7 +84,7 @@ public:
     data::cassandra::PreparedStatement const&
     getPreparedInsertMigratedMigrator(data::cassandra::Handle const& handler)
     {
-        static auto prepared = handler.prepare(fmt::format(
+        static auto kPREPARED = handler.prepare(fmt::format(
             R"(
             INSERT INTO {} 
                    (migrator_name, status)
@@ -92,7 +92,7 @@ public:
             )",
             data::cassandra::qualifiedTableName<SettingsProviderType>(settingsProvider_.get(), "migrator_status")
         ));
-        return prepared;
+        return kPREPARED;
     }
 };
 }  // namespace migration::cassandra::impl

@@ -18,6 +18,8 @@
 //==============================================================================
 
 #pragma once
+
+#include "app/Stopper.hpp"
 #include "util/SignalsHandler.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
 
@@ -29,6 +31,7 @@ namespace app {
 class ClioApplication {
     util::config::ClioConfigDefinition const& config_;
     util::SignalsHandler signalsHandler_;
+    Stopper appStopper_;
 
 public:
     /**

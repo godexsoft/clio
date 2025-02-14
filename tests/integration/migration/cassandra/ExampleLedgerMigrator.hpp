@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2024, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -31,8 +31,8 @@
  * via ledger sequence without full table scan.
  */
 struct ExampleLedgerMigrator {
-    static constexpr char const* name = "ExampleLedgerMigrator";
-    static constexpr char const* description = "The migrator for ledgers table";
+    static constexpr char const* kNAME = "ExampleLedgerMigrator";
+    static constexpr char const* kDESCRIPTION = "The migrator for ledgers table";
 
     using Backend = CassandraMigrationTestBackend;
 

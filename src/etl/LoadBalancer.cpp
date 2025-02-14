@@ -26,6 +26,7 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
+#include "util/CoroutineGroup.hpp"
 #include "util/Random.hpp"
 #include "util/ResponseExpirationCache.hpp"
 #include "util/log/Logger.hpp"
@@ -59,7 +60,7 @@ using namespace util::config;
 namespace etl {
 
 std::shared_ptr<LoadBalancer>
-LoadBalancer::make_LoadBalancer(
+LoadBalancer::makeLoadBalancer(
     ClioConfigDefinition const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,
@@ -235,7 +236,7 @@ LoadBalancer::forwardToRippled(
 )
 {
     if (not request.contains("command"))
-        return std::unexpected{rpc::ClioError::rpcCOMMAND_IS_MISSING};
+        return std::unexpected{rpc::ClioError::RpcCommandIsMissing};
 
     auto const cmd = boost::json::value_to<std::string>(request.at("command"));
     if (forwardingCache_) {
@@ -249,10 +250,10 @@ LoadBalancer::forwardToRippled(
 
     auto numAttempts = 0u;
 
-    auto xUserValue = isAdmin ? ADMIN_FORWARDING_X_USER_VALUE : USER_FORWARDING_X_USER_VALUE;
+    auto xUserValue = isAdmin ? kADMIN_FORWARDING_X_USER_VALUE : kUSER_FORWARDING_X_USER_VALUE;
 
     std::optional<boost::json::object> response;
-    rpc::ClioError error = rpc::ClioError::etlCONNECTION_ERROR;
+    rpc::ClioError error = rpc::ClioError::EtlConnectionError;
     while (numAttempts < sources_.size()) {
         auto res = sources_[sourceIdx]->forwardToRippled(request, clientIp, xUserValue, yield);
         if (res) {
@@ -334,6 +335,16 @@ LoadBalancer::getETLState() noexcept
         etlState_ = ETLState::fetchETLStateFromSource(*this);
     }
     return etlState_;
+}
+
+void
+LoadBalancer::stop(boost::asio::yield_context yield)
+{
+    util::CoroutineGroup group{yield};
+    std::ranges::for_each(sources_, [&group, yield](auto& source) {
+        group.spawn(yield, [&source](boost::asio::yield_context innerYield) { source->stop(innerYield); });
+    });
+    group.asyncWait(yield);
 }
 
 void

@@ -66,6 +66,15 @@ public:
     run() = 0;
 
     /**
+     * @brief Stop Source.
+     * @note This method will asynchronously wait for source to be stopped.
+     *
+     * @param yield The coroutine context.
+     */
+    virtual void
+    stop(boost::asio::yield_context yield) = 0;
+
+    /**
      * @brief Check if source is connected
      *
      * @return true if source is connected; false otherwise
@@ -175,7 +184,7 @@ using SourceFactory = std::function<SourcePtr(
  * @return The created source
  */
 SourcePtr
-make_Source(
+makeSource(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,

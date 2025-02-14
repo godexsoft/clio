@@ -23,6 +23,7 @@
 #include "data/DBHelpers.hpp"
 #include "data/LedgerCache.hpp"
 #include "data/Types.hpp"
+#include "data/cassandra/Concepts.hpp"
 #include "data/cassandra/Handle.hpp"
 #include "data/cassandra/Schema.hpp"
 #include "data/cassandra/SettingsProvider.hpp"
@@ -88,6 +89,7 @@ public:
      *
      * @param settingsProvider The settings provider to use
      * @param readOnly Whether the database should be in readonly mode
+     * @param cache cache
      */
     BasicCassandraBackend(SettingsProviderType settingsProvider, bool readOnly, LedgerCache& cache)
         : BackendInterface(cache)
@@ -189,13 +191,18 @@ public:
         return {txns, {}};
     }
 
+    void
+    waitForWritesToFinish() override
+    {
+        executor_.sync();
+    }
+
     bool
     doFinishWrites() override
     {
-        // wait for other threads to finish their writes
-        executor_.sync();
+        waitForWritesToFinish();
 
-        if (!range) {
+        if (!range_) {
             executor_.writeSync(schema_->updateLedgerRange, ledgerSequence_, false, ledgerSequence_);
         }
 
@@ -620,7 +627,6 @@ public:
                 return seq;
             }
             LOG(log_.debug()) << "Could not fetch ledger object sequence - no rows";
-
         } else {
             LOG(log_.error()) << "Could not fetch ledger object sequence: " << res.error();
         }
@@ -651,7 +657,7 @@ public:
     {
         if (auto const res = executor_.read(yield, schema_->selectSuccessor, key, ledgerSequence); res) {
             if (auto const result = res->template get<ripple::uint256>(); result) {
-                if (*result == lastKey)
+                if (*result == kLAST_KEY)
                     return std::nullopt;
                 return result;
             }
@@ -864,7 +870,7 @@ public:
     {
         LOG(log_.trace()) << " Writing ledger object " << key.size() << ":" << seq << " [" << blob.size() << " bytes]";
 
-        if (range)
+        if (range_)
             executor_.write(schema_->insertDiff, seq, key);
 
         executor_.write(schema_->insertObject, std::move(key), seq, std::move(blob));
@@ -944,28 +950,35 @@ public:
         statements.reserve(data.size() * 3);
 
         for (NFTsData const& record : data) {
-            statements.push_back(
-                schema_->insertNFT.bind(record.tokenID, record.ledgerSequence, record.owner, record.isBurned)
-            );
+            if (!record.onlyUriChanged) {
+                statements.push_back(
+                    schema_->insertNFT.bind(record.tokenID, record.ledgerSequence, record.owner, record.isBurned)
+                );
 
-            // If `uri` is set (and it can be set to an empty uri), we know this
-            // is a net-new NFT. That is, this NFT has not been seen before by
-            // us _OR_ it is in the extreme edge case of a re-minted NFT ID with
-            // the same NFT ID as an already-burned token. In this case, we need
-            // to record the URI and link to the issuer_nf_tokens table.
-            if (record.uri) {
-                statements.push_back(schema_->insertIssuerNFT.bind(
-                    ripple::nft::getIssuer(record.tokenID),
-                    static_cast<uint32_t>(ripple::nft::getTaxon(record.tokenID)),
-                    record.tokenID
-                ));
+                // If `uri` is set (and it can be set to an empty uri), we know this
+                // is a net-new NFT. That is, this NFT has not been seen before by
+                // us _OR_ it is in the extreme edge case of a re-minted NFT ID with
+                // the same NFT ID as an already-burned token. In this case, we need
+                // to record the URI and link to the issuer_nf_tokens table.
+                if (record.uri) {
+                    statements.push_back(schema_->insertIssuerNFT.bind(
+                        ripple::nft::getIssuer(record.tokenID),
+                        static_cast<uint32_t>(ripple::nft::getTaxon(record.tokenID)),
+                        record.tokenID
+                    ));
+                    statements.push_back(
+                        schema_->insertNFTURI.bind(record.tokenID, record.ledgerSequence, record.uri.value())
+                    );
+                }
+            } else {
+                // only uri changed, we update the uri table only
                 statements.push_back(
                     schema_->insertNFTURI.bind(record.tokenID, record.ledgerSequence, record.uri.value())
                 );
             }
         }
 
-        executor_.write(std::move(statements));
+        executor_.writeEach(std::move(statements));
     }
 
     void

@@ -19,6 +19,7 @@
 
 #include "app/ClioApplication.hpp"
 
+#include "app/Stopper.hpp"
 #include "app/WebHandlers.hpp"
 #include "data/AmendmentCenter.hpp"
 #include "data/BackendFactory.hpp"
@@ -27,6 +28,7 @@
 #include "etl/LoadBalancer.hpp"
 #include "etl/NetworkValidatedLedgers.hpp"
 #include "feed/SubscriptionManager.hpp"
+#include "migration/MigrationInspectorFactory.hpp"
 #include "rpc/Counters.hpp"
 #include "rpc/RPCEngine.hpp"
 #include "rpc/WorkQueue.hpp"
@@ -84,6 +86,7 @@ ClioApplication::ClioApplication(util::config::ClioConfigDefinition const& confi
 {
     LOG(util::LogService::info()) << "Clio version: " << util::build::getClioFullVersionString();
     PrometheusService::init(config);
+    signalsHandler_.subscribeToStop([this]() { appStopper_.stop(); });
 }
 
 int
@@ -103,26 +106,36 @@ ClioApplication::run(bool const useNgWebServer)
 
     // Interface to the database
     data::LedgerCache sharedCache;
-    auto etlBackend = data::make_Backend(config_, sharedCache, "etl");
-    auto otherBackend = data::make_Backend(config_, sharedCache, "normal");
+    auto etlBackend = data::makeBackend(config_, sharedCache, "etl");
+    auto otherBackend = data::makeBackend(config_, sharedCache, "normal");
+
+    {
+        auto const migrationInspector = migration::makeMigrationInspector(config_, otherBackend);
+        // Check if any migration is blocking Clio server starting.
+        if (migrationInspector->isBlockingClio() and otherBackend->hardFetchLedgerRangeNoThrow()) {
+            LOG(util::LogService::error())
+                << "Existing Migration is blocking Clio, Please complete the database migration first.";
+            return EXIT_FAILURE;
+        }
+    }
 
     // Manages clients subscribed to streams
-    auto subscriptions = feed::SubscriptionManager::make_SubscriptionManager(config_, otherBackend);
+    auto subscriptions = feed::SubscriptionManager::makeSubscriptionManager(config_, otherBackend);
 
     // Tracks which ledgers have been validated by the network
-    auto ledgers = etl::NetworkValidatedLedgers::make_ValidatedLedgers();
+    auto ledgers = etl::NetworkValidatedLedgers::makeValidatedLedgers();
 
     // Handles the connection to one or more rippled nodes.
     // ETL uses the balancer to extract data.
     // The server uses the balancer to forward RPCs to a rippled node.
     // The balancer itself publishes to streams (transactions_proposed and accounts_proposed)
-    auto balancer = etl::LoadBalancer::make_LoadBalancer(config_, ioc, otherBackend, subscriptions, ledgers);
+    auto balancer = etl::LoadBalancer::makeLoadBalancer(config_, ioc, otherBackend, subscriptions, ledgers);
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
-    auto etl = etl::ETLService::make_ETLService(config_, ioc, etlBackend, subscriptions, balancer, ledgers);
+    auto etl = etl::ETLService::makeETLService(config_, ioc, etlBackend, subscriptions, balancer, ledgers);
 
-    auto workQueue = rpc::WorkQueue::make_WorkQueue(config_);
-    auto counters = rpc::Counters::make_Counters(workQueue);
+    auto workQueue = rpc::WorkQueue::makeWorkQueue(config_);
+    auto counters = rpc::Counters::makeCounters(workQueue);
     auto const amendmentCenter = std::make_shared<data::AmendmentCenter const>(otherBackend);
     auto const handlerProvider = std::make_shared<rpc::impl::ProductionHandlerProvider const>(
         config_, otherBackend, subscriptions, balancer, etl, amendmentCenter, counters
@@ -130,19 +143,19 @@ ClioApplication::run(bool const useNgWebServer)
 
     using RPCEngineType = rpc::RPCEngine<etl::LoadBalancer, rpc::Counters>;
     auto const rpcEngine =
-        RPCEngineType::make_RPCEngine(config_, otherBackend, balancer, dosGuard, workQueue, counters, handlerProvider);
+        RPCEngineType::makeRPCEngine(config_, otherBackend, balancer, dosGuard, workQueue, counters, handlerProvider);
 
     if (useNgWebServer or config_.get<bool>("server.__ng_web_server")) {
         web::ng::RPCServerHandler<RPCEngineType, etl::ETLService> handler{config_, otherBackend, rpcEngine, etl};
 
-        auto expectedAdminVerifier = web::make_AdminVerificationStrategy(config_);
+        auto expectedAdminVerifier = web::makeAdminVerificationStrategy(config_);
         if (not expectedAdminVerifier.has_value()) {
             LOG(util::LogService::error()) << "Error creating admin verifier: " << expectedAdminVerifier.error();
             return EXIT_FAILURE;
         }
         auto const adminVerifier = std::move(expectedAdminVerifier).value();
 
-        auto httpServer = web::ng::make_Server(config_, OnConnectCheck{dosGuard}, DisconnectHook{dosGuard}, ioc);
+        auto httpServer = web::ng::makeServer(config_, OnConnectCheck{dosGuard}, DisconnectHook{dosGuard}, ioc);
 
         if (not httpServer.has_value()) {
             LOG(util::LogService::error()) << "Error creating web server: " << httpServer.error();
@@ -161,6 +174,10 @@ ClioApplication::run(bool const useNgWebServer)
             return EXIT_FAILURE;
         }
 
+        appStopper_.setOnStop(
+            Stopper::makeOnStopCallback(httpServer.value(), *balancer, *etl, *subscriptions, *otherBackend, ioc)
+        );
+
         // Blocks until stopped.
         // When stopped, shared_ptrs fall out of scope
         // Calls destructors on all resources, and destructs in order
@@ -173,7 +190,7 @@ ClioApplication::run(bool const useNgWebServer)
     auto handler =
         std::make_shared<web::RPCServerHandler<RPCEngineType, etl::ETLService>>(config_, otherBackend, rpcEngine, etl);
 
-    auto const httpServer = web::make_HttpServer(config_, ioc, dosGuard, handler);
+    auto const httpServer = web::makeHttpServer(config_, ioc, dosGuard, handler);
 
     // Blocks until stopped.
     // When stopped, shared_ptrs fall out of scope

@@ -40,12 +40,14 @@ namespace data {
  * @brief A factory function that creates the backend based on a config.
  *
  * @param config The clio config to use
+ * @param cache cache
+ * @param cfgSection section
  * @return A shared_ptr<BackendInterface> with the selected implementation
  */
 inline std::shared_ptr<BackendInterface>
-make_Backend(util::config::ClioConfigDefinition const& config, LedgerCache& cache, std::string cfgSection)
+makeBackend(util::config::ClioConfigDefinition const& config, LedgerCache& cache, std::string cfgSection)
 {
-    static util::Logger const log{"Backend"};
+    static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
     LOG(log.info()) << "Constructing BackendInterface";
 
     auto const readOnly = config.get<bool>("read_only");

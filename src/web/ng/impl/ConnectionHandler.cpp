@@ -35,10 +35,12 @@
 #include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/error.hpp>
+#include <boost/beast/core/error.hpp>
 #include <boost/beast/http/error.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/websocket/error.hpp>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -138,8 +140,23 @@ ConnectionHandler::onWs(MessageHandler handler)
 void
 ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::yield_context yield)
 {
+    LOG(log_.trace()) << connectionPtr->tag() << "New connection";
     auto& connectionRef = *connectionPtr;
-    auto signalConnection = onStop_.connect([&connectionRef, yield]() { connectionRef.close(yield); });
+
+    if (isStopping()) {
+        stopConnection(connectionRef, yield);
+        return;
+    }
+    ++connectionsCounter_.get();
+
+    // Using coroutine group here to wait for stopConnection() to finish before exiting this function and destroying
+    // connection.
+    util::CoroutineGroup stopTask{yield, 1};
+    auto stopSignalConnection = onStop_.connect([&connectionRef, &stopTask, yield]() {
+        stopTask.spawn(yield, [&connectionRef](boost::asio::yield_context innerYield) {
+            stopConnection(connectionRef, innerYield);
+        });
+    });
 
     bool shouldCloseGracefully = false;
 
@@ -154,6 +171,7 @@ ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::y
             yield,
             [this](Error const& e, Connection const& c) { return handleError(e, c); }
         );
+        LOG(log_.trace()) << connectionRef.tag() << "Created SubscriptionContext for the connection";
     }
     SubscriptionContextPtr subscriptionContextInterfacePtr = subscriptionContext;
 
@@ -166,25 +184,69 @@ ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::y
             break;
     }
 
-    if (subscriptionContext != nullptr)
+    if (subscriptionContext != nullptr) {
         subscriptionContext->disconnect(yield);
+        LOG(log_.trace()) << connectionRef.tag() << "SubscriptionContext disconnected";
+    }
 
-    if (shouldCloseGracefully)
+    if (shouldCloseGracefully) {
+        connectionRef.setTimeout(kCLOSE_CONNECTION_TIMEOUT);
         connectionRef.close(yield);
+        LOG(log_.trace()) << connectionRef.tag() << "Closed gracefully";
+    }
 
-    signalConnection.disconnect();
+    stopSignalConnection.disconnect();
+    LOG(log_.trace()) << connectionRef.tag() << "Signal disconnected";
+
     onDisconnectHook_(connectionRef);
+    LOG(log_.trace()) << connectionRef.tag() << "Processing finished";
+
+    // Wait for a stopConnection() to finish if there is any to not have dangling reference in stopConnection().
+    stopTask.asyncWait(yield);
+
+    --connectionsCounter_.get();
+    if (connectionsCounter_.get().value() == 0 && stopping_)
+        stopHelper_.readyToStop();
 }
 
 void
-ConnectionHandler::stop()
+ConnectionHandler::stopConnection(Connection& connection, boost::asio::yield_context yield)
 {
+    util::Logger const log{"WebServer"};
+    LOG(log.trace()) << connection.tag() << "Stopping connection";
+    Response response{
+        boost::beast::http::status::service_unavailable,
+        "This Clio node is shutting down. Please try another node.",
+        connection
+    };
+    connection.send(std::move(response), yield);
+    connection.setTimeout(kCLOSE_CONNECTION_TIMEOUT);
+    connection.close(yield);
+    LOG(log.trace()) << connection.tag() << "Connection closed";
+}
+
+void
+ConnectionHandler::stop(boost::asio::yield_context yield)
+{
+    *stopping_ = true;
     onStop_();
+    if (connectionsCounter_.get().value() == 0)
+        return;
+
+    // Wait for server to disconnect all the users
+    stopHelper_.asyncWaitForStop(yield);
+}
+
+bool
+ConnectionHandler::isStopping() const
+{
+    return *stopping_;
 }
 
 bool
 ConnectionHandler::handleError(Error const& error, Connection const& connection) const
 {
+    LOG(log_.trace()) << connection.tag() << "Got error: " << error << " " << error.message();
     // ssl::error::stream_truncated, also known as an SSL "short read",
     // indicates the peer closed the connection without performing the
     // required closing handshake (for example, Google does this to
@@ -201,7 +263,8 @@ ConnectionHandler::handleError(Error const& error, Connection const& connection)
     // Beast returns the error boost::beast::http::error::partial_message.
     // Therefore, if we see a short read here, it has occurred
     // after the message has been completed, so it is safe to ignore it.
-    if (error == boost::beast::http::error::end_of_stream || error == boost::asio::ssl::error::stream_truncated)
+    if (error == boost::beast::http::error::end_of_stream || error == boost::asio::ssl::error::stream_truncated ||
+        error == boost::asio::error::eof || error == boost::beast::error::timeout)
         return false;
 
     // WebSocket connection was gracefully closed
@@ -229,6 +292,7 @@ ConnectionHandler::sequentRequestResponseLoop(
     //   an error appears.
     // - When server is shutting down it will cancel all operations on the connection so an error appears.
 
+    LOG(log_.trace()) << connection.tag() << "Processing sequentially";
     while (true) {
         auto expectedRequest = connection.receive(yield);
         if (not expectedRequest)
@@ -250,12 +314,14 @@ ConnectionHandler::parallelRequestResponseLoop(
     boost::asio::yield_context yield
 )
 {
+    LOG(log_.trace()) << connection.tag() << "Processing in parallel";
     // atomic_bool is not needed here because everything happening on coroutine's strand
     bool stop = false;
     bool closeConnectionGracefully = true;
     util::CoroutineGroup tasksGroup{yield, maxParallelRequests_};
 
     while (not stop) {
+        LOG(log_.trace()) << connection.tag() << "Receiving request";
         auto expectedRequest = connection.receive(yield);
         if (not expectedRequest) {
             auto const closeGracefully = handleError(expectedRequest.error(), connection);
@@ -282,7 +348,9 @@ ConnectionHandler::parallelRequestResponseLoop(
                 }
             );
             ASSERT(spawnSuccess, "The coroutine was expected to be spawned");
+            LOG(log_.trace()) << connection.tag() << "Spawned a coroutine to process request";
         } else {
+            LOG(log_.trace()) << connection.tag() << "Too many requests from one connection, rejecting the request";
             connection.send(
                 Response{
                     boost::beast::http::status::too_many_requests,
@@ -293,7 +361,10 @@ ConnectionHandler::parallelRequestResponseLoop(
             );
         }
     }
+    LOG(log_.trace()) << connection.tag()
+                      << "Waiting processing tasks to finish. Number of tasks: " << tasksGroup.size();
     tasksGroup.asyncWait(yield);
+    LOG(log_.trace()) << connection.tag() << "Processing is done";
     return closeConnectionGracefully;
 }
 
@@ -305,8 +376,10 @@ ConnectionHandler::processRequest(
     boost::asio::yield_context yield
 )
 {
+    LOG(log_.trace()) << connection.tag() << "Processing request: " << request.message();
     auto response = handleRequest(connection, subscriptionContext, request, yield);
 
+    LOG(log_.trace()) << connection.tag() << "Sending response: " << response.message();
     auto const maybeError = connection.send(std::move(response), yield);
     if (maybeError.has_value()) {
         return handleError(maybeError.value(), connection);

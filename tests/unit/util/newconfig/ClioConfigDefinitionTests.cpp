@@ -165,7 +165,10 @@ TEST(ConfigDescription, GetValues)
 {
     ClioConfigDescription const definition{};
 
-    EXPECT_EQ(definition.get("database.type"), "Type of database to use. Default is Scylladb.");
+    EXPECT_EQ(
+        definition.get("database.type"),
+        "Type of database to use. We currently support Cassandra and Scylladb. We default to Scylladb."
+    );
     EXPECT_EQ(definition.get("etl_sources.[].ip"), "IP address of the ETL source.");
     EXPECT_EQ(definition.get("prometheus.enabled"), "Enable or disable Prometheus metrics.");
 }
@@ -182,7 +185,7 @@ TEST(ConfigDescriptionAssertDeathTest, NonExistingKeyTest)
 struct OverrideConfigVals : testing::Test {
     OverrideConfigVals()
     {
-        ConfigFileJson const jsonFileObj{boost::json::parse(JSONData).as_object()};
+        ConfigFileJson const jsonFileObj{boost::json::parse(kJSON_DATA).as_object()};
         auto const errors = configData.parse(jsonFileObj);
         EXPECT_TRUE(!errors.has_value());
     }
@@ -296,7 +299,7 @@ struct IncorrectOverrideValues : testing::Test {
 
 TEST_F(IncorrectOverrideValues, InvalidJsonErrors)
 {
-    ConfigFileJson const jsonFileObj{boost::json::parse(invalidJSONData).as_object()};
+    ConfigFileJson const jsonFileObj{boost::json::parse(kINVALID_JSON_DATA).as_object()};
     auto const errors = configData.parse(jsonFileObj);
     EXPECT_TRUE(errors.has_value());
 

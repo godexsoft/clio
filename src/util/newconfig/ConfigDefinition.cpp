@@ -65,6 +65,7 @@ ClioConfigDefinition::getObject(std::string_view prefix, std::optional<std::size
         auto const hasPrefix = mapKey.starts_with(prefixWithDot);
         if (idx.has_value() && hasPrefix && std::holds_alternative<Array>(mapVal)) {
             ASSERT(std::get<Array>(mapVal).size() > idx.value(), "Index provided is out of scope");
+
             // we want to support getObject("array") and getObject("array.[]"), so we check if "[]" exists
             if (!prefix.contains("[]"))
                 return ObjectView{prefixWithDot + "[]", idx.value(), *this};
@@ -121,7 +122,7 @@ std::chrono::milliseconds
 ClioConfigDefinition::toMilliseconds(float value)
 {
     ASSERT(value >= 0.0f, "Floating point value of seconds must be non-negative, got: {}", value);
-    return std::chrono::milliseconds{std::lroundf(value * static_cast<float>(util::MILLISECONDS_PER_SECOND))};
+    return std::chrono::milliseconds{std::lroundf(value * static_cast<float>(util::kMILLISECONDS_PER_SECOND))};
 }
 
 ValueView

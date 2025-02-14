@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2022-2024, the clio developers.
+    Copyright (c) 2024, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -50,6 +50,7 @@ public:
      * @brief Construct a new Cassandra Migration Backend object. The backend is not readonly.
      *
      * @param settingsProvider The settings provider
+     * @param cache cache
      */
     explicit CassandraMigrationBackend(data::cassandra::SettingsProvider settingsProvider, data::LedgerCache& cache)
         : data::cassandra::CassandraBackend{auto{settingsProvider}, false /* not readonly */, cache}
@@ -77,23 +78,23 @@ public:
     )
     {
         LOG(log_.debug()) << "Travsering token range: " << start << " - " << end
-                          << " ; table: " << TableDesc::TABLE_NAME;
+                          << " ; table: " << TableDesc::kTABLE_NAME;
         // for each table we only have one prepared statement
-        static auto statementPrepared =
-            migrationSchema_.getPreparedFullScanStatement(handle_, TableDesc::TABLE_NAME, TableDesc::PARTITION_KEY);
+        static auto kSTATEMENT_PREPARED =
+            migrationSchema_.getPreparedFullScanStatement(handle_, TableDesc::kTABLE_NAME, TableDesc::kPARTITION_KEY);
 
-        auto const statement = statementPrepared.bind(start, end);
+        auto const statement = kSTATEMENT_PREPARED.bind(start, end);
 
         auto const res = this->executor_.read(yield, statement);
         if (not res) {
-            LOG(log_.error()) << "Could not fetch data from table: " << TableDesc::TABLE_NAME << " range: " << start
+            LOG(log_.error()) << "Could not fetch data from table: " << TableDesc::kTABLE_NAME << " range: " << start
                               << " - " << end << ";" << res.error();
             return;
         }
 
         auto const& results = res.value();
         if (not results.hasRows()) {
-            LOG(log_.debug()) << "No rows returned  - table: " << TableDesc::TABLE_NAME << " range: " << start << " - "
+            LOG(log_.debug()) << "No rows returned  - table: " << TableDesc::kTABLE_NAME << " range: " << start << " - "
                               << end;
             return;
         }

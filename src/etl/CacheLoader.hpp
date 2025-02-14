@@ -69,7 +69,7 @@ public:
         std::shared_ptr<BackendInterface> const& backend,
         CacheType& cache
     )
-        : backend_{backend}, cache_{cache}, settings_{make_CacheLoaderSettings(config)}, ctx_{settings_.numThreads}
+        : backend_{backend}, cache_{cache}, settings_{makeCacheLoaderSettings(config)}, ctx_{settings_.numThreads}
     {
     }
 
@@ -130,7 +130,8 @@ public:
     void
     stop() noexcept
     {
-        loader_->stop();
+        if (loader_ != nullptr)
+            loader_->stop();
     }
 
     /**
@@ -139,7 +140,8 @@ public:
     void
     wait() noexcept
     {
-        loader_->wait();
+        if (loader_ != nullptr)
+            loader_->wait();
     }
 };
 

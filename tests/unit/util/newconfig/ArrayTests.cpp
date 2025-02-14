@@ -31,6 +31,18 @@
 
 using namespace util::config;
 
+TEST(ArrayTest, prefix)
+{
+    EXPECT_EQ(Array::prefix("foo.[]"), "foo.[]");
+    EXPECT_EQ(Array::prefix("foo.[].bar"), "foo.[]");
+    EXPECT_EQ(Array::prefix("foo.bar.[].baz"), "foo.bar.[]");
+}
+
+TEST(ArrayDeathTest, prefix)
+{
+    EXPECT_DEATH(Array::prefix("foo.bar"), ".*");
+}
+
 TEST(ArrayTest, addSingleValue)
 {
     auto arr = Array{ConfigValue{ConfigType::Double}};
@@ -72,7 +84,7 @@ TEST(ArrayTest, testArrayPattern)
 
 TEST(ArrayTest, iterateValueArray)
 {
-    auto arr = Array{ConfigValue{ConfigType::Integer}.withConstraint(validateUint16)};
+    auto arr = Array{ConfigValue{ConfigType::Integer}.withConstraint(gValidateUint16)};
     std::vector<int64_t> const expected{543, 123, 909};
 
     for (auto const num : expected)

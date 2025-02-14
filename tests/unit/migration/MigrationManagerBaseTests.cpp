@@ -46,7 +46,7 @@ struct MigrationManagerBaseTest : public util::prometheus::WithMockPrometheus, p
     util::config::ClioConfigDefinition cfg{
         {"migration.full_scan_threads",
          util::config::ConfigValue{util::config::ConfigType::Integer}.defaultValue(2).withConstraint(
-             util::config::validateUint32
+             util::config::gValidateUint32
          )}
     };
     std::shared_ptr<TestCassandraMigrationManager> migrationManager;
@@ -54,7 +54,6 @@ struct MigrationManagerBaseTest : public util::prometheus::WithMockPrometheus, p
     MigrationManagerBaseTest()
     {
         auto mockBackendPtr = backend_.operator std::shared_ptr<MockMigrationBackend>();
-        TestMigratorRegister migratorRegister(mockBackendPtr);
         migrationManager = std::make_shared<TestCassandraMigrationManager>(mockBackendPtr, cfg.getObject("migration"));
     }
 };
@@ -67,14 +66,12 @@ TEST_F(MigrationManagerBaseTest, AllStatus)
     auto const status = migrationManager->allMigratorsStatusPairs();
     EXPECT_EQ(status.size(), 2);
     EXPECT_TRUE(
-        std::find(
-            status.begin(), status.end(), std::make_tuple("SimpleTestMigrator", migration::MigratorStatus::Migrated)
-        ) != status.end()
+        std::ranges::find(status, std::make_tuple("SimpleTestMigrator", migration::MigratorStatus::Migrated)) !=
+        status.end()
     );
     EXPECT_TRUE(
-        std::find(
-            status.begin(), status.end(), std::make_tuple("SimpleTestMigrator2", migration::MigratorStatus::NotMigrated)
-        ) != status.end()
+        std::ranges::find(status, std::make_tuple("SimpleTestMigrator2", migration::MigratorStatus::NotMigrated)) !=
+        status.end()
     );
 }
 

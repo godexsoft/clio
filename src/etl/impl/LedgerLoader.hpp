@@ -57,6 +57,7 @@ struct FormattedTransactionsData {
     std::vector<NFTTransactionsData> nfTokenTxData;
     std::vector<NFTsData> nfTokensData;
     std::vector<MPTHolderData> mptHoldersData;
+    std::vector<NFTsData> nfTokenURIChanges;
 };
 
 namespace etl::impl {
@@ -111,6 +112,7 @@ public:
     {
         FormattedTransactionsData result;
 
+        std::vector<NFTsData> nfTokenURIChanges;
         for (auto& txn : *(data.mutable_transactions_list()->mutable_transactions())) {
             std::string* raw = txn.mutable_transaction_blob();
 
@@ -123,16 +125,23 @@ public:
 
             auto const [nftTxs, maybeNFT] = getNFTDataFromTx(txMeta, sttx);
             result.nfTokenTxData.insert(result.nfTokenTxData.end(), nftTxs.begin(), nftTxs.end());
-            if (maybeNFT)
-                result.nfTokensData.push_back(*maybeNFT);
+
+            // We need to unique the URI changes separately, in case the URI changes are discarded
+            if (maybeNFT) {
+                if (maybeNFT->onlyUriChanged) {
+                    nfTokenURIChanges.push_back(*maybeNFT);
+                } else {
+                    result.nfTokensData.push_back(*maybeNFT);
+                }
+            }
 
             auto const maybeMPTHolder = getMPTHolderFromTx(txMeta, sttx);
             if (maybeMPTHolder)
                 result.mptHoldersData.push_back(*maybeMPTHolder);
 
             result.accountTxData.emplace_back(txMeta, sttx.getTransactionID());
-            static constexpr std::size_t KEY_SIZE = 32;
-            std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), KEY_SIZE};
+            static constexpr std::size_t kEY_SIZE = 32;
+            std::string keyStr{reinterpret_cast<char const*>(sttx.getTransactionID().data()), kEY_SIZE};
             backend_->writeTransaction(
                 std::move(keyStr),
                 ledger.seq,
@@ -143,6 +152,10 @@ public:
         }
 
         result.nfTokensData = getUniqueNFTsDatas(result.nfTokensData);
+        nfTokenURIChanges = getUniqueNFTsDatas(nfTokenURIChanges);
+
+        // Put uri change at the end to ensure the uri not overwritten
+        result.nfTokensData.insert(result.nfTokensData.end(), nfTokenURIChanges.begin(), nfTokenURIChanges.end());
         return result;
     }
 
@@ -204,10 +217,10 @@ public:
                         backend_->writeSuccessor(std::move(key), sequence, uint256ToString(succ->key));
                 }
 
-                ripple::uint256 prev = data::firstKey;
+                ripple::uint256 prev = data::kFIRST_KEY;
                 while (auto cur = backend_->cache().getSuccessor(prev, sequence)) {
                     ASSERT(cur.has_value(), "Succesor for key {} must exist", ripple::strHex(prev));
-                    if (prev == data::firstKey)
+                    if (prev == data::kFIRST_KEY)
                         backend_->writeSuccessor(uint256ToString(prev), sequence, uint256ToString(cur->key));
 
                     if (isBookDir(cur->key, cur->blob)) {
@@ -228,12 +241,12 @@ public:
                     }
 
                     prev = cur->key;
-                    static constexpr std::size_t LOG_INTERVAL = 100000;
-                    if (numWrites % LOG_INTERVAL == 0 && numWrites != 0)
+                    static constexpr std::size_t kLOG_INTERVAL = 100000;
+                    if (numWrites % kLOG_INTERVAL == 0 && numWrites != 0)
                         LOG(log_.info()) << "Wrote " << numWrites << " book successors";
                 }
 
-                backend_->writeSuccessor(uint256ToString(prev), sequence, uint256ToString(data::lastKey));
+                backend_->writeSuccessor(uint256ToString(prev), sequence, uint256ToString(data::kLAST_KEY));
                 ++numWrites;
             });
 
