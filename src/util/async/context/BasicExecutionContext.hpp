@@ -61,13 +61,14 @@ struct AsioPoolStrandContext {
     using Executor = boost::asio::strand<boost::asio::thread_pool::executor_type>;
     using Timer = SteadyTimer<Executor>;
 
-    Executor const&
+    Executor&
     getExecutor() const
     {
         return executor;
     }
 
-    Executor executor;
+    // TODO: try to avoid mutable here (`getExecutor() const` requires it atm.)
+    mutable Executor executor;
 };
 
 struct AsioPoolContext {

@@ -19,6 +19,8 @@
 
 #include "etl/NetworkValidatedLedgers.hpp"
 
+#include <boost/signals2/connection.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -38,6 +40,8 @@ NetworkValidatedLedgers::push(uint32_t idx)
     std::lock_guard const lck(m_);
     if (!max_ || idx > *max_)
         max_ = idx;
+
+    signal_(idx);
     cv_.notify_all();
 }
 
@@ -60,6 +64,12 @@ NetworkValidatedLedgers::waitUntilValidatedByNetwork(uint32_t sequence, std::opt
         cv_.wait(lck, pred);
     }
     return pred();
+}
+
+boost::signals2::scoped_connection
+NetworkValidatedLedgers::subscribe(SignalType::slot_type const& subscriber)
+{
+    return signal_.connect(subscriber);
 }
 
 }  // namespace etl

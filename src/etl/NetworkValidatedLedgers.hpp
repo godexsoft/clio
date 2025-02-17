@@ -21,6 +21,10 @@
 
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <boost/signals2/variadic_signal.hpp>
+
 #include <condition_variable>
 #include <cstdint>
 #include <memory>
@@ -43,6 +47,8 @@ class NetworkValidatedLedgers : public NetworkValidatedLedgersInterface {
 
     mutable std::mutex m_;
     std::condition_variable cv_;
+
+    SignalType signal_;
 
 public:
     /**
@@ -81,6 +87,9 @@ public:
      */
     bool
     waitUntilValidatedByNetwork(uint32_t sequence, std::optional<uint32_t> maxWaitMs = {}) final;
+
+    boost::signals2::scoped_connection
+    subscribe(SignalType::slot_type const& subscriber) override;
 };
 
 }  // namespace etl

@@ -32,6 +32,7 @@
 #include <concepts>
 #include <condition_variable>
 #include <expected>
+#include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -227,6 +228,7 @@ using ScheduledOperation = impl::BasicScheduledOperation<CtxType, OpType>;
 template <typename CtxType>
 class RepeatingOperation : public util::MoveTracker {
     util::Repeat repeat_;
+    std::function<void()> action_;
 
 public:
     /**
@@ -238,9 +240,9 @@ public:
      * @param fn The function to execute repeatedly
      */
     RepeatingOperation(auto& executor, std::chrono::steady_clock::duration interval, std::invocable auto&& fn)
-        : repeat_(executor)
+        : repeat_(executor), action_([fn, &executor] { boost::asio::post(executor, fn); })
     {
-        repeat_.start(interval, std::forward<decltype(fn)>(fn));
+        repeat_.start(interval, action_);
     }
 
     ~RepeatingOperation() override
@@ -265,6 +267,15 @@ public:
     abort() noexcept
     {
         repeat_.stop();
+    }
+
+    /**
+     * @brief Force-invoke the operation
+     */
+    void
+    invoke()
+    {
+        action_();
     }
 };
 

@@ -20,6 +20,7 @@
 #pragma once
 
 #include "util/async/Concepts.hpp"
+#include "util/async/Operation.hpp"
 #include "util/async/context/impl/Cancellation.hpp"
 #include "util/async/context/impl/Execution.hpp"
 #include "util/async/context/impl/Timer.hpp"
@@ -52,6 +53,7 @@ public:
     using StopToken = typename StopSourceType::Token;
     using Timer =
         typename ParentContextType::ContextHolderType::Timer;  // timers are associated with the parent context
+    using RepeatedOperation = RepeatingOperation<BasicStrand>;
 
     BasicStrand(ParentContextType& parent, auto&& strand)
         : parentContext_{std::ref(parent)}, context_{std::forward<decltype(strand)>(strand)}
@@ -113,6 +115,16 @@ public:
                 }
             })
         );
+    }
+
+    [[nodiscard]] auto
+    executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
+    {
+        if constexpr (not std::is_same_v<decltype(TimerContextProvider::getContext(*this)), decltype(*this)>) {
+            return TimerContextProvider::getContext(*this).executeRepeatedly(interval, std::forward<decltype(fn)>(fn));
+        } else {
+            return RepeatedOperation(impl::extractAssociatedExecutor(*this), interval, std::forward<decltype(fn)>(fn));
+        }
     }
 };
 

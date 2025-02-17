@@ -107,6 +107,15 @@ public:
         }
     }
 
+    /**
+     * @brief Force-invoke the operation
+     */
+    void
+    invoke()
+    {
+        operation_.invoke();
+    }
+
 private:
     impl::ErasedOperation operation_;
 };
