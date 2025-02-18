@@ -47,8 +47,7 @@ protected:
     StrictMockNetworkValidatedLedgersPtr ledgers_;
     testing::StrictMock<testing::MockFunction<void(uint32_t)>> actionMock_;
 
-    etlng::impl::Monitor monitor_ =
-        etlng::impl::Monitor(ctx_, backend_, ledgers_, actionMock_.AsStdFunction(), kSTART_SEQ);
+    etlng::impl::Monitor monitor_ = etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ);
 };
 
 TEST_F(MonitorTests, ConsumesAndNotifiesForAllOutstandingSequencesAtOnce)
@@ -65,6 +64,7 @@ TEST_F(MonitorTests, ConsumesAndNotifiesForAllOutstandingSequencesAtOnce)
             unblock.release();
     });
 
+    auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
     monitor_.run(std::chrono::milliseconds{1});
     unblock.acquire();
 }
@@ -87,6 +87,7 @@ TEST_F(MonitorTests, NotifiesForEachSequence)
             unblock.release();
     });
 
+    auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
     monitor_.run(std::chrono::milliseconds{1});
     unblock.acquire();
 }
@@ -104,6 +105,7 @@ TEST_F(MonitorTests, NotifiesWhenForcedByNewSequenceAvailableFromNetwork)
     EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(range));
     EXPECT_CALL(actionMock_, Call).WillOnce([&] { unblock.release(); });
 
+    auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
     monitor_.run(std::chrono::seconds{10});  // expected to be force-invoked sooner than in 10 sec
     pusher(kSTART_SEQ);                      // pretend network validated a new ledger
     unblock.acquire();
