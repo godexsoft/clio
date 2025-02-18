@@ -26,6 +26,8 @@
 #include "util/async/AnyOperation.hpp"
 #include "util/log/Logger.hpp"
 
+#include <boost/signals2/connection.hpp>
+
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -39,13 +41,11 @@ Monitor::Monitor(
     util::async::AnyExecutionContext&& ctx,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
-    std::function<void(uint32_t)> callback,
     uint32_t startSequence
 )
     : strand_(ctx.makeStrand())
     , backend_(std::move(backend))
     , validatedLedgers_(std::move(validatedLedgers))
-    , onNextLedger_(std::move(callback))
     , nextSequence_(startSequence)
 {
 }
@@ -74,6 +74,12 @@ Monitor::stop()
     repeatedTask_ = std::nullopt;
 }
 
+boost::signals2::scoped_connection
+Monitor::subscribe(SignalType::slot_type const& subscriber)
+{
+    return notificationChannel_.connect(subscriber);
+}
+
 void
 Monitor::onNextSequence(uint32_t seq)
 {
@@ -85,10 +91,8 @@ void
 Monitor::doWork()
 {
     if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); rng) {
-        while (rng->maxSequence >= nextSequence_) {
-            // ledgerPublisher_.publish(nextSequence, {});
-            onNextLedger_(nextSequence_++);
-        }
+        while (rng->maxSequence >= nextSequence_)
+            notificationChannel_(nextSequence_++);
     }
 }
 

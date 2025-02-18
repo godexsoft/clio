@@ -21,7 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
-#include "util/Constants.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
 #include "util/async/AnyStrand.hpp"
@@ -30,46 +30,44 @@
 #include <boost/signals2/connection.hpp>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 
 namespace etlng::impl {
 
-class Monitor {
+class Monitor : public MonitorInterface {
     util::async::AnyStrand strand_;
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers_;
-    std::function<void(uint32_t)> onNextLedger_;
 
     uint32_t nextSequence_;
     std::optional<util::async::AnyOperation<void>> repeatedTask_;
     std::optional<boost::signals2::scoped_connection> subscription_;
-    std::atomic_bool isBusy_ = false;
+
+    SignalType notificationChannel_;
 
     util::Logger log_{"ETL"};
 
 public:
-    static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::milliseconds{util::kMILLISECONDS_PER_SECOND};
-
     Monitor(
         util::async::AnyExecutionContext&& ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
-        std::function<void(uint32_t)> callback,
         uint32_t startSequence
     );
-    ~Monitor();
+    ~Monitor() override;
 
     void
-    run(std::chrono::steady_clock::duration repeatInterval = kDEFAULT_REPEAT_INTERVAL);
+    run(std::chrono::steady_clock::duration repeatInterval) override;
 
     void
-    stop();
+    stop() override;
+
+    boost::signals2::scoped_connection
+    subscribe(SignalType::slot_type const& subscriber) override;
 
 private:
     void
