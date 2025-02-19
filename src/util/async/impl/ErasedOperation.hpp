@@ -145,7 +145,7 @@ private:
         void
         invoke() override
         {
-            if constexpr (not SomeForceInvokableOperation<OpType>) {
+            if constexpr (not SomeForceInvocableOperation<OpType>) {
                 ASSERT(false, "Called invoke() on an operation that can't be force-invoked");
             } else {
                 operation.invoke();

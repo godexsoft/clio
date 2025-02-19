@@ -138,3 +138,8 @@ TEST_F(AnyOperationDeathTest, CallAbortOnNonStoppableOrCancellableOperation)
 {
     EXPECT_DEATH(voidOp.abort(), ".*");
 }
+
+TEST_F(AnyOperationDeathTest, CallInvokeOnNonForceInvocableOperation)
+{
+    EXPECT_DEATH(voidOp.invoke(), ".*");
+}
