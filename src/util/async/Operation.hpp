@@ -239,8 +239,9 @@ public:
      * @param interval Time to wait before repeating the user-provided block of code
      * @param fn The function to execute repeatedly
      */
-    RepeatingOperation(auto& executor, std::chrono::steady_clock::duration interval, std::invocable auto&& fn)
-        : repeat_(executor), action_([fn, &executor] { boost::asio::post(executor, fn); })
+    template <std::invocable FnType>
+    RepeatingOperation(auto& executor, std::chrono::steady_clock::duration interval, FnType&& fn)
+        : repeat_(executor), action_([fn = std::forward<FnType>(fn), &executor] { boost::asio::post(executor, fn); })
     {
         repeat_.start(interval, action_);
     }
