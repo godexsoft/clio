@@ -161,8 +161,10 @@ private:
         virtual ~Concept() = default;
 
         [[nodiscard]] virtual impl::ErasedOperation
-        execute(std::function<std::any(AnyStopToken)>, std::optional<std::chrono::milliseconds> timeout = std::nullopt)
-            const = 0;
+        execute(
+            std::function<std::any(AnyStopToken)>,
+            std::optional<std::chrono::milliseconds> timeout = std::nullopt
+        ) = 0;
         [[nodiscard]] virtual impl::ErasedOperation execute(std::function<std::any()>) = 0;
         [[nodiscard]] virtual impl::ErasedOperation
             executeRepeatedly(std::chrono::milliseconds, std::function<std::any()>) = 0;
@@ -179,8 +181,7 @@ private:
         }
 
         [[nodiscard]] impl::ErasedOperation
-        execute(std::function<std::any(AnyStopToken)> fn, std::optional<std::chrono::milliseconds> timeout)
-            const override
+        execute(std::function<std::any(AnyStopToken)> fn, std::optional<std::chrono::milliseconds> timeout) override
         {
             return strand.execute(std::move(fn), timeout);
         }

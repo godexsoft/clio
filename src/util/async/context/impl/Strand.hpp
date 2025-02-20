@@ -66,8 +66,10 @@ public:
     BasicStrand(BasicStrand const&) = delete;
 
     [[nodiscard]] auto
-    execute(SomeHandlerWith<StopToken> auto&& fn, std::optional<std::chrono::milliseconds> timeout = std::nullopt) const
-        noexcept(kIS_NOEXCEPT)
+    execute(
+        SomeHandlerWith<StopToken> auto&& fn,
+        std::optional<std::chrono::milliseconds> timeout = std::nullopt
+    ) noexcept(kIS_NOEXCEPT)
     {
         return DispatcherType::dispatch(
             context_,
@@ -91,7 +93,7 @@ public:
     }
 
     [[nodiscard]] auto
-    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) const noexcept(kIS_NOEXCEPT)
+    execute(SomeHandlerWith<StopToken> auto&& fn, SomeStdDuration auto timeout) noexcept(kIS_NOEXCEPT)
     {
         return execute(
             std::forward<decltype(fn)>(fn),
@@ -100,7 +102,7 @@ public:
     }
 
     [[nodiscard]] auto
-    execute(SomeHandlerWithoutStopToken auto&& fn) const noexcept(kIS_NOEXCEPT)
+    execute(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
     {
         return DispatcherType::dispatch(
             context_,

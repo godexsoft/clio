@@ -62,13 +62,12 @@ struct AsioPoolStrandContext {
     using Timer = SteadyTimer<Executor>;
 
     Executor&
-    getExecutor() const
+    getExecutor()
     {
         return executor;
     }
 
-    // TODO: try to avoid mutable here (`getExecutor() const` requires it atm.)
-    mutable Executor executor;
+    Executor executor;
 };
 
 struct AsioPoolContext {

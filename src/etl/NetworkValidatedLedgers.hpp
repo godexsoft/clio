@@ -42,13 +42,12 @@ namespace etl {
  * remains stopped for the rest of its lifetime.
  */
 class NetworkValidatedLedgers : public NetworkValidatedLedgersInterface {
-    // max sequence validated by network
-    std::optional<uint32_t> max_;
+    std::optional<uint32_t> latest_;  // currently known latest sequence validated by network
 
-    mutable std::mutex m_;
+    mutable std::mutex mtx_;
     std::condition_variable cv_;
 
-    SignalType signal_;
+    SignalType notificationChannel_;
 
 public:
     /**

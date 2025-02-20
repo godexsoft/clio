@@ -45,7 +45,7 @@ class Monitor : public MonitorInterface {
 
     uint32_t nextSequence_;
     std::optional<util::async::AnyOperation<void>> repeatedTask_;
-    std::optional<boost::signals2::scoped_connection> subscription_;
+    std::optional<boost::signals2::scoped_connection> subscription_;  // network validated ledgers subscription
 
     SignalType notificationChannel_;
 
@@ -53,7 +53,7 @@ class Monitor : public MonitorInterface {
 
 public:
     Monitor(
-        util::async::AnyExecutionContext&& ctx,
+        util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence

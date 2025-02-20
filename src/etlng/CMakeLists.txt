@@ -7,8 +7,8 @@ target_sources(
           impl/Extraction.cpp
           impl/GrpcSource.cpp
           impl/Loading.cpp
-          impl/TaskManager.cpp
           impl/Monitor.cpp
+          impl/TaskManager.cpp
 )
 
 target_link_libraries(clio_etlng PUBLIC clio_data)

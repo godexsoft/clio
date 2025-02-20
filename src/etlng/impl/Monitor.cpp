@@ -38,7 +38,7 @@
 
 namespace etlng::impl {
 Monitor::Monitor(
-    util::async::AnyExecutionContext&& ctx,
+    util::async::AnyExecutionContext ctx,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
     uint32_t startSequence
