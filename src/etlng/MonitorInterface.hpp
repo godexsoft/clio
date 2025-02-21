@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include "util/Constants.hpp"
-
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 #include <boost/signals2/variadic_signal.hpp>
@@ -37,7 +35,7 @@ namespace etlng {
  */
 class MonitorInterface {
 public:
-    static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::milliseconds{util::kMILLISECONDS_PER_SECOND};
+    static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::seconds{1};
     using SignalType = boost::signals2::signal<void(uint32_t)>;
 
     virtual ~MonitorInterface() = default;

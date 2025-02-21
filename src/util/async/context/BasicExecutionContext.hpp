@@ -272,6 +272,7 @@ public:
 
     /**
      * @brief Schedule a repeating operation on the execution context
+     * @warning The code of the user-provided action is expected to be thread-safe
      *
      * @param interval The interval at which the operation should be repeated
      * @param fn The block of code to execute; no args allowed and return type must be void

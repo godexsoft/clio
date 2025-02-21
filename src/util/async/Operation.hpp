@@ -272,6 +272,9 @@ public:
 
     /**
      * @brief Force-invoke the operation
+     * @note The action is scheduled on the underlying context/strand
+     * @warning The code of the user-provided action is expected to take care of thread-safety unless this operation is
+     * scheduled through a strand
      */
     void
     invoke()
