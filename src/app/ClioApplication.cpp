@@ -31,6 +31,7 @@
 #include "rpc/Counters.hpp"
 #include "rpc/RPCEngine.hpp"
 #include "rpc/WorkQueue.hpp"
+#include "rpc/common/Types.hpp"
 #include "rpc/common/impl/HandlerProvider.hpp"
 #include "util/build/Build.hpp"
 #include "util/log/Logger.hpp"
@@ -42,15 +43,25 @@
 #include "web/dosguard/DOSGuard.hpp"
 #include "web/dosguard/IntervalSweepHandler.hpp"
 #include "web/dosguard/WhitelistHandler.hpp"
+#include "web/ng/Connection.hpp"
 #include "web/ng/RPCServerHandler.hpp"
+#include "web/ng/Request.hpp"
+#include "web/ng/Response.hpp"
 #include "web/ng/Server.hpp"
 
+#include <api/DefaultApi.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/beast/http/status.hpp>
+#include <model/ItemRequest.hpp>
+#include <model/ItemResponse.hpp>
+#include <model/UniversalErrorResponseCodes.hpp>
 
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
 #include <optional>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -58,6 +69,24 @@
 namespace app {
 
 namespace {
+
+struct ItemsHandlerImpl : public clio::ItemsHandlerBase<rpc::Context> {
+    std::expected<clio::model::ItemResponse, clio::Error>
+    process(clio::model::ItemRequest const&, rpc::Context const& ctx) override
+    {
+        using namespace clio::model;  // generated name of namespace can be adjusted in openapi
+
+        LOG(util::LogService::info()) << "+++ calling process in item handler impl: " << ctx.clientIp;
+
+        // currently extEnum will be uninitialized which leads to an exception in conversion to json
+        auto tmp = ItemResponse{};
+
+        // comment out to see error case
+        tmp.setExtEnum(UniversalErrorResponseCodes::TooBusy);
+
+        return tmp;
+    }
+};
 
 /**
  * @brief Start context threads
@@ -166,6 +195,24 @@ ClioApplication::run(bool const useNgWebServer)
         auto requestHandler = RequestHandler{adminVerifier, handler, dosGuard};
         httpServer->onPost("/", requestHandler);
         httpServer->onWs(std::move(requestHandler));
+
+        clio::HandlerRegistry<rpc::Context> reg;
+        reg.bind<clio::ItemsHandlerTag>(std::make_shared<ItemsHandlerImpl>());
+
+        for (auto [endpoint, handler] : reg.endpoints()) {
+            LOG(util::LogService::info()) << "+++ endpoint from openapi: " << endpoint;
+            httpServer->onGet(
+                std::string{endpoint},
+                [handler](
+                    web::ng::Request const& req, web::ng::ConnectionMetadata const& connection, auto&&, auto yield
+                ) -> web::ng::Response {
+                    auto res = handler->handle("{}", rpc::Context{.yield = yield, .clientIp = connection.ip()});
+                    return web::ng::Response{
+                        boost::beast::http::status::ok, res.has_value() ? res.value() : res.error().message, req
+                    };
+                }
+            );
+        }
 
         auto const maybeError = httpServer->run();
         if (maybeError.has_value()) {

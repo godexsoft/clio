@@ -51,6 +51,7 @@ include(SourceLocation)
 
 # Clio deps
 include(deps/libxrpl)
+include(deps/models)
 include(deps/Boost)
 include(deps/OpenSSL)
 include(deps/Threads)
