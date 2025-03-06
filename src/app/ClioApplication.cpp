@@ -72,11 +72,12 @@ namespace {
 
 struct ItemsHandlerImpl : public clio::ItemsHandlerBase<rpc::Context> {
     std::expected<clio::model::ItemResponse, clio::Error>
-    process(clio::model::ItemRequest const&, rpc::Context const& ctx) override
+    process(clio::model::ItemRequestBase const& req, rpc::Context const& ctx) override
     {
         using namespace clio::model;  // generated name of namespace can be adjusted in openapi
 
-        LOG(util::LogService::info()) << "+++ calling process in item handler impl: " << ctx.clientIp;
+        LOG(util::LogService::info()) << "+++ client ip: " << ctx.clientIp
+                                      << "; req.limit: " << req.getLimit().value_or(1500);
 
         // currently extEnum will be uninitialized which leads to an exception in conversion to json
         auto tmp = ItemResponse{};
