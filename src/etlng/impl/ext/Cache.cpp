@@ -17,49 +17,43 @@
 */
 //==============================================================================
 
-#include "util/Assert.hpp"
+#include "etlng/impl/ext/Cache.hpp"
 
+#include "data/LedgerCache.hpp"
+#include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
-#include <cstdlib>
-#include <iostream>
-#include <string_view>
-#include <utility>
+#include <cstdint>
+#include <string>
+#include <vector>
 
-namespace util::impl {
+namespace etlng::impl {
 
-OnAssert::ActionType OnAssert::action;
-
-void
-OnAssert::call(std::string_view message)
+CacheExt::CacheExt(data::LedgerCache& cache) : cache_(cache)
 {
-    if (not OnAssert::action) {
-        resetAction();
-    }
-    OnAssert::action(message);
 }
 
 void
-OnAssert::setAction(ActionType newAction)
+CacheExt::onLedgerData(model::LedgerData const& data) const
 {
-    OnAssert::action = std::move(newAction);
+    cache_.update(data.objects, data.seq);
+    LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
 }
 
 void
-OnAssert::resetAction()
+CacheExt::onInitialData(model::LedgerData const& data) const
 {
-    OnAssert::action = [](std::string_view m) { OnAssert::defaultAction(m); };
+    LOG(log_.trace()) << "got initial data. objects cnt = " << data.objects.size();
+    cache_.update(data.objects, data.seq);
+    cache_.setFull();
 }
 
 void
-OnAssert::defaultAction(std::string_view message)
+CacheExt::onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs, [[maybe_unused]] std::string lastKey)
+    const
 {
-    if (LogService::enabled()) {
-        LOG(LogService::fatal()) << message;
-    } else {
-        std::cerr << message;
-    }
-    std::exit(EXIT_FAILURE);  // std::abort does not flush gcovr output and causes uncovered lines
+    LOG(log_.trace()) << "got initial objects cnt = " << objs.size();
+    cache_.update(objs, seq);
 }
 
-}  // namespace util::impl
+}  // namespace etlng::impl

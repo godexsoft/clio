@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/Types.hpp"
+#include "etlng/Models.hpp"
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -72,6 +73,7 @@ class LedgerCache {
     )};
 
     std::map<ripple::uint256, CacheEntry> map_;
+    std::map<ripple::uint256, CacheEntry> deleted_;
 
     mutable std::shared_mutex mtx_;
     std::condition_variable_any cv_;
@@ -94,6 +96,15 @@ public:
     update(std::vector<LedgerObject> const& objs, uint32_t seq, bool isBackground = false);
 
     /**
+     * @brief Update the cache with new ledger objects.
+     *
+     * @param objs The ledger objects to update cache with
+     * @param seq The sequence to update cache for
+     */
+    void
+    update(std::vector<etlng::model::Object> const& objs, uint32_t seq);
+
+    /**
      * @brief Fetch a cached object by its key and sequence number.
      *
      * @param key The key to fetch for
@@ -102,6 +113,16 @@ public:
      */
     std::optional<Blob>
     get(ripple::uint256 const& key, uint32_t seq) const;
+
+    /**
+     * @brief Fetch a recently deleted object by its key and sequence number.
+     *
+     * @param key The key to fetch for
+     * @param seq The sequence to fetch for
+     * @return If found in deleted cache, will return the cached Blob; otherwise nullopt is returned
+     */
+    std::optional<Blob>
+    getDeleted(ripple::uint256 const& key, uint32_t seq) const;
 
     /**
      * @brief Gets a cached successor.

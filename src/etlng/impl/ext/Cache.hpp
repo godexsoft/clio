@@ -17,49 +17,34 @@
 */
 //==============================================================================
 
-#include "util/Assert.hpp"
+#pragma once
 
+#include "data/LedgerCache.hpp"
+#include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
-#include <cstdlib>
-#include <iostream>
-#include <string_view>
-#include <utility>
+#include <cstdint>
+#include <string>
+#include <vector>
 
-namespace util::impl {
+namespace etlng::impl {
 
-OnAssert::ActionType OnAssert::action;
+class CacheExt {
+    data::LedgerCache& cache_;
 
-void
-OnAssert::call(std::string_view message)
-{
-    if (not OnAssert::action) {
-        resetAction();
-    }
-    OnAssert::action(message);
-}
+    util::Logger log_{"ETL"};
 
-void
-OnAssert::setAction(ActionType newAction)
-{
-    OnAssert::action = std::move(newAction);
-}
+public:
+    CacheExt(data::LedgerCache& cache);
 
-void
-OnAssert::resetAction()
-{
-    OnAssert::action = [](std::string_view m) { OnAssert::defaultAction(m); };
-}
+    void
+    onLedgerData(model::LedgerData const& data) const;
 
-void
-OnAssert::defaultAction(std::string_view message)
-{
-    if (LogService::enabled()) {
-        LOG(LogService::fatal()) << message;
-    } else {
-        std::cerr << message;
-    }
-    std::exit(EXIT_FAILURE);  // std::abort does not flush gcovr output and causes uncovered lines
-}
+    void
+    onInitialData(model::LedgerData const& data) const;
 
-}  // namespace util::impl
+    void
+    onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs, [[maybe_unused]] std::string lastKey) const;
+};
+
+}  // namespace etlng::impl

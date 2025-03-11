@@ -17,49 +17,40 @@
 */
 //==============================================================================
 
-#include "util/Assert.hpp"
+#pragma once
 
+#include "data/BackendInterface.hpp"
+#include "data/DBHelpers.hpp"
+#include "etl/NFTHelpers.hpp"
+#include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
-#include <cstdlib>
-#include <iostream>
-#include <string_view>
+#include <cstdint>
+#include <memory>
 #include <utility>
+#include <vector>
 
-namespace util::impl {
+namespace etlng::impl {
 
-OnAssert::ActionType OnAssert::action;
+class NFTExt {
+    std::shared_ptr<BackendInterface> backend_;
+    util::Logger log_{"ETL"};
 
-void
-OnAssert::call(std::string_view message)
-{
-    if (not OnAssert::action) {
-        resetAction();
-    }
-    OnAssert::action(message);
-}
+public:
+    NFTExt(std::shared_ptr<BackendInterface> backend);
 
-void
-OnAssert::setAction(ActionType newAction)
-{
-    OnAssert::action = std::move(newAction);
-}
+    void
+    onLedgerData(model::LedgerData const& data) const;
 
-void
-OnAssert::resetAction()
-{
-    OnAssert::action = [](std::string_view m) { OnAssert::defaultAction(m); };
-}
+    void
+    onInitialObject(uint32_t seq, model::Object const& obj) const;
 
-void
-OnAssert::defaultAction(std::string_view message)
-{
-    if (LogService::enabled()) {
-        LOG(LogService::fatal()) << message;
-    } else {
-        std::cerr << message;
-    }
-    std::exit(EXIT_FAILURE);  // std::abort does not flush gcovr output and causes uncovered lines
-}
+    void
+    onInitialData(model::LedgerData const& data) const;
 
-}  // namespace util::impl
+private:
+    void
+    writeNFTs(model::LedgerData const& data) const;
+};
+
+}  // namespace etlng::impl
