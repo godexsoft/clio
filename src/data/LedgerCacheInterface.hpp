@@ -37,6 +37,8 @@ namespace data {
 class LedgerCacheInterface {
 public:
     virtual ~LedgerCacheInterface() = default;
+    LedgerCacheInterface() = default;
+    LedgerCacheInterface(LedgerCacheInterface&&) = delete;
 
     /**
      * @brief Update the cache with new ledger objects.
