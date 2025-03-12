@@ -39,6 +39,11 @@ public:
     virtual ~LedgerCacheInterface() = default;
     LedgerCacheInterface() = default;
     LedgerCacheInterface(LedgerCacheInterface&&) = delete;
+    LedgerCacheInterface(LedgerCacheInterface const&) = delete;
+    LedgerCacheInterface&
+    operator=(LedgerCacheInterface&&) = delete;
+    LedgerCacheInterface&
+    operator=(LedgerCacheInterface const&) = delete;
 
     /**
      * @brief Update the cache with new ledger objects.
