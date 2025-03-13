@@ -19,23 +19,24 @@
 
 #pragma once
 
-#include "data/LedgerCache.hpp"
+#include "data/LedgerCacheInterface.hpp"
 #include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
 namespace etlng::impl {
 
 class CacheExt {
-    data::LedgerCache& cache_;
+    std::reference_wrapper<data::LedgerCacheInterface> cache_;
 
     util::Logger log_{"ETL"};
 
 public:
-    CacheExt(data::LedgerCache& cache);
+    CacheExt(data::LedgerCacheInterface& cache);
 
     void
     onLedgerData(model::LedgerData const& data) const;

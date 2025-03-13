@@ -19,7 +19,7 @@
 
 #include "etlng/impl/ext/Cache.hpp"
 
-#include "data/LedgerCache.hpp"
+#include "data/LedgerCacheInterface.hpp"
 #include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
@@ -29,14 +29,14 @@
 
 namespace etlng::impl {
 
-CacheExt::CacheExt(data::LedgerCache& cache) : cache_(cache)
+CacheExt::CacheExt(data::LedgerCacheInterface& cache) : cache_(cache)
 {
 }
 
 void
 CacheExt::onLedgerData(model::LedgerData const& data) const
 {
-    cache_.update(data.objects, data.seq);
+    cache_.get().update(data.objects, data.seq);
     LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
 }
 
@@ -44,8 +44,8 @@ void
 CacheExt::onInitialData(model::LedgerData const& data) const
 {
     LOG(log_.trace()) << "got initial data. objects cnt = " << data.objects.size();
-    cache_.update(data.objects, data.seq);
-    cache_.setFull();
+    cache_.get().update(data.objects, data.seq);
+    cache_.get().setFull();
 }
 
 void
@@ -53,7 +53,7 @@ CacheExt::onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs,
     const
 {
     LOG(log_.trace()) << "got initial objects cnt = " << objs.size();
-    cache_.update(objs, seq);
+    cache_.get().update(objs, seq);
 }
 
 }  // namespace etlng::impl
