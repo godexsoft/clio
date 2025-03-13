@@ -46,6 +46,7 @@ target_sources(
           etlng/MonitorTests.cpp
           etlng/ext/CoreTests.cpp
           etlng/ext/CacheTests.cpp
+          etlng/ext/NFTTests.cpp
           # Feed
           util/BytesConverterTests.cpp
           feed/BookChangesFeedTests.cpp
