@@ -44,6 +44,7 @@ target_sources(
           etlng/LoadingTests.cpp
           etlng/NetworkValidatedLedgersTests.cpp
           etlng/MonitorTests.cpp
+          etlng/ext/CoreTests.cpp
           # Feed
           util/BytesConverterTests.cpp
           feed/BookChangesFeedTests.cpp
