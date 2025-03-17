@@ -20,7 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "data/LedgerCache.hpp"
+#include "data/LedgerCacheInterface.hpp"
 #include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
@@ -28,6 +28,7 @@
 #include <xrpl/basics/strHex.h>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,12 +37,12 @@ namespace etlng::impl {
 
 class SuccessorExt {
     std::shared_ptr<BackendInterface> backend_;
-    data::LedgerCache& cache_;
+    std::reference_wrapper<data::LedgerCacheInterface> cache_;
 
     util::Logger log_{"ETL"};
 
 public:
-    SuccessorExt(std::shared_ptr<BackendInterface> backend, data::LedgerCache& cache);
+    SuccessorExt(std::shared_ptr<BackendInterface> backend, data::LedgerCacheInterface& cache);
 
     void
     onInitialData(model::LedgerData const& data) const;

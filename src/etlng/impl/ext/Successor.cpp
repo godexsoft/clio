@@ -21,7 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
-#include "data/LedgerCache.hpp"
+#include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
 #include "etlng/Models.hpp"
 #include "util/Assert.hpp"
@@ -40,7 +40,7 @@
 
 namespace etlng::impl {
 
-SuccessorExt::SuccessorExt(std::shared_ptr<BackendInterface> backend, data::LedgerCache& cache)
+SuccessorExt::SuccessorExt(std::shared_ptr<BackendInterface> backend, data::LedgerCacheInterface& cache)
     : backend_(std::move(backend)), cache_(cache)
 {
 }
@@ -48,7 +48,7 @@ SuccessorExt::SuccessorExt(std::shared_ptr<BackendInterface> backend, data::Ledg
 void
 SuccessorExt::onInitialData(model::LedgerData const& data) const
 {
-    ASSERT(cache_.isFull(), "Cache must be full at this point");
+    ASSERT(cache_.get().isFull(), "Cache must be full at this point");
     ASSERT(data.edgeKeys.has_value(), "Expecting to have edge keys on initial data load");
     ASSERT(data.objects.empty(), "Should not have objects from initial data");
     writeSuccessors(data.seq);
@@ -76,7 +76,7 @@ SuccessorExt::onLedgerData(model::LedgerData const& data) const
 
     LOG(log_.info()) << "Received ledger data for successor ext; obj cnt = " << data.objects.size()
                      << "; got successors = " << data.successors.has_value() << "; cache is "
-                     << (cache_.isFull() ? "FULL" : "Not full");
+                     << (cache_.get().isFull() ? "FULL" : "Not full");
 
     auto filteredObjects = data.objects  //
         | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
@@ -88,7 +88,7 @@ SuccessorExt::onLedgerData(model::LedgerData const& data) const
         for (auto const& obj : filteredObjects)
             writeIncludedSuccessor(data.seq, obj);
     } else {
-        if (not cache_.isFull() or cache_.latestLedgerSequence() != data.seq)
+        if (not cache_.get().isFull() or cache_.get().latestLedgerSequence() != data.seq)
             throw std::logic_error("Cache is not full, but object neighbors were not included");
 
         for (auto const& obj : filteredObjects)
@@ -127,8 +127,9 @@ void
 SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) const
 {
     auto const lb =
-        cache_.getPredecessor(obj.key, seq).value_or(data::LedgerObject{.key = data::kFIRST_KEY, .blob = {}});
-    auto const ub = cache_.getSuccessor(obj.key, seq).value_or(data::LedgerObject{.key = data::kLAST_KEY, .blob = {}});
+        cache_.get().getPredecessor(obj.key, seq).value_or(data::LedgerObject{.key = data::kFIRST_KEY, .blob = {}});
+    auto const ub =
+        cache_.get().getSuccessor(obj.key, seq).value_or(data::LedgerObject{.key = data::kLAST_KEY, .blob = {}});
 
     auto checkBookBase = false;
     auto const isDeleted = obj.data.empty();
@@ -141,7 +142,7 @@ SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) c
     }
 
     if (isDeleted) {
-        auto const old = cache_.getDeleted(obj.key, seq - 1);
+        auto const old = cache_.get().getDeleted(obj.key, seq - 1);
         ASSERT(old.has_value(), "Deleted object {} must be in cache", ripple::strHex(obj.key));
 
         checkBookBase = isBookDir(obj.key, *old);
@@ -150,13 +151,13 @@ SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) c
     }
 
     if (checkBookBase) {
-        auto const current = cache_.get(obj.key, seq);
+        auto const current = cache_.get().get(obj.key, seq);
         auto const bookBase = getBookBase(obj.key);
 
         if (isDeleted and not current.has_value()) {
             updateBookSuccessor(seq, bookBase);
         } else if (current.has_value()) {
-            auto const successor = cache_.getSuccessor(bookBase, seq);
+            auto const successor = cache_.get().getSuccessor(bookBase, seq);
             ASSERT(successor.has_value(), "Book base must have a successor for seq = {}", seq);
 
             if (successor->key == obj.key)
@@ -168,7 +169,7 @@ SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) c
 void
 SuccessorExt::updateBookSuccessor(auto seq, ripple::uint256 const& bookBase) const
 {
-    if (auto succ = cache_.getSuccessor(bookBase, seq); succ.has_value()) {
+    if (auto succ = cache_.get().getSuccessor(bookBase, seq); succ.has_value()) {
         backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(succ->key));
     } else {
         backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(data::kLAST_KEY));
@@ -179,7 +180,7 @@ void
 SuccessorExt::writeSuccessors(uint32_t seq) const
 {
     ripple::uint256 prev = data::kFIRST_KEY;
-    while (auto cur = cache_.getSuccessor(prev, seq)) {
+    while (auto cur = cache_.get().getSuccessor(prev, seq)) {
         ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
         if (prev == data::kFIRST_KEY)
             backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
@@ -188,8 +189,8 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
             auto base = getBookBase(cur->key);
 
             // make sure the base is not an actual object
-            if (not cache_.get(base, seq)) {
-                auto succ = cache_.getSuccessor(base, seq);
+            if (not cache_.get().get(base, seq)) {
+                auto succ = cache_.get().getSuccessor(base, seq);
                 ASSERT(succ.has_value(), "Book base {} must have a successor", ripple::strHex(base));
 
                 if (succ->key == cur->key)
@@ -207,7 +208,7 @@ void
 SuccessorExt::writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
 {
     for (auto& key : edgeKeys) {
-        auto succ = cache_.getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
+        auto succ = cache_.get().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
         if (succ)
             backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
     }

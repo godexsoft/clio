@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include "etlng/Models.hpp"
-#include "etlng/impl/ext/Core.hpp"
 #include "etlng/impl/ext/NFT.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"

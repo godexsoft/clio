@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 #include <org/xrpl/rpc/v1/ledger.pb.h>
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/protocol/AccountID.h>
@@ -87,10 +88,9 @@ createTransaction(ripple::TxType type, std::string hashStr, std::string metaStr,
 }
 
 etlng::model::Object
-createObject()
+createObject(etlng::model::Object::ModType modType, std::string key)
 {
     // random object taken from initial ledger load
-    static constinit auto const kOBJ_KEY = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     static constinit auto const kOBJ_PRED = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960A";
     static constinit auto const kOBJ_SUCC = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960F";
     static constinit auto const kOBJ_BLOB =
@@ -100,13 +100,13 @@ createObject()
         "8BB63367D6C38D7EA4C680004C4A505900000000000000000000000000000000C8056BA4E36038A8A0D2C0A86963153E95A84D56";
 
     return {
-        .key = {},
-        .keyRaw = hexStringToBinaryString(kOBJ_KEY),
-        .data = {},
-        .dataRaw = hexStringToBinaryString(kOBJ_BLOB),
+        .key = binaryStringToUint256(hexStringToBinaryString(key)),
+        .keyRaw = hexStringToBinaryString(key),
+        .data = modType == etlng::model::Object::ModType::Deleted ? ripple::Blob{} : *ripple::strUnHex(kOBJ_BLOB),
+        .dataRaw = modType == etlng::model::Object::ModType::Deleted ? "" : hexStringToBinaryString(kOBJ_BLOB),
         .successor = hexStringToBinaryString(kOBJ_SUCC),
         .predecessor = hexStringToBinaryString(kOBJ_PRED),
-        .type = etlng::model::Object::ModType::Created,
+        .type = modType,
     };
 }
 

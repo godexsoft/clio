@@ -141,6 +141,7 @@ static constexpr auto kDEFAULT_TXN_META =
     "2FC73CE1E1F1031000";
 
 static constexpr auto kDEFAULT_HASH = "6C7F69A6D25A13AC4A2E9145999F45D4674F939900017A96885FDC2757E9284E";
+static constexpr auto kDEFAULT_OBJ_KEY = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
 
 [[maybe_unused, nodiscard]] std::pair<std::string, std::string>
 createNftTxAndMetaBlobs(std::string metaStr = kDEFAULT_TXN_META, std::string txnStr = kDEFAULT_TXN_HEX);
@@ -161,7 +162,10 @@ createTransaction(
 );
 
 [[maybe_unused, nodiscard]] etlng::model::Object
-createObject();
+createObject(
+    etlng::model::Object::ModType modType = etlng::model::Object::ModType::Created,
+    std::string key = kDEFAULT_OBJ_KEY
+);
 
 [[maybe_unused, nodiscard]] etlng::model::Object
 createObjectWithTwoNFTs();

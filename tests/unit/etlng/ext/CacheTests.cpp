@@ -19,7 +19,6 @@
 
 #include "etlng/Models.hpp"
 #include "etlng/impl/ext/Cache.hpp"
-#include "etlng/impl/ext/Core.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerCache.hpp"
