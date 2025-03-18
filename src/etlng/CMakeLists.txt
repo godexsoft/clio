@@ -12,7 +12,7 @@ target_sources(
           impl/ext/Cache.cpp
           impl/ext/Core.cpp
           impl/ext/NFT.cpp
-          impl/ext/SUccessor.cpp
+          impl/ext/Successor.cpp
 )
 
 target_link_libraries(clio_etlng PUBLIC clio_data)
