@@ -111,6 +111,28 @@ createObject(etlng::model::Object::ModType modType, std::string key)
 }
 
 etlng::model::Object
+createObjectWithBookBase(etlng::model::Object::ModType modType, std::string key)
+{
+    // random object taken from initial ledger load
+    static constinit auto const kOBJ_PRED = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960A";
+    static constinit auto const kOBJ_SUCC = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960F";
+    static constinit auto const kOBJ_BLOB =
+        "11006422000000022505A681E855B4E076DD06D6D583804F9DC94F641337ECB97F71860300EEC17E530A2001D6C9583FFBFAD704E299BE"
+        "3E544090ECCB12AF45FD03CAEEA852E5048E57F48FD45B505A0008138882D0F98C64A1A0E6D15053589771AD08B8C13D5384FBDAE20000"
+        "0948011320AC38AE866862CF5A8AF3578C600CEE8BFB894596584B60C0FFA7D22248E33CC3";
+
+    return {
+        .key = binaryStringToUint256(hexStringToBinaryString(key)),
+        .keyRaw = hexStringToBinaryString(key),
+        .data = modType == etlng::model::Object::ModType::Deleted ? ripple::Blob{} : *ripple::strUnHex(kOBJ_BLOB),
+        .dataRaw = modType == etlng::model::Object::ModType::Deleted ? "" : hexStringToBinaryString(kOBJ_BLOB),
+        .successor = hexStringToBinaryString(kOBJ_SUCC),
+        .predecessor = hexStringToBinaryString(kOBJ_PRED),
+        .type = modType,
+    };
+}
+
+etlng::model::Object
 createObjectWithTwoNFTs()
 {
     std::string const url1 = "abcd1";

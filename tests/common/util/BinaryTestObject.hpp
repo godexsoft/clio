@@ -168,6 +168,12 @@ createObject(
 );
 
 [[maybe_unused, nodiscard]] etlng::model::Object
+createObjectWithBookBase(
+    etlng::model::Object::ModType modType = etlng::model::Object::ModType::Created,
+    std::string key = kDEFAULT_OBJ_KEY
+);
+
+[[maybe_unused, nodiscard]] etlng::model::Object
 createObjectWithTwoNFTs();
 
 [[maybe_unused, nodiscard]] etlng::model::BookSuccessor

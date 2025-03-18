@@ -26,6 +26,7 @@
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerCache.hpp"
 #include "util/MockPrometheus.hpp"
+#include "util/StringUtils.hpp"
 #include "util/TestObject.hpp"
 
 #include <gmock/gmock.h>
@@ -37,7 +38,9 @@
 
 #include <cstddef>
 #include <optional>
+#include <queue>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -63,8 +66,8 @@ createInitialTestData()
         .objects = {},  // expected to be empty for onInitialData
         .successors = {},
         .edgeKeys = {{
-            ripple::to_string(data::kFIRST_KEY),
-            ripple::to_string(data::kLAST_KEY),
+            hexStringToBinaryString("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C"),
+            hexStringToBinaryString("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D"),
         }},  // must have some values
         .header = header,
         .rawHeader = {},
@@ -121,7 +124,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataLogicErrorIfCacheIsFullButLatestSeqDiffers
     EXPECT_THROW(ext_.onLedgerData(data), std::logic_error);
 }
 
-TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObject)
+TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorAndNoBookBase)
 {
     using namespace etlng::model;
 
@@ -135,8 +138,8 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObject)
     EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
     EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
 
-    EXPECT_CALL(cache_, getPredecessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
-    EXPECT_CALL(cache_, getSuccessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getPredecessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
 
     EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(data::kLAST_KEY)));
     EXPECT_CALL(cache_, getDeleted(deletedObj.key, kSEQ - 1)).WillRepeatedly(testing::Return(Blob{'0'}));
@@ -144,67 +147,321 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObject)
     ext_.onLedgerData(data);
 }
 
-// TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAssertsIfGetDeletedIsNotInCache)
-// {
-//     using namespace etlng::model;
-
-//     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
-//     auto const deletedObj = util::createObject(Object::ModType::Deleted, objKey);
-//     auto const data = createTestData({
-//         deletedObj,
-//         util::createObject(Object::ModType::Modified),
-//     });
-
-//     EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
-//     EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
-
-//     EXPECT_CALL(cache_, getPredecessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
-//     EXPECT_CALL(cache_, getSuccessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
-
-//     EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ,
-//     uint256ToString(data::kLAST_KEY))); EXPECT_CALL(cache_, getDeleted(deletedObj.key, kSEQ -
-//     1)).WillRepeatedly(testing::Return(std::nullopt));
-
-//     // filters all objects that are not Modified - one created one deleted
-//     // if data.successors has value
-//     //   writeSuccessor for each data.successors
-//     //   writeSuccessor for filtered objects
-//     // else if data.successors no value
-//     //   isFull/latestLedgerSequence check -> could logic_error here
-//     //   for each filtered object:
-//     //     getPredcessor/getSuccessor for key
-//     //     depending on delete or not, writeSuccessor once or twice
-//     //     also depending on delete, getDeleted in cache is called
-//     //     checkBookBase is determined, if is true a bunch more stuff happens
-//     ext_.onLedgerData(data);
-// }
-
-// TEST_F(SuccessorExtTests, OnInitialDataWritesLedgerAndTransactions)
-// {
-//     auto const data = createInitialTestData();
-//     auto const keys = std::vector{data::kFIRST_KEY, ripple::uint256{'1'}, ripple::uint256{'2'}, data::kLAST_KEY};
-
-//     // start with FIRST_KEY, while returns non-null
-//     // backend_ writeSuccessor if FIRST_KEY
-//     // if is book dir
-//     //   get book base, if bookbase NOT in cache
-//     //      getSuccossor from cache
-//     //      writeSuccessor on backend if keys match
-//     // finally writeSuccessor for prev to last key
-//     EXPECT_CALL(cache_, getSuccessor(testing::_, testing::_));
-//     EXPECT_CALL(*backend_, writeLedger(testing::_, auto{data.rawHeader}));
-//     EXPECT_CALL(*backend_, writeAccountTransaction).Times(data.transactions.size());
-//     EXPECT_CALL(*backend_, writeTransaction).Times(data.transactions.size());
-
-//     // write edge keys
-//     // getSuccessor cache for each edgeKey
-//     // if in cache, writeSuccessor on backend with that key from cache
-
-//     ext_.onInitialData(data);
-// }
-
-TEST_F(SuccessorExtTests, OnInitialObjectsWritesLedgerObject)
+TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorAndNoBookBase)
 {
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObject(Object::ModType::Created, objKey);
+    auto const data = createTestData({
+        createdObj,
+        util::createObject(Object::ModType::Modified),
+    });
+
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(createdObj.key)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(createdObj.key), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBase)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
+    auto const data = createTestData({
+        createdObj,
+        util::createObject(Object::ModType::Modified),
+    });
+    auto const bookBase = getBookBase(createdObj.key);
+
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(createdObj.key)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(createdObj.key), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    EXPECT_CALL(cache_, get(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(bookBase, kSEQ)).WillRepeatedly(testing::Return(LedgerObject{}));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(
+    SuccessorExtTests,
+    OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndMatchingSuccessorInCache
+)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
+    auto const data = createTestData({
+        createdObj,
+        util::createObject(Object::ModType::Modified),
+    });
+    auto const bookBase = getBookBase(createdObj.key);
+
+    [[maybe_unused]] testing::InSequence inSeq;
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(createdObj.key)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(createdObj.key), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    EXPECT_CALL(cache_, get(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(data::Blob{'0'}));
+    EXPECT_CALL(cache_, getSuccessor(bookBase, kSEQ))
+        .WillRepeatedly(testing::Return(LedgerObject{.key = createdObj.key, .blob = {}}));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(bookBase), kSEQ, testing::_));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(
+    SuccessorExtTests,
+    OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseButNoCurrentObjAndNoSuccessorInCache
+)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
+    auto const deletedObj = util::createObjectWithBookBase(Object::ModType::Deleted, objKey);
+    auto const data = createTestData({
+        deletedObj,
+        util::createObject(Object::ModType::Modified),
+    });
+    auto const bookBase = getBookBase(deletedObj.key);
+    auto const oldCachedObj = createdObj.data;
+
+    [[maybe_unused]] testing::InSequence inSeq;
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(data::kLAST_KEY)));
+    EXPECT_CALL(cache_, getDeleted(deletedObj.key, kSEQ - 1)).WillOnce(testing::Return(oldCachedObj));
+
+    EXPECT_CALL(cache_, get(deletedObj.key, kSEQ)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(bookBase, kSEQ)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(bookBase), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(
+    SuccessorExtTests,
+    OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndCurrentObjAndSuccessorInCache
+)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
+    auto const deletedObj = util::createObjectWithBookBase(Object::ModType::Deleted, objKey);
+    auto const data = createTestData({
+        deletedObj,
+        util::createObject(Object::ModType::Modified),
+    });
+    auto const bookBase = getBookBase(deletedObj.key);
+    auto const oldCachedObj = createdObj.data;
+
+    [[maybe_unused]] testing::InSequence inSeq;
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(data::kLAST_KEY)));
+    EXPECT_CALL(cache_, getDeleted(deletedObj.key, kSEQ - 1)).WillOnce(testing::Return(oldCachedObj));
+
+    EXPECT_CALL(cache_, get(deletedObj.key, kSEQ)).WillOnce(testing::Return(data::Blob{'0'}));
+    EXPECT_CALL(cache_, getSuccessor(bookBase, kSEQ))
+        .WillRepeatedly(testing::Return(LedgerObject{.key = deletedObj.key, .blob = {}}));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(bookBase), kSEQ, uint256ToString(deletedObj.key)));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAndWithCachedPredecessorAndSuccessor)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const predKey =
+        binaryStringToUint256(hexStringToBinaryString("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C"
+        ));
+    auto const succKey =
+        binaryStringToUint256(hexStringToBinaryString("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E"
+        ));
+    auto const createdObj = util::createObject(Object::ModType::Created, objKey);
+    auto const data = createTestData({
+        createdObj,
+        util::createObject(Object::ModType::Modified),
+    });
+
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(createdObj.key, kSEQ))
+        .WillOnce(testing::Return(data::LedgerObject{.key = predKey, .blob = {}}));
+    EXPECT_CALL(cache_, getSuccessor(createdObj.key, kSEQ))
+        .WillOnce(testing::Return(data::LedgerObject{.key = succKey, .blob = {}}));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(predKey), kSEQ, uint256ToString(createdObj.key)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(createdObj.key), kSEQ, uint256ToString(succKey)));
+
+    ext_.onLedgerData(data);
+}
+
+TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndNoSuccessorsForEdgeKeys)
+{
+    using namespace etlng::model;
+
+    auto const data = createInitialTestData();
+    auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
+    auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");
+
+    auto successorChain = std::queue<ripple::uint256>();
+    successorChain.push(firstKey);
+    successorChain.push(secondKey);
+
+    [[maybe_unused]] testing::Sequence inSeq;
+    EXPECT_CALL(cache_, isFull()).WillOnce(testing::Return(true));
+
+    EXPECT_CALL(cache_, getSuccessor(testing::_, kSEQ))
+        .Times(3)
+        .InSequence(inSeq)
+        .WillRepeatedly([&](auto&&, auto&&) -> std::optional<data::LedgerObject> {
+            if (successorChain.empty())
+                return std::nullopt;
+
+            auto v = successorChain.front();
+            successorChain.pop();
+            return data::LedgerObject{.key = v, .blob = {'0'}};
+        });
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(firstKey)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(secondKey), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    for (auto const& key : *data.edgeKeys) {
+        EXPECT_CALL(cache_, getSuccessor(*ripple::uint256::fromVoidChecked(key), kSEQ))
+            .InSequence(inSeq)
+            .WillOnce(testing::Return(std::nullopt));
+    }
+
+    ext_.onInitialData(data);
+}
+
+TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndSuccessorsForEdgeKeys)
+{
+    using namespace etlng::model;
+
+    auto const data = createInitialTestData();
+    auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
+    auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");
+
+    auto successorChain = std::queue<ripple::uint256>();
+    successorChain.push(firstKey);
+    successorChain.push(secondKey);
+
+    [[maybe_unused]] testing::Sequence inSeq;
+    EXPECT_CALL(cache_, isFull()).WillOnce(testing::Return(true));
+
+    EXPECT_CALL(cache_, getSuccessor(testing::_, kSEQ))
+        .Times(3)
+        .InSequence(inSeq)
+        .WillRepeatedly([&](auto&&, auto&&) -> std::optional<data::LedgerObject> {
+            if (successorChain.empty())
+                return std::nullopt;
+
+            auto v = successorChain.front();
+            successorChain.pop();
+            return data::LedgerObject{.key = v, .blob = {'0'}};
+        });
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(firstKey)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(secondKey), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    for (auto const& key : data.edgeKeys.value()) {
+        EXPECT_CALL(cache_, getSuccessor(*ripple::uint256::fromVoidChecked(key), kSEQ))
+            .InSequence(inSeq)
+            .WillOnce(testing::Return(data::LedgerObject{.key = firstKey, .blob = {}}));
+        EXPECT_CALL(*backend_, writeSuccessor(auto{key}, kSEQ, uint256ToString(firstKey)));
+    }
+
+    ext_.onInitialData(data);
+}
+
+TEST_F(SuccessorExtTests, OnInitialObjectsWithEmptyLastKey)
+{
+    using namespace etlng::model;
+
+    auto const lastKey = std::string{};
+    auto const data = std::vector{
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E"
+        ),
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960F"
+        ),
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E89610"
+        ),
+    };
+
+    std::string lk = lastKey;
+    for (auto const& obj : data) {
+        if (not lk.empty())
+            EXPECT_CALL(*backend_, writeSuccessor(std::move(lk), kSEQ, uint256ToString(obj.key)));
+        lk = uint256ToString(obj.key);
+    }
+
+    ext_.onInitialObjects(kSEQ, data, lastKey);
+}
+
+TEST_F(SuccessorExtTests, OnInitialObjectsWithNonEmptyLastKey)
+{
+    using namespace etlng::model;
+
+    auto const lastKey =
+        uint256ToString(ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D"));
+    auto const data = std::vector{
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E"
+        ),
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960F"
+        ),
+        util::createObject(
+            Object::ModType::Created, "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E89610"
+        ),
+    };
+
+    std::string lk = lastKey;
+    for (auto const& obj : data) {
+        EXPECT_CALL(*backend_, writeSuccessor(std::move(lk), kSEQ, uint256ToString(obj.key)));
+        lk = uint256ToString(obj.key);
+    }
+
+    ext_.onInitialObjects(kSEQ, data, lastKey);
 }
 
 struct SuccessorExtAssertTests : common::util::WithMockAssert, SuccessorExtTests {};
@@ -223,22 +480,76 @@ TEST_F(SuccessorExtAssertTests, OnLedgerDataWithDeletedObjectAssertsIfGetDeleted
     EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
     EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
 
-    EXPECT_CALL(cache_, getPredecessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
-    EXPECT_CALL(cache_, getSuccessor(testing::_, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getPredecessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(deletedObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
 
     EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(data::kLAST_KEY)));
     EXPECT_CALL(cache_, getDeleted(deletedObj.key, kSEQ - 1)).WillRepeatedly(testing::Return(std::nullopt));
 
-    // filters all objects that are not Modified - one created one deleted
-    // if data.successors has value
-    //   writeSuccessor for each data.successors
-    //   writeSuccessor for filtered objects
-    // else if data.successors no value
-    //   isFull/latestLedgerSequence check -> could logic_error here
-    //   for each filtered object:
-    //     getPredcessor/getSuccessor for key
-    //     depending on delete or not, writeSuccessor once or twice
-    //     also depending on delete, getDeleted in cache is called
-    //     checkBookBase is determined, if is true a bunch more stuff happens
     EXPECT_CLIO_ASSERT_FAIL({ ext_.onLedgerData(data); });
+}
+
+TEST_F(
+    SuccessorExtAssertTests,
+    OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndBookSuccessorNotInCache
+)
+{
+    using namespace etlng::model;
+
+    auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
+    auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
+    auto const data = createTestData({
+        createdObj,
+        util::createObject(Object::ModType::Modified),
+    });
+    auto const bookBase = getBookBase(createdObj.key);
+
+    EXPECT_CALL(cache_, isFull()).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(cache_, latestLedgerSequence()).WillRepeatedly(testing::Return(kSEQ));
+
+    EXPECT_CALL(cache_, getPredecessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(cache_, getSuccessor(createdObj.key, kSEQ)).WillRepeatedly(testing::Return(std::nullopt));
+
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(data::kFIRST_KEY), kSEQ, uint256ToString(createdObj.key)));
+    EXPECT_CALL(*backend_, writeSuccessor(uint256ToString(createdObj.key), kSEQ, uint256ToString(data::kLAST_KEY)));
+
+    EXPECT_CALL(cache_, get(createdObj.key, kSEQ)).WillOnce(testing::Return(data::Blob{'0'}));
+    EXPECT_CALL(cache_, getSuccessor(bookBase, kSEQ)).WillOnce(testing::Return(std::nullopt));
+
+    EXPECT_CLIO_ASSERT_FAIL({ ext_.onLedgerData(data); });
+}
+
+TEST_F(SuccessorExtAssertTests, OnInitialDataNotIsFull)
+{
+    using namespace etlng::model;
+
+    auto const data = createTestData({
+        util::createObject(Object::ModType::Modified),
+        util::createObject(Object::ModType::Created),
+    });
+
+    EXPECT_CALL(cache_, isFull()).WillOnce(testing::Return(false));
+    EXPECT_CLIO_ASSERT_FAIL({ ext_.onInitialData(data); });
+}
+
+TEST_F(SuccessorExtAssertTests, OnInitialDataIsFullButNoEdgeKeys)
+{
+    using namespace etlng::model;
+
+    auto data = createTestData({});
+    data.edgeKeys = {};
+
+    EXPECT_CALL(cache_, isFull()).WillOnce(testing::Return(true));
+    EXPECT_CLIO_ASSERT_FAIL({ ext_.onInitialData(data); });
+}
+
+TEST_F(SuccessorExtAssertTests, OnInitialDataIsFullWithEdgeKeysButHasObjects)
+{
+    using namespace etlng::model;
+
+    auto data = createInitialTestData();
+    data.objects = {util::createObject()};
+
+    EXPECT_CALL(cache_, isFull()).WillOnce(testing::Return(true));
+    EXPECT_CLIO_ASSERT_FAIL({ ext_.onInitialData(data); });
 }

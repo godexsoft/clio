@@ -32,6 +32,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -155,22 +156,27 @@ SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) c
         auto const bookBase = getBookBase(obj.key);
 
         if (isDeleted and not current.has_value()) {
-            updateBookSuccessor(seq, bookBase);
+            updateBookSuccessor(cache_.get().getSuccessor(bookBase, seq), seq, bookBase);
         } else if (current.has_value()) {
             auto const successor = cache_.get().getSuccessor(bookBase, seq);
             ASSERT(successor.has_value(), "Book base must have a successor for seq = {}", seq);
 
-            if (successor->key == obj.key)
-                updateBookSuccessor(seq, bookBase);
+            if (successor->key == obj.key) {
+                updateBookSuccessor(successor, seq, bookBase);
+            }
         }
     }
 }
 
 void
-SuccessorExt::updateBookSuccessor(auto seq, ripple::uint256 const& bookBase) const
+SuccessorExt::updateBookSuccessor(
+    std::optional<data::LedgerObject> const& maybeSuccessor,
+    auto seq,
+    ripple::uint256 const& bookBase
+) const
 {
-    if (auto succ = cache_.get().getSuccessor(bookBase, seq); succ.has_value()) {
-        backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(succ->key));
+    if (maybeSuccessor.has_value()) {
+        backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(maybeSuccessor->key));
     } else {
         backend_->writeSuccessor(uint256ToString(bookBase), seq, uint256ToString(data::kLAST_KEY));
     }
@@ -207,7 +213,7 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
 void
 SuccessorExt::writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
 {
-    for (auto& key : edgeKeys) {
+    for (auto const& key : edgeKeys) {
         auto succ = cache_.get().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
         if (succ)
             backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));

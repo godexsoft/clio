@@ -21,6 +21,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/LedgerCacheInterface.hpp"
+#include "data/Types.hpp"
 #include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
@@ -30,6 +31,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -64,7 +66,11 @@ private:
     updateSuccessorFromCache(uint32_t seq, model::Object const& obj) const;
 
     void
-    updateBookSuccessor(auto seq, ripple::uint256 const& bookBase) const;
+    updateBookSuccessor(
+        std::optional<data::LedgerObject> const& maybeSuccessor,
+        auto seq,
+        ripple::uint256 const& bookBase
+    ) const;
 
     void
     writeSuccessors(uint32_t seq) const;
