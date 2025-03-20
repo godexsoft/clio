@@ -275,7 +275,7 @@ TEST_F(NFTExtTests, OnInitialDataFiltersAndWritesNFTs)
     });
     EXPECT_CALL(*backend_, writeNFTTransactions);
 
-    ext_.onLedgerData(data);
+    ext_.onInitialData(data);
 }
 
 TEST_F(NFTExtTests, OnInitialObjectExtractsAndWritesNFTData)
