@@ -41,8 +41,9 @@
 
 using namespace rpc;
 using namespace data;
-namespace json = boost::json;
 using namespace testing;
+
+namespace json = boost::json;
 
 namespace {
 
