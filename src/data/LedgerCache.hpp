@@ -30,7 +30,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 
-#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>

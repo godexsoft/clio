@@ -187,7 +187,6 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
 {
     ripple::uint256 prev = data::kFIRST_KEY;
     while (auto cur = cache_.get().getSuccessor(prev, seq)) {
-        ASSERT(cur.has_value(), "Successor for key {} must exist", ripple::strHex(prev));
         if (prev == data::kFIRST_KEY)
             backend_->writeSuccessor(uint256ToString(prev), seq, uint256ToString(cur->key));
 

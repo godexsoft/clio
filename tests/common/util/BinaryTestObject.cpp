@@ -19,6 +19,7 @@
 
 #include "util/BinaryTestObject.hpp"
 
+#include "data/DBHelpers.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/impl/Extraction.hpp"
 #include "util/StringUtils.hpp"
@@ -164,8 +165,10 @@ etlng::model::BookSuccessor
 createSuccessor()
 {
     return {
-        .firstBook = "A000000000000000000000000000000000000000000000000000000000000000",
-        .bookBase = "A000000000000000000000000000000000000000000000000000000000000001",
+        .firstBook =
+            uint256ToString(ripple::uint256{"A000000000000000000000000000000000000000000000000000000000000000"}),
+        .bookBase =
+            uint256ToString(ripple::uint256{"A000000000000000000000000000000000000000000000000000000000000001"}),
     };
 }
 
