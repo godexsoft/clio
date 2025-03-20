@@ -28,7 +28,6 @@
 #include <gtest/gtest.h>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <cstddef>
 #include <utility>
 #include <vector>
 

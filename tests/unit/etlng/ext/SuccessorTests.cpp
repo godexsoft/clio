@@ -38,11 +38,9 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <iterator>
 #include <optional>
 #include <queue>
-#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -84,9 +82,7 @@ createInitialTestData(std::vector<ripple::uint256> edgeKeys)
 
     auto ret = createTestData({});
     ret.edgeKeys = std::make_optional<std::vector<std::string>>();
-    std::ranges::transform(edgeKeys, std::back_inserter(ret.edgeKeys.value()), [](auto const& v) {
-        return uint256ToString(v);
-    });
+    std::ranges::transform(edgeKeys, std::back_inserter(ret.edgeKeys.value()), &uint256ToString);
 
     return ret;
 }

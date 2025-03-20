@@ -20,7 +20,6 @@
 #include "etlng/Models.hpp"
 #include "etlng/impl/ext/Cache.hpp"
 #include "util/BinaryTestObject.hpp"
-#include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerCache.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/TestObject.hpp"
@@ -29,7 +28,6 @@
 #include <gtest/gtest.h>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <cstddef>
 #include <utility>
 #include <vector>
 
