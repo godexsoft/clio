@@ -43,6 +43,7 @@
 #include <vector>
 
 namespace etl {
+
 // Database must be populated when this starts
 std::optional<uint32_t>
 ETLService::runETLPipeline(uint32_t startSequence, uint32_t numExtractors)

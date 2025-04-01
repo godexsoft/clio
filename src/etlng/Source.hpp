@@ -21,10 +21,9 @@
 
 #include "data/BackendInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
+#include "etlng/InitialLoadObserverInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
-#include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
 #include "util/newconfig/ObjectView.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -45,7 +44,7 @@
 #include <utility>
 #include <vector>
 
-namespace etl {
+namespace etlng {
 
 /**
  * @brief Provides an implementation of a ETL source
@@ -130,10 +129,11 @@ public:
      *
      * @param sequence Sequence of the ledger to download
      * @param numMarkers Number of markers to generate for async calls
+     * @param loader InitialLoadObserverInterface implementation
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
     virtual std::pair<std::vector<std::string>, bool>
-    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers) = 0;
+    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etlng::InitialLoadObserverInterface& loader) = 0;
 
     /**
      * @brief Forward a request to rippled.
@@ -158,9 +158,8 @@ using SourcePtr = std::unique_ptr<SourceBase>;
 using SourceFactory = std::function<SourcePtr(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
-    std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
     std::chrono::steady_clock::duration forwardingTimeout,
     SourceBase::OnConnectHook onConnect,
     SourceBase::OnDisconnectHook onDisconnect,
@@ -172,7 +171,6 @@ using SourceFactory = std::function<SourcePtr(
  *
  * @param config The configuration to use
  * @param ioc The io_context to run on
- * @param backend BackendInterface implementation
  * @param subscriptions Subscription manager
  * @param validatedLedgers The network validated ledgers data structure
  * @param forwardingTimeout The timeout for forwarding to rippled
@@ -186,13 +184,12 @@ SourcePtr
 makeSource(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
-    std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
     std::chrono::steady_clock::duration forwardingTimeout,
     SourceBase::OnConnectHook onConnect,
     SourceBase::OnDisconnectHook onDisconnect,
     SourceBase::OnLedgerClosedHook onLedgerClosed
 );
 
-}  // namespace etl
+}  // namespace etlng

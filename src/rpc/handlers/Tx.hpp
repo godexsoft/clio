@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "data/Types.hpp"
 #include "etl/ETLService.hpp"
+#include "etlng/ETLServiceInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
@@ -53,13 +54,10 @@ namespace rpc {
 
 /**
  * @brief Contains common functionality for handling the `tx` command
- *
- * @tparam ETLServiceType The type of the ETL service to use
  */
-template <typename ETLServiceType>
 class BaseTxHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
-    std::shared_ptr<ETLServiceType const> etl_;
+    std::shared_ptr<etlng::ETLServiceInterface const> etl_;
 
 public:
     /**
@@ -102,7 +100,7 @@ public:
      */
     BaseTxHandler(
         std::shared_ptr<BackendInterface> const& sharedPtrBackend,
-        std::shared_ptr<ETLServiceType const> const& etl
+        std::shared_ptr<etlng::ETLServiceInterface const> const& etl
     )
         : sharedPtrBackend_(sharedPtrBackend), etl_(etl)
     {
@@ -349,5 +347,5 @@ private:
  *
  * For more details see: https://xrpl.org/tx.html
  */
-using TxHandler = BaseTxHandler<etl::ETLService>;
+using TxHandler = BaseTxHandler;  // TODO: don't use Base?
 }  // namespace rpc
