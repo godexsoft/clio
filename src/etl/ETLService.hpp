@@ -43,7 +43,6 @@
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
-#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -85,12 +84,11 @@ concept SomeETLService = std::derived_from<T, ETLServiceTag>;
  */
 class ETLService : public etlng::ETLServiceInterface, ETLServiceTag {
     // TODO: make these template parameters in ETLService
-    using LoadBalancerType = etlng::LoadBalancerInterface;
     using DataPipeType = etl::impl::ExtractionDataPipe<org::xrpl::rpc::v1::GetLedgerResponse>;
     using CacheLoaderType = etl::CacheLoader<>;
-    using LedgerFetcherType = etl::impl::LedgerFetcher<LoadBalancerType>;
+    using LedgerFetcherType = etl::impl::LedgerFetcher;
     using ExtractorType = etl::impl::Extractor<DataPipeType, LedgerFetcherType>;
-    using LedgerLoaderType = etl::impl::LedgerLoader<LoadBalancerType, LedgerFetcherType>;
+    using LedgerLoaderType = etl::impl::LedgerLoader<etlng::LoadBalancerInterface, LedgerFetcherType>;
     using LedgerPublisherType = etl::impl::LedgerPublisher;
     using AmendmentBlockHandlerType = etl::impl::AmendmentBlockHandler;
     using TransformerType =
@@ -99,7 +97,7 @@ class ETLService : public etlng::ETLServiceInterface, ETLServiceTag {
     util::Logger log_{"ETL"};
 
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<LoadBalancerType> loadBalancer_;
+    std::shared_ptr<etlng::LoadBalancerInterface> loadBalancer_;
     std::shared_ptr<NetworkValidatedLedgersInterface> networkValidatedLedgers_;
 
     std::uint32_t extractorThreads_ = 1;
@@ -134,7 +132,7 @@ public:
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<LoadBalancerType> balancer,
+        std::shared_ptr<etlng::LoadBalancerInterface> balancer,
         std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
     );
 

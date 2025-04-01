@@ -132,7 +132,7 @@ public:
         , balancer_(std::move(balancer))
         , ledgers_(std::move(ledgers))
         , cacheLoader_(std::make_shared<etl::CacheLoader<>>(config, backend_, backend_->cache()))
-        , fetcher_(std::make_shared<etl::impl::LedgerFetcher<etlng::LoadBalancerInterface>>(backend_, balancer_))
+        , fetcher_(std::make_shared<etl::impl::LedgerFetcher>(backend_, balancer_))
         , extractor_(std::make_shared<impl::Extractor>(fetcher_))
         , amendmentBlockHandler_(std::make_shared<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
         , loader_(std::make_shared<impl::Loader>(

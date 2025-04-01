@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "etl/CorruptionDetector.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
+#include "etlng/LoadBalancerInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/Constants.hpp"
@@ -266,7 +267,7 @@ ETLService::ETLService(
     boost::asio::io_context& ioc,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<LoadBalancerType> balancer,
+    std::shared_ptr<etlng::LoadBalancerInterface> balancer,
     std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
 )
     : backend_(backend)
