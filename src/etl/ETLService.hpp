@@ -88,7 +88,7 @@ class ETLService : public etlng::ETLServiceInterface, ETLServiceTag {
     using CacheLoaderType = etl::CacheLoader<>;
     using LedgerFetcherType = etl::impl::LedgerFetcher;
     using ExtractorType = etl::impl::Extractor<DataPipeType, LedgerFetcherType>;
-    using LedgerLoaderType = etl::impl::LedgerLoader<etlng::LoadBalancerInterface, LedgerFetcherType>;
+    using LedgerLoaderType = etl::impl::LedgerLoader<LedgerFetcherType>;
     using LedgerPublisherType = etl::impl::LedgerPublisher;
     using AmendmentBlockHandlerType = etl::impl::AmendmentBlockHandler;
     using TransformerType =
