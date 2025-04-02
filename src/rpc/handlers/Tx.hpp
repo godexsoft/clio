@@ -53,9 +53,11 @@
 namespace rpc {
 
 /**
- * @brief Contains common functionality for handling the `tx` command
+ * @brief The tx method retrieves information on a single transaction, by its identifying hash.
+ *
+ * For more details see: https://xrpl.org/tx.html
  */
-class BaseTxHandler {
+class TxHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
     std::shared_ptr<etlng::ETLServiceInterface const> etl_;
 
@@ -93,12 +95,12 @@ public:
     using Result = HandlerReturnType<Output>;
 
     /**
-     * @brief Construct a new BaseTxHandler object
+     * @brief Construct a new TxHandler object
      *
      * @param sharedPtrBackend The backend to use
      * @param etl The ETL service to use
      */
-    BaseTxHandler(
+    TxHandler(
         std::shared_ptr<BackendInterface> const& sharedPtrBackend,
         std::shared_ptr<etlng::ETLServiceInterface const> const& etl
     )
@@ -181,7 +183,7 @@ public:
             dbResponse = sharedPtrBackend_->fetchTransaction(ripple::uint256{input.transaction->c_str()}, ctx.yield);
         }
 
-        auto output = BaseTxHandler::Output{.apiVersion = ctx.apiVersion};
+        auto output = TxHandler::Output{.apiVersion = ctx.apiVersion};
 
         if (!dbResponse) {
             if (rangeSupplied && input.transaction)  // ranges not for ctid
@@ -318,7 +320,7 @@ private:
     friend Input
     tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
     {
-        auto input = BaseTxHandler::Input{};
+        auto input = TxHandler::Input{};
         auto const& jsonObject = jv.as_object();
 
         if (jsonObject.contains(JS(transaction)))
@@ -342,10 +344,4 @@ private:
     }
 };
 
-/**
- * @brief The tx method retrieves information on a single transaction, by its identifying hash.
- *
- * For more details see: https://xrpl.org/tx.html
- */
-using TxHandler = BaseTxHandler;  // TODO: don't use Base?
 }  // namespace rpc

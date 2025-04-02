@@ -44,7 +44,7 @@ using namespace data;
 namespace json = boost::json;
 using namespace testing;
 
-using TestTxHandler = BaseTxHandler;  // TODO: simplify
+using TestTxHandler = TxHandler;
 
 namespace {
 
