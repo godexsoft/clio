@@ -54,7 +54,7 @@ struct ETLServiceInterface {
      *
      * @return The state of ETL as a JSON object
      */
-    virtual boost::json::object
+    [[nodiscard]] virtual boost::json::object
     getInfo() const = 0;
 
     /**
@@ -62,7 +62,7 @@ struct ETLServiceInterface {
      *
      * @return true if currently amendment blocked; false otherwise
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     isAmendmentBlocked() const = 0;
 
     /**
@@ -70,14 +70,14 @@ struct ETLServiceInterface {
      *
      * @return true if corruption of DB was detected and cache was stopped.
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     isCorruptionDetected() const = 0;
 
     /**
      * @brief Get the etl nodes' state
      * @return The etl nodes' state, nullopt if etl nodes are not connected
      */
-    virtual std::optional<etl::ETLState>
+    [[nodiscard]] virtual std::optional<etl::ETLState>
     getETLState() const = 0;
 
     /**
@@ -85,7 +85,7 @@ struct ETLServiceInterface {
      *
      * @return Time passed since last ledger close
      */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     lastCloseAgeSeconds() const = 0;
 };
 

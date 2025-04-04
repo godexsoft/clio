@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
+#include "etl/LoadBalancer.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlockHandler.hpp"
@@ -33,8 +34,10 @@
 #include "etl/impl/Transformer.hpp"
 #include "etlng/ETLService.hpp"
 #include "etlng/ETLServiceInterface.hpp"
+#include "etlng/LoadBalancer.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
+#include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -167,8 +170,15 @@ public:
         std::shared_ptr<etlng::ETLServiceInterface> ret;
 
         if (config.get<bool>("__ng_etl")) {
+            ASSERT(
+                std::dynamic_pointer_cast<etlng::LoadBalancer>(balancer),
+                "LoadBalancer type must be etlng::LoadBalancer"
+            );
             ret = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
         } else {
+            ASSERT(
+                std::dynamic_pointer_cast<etl::LoadBalancer>(balancer), "LoadBalancer type must be etl::LoadBalancer"
+            );
             ret = std::make_shared<etl::ETLService>(config, ioc, backend, subscriptions, balancer, ledgers);
         }
 

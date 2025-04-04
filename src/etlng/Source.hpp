@@ -48,7 +48,6 @@ namespace etlng {
 
 /**
  * @brief Provides an implementation of a ETL source
- *
  */
 class SourceBase {
 public:
@@ -78,7 +77,7 @@ public:
      *
      * @return true if source is connected; false otherwise
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     isConnected() const = 0;
 
     /**
@@ -94,11 +93,11 @@ public:
      *
      * @return JSON representation of the source
      */
-    virtual boost::json::object
+    [[nodiscard]] virtual boost::json::object
     toJson() const = 0;
 
     /** @return String representation of the source (for debug) */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     toString() const = 0;
 
     /**
@@ -107,7 +106,7 @@ public:
      * @param sequence The ledger sequence to check
      * @return true if ledger is in the range of this source; false otherwise
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     hasLedger(uint32_t sequence) const = 0;
 
     /**
@@ -121,7 +120,7 @@ public:
      * @param getObjectNeighbors Whether to request object neighbors; defaults to false
      * @return A std::pair of the response status and the response itself
      */
-    virtual std::pair<grpc::Status, org::xrpl::rpc::v1::GetLedgerResponse>
+    [[nodiscard]] virtual std::pair<grpc::Status, org::xrpl::rpc::v1::GetLedgerResponse>
     fetchLedger(uint32_t sequence, bool getObjects = true, bool getObjectNeighbors = false) = 0;
 
     /**
@@ -144,7 +143,7 @@ public:
      * @param yield The coroutine context
      * @return Response on success or error on failure
      */
-    virtual std::expected<boost::json::object, rpc::ClioError>
+    [[nodiscard]] virtual std::expected<boost::json::object, rpc::ClioError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,
@@ -180,7 +179,7 @@ using SourceFactory = std::function<SourcePtr(
  * as forwarding.
  * @return The created source
  */
-SourcePtr
+[[nodiscard]] SourcePtr
 makeSource(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
