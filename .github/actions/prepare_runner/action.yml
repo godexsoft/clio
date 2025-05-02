@@ -1,9 +1,11 @@
 name: Prepare runner
 description: Install packages, set environment variables, create directories
+
 inputs:
   disable_ccache:
     description: Whether ccache should be disabled
     required: true
+
 runs:
   using: composite
   steps:
@@ -11,7 +13,17 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        brew install llvm@14 pkg-config ninja bison ccache jq gh conan@1 ca-certificates
+        brew install \
+          bison \
+          ca-certificates \
+          ccache \
+          clang-build-analyzer \
+          conan@1 \
+          gh \
+          jq \
+          llvm@14 \
+          ninja \
+          pkg-config
         echo "/opt/homebrew/opt/conan@1/bin" >> $GITHUB_PATH
 
     - name: Install CMake 3.31.6 on mac
