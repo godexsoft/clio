@@ -59,8 +59,8 @@ runs:
         conan \
           install .. \
           -of . \
-          -b "$BUILD_OPTION" \
-          -s build_type=${{ inputs.build_type }} \
+          -b $BUILD_OPTION \
+          -s build_type="${{ inputs.build_type }}" \
           -o clio:static="${STATIC_OPTION}" \
           -o clio:tests=True \
           -o clio:integration_tests="${INTEGRATION_TESTS_OPTION}" \
