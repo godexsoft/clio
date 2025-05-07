@@ -37,8 +37,9 @@ struct LedgerPublisherInterface {
      * @param seq The sequence number of the ledger
      * @param maxAttempts The maximum number of attempts to publish the ledger; no limit if nullopt
      * @param attemptsDelay The delay between attempts
+     * @return Whether the ledger was found in the database and published
      */
-    virtual void
+    virtual bool
     publish(
         uint32_t seq,
         std::optional<uint32_t> maxAttempts,

@@ -55,7 +55,7 @@
 #include <utility>
 #include <vector>
 
-namespace etl::impl {
+namespace etlng::impl {
 
 /**
  * @brief Publishes ledgers in a synchronized fashion.
@@ -76,7 +76,7 @@ class LedgerPublisher : public etlng::LedgerPublisherInterface {
     std::shared_ptr<BackendInterface> backend_;
     std::reference_wrapper<data::LedgerCacheInterface> cache_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
-    std::reference_wrapper<SystemState const> state_;  // shared state for ETL
+    std::reference_wrapper<etl::SystemState const> state_;  // shared state for ETL
 
     std::chrono::time_point<ripple::NetClock> lastCloseTime_;
     mutable std::shared_mutex closeTimeMtx_;
@@ -99,7 +99,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         data::LedgerCacheInterface& cache,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        SystemState const& state
+        etl::SystemState const& state
     )
         : publishStrand_{boost::asio::make_strand(ioc)}
         , backend_{std::move(backend)}
@@ -168,19 +168,21 @@ public:
         boost::asio::post(publishStrand_, [this, lgrInfo = lgrInfo]() {
             LOG(log_.info()) << "Publishing ledger " << std::to_string(lgrInfo.seq);
 
-            if (!state_.get().isWriting) {
-                LOG(log_.info()) << "Updating ledger range for read node.";
+            // TODO: this now should only be done in CacheExt.
+            // TODO2: figure out when to updateRange though
+            // if (!state_.get().isWriting) {
+            //     LOG(log_.info()) << "Updating ledger range for read node.";
 
-                if (!cache_.get().isDisabled()) {
-                    std::vector<data::LedgerObject> const diff = data::synchronousAndRetryOnTimeout([&](auto yield) {
-                        return backend_->fetchLedgerDiff(lgrInfo.seq, yield);
-                    });
+            //     if (!cache_.get().isDisabled()) {
+            //         std::vector<data::LedgerObject> const diff = data::synchronousAndRetryOnTimeout([&](auto yield) {
+            //             return backend_->fetchLedgerDiff(lgrInfo.seq, yield);
+            //         });
 
-                    cache_.get().update(diff, lgrInfo.seq);
-                }
+            //         cache_.get().update(diff, lgrInfo.seq);
+            //     }
 
-                backend_->updateRange(lgrInfo.seq);
-            }
+            //     backend_->updateRange(lgrInfo.seq);
+            // }
 
             setLastClose(lgrInfo.closeTime);
             auto age = lastCloseAgeSeconds();
@@ -303,4 +305,4 @@ private:
     }
 };
 
-}  // namespace etl::impl
+}  // namespace etlng::impl

@@ -34,11 +34,13 @@
 #include "etl/impl/Transformer.hpp"
 #include "etlng/ETLService.hpp"
 #include "etlng/ETLServiceInterface.hpp"
+#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoadBalancer.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
+#include "util/prometheus/Bool.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>
@@ -173,7 +175,7 @@ public:
                 std::dynamic_pointer_cast<etlng::LoadBalancer>(balancer),
                 "LoadBalancer type must be etlng::LoadBalancer"
             );
-            ret = std::make_shared<etlng::ETLService>(config, backend, subscriptions, balancer, ledgers);
+            ret = std::make_shared<etlng::ETLService>(ioc, config, backend, subscriptions, balancer, ledgers);
         } else {
             ASSERT(
                 std::dynamic_pointer_cast<etl::LoadBalancer>(balancer), "LoadBalancer type must be etl::LoadBalancer"

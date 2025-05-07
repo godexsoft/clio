@@ -20,7 +20,6 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "data/LedgerCache.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
@@ -29,13 +28,15 @@
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlockHandler.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
-#include "etl/impl/LedgerPublisher.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
+#include "etlng/LoaderInterface.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/impl/AmendmentBlockHandler.hpp"
 #include "etlng/impl/Extraction.hpp"
+#include "etlng/impl/LedgerPublisher.hpp"
 #include "etlng/impl/Loading.hpp"
 #include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/Registry.hpp"
@@ -49,10 +50,10 @@
 #include "util/Assert.hpp"
 #include "util/Profiler.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
-#include "util/config/Config.hpp"
 #include "util/log/Logger.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
 
+#include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>
 #include <fmt/core.h>
 #include <xrpl/basics/Blob.h>
@@ -66,13 +67,12 @@
 #include <xrpl/protocol/TxMeta.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <utility>
 
 namespace etlng {
@@ -93,6 +93,7 @@ namespace etlng {
 class ETLService : public ETLServiceInterface {
     util::Logger log_{"ETL"};
 
+    util::config::ClioConfigDefinition config_;
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
     std::shared_ptr<etlng::LoadBalancerInterface> balancer_;
@@ -106,7 +107,10 @@ class ETLService : public ETLServiceInterface {
     util::async::CoroExecutionContext ctx_{8};
 
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
-    std::shared_ptr<impl::Loader> loader_;
+    std::unique_ptr<impl::Loader> loader_;
+    std::unique_ptr<MonitorInterface> monitor_;
+
+    etlng::impl::LedgerPublisher publisher_;
 
     std::optional<util::async::CoroExecutionContext::Operation<void>> mainLoop_;
 
@@ -114,6 +118,7 @@ public:
     /**
      * @brief Create an instance of ETLService.
      *
+     * @param ioc TODO remove
      * @param config The configuration to use
      * @param backend BackendInterface implementation
      * @param subscriptions Subscription manager
@@ -121,21 +126,23 @@ public:
      * @param ledgers The network validated ledgers datastructure
      */
     ETLService(
+        boost::asio::io_context& ioc,  // TODO: remove. currently for publisher
         util::config::ClioConfigDefinition const& config,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::shared_ptr<etlng::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers
     )
-        : backend_(std::move(backend))
+        : config_(config)
+        , backend_(std::move(backend))
         , subscriptions_(std::move(subscriptions))
         , balancer_(std::move(balancer))
         , ledgers_(std::move(ledgers))
         , cacheLoader_(std::make_shared<etl::CacheLoader<>>(config, backend_, backend_->cache()))
         , fetcher_(std::make_shared<etl::impl::LedgerFetcher>(backend_, balancer_))
         , extractor_(std::make_shared<impl::Extractor>(fetcher_))
-        , amendmentBlockHandler_(std::make_shared<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
-        , loader_(std::make_shared<impl::Loader>(
+        , amendmentBlockHandler_(std::make_unique<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
+        , loader_(std::make_unique<impl::Loader>(
               backend_,
               fetcher_,
               impl::makeRegistry(
@@ -146,6 +153,7 @@ public:
               ),
               amendmentBlockHandler_
           ))
+        , publisher_(ioc, backend_, backend_->cache(), subscriptions_, state_)
     {
         LOG(log_.info()) << "Creating ETLng...";
     }
@@ -176,16 +184,17 @@ public:
             auto const nextSequence = rng->maxSequence + 1;
 
             LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
+            startMonitor(nextSequence);
 
             auto scheduler = impl::makeScheduler(impl::ForwardScheduler{*ledgers_, nextSequence}
                                                  // impl::BackfillScheduler{nextSequence - 1, nextSequence - 1000},
                                                  // TODO lift limit and start with rng.minSeq
             );
-
             auto man = impl::TaskManager(ctx_, *scheduler, *extractor_, *loader_);
-
-            // TODO: figure out this: std::make_shared<impl::Monitor>(backend_, ledgers_, nextSequence)
-            man.run({});  // TODO: needs to be interruptible and fill out settings
+            man.run({
+                .numExtractors = config_.get<std::size_t>("extractor_threads"),
+                .numLoaders = 1uz,  // FIXME: this breaks if it's not 1 atm. presumably due to backend's finishWrites
+            });                     // TODO: needs to be interruptible
         }));
     }
 
@@ -278,6 +287,20 @@ private:
         }
 
         return std::nullopt;
+    }
+
+    void
+    startMonitor(uint32_t seq)
+    {
+        monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq);
+        state_.isWriting = true;  // TODO: this is now needed because we don't have a mechanism for readonly or ETL
+                                  // writer node. remove later in favor of real mechanism
+
+        auto connection = monitor_->subscribe([this](uint32_t seq) {
+            log_.info() << "MONITOR got new seq from db: " << seq;
+            publisher_.publish(seq, {});
+        });
+        monitor_->run();
     }
 };
 }  // namespace etlng
