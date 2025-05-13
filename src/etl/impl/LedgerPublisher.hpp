@@ -269,7 +269,7 @@ public:
     }
 
     /**
-     * @brief Get the sequence of the last schueduled ledger to publish, Be aware that the ledger may not have been
+     * @brief Get the sequence of the last scheduled ledger to publish, Be aware that the ledger may not have been
      * published to network
      */
     std::optional<uint32_t>
