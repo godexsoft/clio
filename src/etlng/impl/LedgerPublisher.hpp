@@ -168,21 +168,9 @@ public:
         boost::asio::post(publishStrand_, [this, lgrInfo = lgrInfo]() {
             LOG(log_.info()) << "Publishing ledger " << std::to_string(lgrInfo.seq);
 
-            // TODO: this now should only be done in CacheExt.
-            // TODO2: figure out when to updateRange though
-            // if (!state_.get().isWriting) {
-            //     LOG(log_.info()) << "Updating ledger range for read node.";
-
-            //     if (!cache_.get().isDisabled()) {
-            //         std::vector<data::LedgerObject> const diff = data::synchronousAndRetryOnTimeout([&](auto yield) {
-            //             return backend_->fetchLedgerDiff(lgrInfo.seq, yield);
-            //         });
-
-            //         cache_.get().update(diff, lgrInfo.seq);
-            //     }
-
-            //     backend_->updateRange(lgrInfo.seq);
-            // }
+            // TODO: think how to do it elsewhere
+            if (not state_.get().isWriting)
+                backend_->updateRange(lgrInfo.seq);
 
             setLastClose(lgrInfo.closeTime);
             auto age = lastCloseAgeSeconds();

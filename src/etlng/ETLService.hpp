@@ -146,6 +146,7 @@ public:
               backend_,
               fetcher_,
               impl::makeRegistry(
+                  state_,
                   impl::CacheExt{backend_->cache()},
                   impl::CoreExt{backend_},
                   impl::SuccessorExt{backend_, backend_->cache()},
