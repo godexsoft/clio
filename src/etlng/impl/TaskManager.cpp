@@ -63,7 +63,7 @@ TaskManager::~TaskManager()
 void
 TaskManager::run(Settings settings)
 {
-    LOG(log_.debug()) << "Starting task manager...\n";
+    LOG(log_.debug()) << "Starting task manager with " << settings.numExtractors << " extractors...\n";
 
     stop();
     extractors_.clear();

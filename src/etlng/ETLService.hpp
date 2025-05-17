@@ -56,6 +56,7 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>
+#include <boost/signals2/connection.hpp>
 #include <fmt/core.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -115,6 +116,8 @@ class ETLService : public ETLServiceInterface {
     std::shared_ptr<impl::Loader> loader_;
     std::unique_ptr<MonitorInterface> monitor_;
     std::unique_ptr<impl::TaskManager> taskMan_;
+
+    boost::signals2::scoped_connection monitorSubscription_;
 
     std::optional<util::async::CoroExecutionContext::Operation<void>> mainLoop_;
 
@@ -304,7 +307,7 @@ private:
     startMonitor(uint32_t seq)
     {
         monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq);
-        auto connection = monitor_->subscribe([this](uint32_t seq) {
+        monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
             log_.info() << "MONITOR got new seq from db: " << seq;
 
             // FIXME: is this the best way?
