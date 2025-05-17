@@ -20,6 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "data/Types.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
@@ -49,7 +50,7 @@ namespace etlng::impl {
 
 class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
+    std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;  // TODO: remove?
     std::shared_ptr<RegistryInterface> registry_;
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
 

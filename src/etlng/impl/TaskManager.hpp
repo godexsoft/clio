@@ -23,7 +23,7 @@
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/SchedulerInterface.hpp"
-#include "util/StrandedPriorityQueue.hpp"
+#include "etlng/impl/TaskQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
 #include "util/async/AnyStrand.hpp"
@@ -31,30 +31,30 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
+#include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <vector>
 
 namespace etlng::impl {
 
 class TaskManager {
+    static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
+
     util::async::AnyExecutionContext ctx_;
-    std::reference_wrapper<SchedulerInterface> schedulers_;
+    std::shared_ptr<SchedulerInterface> schedulers_;
     std::reference_wrapper<ExtractorInterface> extractor_;
     std::reference_wrapper<LoaderInterface> loader_;
+
+    impl::TaskQueue queue_;
+    std::atomic_uint32_t nextForwardSequence_;
 
     std::vector<util::async::AnyOperation<void>> extractors_;
     std::vector<util::async::AnyOperation<void>> loaders_;
 
     util::Logger log_{"ETL"};
-
-    struct ReverseOrderComparator {
-        [[nodiscard]] bool
-        operator()(model::LedgerData const& lhs, model::LedgerData const& rhs) const noexcept
-        {
-            return lhs.seq > rhs.seq;
-        }
-    };
 
 public:
     struct Settings {
@@ -62,14 +62,12 @@ public:
         size_t numLoaders;    /**< number of loading tasks */
     };
 
-    // reverse order loading is needed (i.e. start with oldest seq in forward fill buffer)
-    using PriorityQueue = util::StrandedPriorityQueue<model::LedgerData, ReverseOrderComparator>;
-
     TaskManager(
         util::async::AnyExecutionContext&& ctx,
-        std::reference_wrapper<SchedulerInterface> scheduler,
+        std::shared_ptr<SchedulerInterface> scheduler,
         std::reference_wrapper<ExtractorInterface> extractor,
-        std::reference_wrapper<LoaderInterface> loader
+        std::reference_wrapper<LoaderInterface> loader,
+        uint32_t startSeq
     );
 
     ~TaskManager();
@@ -85,10 +83,10 @@ private:
     wait();
 
     [[nodiscard]] util::async::AnyOperation<void>
-    spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue);
+    spawnExtractor(TaskQueue& queue);
 
     [[nodiscard]] util::async::AnyOperation<void>
-    spawnLoader(PriorityQueue& queue);
+    spawnLoader(TaskQueue& queue);
 };
 
 }  // namespace etlng::impl

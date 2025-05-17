@@ -74,7 +74,7 @@ protected:
     std::shared_ptr<MockExtractorType> mockExtractorPtr_ = std::make_shared<MockExtractorType>();
     std::shared_ptr<MockLoaderType> mockLoaderPtr_ = std::make_shared<MockLoaderType>();
 
-    TaskManager taskManager_{ctx_, *mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_};
+    TaskManager taskManager_{ctx_, mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_, kSEQ};
 };
 
 auto
@@ -97,7 +97,7 @@ createTestData(uint32_t seq)
 TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 {
     static constexpr auto kTOTAL = 64uz;
-    static constexpr auto kEXTRACTORS = 5uz;
+    static constexpr auto kEXTRACTORS = 4uz;
     static constexpr auto kLOADERS = 1uz;
 
     std::atomic_uint32_t seq = kSEQ;
@@ -118,17 +118,14 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 
     EXPECT_CALL(*mockLoaderPtr_, load(testing::_)).Times(kTOTAL).WillRepeatedly([&](LedgerData data) {
         loaded.push_back(data.seq);
-
         if (loaded.size() == kTOTAL) {
             done.release();
         }
     });
 
-    auto loop = ctx_.execute([&] { taskManager_.run({.numExtractors = kEXTRACTORS, .numLoaders = kLOADERS}); });
+    taskManager_.run({.numExtractors = kEXTRACTORS, .numLoaders = kLOADERS});
     done.acquire();
-
     taskManager_.stop();
-    loop.wait();
 
     EXPECT_EQ(loaded.size(), kTOTAL);
     for (std::size_t i = 0; i < loaded.size(); ++i) {

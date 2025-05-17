@@ -23,14 +23,16 @@
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "etlng/impl/TaskQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
-#include "util/async/AnyStrand.hpp"
 #include "util/log/Logger.hpp"
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <ranges>
 #include <thread>
 #include <utility>
@@ -40,11 +42,16 @@ namespace etlng::impl {
 
 TaskManager::TaskManager(
     util::async::AnyExecutionContext&& ctx,
-    std::reference_wrapper<SchedulerInterface> scheduler,
+    std::shared_ptr<SchedulerInterface> scheduler,
     std::reference_wrapper<ExtractorInterface> extractor,
-    std::reference_wrapper<LoaderInterface> loader
+    std::reference_wrapper<LoaderInterface> loader,
+    uint32_t startSeq
 )
-    : ctx_(std::move(ctx)), schedulers_(scheduler), extractor_(extractor), loader_(loader)
+    : ctx_(std::move(ctx))
+    , schedulers_(std::move(scheduler))
+    , extractor_(extractor)
+    , loader_(loader)
+    , queue_({.startSeq = startSeq, .increment = 1u, .limit = kQUEUE_SIZE_LIMIT})
 {
 }
 
@@ -56,35 +63,31 @@ TaskManager::~TaskManager()
 void
 TaskManager::run(Settings settings)
 {
-    static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
-
-    auto schedulingStrand = ctx_.makeStrand();
-    PriorityQueue queue(ctx_.makeStrand(), kQUEUE_SIZE_LIMIT);
-
     LOG(log_.debug()) << "Starting task manager...\n";
+
+    stop();
+    extractors_.clear();
+    loaders_.clear();
 
     extractors_.reserve(settings.numExtractors);
     for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numExtractors))
-        extractors_.push_back(spawnExtractor(schedulingStrand, queue));
+        extractors_.push_back(spawnExtractor(queue_));
 
     loaders_.reserve(settings.numLoaders);
     for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numLoaders))
-        loaders_.push_back(spawnLoader(queue));
-
-    wait();
-    LOG(log_.debug()) << "All finished in task manager..\n";
+        loaders_.push_back(spawnLoader(queue_));
 }
 
 util::async::AnyOperation<void>
-TaskManager::spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue)
+TaskManager::spawnExtractor(TaskQueue& queue)
 {
     // TODO: these values may be extracted to config later and/or need to be fine-tuned on a realistic system
     static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{100u};
     static constexpr auto kDELAY_BETWEEN_ENQUEUE_ATTEMPTS = std::chrono::milliseconds{1u};
 
-    return strand.execute([this, &queue](auto stopRequested) {
+    return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
-            if (auto task = schedulers_.get().next(); task.has_value()) {
+            if (auto task = schedulers_->next(); task.has_value()) {
                 if (auto maybeBatch = extractor_.get().extractLedgerWithDiff(task->seq); maybeBatch.has_value()) {
                     LOG(log_.debug()) << "Adding data after extracting diff";
                     while (not queue.enqueue(*maybeBatch)) {
@@ -107,7 +110,7 @@ TaskManager::spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue
 }
 
 util::async::AnyOperation<void>
-TaskManager::spawnLoader(PriorityQueue& queue)
+TaskManager::spawnLoader(TaskQueue& queue)
 {
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {

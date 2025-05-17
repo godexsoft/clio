@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "etlng/Models.hpp"
+#include "etlng/impl/CacheUpdater.hpp"
 #include "etlng/impl/ext/Cache.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockLedgerCache.hpp"
@@ -27,6 +28,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -59,7 +61,8 @@ createTestData()
 struct CacheExtTests : util::prometheus::WithPrometheus {
 protected:
     MockLedgerCache cache_;
-    etlng::impl::CacheExt ext_{cache_};
+    std::shared_ptr<etlng::impl::CacheUpdater> updater_ = std::make_shared<etlng::impl::CacheUpdater>(cache_);
+    etlng::impl::CacheExt ext_{updater_};
 };
 
 TEST_F(CacheExtTests, OnLedgerDataUpdatesCache)

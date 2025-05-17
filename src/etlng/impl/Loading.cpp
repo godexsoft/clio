@@ -20,6 +20,7 @@
 #include "etlng/impl/Loading.hpp"
 
 #include "data/BackendInterface.hpp"
+#include "data/Types.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
@@ -32,9 +33,11 @@
 
 #include <xrpl/protocol/LedgerHeader.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -61,7 +64,10 @@ void
 Loader::load(model::LedgerData const& data)
 {
     try {
-        // perform cache updates and all writes from extensions
+        // TODO: update cache here or what.
+        // need to be extra careful with other places we updated cache before when we had ext
+
+        // perform updates and all writes from extensions
         registry_->dispatch(data);
 
         auto [success, duration] =

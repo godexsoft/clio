@@ -21,10 +21,10 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
-#include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
 #include "etl/SystemState.hpp"
 #include "etlng/LedgerPublisherInterface.hpp"
+#include "etlng/impl/Loading.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
@@ -74,7 +74,6 @@ class LedgerPublisher : public etlng::LedgerPublisherInterface {
     boost::asio::strand<boost::asio::io_context::executor_type> publishStrand_;
 
     std::shared_ptr<BackendInterface> backend_;
-    std::reference_wrapper<data::LedgerCacheInterface> cache_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
     std::reference_wrapper<etl::SystemState const> state_;  // shared state for ETL
 
@@ -95,15 +94,13 @@ public:
      * @brief Create an instance of the publisher
      */
     LedgerPublisher(
-        boost::asio::io_context& ioc,
+        boost::asio::io_context& ioc,  // TODO: replace with AsyncContext shared with ETLServiceNg
         std::shared_ptr<BackendInterface> backend,
-        data::LedgerCacheInterface& cache,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         etl::SystemState const& state
     )
         : publishStrand_{boost::asio::make_strand(ioc)}
         , backend_{std::move(backend)}
-        , cache_{cache}
         , subscriptions_{std::move(subscriptions)}
         , state_{std::cref(state)}
     {

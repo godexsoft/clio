@@ -145,7 +145,6 @@ target_sources(
           util/ConceptsTests.cpp
           util/CoroutineGroupTests.cpp
           util/LedgerUtilsTests.cpp
-          util/StrandedPriorityQueueTests.cpp
           # Prometheus support
           util/prometheus/BoolTests.cpp
           util/prometheus/CounterTests.cpp
