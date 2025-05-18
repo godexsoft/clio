@@ -84,31 +84,45 @@ Loader::onInitialLoadGotMoreObjects(
     std::optional<std::string> lastKey
 )
 {
-    LOG(log_.debug()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
-    registry_->dispatchInitialObjects(
-        seq, data, std::move(lastKey).value_or(std::string{})  // TODO: perhaps use optional all the way to extensions?
-    );
+    try {
+        LOG(log_.debug()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
+        registry_->dispatchInitialObjects(
+            seq,
+            data,
+            std::move(lastKey).value_or(std::string{})  // TODO: perhaps use optional all the way to extensions?
+        );
+    } catch (std::runtime_error const& e) {
+        LOG(log_.fatal()) << "Failed to load initial objects for " << seq << ": " << e.what();
+        amendmentBlockHandler_->notifyAmendmentBlocked();
+    }
 }
 
 std::optional<ripple::LedgerHeader>
 Loader::loadInitialLedger(model::LedgerData const& data)
 {
-    // check that database is actually empty
-    auto rng = backend_->hardFetchLedgerRangeNoThrow();
-    if (rng) {
-        ASSERT(false, "Database is not empty");
-        return std::nullopt;
+    try {
+        // check that database is actually empty
+        auto rng = backend_->hardFetchLedgerRangeNoThrow();
+        if (rng) {
+            ASSERT(false, "Database is not empty");
+            return std::nullopt;
+        }
+
+        LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(data.header);
+
+        auto seconds = ::util::timed<std::chrono::seconds>([this, &data]() { registry_->dispatchInitialData(data); });
+        LOG(log_.info()) << "Dispatching initial data and submitting all writes took " << seconds << " seconds.";
+
+        backend_->finishWrites(data.seq);
+        LOG(log_.debug()) << "Loaded initial ledger";
+
+        return {data.header};
+    } catch (std::runtime_error const& e) {
+        LOG(log_.fatal()) << "Failed to load initial ledger " << data.seq << ": " << e.what();
+        amendmentBlockHandler_->notifyAmendmentBlocked();
     }
 
-    LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(data.header);
-
-    auto seconds = ::util::timed<std::chrono::seconds>([this, &data]() { registry_->dispatchInitialData(data); });
-    LOG(log_.info()) << "Dispatching initial data and submitting all writes took " << seconds << " seconds.";
-
-    backend_->finishWrites(data.seq);
-    LOG(log_.debug()) << "Loaded initial ledger";
-
-    return {data.header};
+    return std::nullopt;
 }
 
 }  // namespace etlng::impl

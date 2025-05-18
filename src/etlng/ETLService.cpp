@@ -50,7 +50,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -184,48 +183,45 @@ ETLService::lastCloseAgeSeconds() const
 std::optional<data::LedgerRange>
 ETLService::loadInitialLedgerIfNeeded()
 {
-    if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); not rng.has_value()) {
+    auto rng = backend_->hardFetchLedgerRangeNoThrow();
+    if (not rng.has_value()) {
         LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
 
-        try {
-            LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
-            if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
-                auto const seq = *mostRecentValidated;
-                LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
+        LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
+        if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
+            auto const seq = *mostRecentValidated;
+            LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
 
-                auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
-                    return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
-                        // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
-                        data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
+            auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
+                return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
+                    // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
+                    data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
 
-                        // TODO: this should be interruptible for graceful shutdown
-                        return loader_->loadInitialLedger(data);
-                    });
+                    // TODO: this should be interruptible for graceful shutdown
+                    return loader_->loadInitialLedger(data);
                 });
+            });
 
-                LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
-                LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
-
-                if (ledger.has_value())
-                    return backend_->hardFetchLedgerRangeNoThrow();
-
+            if (not ledger.has_value()) {
                 LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
-            } else {
-                LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
-                                    "Exiting monitor loop";
+                return std::nullopt;
             }
-        } catch (std::runtime_error const& e) {
-            LOG(log_.fatal()) << "Failed to load initial ledger: " << e.what();
-            amendmentBlockHandler_->notifyAmendmentBlocked();
-        }
-    } else {
-        LOG(log_.info()) << "Database already populated. Picking up from the tip of history";
-        cacheLoader_->load(rng->maxSequence);
 
-        return rng;
+            LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
+            LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
+
+            return backend_->hardFetchLedgerRangeNoThrow();
+        }
+
+        LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
+                            "Exiting monitor loop";
+        return std::nullopt;
     }
 
-    return std::nullopt;
+    LOG(log_.info()) << "Database already populated. Picking up from the tip of history";
+    cacheLoader_->load(rng->maxSequence);
+
+    return rng;
 }
 
 void

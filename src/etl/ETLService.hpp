@@ -34,13 +34,11 @@
 #include "etl/impl/Transformer.hpp"
 #include "etlng/ETLService.hpp"
 #include "etlng/ETLServiceInterface.hpp"
-#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoadBalancer.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
-#include "util/prometheus/Bool.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>
