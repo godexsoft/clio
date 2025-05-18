@@ -48,8 +48,8 @@
 #include "etlng/impl/ext/Successor.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
+#include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>

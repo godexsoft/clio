@@ -20,8 +20,6 @@
 #include "etlng/impl/Loading.hpp"
 
 #include "data/BackendInterface.hpp"
-#include "data/Types.hpp"
-#include "etl/LedgerFetcherInterface.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/Models.hpp"
@@ -33,11 +31,9 @@
 
 #include <xrpl/protocol/LedgerHeader.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -49,12 +45,10 @@ namespace etlng::impl {
 
 Loader::Loader(
     std::shared_ptr<BackendInterface> backend,
-    std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
     std::shared_ptr<RegistryInterface> registry,
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
 )
     : backend_(std::move(backend))
-    , fetcher_(std::move(fetcher))
     , registry_(std::move(registry))
     , amendmentBlockHandler_(std::move(amendmentBlockHandler))
 {

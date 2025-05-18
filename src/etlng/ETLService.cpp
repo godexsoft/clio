@@ -29,7 +29,6 @@
 #include "util/Profiler.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/object.hpp>
@@ -76,7 +75,6 @@ ETLService::ETLService(
     , amendmentBlockHandler_(std::make_unique<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
     , loader_(std::make_shared<impl::Loader>(
           backend_,
-          fetcher_,
           impl::makeRegistry(
               state_,
               impl::CacheExt{cacheUpdater_},

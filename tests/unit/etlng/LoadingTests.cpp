@@ -64,13 +64,10 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
     );
 };
 
-struct LoadingTests : util::prometheus::WithPrometheus,
-                      MockBackendTest,
-                      MockLedgerFetcherTest,
-                      MockAmendmentBlockHandlerTest {
+struct LoadingTests : util::prometheus::WithPrometheus, MockBackendTest, MockAmendmentBlockHandlerTest {
 protected:
     std::shared_ptr<MockRegistry> mockRegistryPtr_ = std::make_shared<MockRegistry>();
-    Loader loader_{backend_, mockLedgerFetcherPtr_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
+    Loader loader_{backend_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
 };
 
 struct LoadingAssertTest : common::util::WithMockAssert, LoadingTests {};
