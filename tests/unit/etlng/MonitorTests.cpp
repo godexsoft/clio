@@ -66,7 +66,7 @@ TEST_F(MonitorTests, ConsumesAndNotifiesForAllOutstandingSequencesAtOnce)
     });
 
     auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
-    monitor_.run(std::chrono::milliseconds{1});
+    monitor_.run(std::chrono::milliseconds{10});
     unblock.acquire();
 }
 

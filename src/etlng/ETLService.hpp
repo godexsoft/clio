@@ -330,7 +330,8 @@ private:
         // TODO: add impl::BackfillScheduler{seq - 1, seq - 1000},
         // TODO2: lift limit and start with rng.minSeq
 
-        taskMan_ = std::make_unique<impl::TaskManager>(ctx_, std::move(scheduler), *extractor_, *loader_, seq);
+        taskMan_ =
+            std::make_unique<impl::TaskManager>(ctx_, std::move(scheduler), *extractor_, *loader_, *monitor_, seq);
         taskMan_->run({
             .numExtractors = config_.get<std::size_t>("extractor_threads"),
             .numLoaders = 1uz,  // FIXME: this breaks if it's not 1 atm. presumably due to backend's finishWrites

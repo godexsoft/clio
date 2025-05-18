@@ -22,7 +22,9 @@
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/TaskQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
@@ -47,6 +49,7 @@ class TaskManager {
     std::shared_ptr<SchedulerInterface> schedulers_;
     std::reference_wrapper<ExtractorInterface> extractor_;
     std::reference_wrapper<LoaderInterface> loader_;
+    std::reference_wrapper<MonitorInterface> monitor_;
 
     impl::TaskQueue queue_;
     std::atomic_uint32_t nextForwardSequence_;
@@ -67,6 +70,7 @@ public:
         std::shared_ptr<SchedulerInterface> scheduler,
         std::reference_wrapper<ExtractorInterface> extractor,
         std::reference_wrapper<LoaderInterface> loader,
+        std::reference_wrapper<MonitorInterface> monitor,
         uint32_t startSeq
     );
 

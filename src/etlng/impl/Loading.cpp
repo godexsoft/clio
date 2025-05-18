@@ -64,10 +64,7 @@ void
 Loader::load(model::LedgerData const& data)
 {
     try {
-        // TODO: update cache here or what.
-        // need to be extra careful with other places we updated cache before when we had ext
-
-        // perform updates and all writes from extensions
+        // perform cache updates and all writes from extensions
         registry_->dispatch(data);
 
         auto [success, duration] =

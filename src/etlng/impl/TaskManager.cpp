@@ -22,8 +22,12 @@
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/TaskQueue.hpp"
+#include "util/LedgerUtils.hpp"
+#include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
 #include "util/log/Logger.hpp"
@@ -45,12 +49,14 @@ TaskManager::TaskManager(
     std::shared_ptr<SchedulerInterface> scheduler,
     std::reference_wrapper<ExtractorInterface> extractor,
     std::reference_wrapper<LoaderInterface> loader,
+    std::reference_wrapper<MonitorInterface> monitor,
     uint32_t startSeq
 )
     : ctx_(std::move(ctx))
     , schedulers_(std::move(scheduler))
     , extractor_(extractor)
     , loader_(loader)
+    , monitor_(monitor)
     , queue_({.startSeq = startSeq, .increment = 1u, .limit = kQUEUE_SIZE_LIMIT})
 {
 }
@@ -115,8 +121,19 @@ TaskManager::spawnLoader(TaskQueue& queue)
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
-            if (auto data = queue.dequeue(); data.has_value())
-                loader_.get().load(*data);
+            if (auto data = queue.dequeue(); data.has_value()) {
+                auto nanos = util::timed<std::chrono::nanoseconds>([this, data = *data] { loader_.get().load(data); });
+                auto const seconds = nanos / 1000000000.0;
+                auto const txnCount = data->transactions.size();
+                auto const objCount = data->objects.size();
+
+                LOG(log_.info()) << "Wrote ledger " << data->seq << " with header: " << util::toString(data->header)
+                                 << ". txns[" << txnCount << "]; objs[" << objCount << "]; in " << seconds
+                                 << " seconds;"
+                                 << " tps[" << txnCount / seconds << "], ops[" << objCount / seconds << "]";
+
+                monitor_.get().notifyLedgerLoaded(data->seq);
+            }
         }
     });
 }
