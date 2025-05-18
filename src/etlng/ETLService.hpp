@@ -20,7 +20,6 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
@@ -48,8 +47,6 @@
 #include "etlng/impl/ext/NFT.hpp"
 #include "etlng/impl/ext/Successor.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
-#include "util/Assert.hpp"
-#include "util/Profiler.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/log/Logger.hpp"
 #include "util/newconfig/ConfigDefinition.hpp"
@@ -68,15 +65,11 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace etlng {
 
@@ -139,203 +132,41 @@ public:
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::shared_ptr<etlng::LoadBalancerInterface> balancer,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers
-    )
-        : config_(config)
-        , backend_(std::move(backend))
-        , subscriptions_(std::move(subscriptions))
-        , balancer_(std::move(balancer))
-        , ledgers_(std::move(ledgers))
-        , cacheLoader_(std::make_shared<etl::CacheLoader<>>(config, backend_, backend_->cache()))
-        , cacheUpdater_(std::make_shared<impl::CacheUpdater>(backend_->cache()))
-        , fetcher_(std::make_shared<etl::impl::LedgerFetcher>(backend_, balancer_))
-        , extractor_(std::make_shared<impl::Extractor>(fetcher_))
-        , publisher_(ioc, backend_, subscriptions_, state_)
-        , amendmentBlockHandler_(std::make_unique<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
-        , loader_(std::make_shared<impl::Loader>(
-              backend_,
-              fetcher_,
-              impl::makeRegistry(
-                  state_,
-                  impl::CacheExt{cacheUpdater_},
-                  impl::CoreExt{backend_},
-                  impl::SuccessorExt{backend_, backend_->cache()},
-                  impl::NFTExt{backend_}
-              ),
-              amendmentBlockHandler_
-          ))
-    {
-        LOG(log_.info()) << "Creating ETLng...";
-    }
+    );
 
-    ~ETLService() override
-    {
-        stop();
-        LOG(log_.debug()) << "Destroying ETLng";
-    }
+    ~ETLService() override;
 
     void
-    run() override
-    {
-        LOG(log_.info()) << "Running ETLng...";
-
-        // TODO: write-enabled node should start in readonly and do the 10 second dance to become a writer
-        mainLoop_.emplace(ctx_.execute([this] {
-            state_.isWriting =
-                not state_.isReadOnly;  // TODO: this is now needed because we don't have a mechanism for readonly or
-                                        // ETL writer node. remove later in favor of real mechanism
-
-            auto const rng = loadInitialLedgerIfNeeded();
-
-            LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
-            std::optional<uint32_t> const mostRecentValidated = ledgers_->getMostRecent();
-
-            if (not mostRecentValidated) {
-                LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
-                                    "Exiting monitor loop";
-                return;
-            }
-
-            ASSERT(rng.has_value(), "Ledger range can't be null");
-            auto const nextSequence = rng->maxSequence + 1;
-
-            LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
-            startMonitor(nextSequence);
-
-            // TODO: we only want to run the full ETL task man if we are POSSIBLY a write node
-            // but definitely not in strict readonly
-            if (not state_.isReadOnly)
-                startLoading(nextSequence);
-        }));
-    }
+    run() override;
 
     void
-    stop() override
-    {
-        LOG(log_.info()) << "Stop called";
-
-        if (taskMan_)
-            taskMan_->stop();
-        if (monitor_)
-            monitor_->stop();
-    }
+    stop() override;
 
     boost::json::object
-    getInfo() const override
-    {
-        // TODO
-        return {{"ok", true}};
-    }
+    getInfo() const override;
 
     bool
-    isAmendmentBlocked() const override
-    {
-        // TODO
-        return false;
-    }
+    isAmendmentBlocked() const override;
 
     bool
-    isCorruptionDetected() const override
-    {
-        // TODO
-        return false;
-    }
+    isCorruptionDetected() const override;
 
     std::optional<etl::ETLState>
-    getETLState() const override
-    {
-        // TODO
-        return std::nullopt;
-    }
+    getETLState() const override;
 
     std::uint32_t
-    lastCloseAgeSeconds() const override
-    {
-        // TODO
-        return 0;
-    }
+    lastCloseAgeSeconds() const override;
 
 private:
     // TODO: this better be std::expected
     std::optional<data::LedgerRange>
-    loadInitialLedgerIfNeeded()
-    {
-        if (auto rng = backend_->hardFetchLedgerRangeNoThrow(); not rng.has_value()) {
-            LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
-
-            try {
-                LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
-                if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
-                    auto const seq = *mostRecentValidated;
-                    LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
-
-                    auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
-                        return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
-                            // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
-                            data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
-
-                            // TODO: this should be interruptible for graceful shutdown
-                            return loader_->loadInitialLedger(data);
-                        });
-                    });
-
-                    LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
-                    LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
-
-                    if (ledger.has_value())
-                        return backend_->hardFetchLedgerRangeNoThrow();
-
-                    LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
-                } else {
-                    LOG(log_.info()) << "The wait for the next validated ledger has been aborted. "
-                                        "Exiting monitor loop";
-                }
-            } catch (std::runtime_error const& e) {
-                LOG(log_.fatal()) << "Failed to load initial ledger: " << e.what();
-                amendmentBlockHandler_->notifyAmendmentBlocked();
-            }
-        } else {
-            LOG(log_.info()) << "Database already populated. Picking up from the tip of history";
-            cacheLoader_->load(rng->maxSequence);
-
-            return rng;
-        }
-
-        return std::nullopt;
-    }
+    loadInitialLedgerIfNeeded();
 
     void
-    startMonitor(uint32_t seq)
-    {
-        monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq);
-        monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
-            log_.info() << "MONITOR got new seq from db: " << seq;
-
-            // FIXME: is this the best way?
-            if (not state_.isWriting) {
-                auto const diff = data::synchronousAndRetryOnTimeout([this, seq](auto yield) {
-                    return backend_->fetchLedgerDiff(seq, yield);
-                });
-                cacheUpdater_->update(seq, diff);
-            }
-
-            publisher_.publish(seq, {});
-        });
-        monitor_->run();
-    }
+    startMonitor(uint32_t seq);
 
     void
-    startLoading(uint32_t seq)
-    {
-        auto scheduler = impl::makeScheduler(impl::ForwardScheduler{*ledgers_, seq});
-        // TODO: add impl::BackfillScheduler{seq - 1, seq - 1000},
-        // TODO2: lift limit and start with rng.minSeq
-
-        taskMan_ =
-            std::make_unique<impl::TaskManager>(ctx_, std::move(scheduler), *extractor_, *loader_, *monitor_, seq);
-        taskMan_->run({
-            .numExtractors = config_.get<std::size_t>("extractor_threads"),
-            .numLoaders = 1uz,  // FIXME: this breaks if it's not 1 atm. presumably due to backend's finishWrites
-        });                     // TODO: needs to be interruptible
-    }
+    startLoading(uint32_t seq);
 };
+
 }  // namespace etlng
