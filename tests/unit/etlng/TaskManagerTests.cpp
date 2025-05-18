@@ -110,7 +110,6 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 {
     static constexpr auto kTOTAL = 64uz;
     static constexpr auto kEXTRACTORS = 4uz;
-    static constexpr auto kLOADERS = 1uz;
 
     std::atomic_uint32_t seq = kSEQ;
     std::vector<uint32_t> loaded;
@@ -137,7 +136,7 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 
     EXPECT_CALL(*mockMonitorPtr_, notifyLedgerLoaded(testing::_)).Times(kTOTAL);
 
-    taskManager_.run({.numExtractors = kEXTRACTORS, .numLoaders = kLOADERS});
+    taskManager_.run({.numExtractors = kEXTRACTORS});
     done.acquire();
     taskManager_.stop();
 

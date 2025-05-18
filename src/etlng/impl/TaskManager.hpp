@@ -62,7 +62,6 @@ class TaskManager {
 public:
     struct Settings {
         size_t numExtractors; /**< number of extraction tasks */
-        size_t numLoaders;    /**< number of loading tasks */
     };
 
     TaskManager(
