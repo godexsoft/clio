@@ -145,6 +145,33 @@ TEST_F(LoadingTests, OnInitialLoadGotMoreObjectsWithoutKey)
     loader_.onInitialLoadGotMoreObjects(kSEQ, data.objects, lastKey);
 }
 
+TEST_F(LoadingTests, OnInitialLoadGotMoreObjectsFailure)
+{
+    auto const data = createTestData();
+    auto const lastKey = std::optional<std::string>{};
+
+    EXPECT_CALL(*mockRegistryPtr_, dispatchInitialObjects(kSEQ, data.objects, std::string{}))
+        .WillOnce([](auto, auto, auto) { throw std::runtime_error("some error"); });
+    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, notifyAmendmentBlocked());
+
+    loader_.onInitialLoadGotMoreObjects(kSEQ, data.objects, lastKey);
+}
+
+TEST_F(LoadingTests, LoadInitialLedgerFailure)
+{
+    auto const data = createTestData();
+
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*backend_, doFinishWrites()).Times(0);
+    EXPECT_CALL(*mockRegistryPtr_, dispatchInitialData(data)).WillOnce([](auto const&) {
+        throw std::runtime_error("some error");
+    });
+    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, notifyAmendmentBlocked());
+
+    auto const res = loader_.loadInitialLedger(data);
+    EXPECT_FALSE(res.has_value());
+}
+
 TEST_F(LoadingAssertTest, LoadInitialLedgerHasDataInDB)
 {
     auto const data = createTestData();

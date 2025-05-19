@@ -114,9 +114,8 @@ Loader::loadInitialLedger(model::LedgerData const& data)
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load initial ledger " << data.seq << ": " << e.what();
         amendmentBlockHandler_->notifyAmendmentBlocked();
+        return std::nullopt;
     }
-
-    return std::nullopt;
 }
 
 }  // namespace etlng::impl

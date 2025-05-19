@@ -19,16 +19,19 @@
 
 #include "etl/SystemState.hpp"
 #include "etlng/Models.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/impl/Registry.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/LoggerFixtures.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/TestObject.hpp"
 
+#include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -664,4 +667,161 @@ TEST_F(RegistryTest, MixedReadonlyAndRegularExtensions)
         .rawHeader = {},
         .seq = kSEQ
     });
+}
+
+TEST_F(RegistryTest, MonitorInterfaceExecution)
+{
+    struct MockMonitor : etlng::MonitorInterface {
+        MOCK_METHOD(void, notifyLedgerLoaded, (uint32_t), (override));
+        MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
+        MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
+        MOCK_METHOD(void, stop, (), (override));
+    };
+
+    auto monitor = MockMonitor{};
+    EXPECT_CALL(monitor, notifyLedgerLoaded(kSEQ)).Times(1);
+
+    monitor.notifyLedgerLoaded(kSEQ);
+}
+
+TEST_F(RegistryTest, ReadonlyModeWithAllowInReadonlyTest)
+{
+    struct ExtWithAllowInReadonly {
+        MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
+
+        static bool
+        allowInReadonly()
+        {
+            return true;
+        }
+    };
+
+    auto ext = ExtWithAllowInReadonly{};
+    state_.isWriting = false;
+
+    EXPECT_CALL(ext, onLedgerData(testing::_)).Times(1);
+
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
+    auto reg = Registry<ExtWithAllowInReadonly&>(state_, ext);
+    reg.dispatch(etlng::model::LedgerData{
+        .transactions = {},
+        .objects = {},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    });
+}
+
+TEST_F(RegistryTest, ReadonlyModeExecutePluralHooksIfAllowedPaths)
+{
+    struct ExtWithBothHooksAndAllowReadonly {
+        MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
+        MOCK_METHOD(void, onInitialData, (etlng::model::LedgerData const&), (const));
+        MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&, std::string), (const));
+
+        static bool
+        allowInReadonly()
+        {
+            return true;
+        }
+    };
+
+    auto ext = ExtWithBothHooksAndAllowReadonly{};
+    state_.isWriting = false;
+
+    auto transactions = std::vector{
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+    };
+    auto objects = std::vector{
+        util::createObject(),
+    };
+
+    EXPECT_CALL(ext, onLedgerData(testing::_)).Times(1);
+    EXPECT_CALL(ext, onInitialData(testing::_)).Times(1);
+    EXPECT_CALL(ext, onInitialObjects(testing::_, testing::_, testing::_)).Times(1);
+
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
+    auto reg = Registry<ExtWithBothHooksAndAllowReadonly&>(state_, ext);
+
+    reg.dispatch(etlng::model::LedgerData{
+        .transactions = transactions,
+        .objects = objects,
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    });
+
+    reg.dispatchInitialData(etlng::model::LedgerData{
+        .transactions = std::move(transactions),
+        .objects = {},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    });
+
+    reg.dispatchInitialObjects(kSEQ, objects, {});
+}
+
+TEST_F(RegistryTest, ReadonlyModeExecuteByOneHooksIfAllowedPaths)
+{
+    struct ExtWithBothHooksAndAllowReadonly {
+        using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+
+        MOCK_METHOD(void, onObject, (uint32_t, etlng::model::Object const&), (const));
+        MOCK_METHOD(void, onInitialObject, (uint32_t, etlng::model::Object const&), (const));
+        MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+        MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+
+        static bool
+        allowInReadonly()
+        {
+            return true;
+        }
+    };
+
+    auto ext = ExtWithBothHooksAndAllowReadonly{};
+    state_.isWriting = false;
+
+    auto transactions = std::vector{
+        util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
+    };
+    auto objects = std::vector{
+        util::createObject(),
+    };
+
+    EXPECT_CALL(ext, onTransaction(testing::_, testing::_)).Times(1);
+    EXPECT_CALL(ext, onObject(testing::_, testing::_)).Times(1);
+    EXPECT_CALL(ext, onInitialTransaction(testing::_, testing::_)).Times(1);
+    EXPECT_CALL(ext, onInitialObject(testing::_, testing::_)).Times(1);
+
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
+    auto reg = Registry<ExtWithBothHooksAndAllowReadonly&>(state_, ext);
+
+    reg.dispatch(etlng::model::LedgerData{
+        .transactions = transactions,
+        .objects = objects,
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    });
+
+    reg.dispatchInitialData(etlng::model::LedgerData{
+        .transactions = std::move(transactions),
+        .objects = {},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    });
+
+    reg.dispatchInitialObjects(kSEQ, objects, {});
 }
