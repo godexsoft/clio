@@ -40,6 +40,7 @@ target_sources(
           etl/TransformerTests.cpp
           # ETLng
           etlng/AmendmentBlockHandlerTests.cpp
+          etlng/ETLServiceTests.cpp
           etlng/ExtractionTests.cpp
           etlng/ForwardingSourceTests.cpp
           etlng/GrpcSourceTests.cpp

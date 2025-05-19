@@ -247,7 +247,6 @@ ETLService::startLoading(uint32_t seq)
 {
     auto scheduler = impl::makeScheduler(impl::ForwardScheduler{*ledgers_, seq});
     // TODO: add impl::BackfillScheduler{seq - 1, seq - 1000},
-    // TODO2: lift limit and start with rng.minSeq
 
     taskMan_ = std::make_unique<impl::TaskManager>(ctx_, std::move(scheduler), *extractor_, *loader_, *monitor_, seq);
     taskMan_->run({.numExtractors = config_.get<std::size_t>("extractor_threads")});
