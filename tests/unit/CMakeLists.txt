@@ -43,6 +43,7 @@ target_sources(
           etlng/ExtractionTests.cpp
           etlng/ForwardingSourceTests.cpp
           etlng/GrpcSourceTests.cpp
+          etlng/LedgerPublisherTests.cpp
           etlng/RegistryTests.cpp
           etlng/SchedulingTests.cpp
           etlng/TaskManagerTests.cpp
