@@ -21,14 +21,13 @@
 
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
-#include "etlng/Models.hpp"
 #include "etlng/MonitorInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "etlng/TaskManagerInterface.hpp"
 #include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/TaskQueue.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
-#include "util/async/AnyStrand.hpp"
 #include "util/log/Logger.hpp"
 
 #include <xrpl/protocol/TxFormats.h>
@@ -42,7 +41,7 @@
 
 namespace etlng::impl {
 
-class TaskManager {
+class TaskManager : public TaskManagerInterface {
     static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
 
     util::async::AnyExecutionContext ctx_;
@@ -60,12 +59,8 @@ class TaskManager {
     util::Logger log_{"ETL"};
 
 public:
-    struct Settings {
-        size_t numExtractors; /**< number of extraction tasks */
-    };
-
     TaskManager(
-        util::async::AnyExecutionContext&& ctx,
+        util::async::AnyExecutionContext ctx,
         std::shared_ptr<SchedulerInterface> scheduler,
         std::reference_wrapper<ExtractorInterface> extractor,
         std::reference_wrapper<LoaderInterface> loader,
@@ -73,13 +68,13 @@ public:
         uint32_t startSeq
     );
 
-    ~TaskManager();
+    ~TaskManager() override;
 
     void
-    run(Settings settings);
+    run(Settings settings) override;
 
     void
-    stop();
+    stop() override;
 
 private:
     void

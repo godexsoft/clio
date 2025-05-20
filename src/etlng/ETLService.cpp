@@ -3,14 +3,20 @@
 #include "data/BackendInterface.hpp"
 #include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
-#include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlockHandler.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
+#include "etlng/CacheLoaderInterface.hpp"
+#include "etlng/CacheUpdaterInterface.hpp"
+#include "etlng/ExtractorInterface.hpp"
+#include "etlng/InitialLoadObserverInterface.hpp"
+#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
+#include "etlng/LoaderInterface.hpp"
 #include "etlng/MonitorInterface.hpp"
+#include "etlng/TaskManagerProviderInterface.hpp"
 #include "etlng/impl/AmendmentBlockHandler.hpp"
 #include "etlng/impl/CacheUpdater.hpp"
 #include "etlng/impl/Extraction.hpp"
@@ -24,10 +30,9 @@
 #include "etlng/impl/ext/Core.hpp"
 #include "etlng/impl/ext/NFT.hpp"
 #include "etlng/impl/ext/Successor.hpp"
-#include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/Profiler.hpp"
-#include "util/async/context/BasicExecutionContext.hpp"
+#include "util/async/AnyExecutionContext.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -47,6 +52,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -55,35 +61,33 @@
 namespace etlng {
 
 ETLService::ETLService(
-    boost::asio::io_context& ioc,
-    util::config::ClioConfigDefinition const& config,
-    std::shared_ptr<BackendInterface> backend,
-    std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<etlng::LoadBalancerInterface> balancer,
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers
+    util::async::AnyExecutionContext ctx,
+    std::reference_wrapper<util::config::ClioConfigDefinition const> config,
+    std::shared_ptr<data::BackendInterface> backend,
+    std::shared_ptr<LoadBalancerInterface> balancer,
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+    std::shared_ptr<LedgerPublisherInterface> publisher,
+    std::shared_ptr<CacheLoaderInterface> cacheLoader,
+    std::shared_ptr<CacheUpdaterInterface> cacheUpdater,
+    std::shared_ptr<ExtractorInterface> extractor,
+    std::shared_ptr<LoaderInterface> loader,
+    std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
+    std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider,
+    std::shared_ptr<etl::SystemState> state
 )
-    : config_(config)
+    : ctx_(std::move(ctx))
+    , config_(config)
     , backend_(std::move(backend))
-    , subscriptions_(std::move(subscriptions))
     , balancer_(std::move(balancer))
     , ledgers_(std::move(ledgers))
-    , cacheLoader_(std::make_shared<etl::CacheLoader<>>(config, backend_, backend_->cache()))
-    , cacheUpdater_(std::make_shared<impl::CacheUpdater>(backend_->cache()))
-    , fetcher_(std::make_shared<etl::impl::LedgerFetcher>(backend_, balancer_))
-    , extractor_(std::make_shared<impl::Extractor>(fetcher_))
-    , publisher_(ioc, backend_, subscriptions_, state_)
-    , amendmentBlockHandler_(std::make_unique<etlng::impl::AmendmentBlockHandler>(ctx_, state_))
-    , loader_(std::make_shared<impl::Loader>(
-          backend_,
-          impl::makeRegistry(
-              state_,
-              impl::CacheExt{cacheUpdater_},
-              impl::CoreExt{backend_},
-              impl::SuccessorExt{backend_, backend_->cache()},
-              impl::NFTExt{backend_}
-          ),
-          amendmentBlockHandler_
-      ))
+    , publisher_(std::move(publisher))
+    , cacheLoader_(std::move(cacheLoader))
+    , cacheUpdater_(std::move(cacheUpdater))
+    , extractor_(std::move(extractor))
+    , loader_(std::move(loader))
+    , initialLoadObserver_(std::move(initialLoadObserver))
+    , taskManagerProvider_(std::move(taskManagerProvider))
+    , state_(std::move(state))
 {
     LOG(log_.info()) << "Creating ETLng...";
 }
@@ -101,9 +105,9 @@ ETLService::run()
 
     // TODO: write-enabled node should start in readonly and do the 10 second dance to become a writer
     mainLoop_.emplace(ctx_.execute([this] {
-        state_.isWriting =
-            not state_.isReadOnly;  // TODO: this is now needed because we don't have a mechanism for readonly or
-                                    // ETL writer node. remove later in favor of real mechanism
+        state_->isWriting =
+            not state_->isReadOnly;  // TODO: this is now needed because we don't have a mechanism for readonly or
+                                     // ETL writer node. remove later in favor of real mechanism
 
         auto const rng = loadInitialLedgerIfNeeded();
 
@@ -124,7 +128,7 @@ ETLService::run()
 
         // TODO: we only want to run the full ETL task man if we are POSSIBLY a write node
         // but definitely not in strict readonly
-        if (not state_.isReadOnly)
+        if (not state_->isReadOnly)
             startLoading(nextSequence);
     }));
 }
@@ -146,24 +150,24 @@ ETLService::getInfo() const
     boost::json::object result;
 
     result["etl_sources"] = balancer_->toJson();
-    result["is_writer"] = static_cast<int>(state_.isWriting);
-    result["read_only"] = static_cast<int>(state_.isReadOnly);
-    auto last = publisher_.getLastPublish();
+    result["is_writer"] = static_cast<int>(state_->isWriting);
+    result["read_only"] = static_cast<int>(state_->isReadOnly);
+    auto last = publisher_->getLastPublish();
     if (last.time_since_epoch().count() != 0)
-        result["last_publish_age_seconds"] = std::to_string(publisher_.lastPublishAgeSeconds());
+        result["last_publish_age_seconds"] = std::to_string(publisher_->lastPublishAgeSeconds());
     return result;
 }
 
 bool
 ETLService::isAmendmentBlocked() const
 {
-    return state_.isAmendmentBlocked;
+    return state_->isAmendmentBlocked;
 }
 
 bool
 ETLService::isCorruptionDetected() const
 {
-    return state_.isCorruptionDetected;
+    return state_->isCorruptionDetected;
 }
 
 std::optional<etl::ETLState>
@@ -175,7 +179,7 @@ ETLService::getETLState() const
 std::uint32_t
 ETLService::lastCloseAgeSeconds() const
 {
-    return publisher_.lastCloseAgeSeconds();
+    return publisher_->lastCloseAgeSeconds();
 }
 
 std::optional<data::LedgerRange>
@@ -193,7 +197,7 @@ ETLService::loadInitialLedgerIfNeeded()
             auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
                 return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
                     // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
-                    data.edgeKeys = balancer_->loadInitialLedger(seq, *loader_);
+                    data.edgeKeys = balancer_->loadInitialLedger(seq, *initialLoadObserver_);
 
                     // TODO: this should be interruptible for graceful shutdown
                     return loader_->loadInitialLedger(data);
@@ -230,14 +234,14 @@ ETLService::startMonitor(uint32_t seq)
         log_.info() << "MONITOR got new seq from db: " << seq;
 
         // FIXME: is this the best way?
-        if (not state_.isWriting) {
+        if (not state_->isWriting) {
             auto const diff = data::synchronousAndRetryOnTimeout([this, seq](auto yield) {
                 return backend_->fetchLedgerDiff(seq, yield);
             });
             cacheUpdater_->update(seq, diff);
         }
 
-        publisher_.publish(seq, {});
+        publisher_->publish(seq, {});
     });
     monitor_->run();
 }
@@ -245,11 +249,8 @@ ETLService::startMonitor(uint32_t seq)
 void
 ETLService::startLoading(uint32_t seq)
 {
-    auto scheduler = impl::makeScheduler(impl::ForwardScheduler{*ledgers_, seq});
-    // TODO: add impl::BackfillScheduler{seq - 1, seq - 1000},
-
-    taskMan_ = std::make_unique<impl::TaskManager>(ctx_, std::move(scheduler), *extractor_, *loader_, *monitor_, seq);
-    taskMan_->run({.numExtractors = config_.get<std::size_t>("extractor_threads")});
+    taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq);
+    taskMan_->run({.numExtractors = config_.get().get<std::size_t>("extractor_threads")});
 }
 
 }  // namespace etlng

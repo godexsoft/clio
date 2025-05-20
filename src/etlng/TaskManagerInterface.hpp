@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2023, the clio developers.
+    Copyright (c) 2025, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -19,20 +19,35 @@
 
 #pragma once
 
-#include "etlng/LedgerPublisherInterface.hpp"
+#include <cstddef>
 
-#include <gmock/gmock.h>
-#include <xrpl/protocol/LedgerHeader.h>
+namespace etlng {
 
-#include <chrono>
-#include <cstdint>
-#include <optional>
+/**
+ * @brief An interface for the Task Manager
+ */
+struct TaskManagerInterface {
+    /**
+     * @brief Settings for the task manager
+     */
+    struct Settings {
+        size_t numExtractors; /**< number of extraction tasks */
+    };
 
-struct MockLedgerPublisher : public etlng::LedgerPublisherInterface {
-    MOCK_METHOD(bool, publish, (uint32_t, std::optional<uint32_t>, std::chrono::steady_clock::duration), (override));
-    MOCK_METHOD(void, publish, (ripple::LedgerHeader const&), ());
-    MOCK_METHOD(std::uint32_t, lastPublishAgeSeconds, (), (const));
-    MOCK_METHOD(std::chrono::time_point<std::chrono::system_clock>, getLastPublish, (), (const, override));
-    MOCK_METHOD(std::uint32_t, lastCloseAgeSeconds, (), (const, override));
-    MOCK_METHOD(std::optional<uint32_t>, getLastPublishedSequence, (), (const));
+    virtual ~TaskManagerInterface() = default;
+
+    /**
+     * @brief Start the task manager with specified settings
+     * @param settings Configuration settings for the task manager
+     */
+    virtual void
+    run(Settings settings) = 0;
+
+    /**
+     * @brief Stop the task manager
+     */
+    virtual void
+    stop() = 0;
 };
+
+}  // namespace etlng

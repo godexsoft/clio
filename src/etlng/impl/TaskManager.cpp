@@ -45,7 +45,7 @@
 namespace etlng::impl {
 
 TaskManager::TaskManager(
-    util::async::AnyExecutionContext&& ctx,
+    util::async::AnyExecutionContext ctx,
     std::shared_ptr<SchedulerInterface> scheduler,
     std::reference_wrapper<ExtractorInterface> extractor,
     std::reference_wrapper<LoaderInterface> loader,

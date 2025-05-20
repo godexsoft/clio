@@ -223,7 +223,7 @@ public:
      * @brief Get time passed since last publish, in seconds
      */
     std::uint32_t
-    lastPublishAgeSeconds() const
+    lastPublishAgeSeconds() const override
     {
         return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - getLastPublish())
             .count();
@@ -233,7 +233,7 @@ public:
      * @brief Get last publish time as a time point
      */
     std::chrono::time_point<std::chrono::system_clock>
-    getLastPublish() const
+    getLastPublish() const override
     {
         return std::chrono::time_point<std::chrono::system_clock>{std::chrono::seconds{lastPublishSeconds_.get().value()
         }};
@@ -243,7 +243,7 @@ public:
      * @brief Get time passed since last ledger close, in seconds
      */
     std::uint32_t
-    lastCloseAgeSeconds() const
+    lastCloseAgeSeconds() const override
     {
         std::shared_lock const lck(closeTimeMtx_);
         auto now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())

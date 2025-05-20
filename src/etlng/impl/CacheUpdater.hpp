@@ -21,6 +21,7 @@
 
 #include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
+#include "etlng/CacheUpdaterInterface.hpp"
 #include "etlng/Models.hpp"
 #include "util/log/Logger.hpp"
 
@@ -30,7 +31,7 @@
 
 namespace etlng::impl {
 
-class CacheUpdater {
+class CacheUpdater : public CacheUpdaterInterface {
     std::reference_wrapper<data::LedgerCacheInterface> cache_;
 
     util::Logger log_{"ETL"};
@@ -41,25 +42,25 @@ public:
     }
 
     void
-    update(model::LedgerData const& data)
+    update(model::LedgerData const& data) override
     {
         cache_.get().update(data.objects, data.seq);
     }
 
     void
-    update(uint32_t seq, std::vector<data::LedgerObject> const& objs)
+    update(uint32_t seq, std::vector<data::LedgerObject> const& objs) override
     {
         cache_.get().update(objs, seq);
     }
 
     void
-    update(uint32_t seq, std::vector<model::Object> const& objs)
+    update(uint32_t seq, std::vector<model::Object> const& objs) override
     {
         cache_.get().update(objs, seq);
     }
 
     void
-    setFull()
+    setFull() override
     {
         cache_.get().setFull();
     }

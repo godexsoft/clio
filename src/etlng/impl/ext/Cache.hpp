@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "etlng/CacheUpdaterInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/impl/CacheUpdater.hpp"
 #include "util/log/Logger.hpp"
@@ -31,12 +32,12 @@
 namespace etlng::impl {
 
 class CacheExt {
-    std::shared_ptr<impl::CacheUpdater> cacheUpdater_;
+    std::shared_ptr<CacheUpdaterInterface> cacheUpdater_;
 
     util::Logger log_{"ETL"};
 
 public:
-    CacheExt(std::shared_ptr<impl::CacheUpdater> cacheUpdater);
+    CacheExt(std::shared_ptr<CacheUpdaterInterface> cacheUpdater);
 
     void
     onLedgerData(model::LedgerData const& data) const;

@@ -21,18 +21,22 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/Types.hpp"
-#include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
-#include "etl/LedgerFetcherInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/AmendmentBlockHandler.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
-#include "etlng/AmendmentBlockHandlerInterface.hpp"
+#include "etlng/CacheLoaderInterface.hpp"
+#include "etlng/CacheUpdaterInterface.hpp"
 #include "etlng/ETLServiceInterface.hpp"
 #include "etlng/ExtractorInterface.hpp"
+#include "etlng/InitialLoadObserverInterface.hpp"
+#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
+#include "etlng/LoaderInterface.hpp"
 #include "etlng/MonitorInterface.hpp"
+#include "etlng/TaskManagerInterface.hpp"
+#include "etlng/TaskManagerProviderInterface.hpp"
 #include "etlng/impl/AmendmentBlockHandler.hpp"
 #include "etlng/impl/CacheUpdater.hpp"
 #include "etlng/impl/Extraction.hpp"
@@ -46,7 +50,8 @@
 #include "etlng/impl/ext/Core.hpp"
 #include "etlng/impl/ext/NFT.hpp"
 #include "etlng/impl/ext/Successor.hpp"
-#include "feed/SubscriptionManagerInterface.hpp"
+#include "util/async/AnyExecutionContext.hpp"
+#include "util/async/AnyOperation.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -67,6 +72,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -89,49 +95,59 @@ namespace etlng {
 class ETLService : public ETLServiceInterface {
     util::Logger log_{"ETL"};
 
-    util::config::ClioConfigDefinition config_;
+    util::async::AnyExecutionContext ctx_;
+    std::reference_wrapper<util::config::ClioConfigDefinition const> config_;
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
-    std::shared_ptr<etlng::LoadBalancerInterface> balancer_;
+    std::shared_ptr<LoadBalancerInterface> balancer_;
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
-    std::shared_ptr<etl::CacheLoader<>> cacheLoader_;
-    std::shared_ptr<impl::CacheUpdater> cacheUpdater_;
-
-    std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
+    std::shared_ptr<LedgerPublisherInterface> publisher_;
+    std::shared_ptr<CacheLoaderInterface> cacheLoader_;
+    std::shared_ptr<CacheUpdaterInterface> cacheUpdater_;
     std::shared_ptr<ExtractorInterface> extractor_;
+    std::shared_ptr<LoaderInterface> loader_;
+    std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver_;
+    std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider_;
+    std::shared_ptr<etl::SystemState> state_;
 
-    etl::SystemState state_;
-    util::async::CoroExecutionContext ctx_{8};
-
-    impl::LedgerPublisher publisher_;
-
-    std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
-    std::shared_ptr<impl::Loader> loader_;
     std::unique_ptr<MonitorInterface> monitor_;
-    std::unique_ptr<impl::TaskManager> taskMan_;
+    std::unique_ptr<TaskManagerInterface> taskMan_;
 
     boost::signals2::scoped_connection monitorSubscription_;
 
-    std::optional<util::async::CoroExecutionContext::Operation<void>> mainLoop_;
+    std::optional<util::async::AnyOperation<void>> mainLoop_;
 
 public:
     /**
      * @brief Create an instance of ETLService.
      *
-     * @param ioc TODO remove
-     * @param config The configuration to use
-     * @param backend BackendInterface implementation
-     * @param subscriptions Subscription manager
-     * @param balancer Load balancer to use
-     * @param ledgers The network validated ledgers datastructure
+     * @param ctx The execution context for asynchronous operations
+     * @param config The Clio configuration definition
+     * @param backend Interface to the backend database
+     * @param balancer Load balancer for distributing work
+     * @param ledgers Interface for accessing network validated ledgers
+     * @param publisher Interface for publishing ledger data
+     * @param cacheLoader Interface for loading cache data
+     * @param cacheUpdater Interface for updating cache data
+     * @param extractor The extractor to use
+     * @param loader Interface for loading data
+     * @param initialLoadObserver The observer for initial data loading
+     * @param taskManagerProvider The provider of the task manager instance
+     * @param state System state tracking object
      */
     ETLService(
-        boost::asio::io_context& ioc,  // TODO: remove. currently for publisher
-        util::config::ClioConfigDefinition const& config,
-        std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<etlng::LoadBalancerInterface> balancer,
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers
+        util::async::AnyExecutionContext ctx,
+        std::reference_wrapper<util::config::ClioConfigDefinition const> config,
+        std::shared_ptr<data::BackendInterface> backend,
+        std::shared_ptr<LoadBalancerInterface> balancer,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+        std::shared_ptr<LedgerPublisherInterface> publisher,
+        std::shared_ptr<CacheLoaderInterface> cacheLoader,
+        std::shared_ptr<CacheUpdaterInterface> cacheUpdater,
+        std::shared_ptr<ExtractorInterface> extractor,
+        std::shared_ptr<LoaderInterface> loader,
+        std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
+        std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider,
+        std::shared_ptr<etl::SystemState> state
     );
 
     ~ETLService() override;

@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/ETLState.hpp"
+#include "etl/LedgerFetcherInterface.hpp"
 #include "etl/LoadBalancer.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
@@ -32,12 +33,23 @@
 #include "etl/impl/LedgerLoader.hpp"
 #include "etl/impl/LedgerPublisher.hpp"
 #include "etl/impl/Transformer.hpp"
+#include "etlng/AmendmentBlockHandlerInterface.hpp"
+#include "etlng/CacheLoaderInterface.hpp"
+#include "etlng/CacheUpdaterInterface.hpp"
 #include "etlng/ETLService.hpp"
 #include "etlng/ETLServiceInterface.hpp"
+#include "etlng/ExtractorInterface.hpp"
+#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoadBalancer.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
+#include "etlng/LoaderInterface.hpp"
+#include "etlng/TaskManagerProviderInterface.hpp"
+#include "etlng/impl/LedgerPublisher.hpp"
+#include "etlng/impl/TaskManagerProvider.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
+#include "util/async/AnyExecutionContext.hpp"
+#include "util/async/context/BasicExecutionContext.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -150,6 +162,7 @@ public:
      *
      * @param config The configuration to use
      * @param ioc io context to run on
+     * @param ctx Execution context for asynchronous operations
      * @param backend BackendInterface implementation
      * @param subscriptions Subscription manager
      * @param balancer Load balancer to use
@@ -160,6 +173,7 @@ public:
     makeETLService(
         util::config::ClioConfigDefinition const& config,
         boost::asio::io_context& ioc,
+        util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::shared_ptr<etlng::LoadBalancerInterface> balancer,
@@ -173,7 +187,45 @@ public:
                 std::dynamic_pointer_cast<etlng::LoadBalancer>(balancer),
                 "LoadBalancer type must be etlng::LoadBalancer"
             );
-            ret = std::make_shared<etlng::ETLService>(ioc, config, backend, subscriptions, balancer, ledgers);
+
+            auto state = std::make_shared<etl::SystemState>();
+
+            auto fetcher = std::make_shared<etl::impl::LedgerFetcher>(backend, balancer);
+            auto extractor = std::make_shared<etlng::impl::Extractor>(fetcher);
+            auto publisher = std::make_shared<etlng::impl::LedgerPublisher>(ioc, backend, subscriptions, *state);
+            auto cacheLoader = std::make_shared<etl::CacheLoader<>>(config, backend, backend->cache());
+            auto cacheUpdater = std::make_shared<etlng::impl::CacheUpdater>(backend->cache());
+            auto amendmentBlockHandler = std::make_shared<etlng::impl::AmendmentBlockHandler>(ctx, *state);
+
+            auto loader = std::make_shared<etlng::impl::Loader>(
+                backend,
+                etlng::impl::makeRegistry(
+                    *state,
+                    etlng::impl::CacheExt{cacheUpdater},
+                    etlng::impl::CoreExt{backend},
+                    etlng::impl::SuccessorExt{backend, backend->cache()},
+                    etlng::impl::NFTExt{backend}
+                ),
+                amendmentBlockHandler
+            );
+
+            auto taskManagerProvider = std::make_shared<etlng::impl::TaskManagerProvider>(*ledgers, extractor, loader);
+
+            ret = std::make_shared<etlng::ETLService>(
+                ctx,
+                config,
+                backend,
+                balancer,
+                ledgers,
+                publisher,
+                cacheLoader,
+                cacheUpdater,
+                extractor,
+                loader,  // loader itself
+                loader,  // initial load observer
+                taskManagerProvider,
+                state
+            );
         } else {
             ASSERT(
                 std::dynamic_pointer_cast<etl::LoadBalancer>(balancer), "LoadBalancer type must be etl::LoadBalancer"
