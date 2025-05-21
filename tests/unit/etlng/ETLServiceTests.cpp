@@ -25,20 +25,22 @@
 #include "etlng/ETLService.hpp"
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/LedgerPublisherInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/MonitorInterface.hpp"
 #include "etlng/TaskManagerInterface.hpp"
 #include "etlng/TaskManagerProviderInterface.hpp"
+#include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerPublisher.hpp"
 #include "util/MockLoadBalancer.hpp"
 #include "util/MockNetworkValidatedLedgers.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockSubscriptionManager.hpp"
+#include "util/TestObject.hpp"
 #include "util/async/AnyExecutionContext.hpp"
-#include "util/async/context/BasicExecutionContext.hpp"
+#include "util/async/context/SyncExecutionContext.hpp"
+#include "util/async/impl/ErasedOperation.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ConfigValue.hpp"
 #include "util/config/Types.hpp"
@@ -60,6 +62,10 @@
 #include <vector>
 
 using namespace util::config;
+
+namespace {
+constinit auto const kSEQ = 100;
+constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 class MockMonitor : public etlng::MonitorInterface {
 public:
@@ -114,10 +120,12 @@ struct MockTaskManagerProvider : etlng::TaskManagerProviderInterface {
         (override)
     );
 };
+}  // namespace
 
 struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
-    util::async::CoroExecutionContext ctx{2};
-    util::config::ClioConfigDefinition config{
+protected:
+    util::async::SyncExecutionContext ctx_;
+    util::config::ClioConfigDefinition config_{
         {"extractor_threads", ConfigValue{ConfigType::Integer}.defaultValue(4)},
         {"io_threads", ConfigValue{ConfigType::Integer}.defaultValue(2)},
         {"cache.num_diffs", ConfigValue{ConfigType::Integer}.defaultValue(32)},
@@ -127,23 +135,46 @@ struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
         {"cache.page_fetch_size", ConfigValue{ConfigType::Integer}.defaultValue(512)},
         {"cache.load", ConfigValue{ConfigType::String}.defaultValue("async")}
     };
-    StrictMockSubscriptionManagerSharedPtr subscriptions;
-    std::shared_ptr<MockLoadBalancer> balancer = std::make_shared<MockLoadBalancer>();
-    MockNetworkValidatedLedgersPtr ledgers;
-    std::shared_ptr<MockLedgerPublisher> publisher = std::make_shared<MockLedgerPublisher>();
-    std::shared_ptr<MockCacheLoader> cacheLoader = std::make_shared<MockCacheLoader>();
-    std::shared_ptr<MockCacheUpdater> cacheUpdater = std::make_shared<MockCacheUpdater>();
-    std::shared_ptr<MockExtractor> extractor = std::make_shared<MockExtractor>();
-    std::shared_ptr<MockLoader> loader = std::make_shared<MockLoader>();
-    std::shared_ptr<MockInitialLoadObserver> initialLoadObserver = std::make_shared<MockInitialLoadObserver>();
-    std::shared_ptr<MockTaskManagerProvider> taskManagerProvider = std::make_shared<MockTaskManagerProvider>();
-    std::shared_ptr<etl::SystemState> systemState = std::make_shared<etl::SystemState>();
+    StrictMockSubscriptionManagerSharedPtr subscriptions_;
+    std::shared_ptr<MockLoadBalancer> balancer_ = std::make_shared<MockLoadBalancer>();
+    MockNetworkValidatedLedgersPtr ledgers_;
+    std::shared_ptr<MockLedgerPublisher> publisher_ = std::make_shared<MockLedgerPublisher>();
+    std::shared_ptr<MockCacheLoader> cacheLoader_ = std::make_shared<MockCacheLoader>();
+    std::shared_ptr<MockCacheUpdater> cacheUpdater_ = std::make_shared<MockCacheUpdater>();
+    std::shared_ptr<MockExtractor> extractor_ = std::make_shared<MockExtractor>();
+    std::shared_ptr<MockLoader> loader_ = std::make_shared<MockLoader>();
+    std::shared_ptr<MockInitialLoadObserver> initialLoadObserver_ = std::make_shared<MockInitialLoadObserver>();
+    std::shared_ptr<MockTaskManagerProvider> taskManagerProvider_ = std::make_shared<MockTaskManagerProvider>();
+    std::shared_ptr<etl::SystemState> systemState_ = std::make_shared<etl::SystemState>();
 
+    etlng::ETLService service_;
+
+public:
+    ETLServiceTests()
+        : service_(
+              ctx_,
+              config_,
+              backend_,
+              balancer_,
+              ledgers_,
+              publisher_,
+              cacheLoader_,
+              cacheUpdater_,
+              extractor_,
+              loader_,
+              initialLoadObserver_,
+              taskManagerProvider_,
+              systemState_
+          )
+    {
+    }
+
+protected:
     void
     setupEmptyDatabaseExpectations(uint32_t mostRecentSeq)
     {
         EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
-        EXPECT_CALL(*ledgers, getMostRecent()).WillOnce(testing::Return(mostRecentSeq));
+        EXPECT_CALL(*ledgers_, getMostRecent()).WillOnce(testing::Return(mostRecentSeq));
     }
 
     void
@@ -156,25 +187,10 @@ struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
 
 TEST_F(ETLServiceTests, GetInfo)
 {
-    EXPECT_CALL(*balancer, toJson()).WillOnce(testing::Return(boost::json::object{{"test", "value"}}));
-    EXPECT_CALL(*publisher, lastPublishAgeSeconds()).WillRepeatedly(testing::Return(0));
+    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::object{{"test", "value"}}));
+    EXPECT_CALL(*publisher_, lastPublishAgeSeconds()).WillRepeatedly(testing::Return(0));
 
-    etlng::ETLService service(
-        ctx,
-        config,
-        backend_,
-        balancer,
-        ledgers,
-        publisher,
-        cacheLoader,
-        cacheUpdater,
-        extractor,
-        loader,
-        initialLoadObserver,
-        taskManagerProvider,
-        systemState
-    );
-    auto result = service.getInfo();
+    auto result = service_.getInfo();
 
     EXPECT_TRUE(result.contains("etl_sources"));
     EXPECT_TRUE(result.contains("is_writer"));
@@ -183,86 +199,78 @@ TEST_F(ETLServiceTests, GetInfo)
 
 TEST_F(ETLServiceTests, IsAmendmentBlocked)
 {
-    etlng::ETLService service(
-        ctx,
-        config,
-        backend_,
-        balancer,
-        ledgers,
-        publisher,
-        cacheLoader,
-        cacheUpdater,
-        extractor,
-        loader,
-        initialLoadObserver,
-        taskManagerProvider,
-        systemState
-    );
-    EXPECT_FALSE(service.isAmendmentBlocked());
+    EXPECT_FALSE(service_.isAmendmentBlocked());
 }
 
 TEST_F(ETLServiceTests, IsCorruptionDetected)
 {
-    etlng::ETLService service(
-        ctx,
-        config,
-        backend_,
-        balancer,
-        ledgers,
-        publisher,
-        cacheLoader,
-        cacheUpdater,
-        extractor,
-        loader,
-        initialLoadObserver,
-        taskManagerProvider,
-        systemState
-    );
-    EXPECT_FALSE(service.isCorruptionDetected());
+    EXPECT_FALSE(service_.isCorruptionDetected());
 }
 
 TEST_F(ETLServiceTests, GetETLState)
 {
-    EXPECT_CALL(*balancer, getETLState()).WillOnce(testing::Return(etl::ETLState{}));
+    EXPECT_CALL(*balancer_, getETLState()).WillOnce(testing::Return(etl::ETLState{}));
 
-    etlng::ETLService service(
-        ctx,
-        config,
-        backend_,
-        balancer,
-        ledgers,
-        publisher,
-        cacheLoader,
-        cacheUpdater,
-        extractor,
-        loader,
-        initialLoadObserver,
-        taskManagerProvider,
-        systemState
-    );
-    auto result = service.getETLState();
+    auto result = service_.getETLState();
     EXPECT_TRUE(result.has_value());
 }
 
 TEST_F(ETLServiceTests, LastCloseAgeSeconds)
 {
-    EXPECT_CALL(*publisher, lastCloseAgeSeconds()).WillOnce(testing::Return(10));
+    EXPECT_CALL(*publisher_, lastCloseAgeSeconds()).WillOnce(testing::Return(10));
 
-    etlng::ETLService service(
-        ctx,
-        config,
-        backend_,
-        balancer,
-        ledgers,
-        publisher,
-        cacheLoader,
-        cacheUpdater,
-        extractor,
-        loader,
-        initialLoadObserver,
-        taskManagerProvider,
-        systemState
-    );
-    auto result = service.lastCloseAgeSeconds();
+    auto result = service_.lastCloseAgeSeconds();
     EXPECT_GE(result, 0);
+}
+
+auto
+createTestData(uint32_t seq)
+{
+    auto const header = createLedgerHeader(kLEDGER_HASH, seq);
+    return etlng::model::LedgerData{
+        .transactions = {},
+        .objects = {util::createObject(), util::createObject(), util::createObject()},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = seq
+    };
+}
+
+TEST_F(ETLServiceTests, RunWithEmptyDatabase)
+{
+    auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
+    auto ledgerData = createTestData(kSEQ);
+
+    testing::Sequence s;
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).InSequence(s).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent()).WillRepeatedly(testing::Return(kSEQ));
+    EXPECT_CALL(*extractor_, extractLedgerOnly(kSEQ)).WillOnce(testing::Return(ledgerData));
+    EXPECT_CALL(*balancer_, loadInitialLedger(kSEQ, testing::_, testing::_))
+        .WillOnce(testing::Return(std::vector<std::string>{}));
+    EXPECT_CALL(*loader_, loadInitialLedger(testing::_)).WillOnce(testing::Return(ripple::LedgerHeader{}));
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_))
+        .InSequence(s)
+        .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
+    EXPECT_CALL(*mockTaskManager, run(testing::_));
+    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
+        .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
+
+    service_.run();
+}
+
+TEST_F(ETLServiceTests, RunWithPopulatedDatabase)
+{
+    auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
+
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_))
+        .WillRepeatedly(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
+    EXPECT_CALL(*ledgers_, getMostRecent()).WillRepeatedly(testing::Return(kSEQ));
+    EXPECT_CALL(*cacheLoader_, load(kSEQ));
+    EXPECT_CALL(*mockTaskManager, run(testing::_));
+    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
+        .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
+
+    service_.run();
 }
