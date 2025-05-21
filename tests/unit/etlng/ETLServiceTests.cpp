@@ -31,6 +31,7 @@
 #include "etlng/TaskManagerInterface.hpp"
 #include "etlng/TaskManagerProviderInterface.hpp"
 #include "util/BinaryTestObject.hpp"
+#include "util/MockAssert.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerPublisher.hpp"
 #include "util/MockLoadBalancer.hpp"
@@ -39,6 +40,7 @@
 #include "util/MockSubscriptionManager.hpp"
 #include "util/TestObject.hpp"
 #include "util/async/AnyExecutionContext.hpp"
+#include "util/async/context/BasicExecutionContext.hpp"
 #include "util/async/context/SyncExecutionContext.hpp"
 #include "util/async/impl/ErasedOperation.hpp"
 #include "util/config/ConfigDefinition.hpp"
@@ -46,6 +48,7 @@
 #include "util/config/Types.hpp"
 
 #include <boost/asio/io_context.hpp>
+#include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
 #include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
@@ -123,8 +126,15 @@ struct MockTaskManagerProvider : etlng::TaskManagerProviderInterface {
 }  // namespace
 
 struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
+    using SameThreadTestContext = util::async::BasicExecutionContext<
+        util::async::impl::SameThreadContext,
+        util::async::impl::BasicStopSource,
+        util::async::impl::SyncDispatchStrategy,
+        util::async::impl::SystemContextProvider,
+        util::async::impl::NoErrorHandler>;  // This will allow ASSERTs turned exceptions to propagate
+
 protected:
-    util::async::SyncExecutionContext ctx_;
+    SameThreadTestContext ctx_;
     util::config::ClioConfigDefinition config_{
         {"extractor_threads", ConfigValue{ConfigType::Integer}.defaultValue(4)},
         {"io_threads", ConfigValue{ConfigType::Integer}.defaultValue(2)},
@@ -185,16 +195,41 @@ protected:
     }
 };
 
-TEST_F(ETLServiceTests, GetInfo)
+TEST_F(ETLServiceTests, GetInfoWithoutLastPublish)
 {
-    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::object{{"test", "value"}}));
+    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::array{{"test", "value"}}));
+    EXPECT_CALL(*publisher_, getLastPublish()).WillOnce(testing::Return(std::chrono::system_clock::time_point{}));
     EXPECT_CALL(*publisher_, lastPublishAgeSeconds()).WillRepeatedly(testing::Return(0));
 
     auto result = service_.getInfo();
 
     EXPECT_TRUE(result.contains("etl_sources"));
+    EXPECT_TRUE(result.at("etl_sources").is_array());
+    EXPECT_EQ(result.at("etl_sources").as_array().size(), 1);
     EXPECT_TRUE(result.contains("is_writer"));
+    EXPECT_TRUE(result.at("is_writer").is_int64());
     EXPECT_TRUE(result.contains("read_only"));
+    EXPECT_TRUE(result.at("read_only").is_int64());
+    EXPECT_FALSE(result.contains("last_publish_age_seconds"));
+}
+
+TEST_F(ETLServiceTests, GetInfoWithLastPublish)
+{
+    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::array{{"test", "value"}}));
+    EXPECT_CALL(*publisher_, getLastPublish()).WillOnce(testing::Return(std::chrono::system_clock::now()));
+    EXPECT_CALL(*publisher_, lastPublishAgeSeconds()).WillOnce(testing::Return(42));
+
+    auto result = service_.getInfo();
+
+    EXPECT_TRUE(result.contains("etl_sources"));
+    EXPECT_TRUE(result.at("etl_sources").is_array());
+    EXPECT_EQ(result.at("etl_sources").as_array().size(), 1);
+    EXPECT_TRUE(result.contains("is_writer"));
+    EXPECT_TRUE(result.at("is_writer").is_int64());
+    EXPECT_TRUE(result.contains("read_only"));
+    EXPECT_TRUE(result.at("read_only").is_int64());
+    EXPECT_TRUE(result.contains("last_publish_age_seconds"));
+    EXPECT_EQ(result.at("last_publish_age_seconds").as_string(), "42");
 }
 
 TEST_F(ETLServiceTests, IsAmendmentBlocked)
@@ -273,4 +308,50 @@ TEST_F(ETLServiceTests, RunWithPopulatedDatabase)
         .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
 
     service_.run();
+}
+
+TEST_F(ETLServiceTests, WaitForValidatedLedgerIsAborted)
+{
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent()).Times(2).WillRepeatedly(testing::Return(std::nullopt));
+
+    // No other calls should happen because we exit early
+    EXPECT_CALL(*extractor_, extractLedgerOnly(testing::_)).Times(0);
+    EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*loader_, loadInitialLedger(testing::_)).Times(0);
+    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, testing::_)).Times(0);
+
+    service_.run();
+}
+
+struct ETLServiceAssertTests : common::util::WithMockAssert, ETLServiceTests {};
+
+TEST_F(ETLServiceAssertTests, FailToLoadInitialLedger)
+{
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent()).WillRepeatedly(testing::Return(kSEQ));
+    EXPECT_CALL(*extractor_, extractLedgerOnly(kSEQ)).WillOnce(testing::Return(std::nullopt));
+
+    // These calls should not happen because loading the initial ledger fails
+    EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*loader_, loadInitialLedger(testing::_)).Times(0);
+    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, testing::_)).Times(0);
+
+    EXPECT_CLIO_ASSERT_FAIL({ service_.run(); });
+}
+
+TEST_F(ETLServiceAssertTests, WaitForValidatedLedgerIsAbortedLeadToFailToLoadInitialLedger)
+{
+    testing::Sequence s;
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent()).InSequence(s).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent()).InSequence(s).WillOnce(testing::Return(kSEQ));
+
+    // No other calls should happen because we exit early
+    EXPECT_CALL(*extractor_, extractLedgerOnly(testing::_)).Times(0);
+    EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*loader_, loadInitialLedger(testing::_)).Times(0);
+    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, testing::_)).Times(0);
+
+    EXPECT_CLIO_ASSERT_FAIL({ service_.run(); });
 }
