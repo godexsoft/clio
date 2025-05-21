@@ -70,8 +70,7 @@ namespace {
 constinit auto const kSEQ = 100;
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
-class MockMonitor : public etlng::MonitorInterface {
-public:
+struct MockMonitor : public etlng::MonitorInterface {
     MOCK_METHOD(void, notifyLedgerLoaded, (uint32_t), (override));
     MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
     MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
