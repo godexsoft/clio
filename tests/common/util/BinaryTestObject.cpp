@@ -161,6 +161,28 @@ createObjectWithTwoNFTs()
     };
 }
 
+etlng::model::Object
+createObjectWithMPT()
+{
+    constexpr auto kACCOUNT = "rM2AGCCCRb373FRuD8wHyUwUsh2dV4BW5Q";
+
+    auto const account = getAccountIdWithString(kACCOUNT);
+    auto const mptokenObject = createMpTokenObject(kACCOUNT, ripple::makeMptID(2, getAccountIdWithString(kACCOUNT)));
+
+    return {
+        .key = {},
+        .keyRaw = std::string(reinterpret_cast<char const*>(account.data()), ripple::AccountID::size()),
+        .data = {},
+        .dataRaw = std::string(
+            static_cast<char const*>(mptokenObject.getSerializer().getDataPtr()),
+            mptokenObject.getSerializer().getDataLength()
+        ),
+        .successor = "",
+        .predecessor = "",
+        .type = etlng::model::Object::ModType::Created,
+    };
+}
+
 etlng::model::BookSuccessor
 createSuccessor()
 {

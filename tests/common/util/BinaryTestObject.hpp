@@ -176,6 +176,9 @@ createObjectWithBookBase(
 [[maybe_unused, nodiscard]] etlng::model::Object
 createObjectWithTwoNFTs();
 
+[[maybe_unused, nodiscard]] etlng::model::Object
+createObjectWithMPT();
+
 [[maybe_unused, nodiscard]] etlng::model::BookSuccessor
 createSuccessor();
 

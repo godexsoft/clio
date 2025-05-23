@@ -39,6 +39,7 @@
 #include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/impl/LedgerPublisher.hpp"
 #include "etlng/impl/TaskManagerProvider.hpp"
+#include "etlng/impl/ext/MPT.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/Constants.hpp"
@@ -100,7 +101,8 @@ ETLService::makeETLService(
                 etlng::impl::CacheExt{cacheUpdater},
                 etlng::impl::CoreExt{backend},
                 etlng::impl::SuccessorExt{backend, backend->cache()},
-                etlng::impl::NFTExt{backend}
+                etlng::impl::NFTExt{backend},
+                etlng::impl::MPTExt{backend}
             ),
             amendmentBlockHandler
         );
