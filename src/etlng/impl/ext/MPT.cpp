@@ -43,13 +43,13 @@ MPTExt::MPTExt(std::shared_ptr<BackendInterface> backend) : backend_(std::move(b
 }
 
 void
-MPTExt::onLedgerData(model::LedgerData const& data) const
+MPTExt::onLedgerData(model::LedgerData const& data)
 {
     writeMPTHoldersFromTransactions(data);
 }
 
 void
-MPTExt::onInitialObject(uint32_t, model::Object const& obj) const
+MPTExt::onInitialObject(uint32_t, model::Object const& obj)
 {
     LOG(log_.trace()) << "got initial object with key: " << ripple::strHex(obj.key);
     if (auto const mptHolder = etl::getMPTHolderFromObj(obj.keyRaw, obj.dataRaw); mptHolder.has_value())
@@ -57,14 +57,14 @@ MPTExt::onInitialObject(uint32_t, model::Object const& obj) const
 }
 
 void
-MPTExt::onInitialData(model::LedgerData const& data) const
+MPTExt::onInitialData(model::LedgerData const& data)
 {
     LOG(log_.trace()) << "got initial TXS cnt = " << data.transactions.size();
     writeMPTHoldersFromTransactions(data);
 }
 
 void
-MPTExt::writeMPTHoldersFromTransactions(model::LedgerData const& data) const
+MPTExt::writeMPTHoldersFromTransactions(model::LedgerData const& data)
 {
     std::vector<MPTHolderData> holders;
 

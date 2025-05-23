@@ -36,14 +36,14 @@ CacheExt::CacheExt(std::shared_ptr<CacheUpdaterInterface> cacheUpdater) : cacheU
 }
 
 void
-CacheExt::onLedgerData(model::LedgerData const& data) const
+CacheExt::onLedgerData(model::LedgerData const& data)
 {
     cacheUpdater_->update(data);
     LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
 }
 
 void
-CacheExt::onInitialData(model::LedgerData const& data) const
+CacheExt::onInitialData(model::LedgerData const& data)
 {
     LOG(log_.trace()) << "got initial data. objects cnt = " << data.objects.size();
     cacheUpdater_->update(data);
@@ -52,7 +52,6 @@ CacheExt::onInitialData(model::LedgerData const& data) const
 
 void
 CacheExt::onInitialObjects(uint32_t seq, std::vector<model::Object> const& objs, [[maybe_unused]] std::string lastKey)
-    const
 {
     LOG(log_.trace()) << "got initial objects cnt = " << objs.size();
     cacheUpdater_->update(seq, objs);
