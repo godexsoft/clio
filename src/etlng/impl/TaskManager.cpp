@@ -67,16 +67,16 @@ TaskManager::~TaskManager()
 }
 
 void
-TaskManager::run(Settings settings)
+TaskManager::run(std::size_t numExtractors)
 {
-    LOG(log_.debug()) << "Starting task manager with " << settings.numExtractors << " extractors...\n";
+    LOG(log_.debug()) << "Starting task manager with " << numExtractors << " extractors...\n";
 
     stop();
     extractors_.clear();
     loaders_.clear();
 
-    extractors_.reserve(settings.numExtractors);
-    for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numExtractors))
+    extractors_.reserve(numExtractors);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, numExtractors))
         extractors_.push_back(spawnExtractor(queue_));
 
     // Only one forward loader for now. Backfill to be added here later
@@ -117,12 +117,14 @@ TaskManager::spawnExtractor(TaskQueue& queue)
 util::async::AnyOperation<void>
 TaskManager::spawnLoader(TaskQueue& queue)
 {
+    static constexpr auto kNANO_TO_SECOND = 1.0e9;
+
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
             if (auto data = queue.dequeue(); data.has_value()) {
                 auto nanos = util::timed<std::chrono::nanoseconds>([this, data = *data] { loader_.get().load(data); });
-                auto const seconds = nanos / 1000000000.0;
+                auto const seconds = nanos / kNANO_TO_SECOND;
                 auto const txnCount = data->transactions.size();
                 auto const objCount = data->objects.size();
 

@@ -136,7 +136,7 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 
     EXPECT_CALL(*mockMonitorPtr_, notifyLedgerLoaded(testing::_)).Times(kTOTAL);
 
-    taskManager_.run({.numExtractors = kEXTRACTORS});
+    taskManager_.run(kEXTRACTORS);
     done.acquire();
     taskManager_.stop();
 

@@ -71,7 +71,7 @@ public:
     ~TaskManager() override;
 
     void
-    run(Settings settings) override;
+    run(std::size_t numExtractors) override;
 
     void
     stop() override;

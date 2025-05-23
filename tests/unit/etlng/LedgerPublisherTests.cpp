@@ -51,6 +51,10 @@ constexpr auto kACCOUNT2 = "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun";
 constexpr auto kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 constexpr auto kSEQ = 30;
 constexpr auto kAGE = 800;
+constexpr auto kAMOUNT = 100;
+constexpr auto kFEE = 3;
+constexpr auto kFINAL_BALANCE = 110;
+constexpr auto kFINAL_BALANCE2 = 30;
 
 MATCHER_P(ledgerHeaderMatcher, expectedHeader, "Headers match")
 {
@@ -134,8 +138,11 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     TransactionAndMetadata t1;
-    t1.transaction = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 100, 3, kSEQ).getSerializer().peekData();
-    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 110, 30).getSerializer().peekData();
+    t1.transaction =
+        createPaymentTransactionObject(kACCOUNT, kACCOUNT2, kAMOUNT, kFEE, kSEQ).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, kFINAL_BALANCE, kFINAL_BALANCE2)
+                      .getSerializer()
+                      .peekData();
     t1.ledgerSequence = kSEQ;
 
     // mock fetch transactions
@@ -175,8 +182,11 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
     TransactionAndMetadata t1;
-    t1.transaction = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 100, 3, kSEQ).getSerializer().peekData();
-    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 110, 30).getSerializer().peekData();
+    t1.transaction =
+        createPaymentTransactionObject(kACCOUNT, kACCOUNT2, kAMOUNT, kFEE, kSEQ).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, kFINAL_BALANCE, kFINAL_BALANCE2)
+                      .getSerializer()
+                      .peekData();
     t1.ledgerSequence = kSEQ;
 
     // mock fetch transactions
@@ -252,13 +262,19 @@ TEST_F(ETLLedgerPublisherNgTest, PublishMultipleTxInOrder)
 
     // t1 index > t2 index
     TransactionAndMetadata t1;
-    t1.transaction = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 100, 3, kSEQ).getSerializer().peekData();
-    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 110, 30, 2).getSerializer().peekData();
+    t1.transaction =
+        createPaymentTransactionObject(kACCOUNT, kACCOUNT2, kAMOUNT, kFEE, kSEQ).getSerializer().peekData();
+    t1.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, kFINAL_BALANCE, kFINAL_BALANCE2, 2)
+                      .getSerializer()
+                      .peekData();
     t1.ledgerSequence = kSEQ;
     t1.date = 1;
     TransactionAndMetadata t2;
-    t2.transaction = createPaymentTransactionObject(kACCOUNT, kACCOUNT2, 100, 3, kSEQ).getSerializer().peekData();
-    t2.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, 110, 30, 1).getSerializer().peekData();
+    t2.transaction =
+        createPaymentTransactionObject(kACCOUNT, kACCOUNT2, kAMOUNT, kFEE, kSEQ).getSerializer().peekData();
+    t2.metadata = createPaymentTransactionMetaObject(kACCOUNT, kACCOUNT2, kFINAL_BALANCE, kFINAL_BALANCE2, 1)
+                      .getSerializer()
+                      .peekData();
     t2.ledgerSequence = kSEQ;
     t2.date = 2;
 
@@ -287,7 +303,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishVeryOldLedgerShouldSkip)
     etl::SystemState dummyState;
     dummyState.isWriting = true;
 
-    // Create a ledger header with age greater than MAX_LEDGER_AGE_SECONDS (600)
+    // Create a ledger header with age (800) greater than MAX_LEDGER_AGE_SECONDS (600)
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 800);
     impl::LedgerPublisher publisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     backend_->setRange(kSEQ - 1, kSEQ);

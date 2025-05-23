@@ -27,21 +27,14 @@ namespace etlng {
  * @brief An interface for the Task Manager
  */
 struct TaskManagerInterface {
-    /**
-     * @brief Settings for the task manager
-     */
-    struct Settings {
-        size_t numExtractors; /**< number of extraction tasks */
-    };
-
     virtual ~TaskManagerInterface() = default;
 
     /**
      * @brief Start the task manager with specified settings
-     * @param settings Configuration settings for the task manager
+     * @param numExtractors The number of extraction tasks
      */
     virtual void
-    run(Settings settings) = 0;
+    run(size_t numExtractors) = 0;
 
     /**
      * @brief Stop the task manager

@@ -269,7 +269,7 @@ void
 ETLService::startLoading(uint32_t seq)
 {
     taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq);
-    taskMan_->run({.numExtractors = config_.get().get<std::size_t>("extractor_threads")});
+    taskMan_->run(config_.get().get<std::size_t>("extractor_threads"));
 }
 
 }  // namespace etlng

@@ -27,6 +27,7 @@
 #include "etlng/impl/Loading.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
+#include "util/Mutex.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -77,8 +78,7 @@ class LedgerPublisher : public etlng::LedgerPublisherInterface {
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
     std::reference_wrapper<etl::SystemState const> state_;  // shared state for ETL
 
-    std::chrono::time_point<ripple::NetClock> lastCloseTime_;
-    mutable std::shared_mutex closeTimeMtx_;
+    util::Mutex<std::chrono::time_point<ripple::NetClock>, std::shared_mutex> lastCloseTime_;
 
     std::reference_wrapper<util::prometheus::CounterInt> lastPublishSeconds_ = PrometheusService::counterInt(
         "etl_last_publish_seconds",
@@ -86,8 +86,7 @@ class LedgerPublisher : public etlng::LedgerPublisherInterface {
         "Seconds since epoch of the last published ledger"
     );
 
-    std::optional<uint32_t> lastPublishedSequence_;
-    mutable std::shared_mutex lastPublishedSeqMtx_;
+    util::Mutex<std::optional<uint32_t>, std::shared_mutex> lastPublishedSequence_;
 
 public:
     /**
@@ -180,17 +179,14 @@ public:
                 });
                 ASSERT(fees.has_value(), "Fees must exist for ledger {}", lgrInfo.seq);
 
-                std::vector<data::TransactionAndMetadata> transactions =
-                    data::synchronousAndRetryOnTimeout([&](auto yield) {
-                        return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
-                    });
+                auto transactions = data::synchronousAndRetryOnTimeout([&](auto yield) {
+                    return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
+                });
 
                 auto const ledgerRange = backend_->fetchLedgerRange();
                 ASSERT(ledgerRange.has_value(), "Ledger range must exist");
 
-                std::string const range =
-                    std::to_string(ledgerRange->minSequence) + "-" + std::to_string(ledgerRange->maxSequence);
-
+                auto const range = fmt::format("{}-{}", ledgerRange->minSequence, ledgerRange->maxSequence);
                 subscriptions_->pubLedger(lgrInfo, *fees, range, transactions.size());
 
                 // order with transaction index
@@ -203,15 +199,15 @@ public:
                         object2.getFieldU32(ripple::sfTransactionIndex);
                 });
 
-                for (auto& txAndMeta : transactions)
+                for (auto const& txAndMeta : transactions)
                     subscriptions_->pubTransaction(txAndMeta, lgrInfo);
 
                 subscriptions_->pubBookChanges(lgrInfo, transactions);
 
                 setLastPublishTime();
-                LOG(log_.info()) << "Published ledger " << std::to_string(lgrInfo.seq);
+                LOG(log_.info()) << "Published ledger " << lgrInfo.seq;
             } else {
-                LOG(log_.info()) << "Skipping publishing ledger " << std::to_string(lgrInfo.seq);
+                LOG(log_.info()) << "Skipping publishing ledger " << lgrInfo.seq;
             }
         });
 
@@ -245,10 +241,9 @@ public:
     std::uint32_t
     lastCloseAgeSeconds() const override
     {
-        std::shared_lock const lck(closeTimeMtx_);
+        auto closeTime = lastCloseTime_.lock()->time_since_epoch().count();
         auto now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
                        .count();
-        auto closeTime = lastCloseTime_.time_since_epoch().count();
         if (now < (kRIPPLE_EPOCH_START + closeTime))
             return 0;
         return now - (kRIPPLE_EPOCH_START + closeTime);
@@ -261,16 +256,15 @@ public:
     std::optional<uint32_t>
     getLastPublishedSequence() const
     {
-        std::scoped_lock const lck(lastPublishedSeqMtx_);
-        return lastPublishedSequence_;
+        return *lastPublishedSequence_.lock();
     }
 
 private:
     void
     setLastClose(std::chrono::time_point<ripple::NetClock> lastCloseTime)
     {
-        std::scoped_lock const lck(closeTimeMtx_);
-        lastCloseTime_ = lastCloseTime;
+        auto closeTime = lastCloseTime_.lock<std::scoped_lock>();
+        *closeTime = lastCloseTime;
     }
 
     void
@@ -284,8 +278,8 @@ private:
     void
     setLastPublishedSequence(std::optional<uint32_t> lastPublishedSequence)
     {
-        std::scoped_lock const lck(lastPublishedSeqMtx_);
-        lastPublishedSequence_ = lastPublishedSequence;
+        auto lastPublishSeq = lastPublishedSequence_.lock();
+        *lastPublishSeq = lastPublishedSequence;
     }
 };
 

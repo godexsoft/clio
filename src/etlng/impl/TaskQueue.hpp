@@ -20,10 +20,10 @@
 #pragma once
 
 #include "etlng/Models.hpp"
+#include "util/Mutex.hpp"
 
 #include <cstddef>
 #include <cstdint>
-#include <mutex>
 #include <optional>
 #include <queue>
 #include <utility>
@@ -45,12 +45,18 @@ struct ReverseOrderComparator {
  */
 class TaskQueue {
     std::size_t limit_;
-    std::uint32_t expectedSequence_;
     std::uint32_t increment_;
 
-    std::mutex mutex_;
+    struct Data {
+        std::uint32_t expectedSequence;
+        std::priority_queue<model::LedgerData, std::vector<model::LedgerData>, ReverseOrderComparator> forwardLoadQueue;
 
-    std::priority_queue<model::LedgerData, std::vector<model::LedgerData>, ReverseOrderComparator> forwardLoadQueue_;
+        Data(std::uint32_t seq) : expectedSequence(seq)
+        {
+        }
+    };
+
+    util::Mutex<Data> data_;
 
 public:
     struct Settings {
@@ -64,7 +70,7 @@ public:
      * @param limit The limit of items allowed simultaneously in the queue
      */
     explicit TaskQueue(Settings settings)
-        : limit_(settings.limit.value_or(0uz)), expectedSequence_(settings.startSeq), increment_(settings.increment)
+        : limit_(settings.limit.value_or(0uz)), increment_(settings.increment), data_(settings.startSeq)
     {
     }
 
@@ -78,10 +84,10 @@ public:
     [[nodiscard]] bool
     enqueue(model::LedgerData item)
     {
-        std::scoped_lock lk(mutex_);
+        auto lock = data_.lock();
 
-        if (limit_ == 0uz or forwardLoadQueue_.size() < limit_) {
-            forwardLoadQueue_.push(std::move(item));
+        if (limit_ == 0uz or lock->forwardLoadQueue.size() < limit_) {
+            lock->forwardLoadQueue.push(std::move(item));
             return true;
         }
 
@@ -96,13 +102,13 @@ public:
     [[nodiscard]] std::optional<model::LedgerData>
     dequeue()
     {
-        std::scoped_lock lk(mutex_);
+        auto lock = data_.lock();
         std::optional<model::LedgerData> out;
 
-        if (not forwardLoadQueue_.empty() && forwardLoadQueue_.top().seq == expectedSequence_) {
-            out.emplace(forwardLoadQueue_.top());
-            forwardLoadQueue_.pop();
-            expectedSequence_ += increment_;
+        if (not lock->forwardLoadQueue.empty() && lock->forwardLoadQueue.top().seq == lock->expectedSequence) {
+            out.emplace(lock->forwardLoadQueue.top());
+            lock->forwardLoadQueue.pop();
+            lock->expectedSequence += increment_;
         }
 
         return out;
@@ -117,8 +123,7 @@ public:
     [[nodiscard]] bool
     empty()
     {
-        std::scoped_lock lk(mutex_);
-        return forwardLoadQueue_.empty();
+        return data_.lock()->forwardLoadQueue.empty();
     }
 };
 

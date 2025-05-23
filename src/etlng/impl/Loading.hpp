@@ -65,6 +65,13 @@ public:
         std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
     );
 
+    Loader(Loader const&) = delete;
+    Loader(Loader&&) = delete;
+    Loader&
+    operator=(Loader const&) = delete;
+    Loader&
+    operator=(Loader&&) = delete;
+
     void
     load(model::LedgerData const& data) override;
 

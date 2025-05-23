@@ -49,7 +49,9 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json/array.hpp>
+#include <boost/json/kind.hpp>
 #include <boost/json/object.hpp>
+#include <boost/json/serialize.hpp>
 #include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -110,7 +112,7 @@ struct MockInitialLoadObserver : etlng::InitialLoadObserverInterface {
 };
 
 struct MockTaskManager : etlng::TaskManagerInterface {
-    MOCK_METHOD(void, run, (etlng::TaskManagerInterface::Settings), (override));
+    MOCK_METHOD(void, run, (std::size_t), (override));
     MOCK_METHOD(void, stop, (), (override));
 };
 
@@ -122,6 +124,21 @@ struct MockTaskManagerProvider : etlng::TaskManagerProviderInterface {
         (override)
     );
 };
+
+auto
+createTestData(uint32_t seq)
+{
+    auto const header = createLedgerHeader(kLEDGER_HASH, seq);
+    return etlng::model::LedgerData{
+        .transactions = {},
+        .objects = {util::createObject(), util::createObject(), util::createObject()},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = seq
+    };
+}
 }  // namespace
 
 struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
@@ -145,90 +162,73 @@ protected:
         {"cache.load", ConfigValue{ConfigType::String}.defaultValue("async")}
     };
     StrictMockSubscriptionManagerSharedPtr subscriptions_;
-    std::shared_ptr<MockLoadBalancer> balancer_ = std::make_shared<MockLoadBalancer>();
-    MockNetworkValidatedLedgersPtr ledgers_;
-    std::shared_ptr<MockLedgerPublisher> publisher_ = std::make_shared<MockLedgerPublisher>();
-    std::shared_ptr<MockCacheLoader> cacheLoader_ = std::make_shared<MockCacheLoader>();
-    std::shared_ptr<MockCacheUpdater> cacheUpdater_ = std::make_shared<MockCacheUpdater>();
-    std::shared_ptr<MockExtractor> extractor_ = std::make_shared<MockExtractor>();
-    std::shared_ptr<MockLoader> loader_ = std::make_shared<MockLoader>();
-    std::shared_ptr<MockInitialLoadObserver> initialLoadObserver_ = std::make_shared<MockInitialLoadObserver>();
-    std::shared_ptr<MockTaskManagerProvider> taskManagerProvider_ = std::make_shared<MockTaskManagerProvider>();
+    std::shared_ptr<testing::NiceMock<MockLoadBalancer>> balancer_ =
+        std::make_shared<testing::NiceMock<MockLoadBalancer>>();
+    std::shared_ptr<testing::NiceMock<MockNetworkValidatedLedgers>> ledgers_ =
+        std::make_shared<testing::NiceMock<MockNetworkValidatedLedgers>>();
+    std::shared_ptr<testing::NiceMock<MockLedgerPublisher>> publisher_ =
+        std::make_shared<testing::NiceMock<MockLedgerPublisher>>();
+    std::shared_ptr<testing::NiceMock<MockCacheLoader>> cacheLoader_ =
+        std::make_shared<testing::NiceMock<MockCacheLoader>>();
+    std::shared_ptr<testing::NiceMock<MockCacheUpdater>> cacheUpdater_ =
+        std::make_shared<testing::NiceMock<MockCacheUpdater>>();
+    std::shared_ptr<testing::NiceMock<MockExtractor>> extractor_ = std::make_shared<testing::NiceMock<MockExtractor>>();
+    std::shared_ptr<testing::NiceMock<MockLoader>> loader_ = std::make_shared<testing::NiceMock<MockLoader>>();
+    std::shared_ptr<testing::NiceMock<MockInitialLoadObserver>> initialLoadObserver_ =
+        std::make_shared<testing::NiceMock<MockInitialLoadObserver>>();
+    std::shared_ptr<testing::NiceMock<MockTaskManagerProvider>> taskManagerProvider_ =
+        std::make_shared<testing::NiceMock<MockTaskManagerProvider>>();
     std::shared_ptr<etl::SystemState> systemState_ = std::make_shared<etl::SystemState>();
 
-    etlng::ETLService service_;
-
-public:
-    ETLServiceTests()
-        : service_(
-              ctx_,
-              config_,
-              backend_,
-              balancer_,
-              ledgers_,
-              publisher_,
-              cacheLoader_,
-              cacheUpdater_,
-              extractor_,
-              loader_,
-              initialLoadObserver_,
-              taskManagerProvider_,
-              systemState_
-          )
-    {
-    }
-
-protected:
-    void
-    setupEmptyDatabaseExpectations(uint32_t mostRecentSeq)
-    {
-        EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
-        EXPECT_CALL(*ledgers_, getMostRecent()).WillOnce(testing::Return(mostRecentSeq));
-    }
-
-    void
-    setupPopulatedDatabaseExpectations(uint32_t maxSequence)
-    {
-        EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_))
-            .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = maxSequence}));
-    }
+    etlng::ETLService service_{
+        ctx_,
+        config_,
+        backend_,
+        balancer_,
+        ledgers_,
+        publisher_,
+        cacheLoader_,
+        cacheUpdater_,
+        extractor_,
+        loader_,
+        initialLoadObserver_,
+        taskManagerProvider_,
+        systemState_
+    };
 };
 
 TEST_F(ETLServiceTests, GetInfoWithoutLastPublish)
 {
-    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::array{{"test", "value"}}));
+    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::parse(R"json([{"test": "value"}])json")));
     EXPECT_CALL(*publisher_, getLastPublish()).WillOnce(testing::Return(std::chrono::system_clock::time_point{}));
     EXPECT_CALL(*publisher_, lastPublishAgeSeconds()).WillRepeatedly(testing::Return(0));
 
     auto result = service_.getInfo();
+    auto expectedResult = boost::json::parse(R"json({
+        "etl_sources": [{"test": "value"}],
+        "is_writer": 0,
+        "read_only": 0
+    })json");
 
-    EXPECT_TRUE(result.contains("etl_sources"));
-    EXPECT_TRUE(result.at("etl_sources").is_array());
-    EXPECT_EQ(result.at("etl_sources").as_array().size(), 1);
-    EXPECT_TRUE(result.contains("is_writer"));
-    EXPECT_TRUE(result.at("is_writer").is_int64());
-    EXPECT_TRUE(result.contains("read_only"));
-    EXPECT_TRUE(result.at("read_only").is_int64());
+    EXPECT_TRUE(result == expectedResult);
     EXPECT_FALSE(result.contains("last_publish_age_seconds"));
 }
 
 TEST_F(ETLServiceTests, GetInfoWithLastPublish)
 {
-    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::array{{"test", "value"}}));
+    EXPECT_CALL(*balancer_, toJson()).WillOnce(testing::Return(boost::json::parse(R"json([{"test": "value"}])json")));
     EXPECT_CALL(*publisher_, getLastPublish()).WillOnce(testing::Return(std::chrono::system_clock::now()));
     EXPECT_CALL(*publisher_, lastPublishAgeSeconds()).WillOnce(testing::Return(42));
 
     auto result = service_.getInfo();
+    auto expectedResult = boost::json::parse(R"json({
+        "etl_sources": [{"test": "value"}],
+        "is_writer": 0,
+        "read_only": 0,
+        "last_publish_age_seconds": "42"
+    })json");
 
-    EXPECT_TRUE(result.contains("etl_sources"));
-    EXPECT_TRUE(result.at("etl_sources").is_array());
-    EXPECT_EQ(result.at("etl_sources").as_array().size(), 1);
-    EXPECT_TRUE(result.contains("is_writer"));
-    EXPECT_TRUE(result.at("is_writer").is_int64());
-    EXPECT_TRUE(result.contains("read_only"));
-    EXPECT_TRUE(result.at("read_only").is_int64());
-    EXPECT_TRUE(result.contains("last_publish_age_seconds"));
-    EXPECT_EQ(result.at("last_publish_age_seconds").as_string(), "42");
+    EXPECT_TRUE(result == expectedResult);
 }
 
 TEST_F(ETLServiceTests, IsAmendmentBlocked)
@@ -255,21 +255,6 @@ TEST_F(ETLServiceTests, LastCloseAgeSeconds)
 
     auto result = service_.lastCloseAgeSeconds();
     EXPECT_GE(result, 0);
-}
-
-auto
-createTestData(uint32_t seq)
-{
-    auto const header = createLedgerHeader(kLEDGER_HASH, seq);
-    return etlng::model::LedgerData{
-        .transactions = {},
-        .objects = {util::createObject(), util::createObject(), util::createObject()},
-        .successors = {},
-        .edgeKeys = {},
-        .header = header,
-        .rawHeader = {},
-        .seq = seq
-    };
 }
 
 TEST_F(ETLServiceTests, RunWithEmptyDatabase)
