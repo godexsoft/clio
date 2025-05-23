@@ -68,6 +68,8 @@ constinit auto const kTXN_META =
     "000002624000000005F5E0FE8114CEF330DB51154D8DEE249CC3D6DFD04B91F648EEE1E1F1031000";
 
 constinit auto const kHASH = "6005B465CBBF7FA8E41AC0C0CD38491026D9411FCB7BA46E2AEBB3AF7654261B";
+constinit auto const kHASH2 = "6005B465CBBF7FA8E41AC0C0CD38491026D9411FCB7BA46E2AEBB3AF7654261C";
+constinit auto const kHASH3 = "6005B465CBBF7FA8E41AC0C0CD38491026D9411FCB7BA46E2AEBB3AF7654261D";
 
 auto
 createTestData()
@@ -77,6 +79,27 @@ createTestData()
         util::createTransaction(ripple::TxType::ttMPTOKEN_AUTHORIZE, kHASH, kTXN_META, kTXN_HEX),
         util::createTransaction(ripple::TxType::ttAMM_CREATE),               // not MPT - will be filtered
         util::createTransaction(ripple::TxType::ttMPTOKEN_ISSUANCE_CREATE),  // not unique - will be filtered
+    };
+
+    auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
+    return etlng::model::LedgerData{
+        .transactions = std::move(transactions),
+        .objects = {},
+        .successors = {},
+        .edgeKeys = {},
+        .header = header,
+        .rawHeader = {},
+        .seq = kSEQ
+    };
+}
+
+auto
+createMultipleHoldersTestData()
+{
+    auto transactions = std::vector{
+        util::createTransaction(ripple::TxType::ttMPTOKEN_AUTHORIZE, kHASH, kTXN_META, kTXN_HEX),
+        util::createTransaction(ripple::TxType::ttMPTOKEN_AUTHORIZE, kHASH2, kTXN_META, kTXN_HEX),
+        util::createTransaction(ripple::TxType::ttMPTOKEN_AUTHORIZE, kHASH3, kTXN_META, kTXN_HEX)
     };
 
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
@@ -127,4 +150,15 @@ TEST_F(MPTExtTests, OnInitialObjectWritesMPT)
     EXPECT_CALL(*backend_, writeMPTHolders).WillOnce([](auto const& holders) { EXPECT_EQ(holders.size(), 1); });
 
     ext_.onInitialObject(kSEQ, data);
+}
+
+TEST_F(MPTExtTests, OnInitialDataWithMultipleHolders)
+{
+    auto const data = createMultipleHoldersTestData();
+
+    EXPECT_CALL(*backend_, writeMPTHolders).WillOnce([](auto const& holders) {
+        EXPECT_EQ(holders.size(), 3);  // Expect all three AUTHORIZE transactions
+    });
+
+    ext_.onInitialData(data);
 }
