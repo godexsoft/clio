@@ -39,6 +39,7 @@ NFTExt::NFTExt(std::shared_ptr<BackendInterface> backend) : backend_(std::move(b
 void
 NFTExt::onLedgerData(model::LedgerData const& data)
 {
+    LOG(log_.trace()) << "got TXS cnt = " << data.transactions.size() << "; OBJS size = " << data.objects.size();
     writeNFTs(data);
 }
 

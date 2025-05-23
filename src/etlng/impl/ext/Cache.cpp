@@ -38,8 +38,8 @@ CacheExt::CacheExt(std::shared_ptr<CacheUpdaterInterface> cacheUpdater) : cacheU
 void
 CacheExt::onLedgerData(model::LedgerData const& data)
 {
-    cacheUpdater_->update(data);
     LOG(log_.trace()) << "got data. objects cnt = " << data.objects.size();
+    cacheUpdater_->update(data);
 }
 
 void
