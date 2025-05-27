@@ -56,18 +56,18 @@ constinit auto const kRAW_HEADER =
 namespace util {
 
 std::pair<std::string, std::string>
-createNftTxAndMetaBlobs(std::string metaStr, std::string txnStr)
+createTxAndMetaBlobs(std::string metaStr, std::string txnStr)
 {
     return {hexStringToBinaryString(metaStr), hexStringToBinaryString(txnStr)};
 }
 
 std::pair<ripple::STTx, ripple::TxMeta>
-createNftTxAndMeta(std::string hashStr, std::string metaStr, std::string txnStr)
+createTxAndMeta(std::string hashStr, std::string metaStr, std::string txnStr)
 {
     ripple::uint256 hash;
     EXPECT_TRUE(hash.parseHex(hashStr));
 
-    auto const [metaBlob, txnBlob] = createNftTxAndMetaBlobs(metaStr, txnStr);
+    auto const [metaBlob, txnBlob] = createTxAndMetaBlobs(metaStr, txnStr);
 
     ripple::SerialIter it{txnBlob.data(), txnBlob.size()};
     return {ripple::STTx{it}, ripple::TxMeta{hash, kSEQ, metaBlob}};
@@ -76,7 +76,7 @@ createNftTxAndMeta(std::string hashStr, std::string metaStr, std::string txnStr)
 etlng::model::Transaction
 createTransaction(ripple::TxType type, std::string hashStr, std::string metaStr, std::string txnStr)
 {
-    auto const [sttx, meta] = createNftTxAndMeta(hashStr, metaStr, txnStr);
+    auto const [sttx, meta] = createTxAndMeta(hashStr, metaStr, txnStr);
     return {
         .raw = "",
         .metaRaw = "",
@@ -206,7 +206,7 @@ createDataAndDiff()
 
     {
         auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-        auto const [metaRaw, txRaw] = createNftTxAndMetaBlobs();
+        auto const [metaRaw, txRaw] = createTxAndMetaBlobs();
         original.set_transaction_blob(txRaw);
         original.set_metadata_blob(metaRaw);
         for (int i = 0; i < 10; ++i) {
@@ -252,7 +252,7 @@ createData()
 
     {
         auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-        auto const [metaRaw, txRaw] = createNftTxAndMetaBlobs();
+        auto const [metaRaw, txRaw] = createTxAndMetaBlobs();
         original.set_transaction_blob(txRaw);
         original.set_metadata_blob(metaRaw);
         for (int i = 0; i < 10; ++i) {

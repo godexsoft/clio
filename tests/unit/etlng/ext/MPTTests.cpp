@@ -19,6 +19,7 @@
 
 #include "etlng/Models.hpp"
 #include "etlng/impl/ext/MPT.hpp"
+#include "rpc/RPCHelpers.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
@@ -29,6 +30,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -51,6 +53,7 @@ namespace {
 
 constinit auto const kSEQ = 123u;
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
+constinit auto const kHOLDER_ACCOUNT = "rK1EX542EgA9m948JrJRaEzwLVEhqWvnr9";
 
 constinit auto const kTXN_HEX =
     "120039220000000024002DBD1A201B002DBDA36840000000000000017321EDECF25C029811CAD07AFD616EB75E3803E44D0D59A6826AC25FE3"
@@ -158,6 +161,11 @@ TEST_F(MPTExtTests, OnInitialDataWithMultipleHolders)
 
     EXPECT_CALL(*backend_, writeMPTHolders).WillOnce([](auto const& holders) {
         EXPECT_EQ(holders.size(), 3);  // Expect all three AUTHORIZE transactions
+
+        auto const expectedAccount = rpc::accountFromStringStrict(kHOLDER_ACCOUNT);  // Expect all three to be the same
+        EXPECT_TRUE(std::all_of(holders.begin(), holders.end(), [&expectedAccount](auto const& data) {
+            return data.holder == expectedAccount;
+        }));
     });
 
     ext_.onInitialData(data);
