@@ -41,6 +41,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/serialize.h>
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -163,7 +164,7 @@ TEST_F(MPTExtTests, OnInitialDataWithMultipleHolders)
         EXPECT_EQ(holders.size(), 3);  // Expect all three AUTHORIZE transactions
 
         auto const expectedAccount = rpc::accountFromStringStrict(kHOLDER_ACCOUNT);  // Expect all three to be the same
-        EXPECT_TRUE(std::all_of(holders.begin(), holders.end(), [&expectedAccount](auto const& data) {
+        EXPECT_TRUE(std::ranges::all_of(holders, [&expectedAccount](auto const& data) {
             return data.holder == expectedAccount;
         }));
     });
