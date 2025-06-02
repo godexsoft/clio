@@ -48,6 +48,11 @@ class Monitor : public MonitorInterface {
     std::optional<boost::signals2::scoped_connection> subscription_;  // network validated ledgers subscription
 
     SignalType notificationChannel_;
+    NoDbUpdateSignalType noDbUpdateChannel_;
+
+    std::chrono::steady_clock::duration noDbUpdateTimeout_;
+    std::chrono::steady_clock::time_point lastDbProgressTime_;
+    uint32_t lastSeenMaxSeqInDb_ = 0u;
 
     util::Logger log_{"ETL"};
 
@@ -56,7 +61,8 @@ public:
         util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
-        uint32_t startSequence
+        uint32_t startSequence,
+        std::chrono::steady_clock::duration noDbUpdateTimeout
     );
     ~Monitor() override;
 
@@ -71,6 +77,9 @@ public:
 
     boost::signals2::scoped_connection
     subscribe(SignalType::slot_type const& subscriber) override;
+
+    boost::signals2::scoped_connection
+    subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber) override;
 
 private:
     void

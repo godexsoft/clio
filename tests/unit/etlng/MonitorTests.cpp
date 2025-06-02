@@ -40,6 +40,7 @@ using namespace data;
 
 namespace {
 constexpr auto kSTART_SEQ = 123u;
+constexpr auto kNO_NEW_LEDGER_REPORT_DELAY = std::chrono::seconds(10u);
 }  // namespace
 
 struct MonitorTests : util::prometheus::WithPrometheus, MockBackendTest {
@@ -48,7 +49,8 @@ protected:
     StrictMockNetworkValidatedLedgersPtr ledgers_;
     testing::StrictMock<testing::MockFunction<void(uint32_t)>> actionMock_;
 
-    etlng::impl::Monitor monitor_ = etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ);
+    etlng::impl::Monitor monitor_ =
+        etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ, kNO_NEW_LEDGER_REPORT_DELAY);
 };
 
 TEST_F(MonitorTests, ConsumesAndNotifiesForAllOutstandingSequencesAtOnce)

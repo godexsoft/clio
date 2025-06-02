@@ -104,7 +104,8 @@ ETLService::makeETLService(
                 etlng::impl::NFTExt{backend},
                 etlng::impl::MPTExt{backend}
             ),
-            amendmentBlockHandler
+            amendmentBlockHandler,
+            state
         );
 
         auto taskManagerProvider = std::make_shared<etlng::impl::TaskManagerProvider>(*ledgers, extractor, loader);

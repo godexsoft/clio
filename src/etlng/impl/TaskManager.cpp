@@ -102,9 +102,6 @@ TaskManager::spawnExtractor(TaskQueue& queue)
                         if (stopRequested)
                             break;
                     }
-                } else {
-                    // TODO: how do we signal to the loaders that it's time to shutdown? some special task?
-                    break;  // TODO: handle server shutdown or other node took over ETL
                 }
             } else {
                 // TODO (https://github.com/XRPLF/clio/issues/1852)
@@ -123,7 +120,9 @@ TaskManager::spawnLoader(TaskQueue& queue)
         while (not stopRequested) {
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
             if (auto data = queue.dequeue(); data.has_value()) {
+                // perhaps this should return an error if conflict happened, then we can stop loading immediately
                 auto nanos = util::timed<std::chrono::nanoseconds>([this, data = *data] { loader_.get().load(data); });
+
                 auto const seconds = nanos / kNANO_TO_SECOND;
                 auto const txnCount = data->transactions.size();
                 auto const objCount = data->objects.size();

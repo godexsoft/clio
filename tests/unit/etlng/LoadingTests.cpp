@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "data/Types.hpp"
+#include "etl/SystemState.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/RegistryInterface.hpp"
@@ -67,7 +68,8 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
 struct LoadingTests : util::prometheus::WithPrometheus, MockBackendTest, MockAmendmentBlockHandlerTest {
 protected:
     std::shared_ptr<MockRegistry> mockRegistryPtr_ = std::make_shared<MockRegistry>();
-    Loader loader_{backend_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
+    std::shared_ptr<etl::SystemState> state_ = std::make_shared<etl::SystemState>();
+    Loader loader_{backend_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_, state_};
 };
 
 struct LoadingAssertTest : common::util::WithMockAssert, LoadingTests {};

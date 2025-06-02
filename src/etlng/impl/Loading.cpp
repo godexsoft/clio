@@ -20,6 +20,7 @@
 #include "etlng/impl/Loading.hpp"
 
 #include "data/BackendInterface.hpp"
+#include "etl/SystemState.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/Models.hpp"
@@ -46,11 +47,13 @@ namespace etlng::impl {
 Loader::Loader(
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<RegistryInterface> registry,
-    std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
+    std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler,
+    std::shared_ptr<etl::SystemState> state
 )
     : backend_(std::move(backend))
     , registry_(std::move(registry))
     , amendmentBlockHandler_(std::move(amendmentBlockHandler))
+    , state_(std::move(state))
 {
 }
 
@@ -61,10 +64,19 @@ Loader::load(model::LedgerData const& data)
         // perform cache updates and all writes from extensions
         registry_->dispatch(data);
 
-        auto [success, duration] =
-            ::util::timed<std::chrono::duration<double>>([&]() { return backend_->finishWrites(data.seq); });
-        LOG(log_.info()) << "Finished writes to DB for " << data.seq << ": " << (success ? "YES" : "NO") << "; took "
-                         << duration;
+        // Only a writer should attempt to commit to DB
+        // This is also where conflicts with other writer nodes will be detected
+        if (state_->isWriting) {
+            auto [success, duration] =
+                ::util::timed<std::chrono::duration<double>>([&]() { return backend_->finishWrites(data.seq); });
+            LOG(log_.info()) << "Finished writes to DB for " << data.seq << ": " << (success ? "YES" : "NO")
+                             << "; took " << duration;
+
+            if (not success) {
+                state_->writeConflict = true;
+                LOG(log_.warn()) << "Another node wrote a ledger into the DB - we have a write conflict";
+            }
+        }
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load " << data.seq << ": " << e.what();
         amendmentBlockHandler_->notifyAmendmentBlocked();

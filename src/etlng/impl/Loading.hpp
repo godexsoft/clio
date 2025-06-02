@@ -20,7 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "etl/LedgerFetcherInterface.hpp"
+#include "etl/SystemState.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
@@ -51,6 +51,7 @@ class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<RegistryInterface> registry_;
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
+    std::shared_ptr<etl::SystemState> state_;
 
     util::Logger log_{"ETL"};
 
@@ -62,7 +63,8 @@ public:
     Loader(
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<RegistryInterface> registry,
-        std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
+        std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler,
+        std::shared_ptr<etl::SystemState> state
     );
 
     Loader(Loader const&) = delete;

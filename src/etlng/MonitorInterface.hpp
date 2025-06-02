@@ -37,6 +37,7 @@ class MonitorInterface {
 public:
     static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::seconds{1};
     using SignalType = boost::signals2::signal<void(uint32_t)>;
+    using NoDbUpdateSignalType = boost::signals2::signal<void()>;
 
     virtual ~MonitorInterface() = default;
 
@@ -55,6 +56,15 @@ public:
      */
     [[nodiscard]] virtual boost::signals2::scoped_connection
     subscribe(SignalType::slot_type const& subscriber) = 0;
+
+    /**
+     * @brief Allows clients to get notified when no database update is detected for a configured period.
+     *
+     * @param subscriber The slot to connect
+     * @return A connection object that automatically disconnects the subscription once destroyed
+     */
+    [[nodiscard]] virtual boost::signals2::scoped_connection
+    subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber) = 0;
 
     /**
      * @brief Run the monitor service

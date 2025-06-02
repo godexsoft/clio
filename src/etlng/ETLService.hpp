@@ -112,6 +112,7 @@ class ETLService : public ETLServiceInterface {
     std::unique_ptr<TaskManagerInterface> taskMan_;
 
     boost::signals2::scoped_connection monitorSubscription_;
+    boost::signals2::scoped_connection monitorNoDbUpdateSubscription_;  // New subscription
 
     std::optional<util::async::AnyOperation<void>> mainLoop_;
 
@@ -182,6 +183,9 @@ private:
 
     void
     startLoading(uint32_t seq);
+
+    void
+    attemptTakeoverWriter();
 };
 
 }  // namespace etlng

@@ -674,6 +674,12 @@ TEST_F(RegistryTest, MonitorInterfaceExecution)
     struct MockMonitor : etlng::MonitorInterface {
         MOCK_METHOD(void, notifyLedgerLoaded, (uint32_t), (override));
         MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
+        MOCK_METHOD(
+            boost::signals2::scoped_connection,
+            subscribeToNoDbUpdate,
+            (NoDbUpdateSignalType::slot_type const&),
+            (override)
+        );
         MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
         MOCK_METHOD(void, stop, (), (override));
     };

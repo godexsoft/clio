@@ -52,6 +52,8 @@
 #include "util/Assert.hpp"
 #include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
+#include "util/async/AnyOperation.hpp"
+#include "util/async/context/SystemExecutionContext.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/object.hpp>
@@ -66,6 +68,10 @@
 #include <optional>
 #include <string>
 #include <utility>
+
+namespace {
+std::optional<util::async::AnyOperation<void>> gTest;
+}  // namespace
 
 namespace etlng {
 
@@ -99,6 +105,10 @@ ETLService::ETLService(
     , state_(std::move(state))
 {
     LOG(log_.info()) << "Creating ETLng...";
+    state_->isReadOnly = config_.get().get<bool>("read_only");
+    state_->isWriting = false;  // regardless of write/read mode we need to start as a reader
+
+    LOG(log_.info()) << "Starting in " << (state_->isReadOnly ? "STRICT READONLY MODE" : "WRITE MODE");
 }
 
 ETLService::~ETLService()
@@ -112,12 +122,7 @@ ETLService::run()
 {
     LOG(log_.info()) << "Running ETLng...";
 
-    // TODO: write-enabled node should start in readonly and do the 10 second dance to become a writer
     mainLoop_.emplace(ctx_.execute([this] {
-        state_->isWriting =
-            not state_->isReadOnly;  // TODO: this is now needed because we don't have a mechanism for readonly or
-                                     // ETL writer node. remove later in favor of real mechanism
-
         auto const rng = loadInitialLedgerIfNeeded();
 
         LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
@@ -135,9 +140,8 @@ ETLService::run()
         LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = " << nextSequence;
         startMonitor(nextSequence);
 
-        // TODO: we only want to run the full ETL task man if we are POSSIBLY a write node
-        // but definitely not in strict readonly
-        if (not state_->isReadOnly)
+        // If we are a writer as the result of loading the initial ledger - start loading
+        if (state_->isWriting)
             startLoading(nextSequence);
     }));
 }
@@ -196,7 +200,13 @@ ETLService::loadInitialLedgerIfNeeded()
 {
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     if (not rng.has_value()) {
+        ASSERT(
+            not state_->isReadOnly,
+            "Database is empty but this node is in strict readonly mode. Can't write initial ledger."
+        );
+
         LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
+        state_->isWriting = true;  // immediately become writer as this as db is empty
 
         LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
         if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
@@ -238,11 +248,27 @@ ETLService::loadInitialLedgerIfNeeded()
 void
 ETLService::startMonitor(uint32_t seq)
 {
-    monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq);
-    monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
-        log_.info() << "MONITOR got new seq from db: " << seq;
+    auto takeoverTimeoutSeconds = 10.0f;
+    std::chrono::steady_clock::duration noDbUpdateTimeout =
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<float>(takeoverTimeoutSeconds)
+        );
 
-        // FIXME: is this the best way?
+    monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq, noDbUpdateTimeout);
+
+    monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
+        LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;
+
+        if (state_->writeConflict) {
+            // gTest.emplace(util::async::SystemExecutionContext::instance().execute([this, seq] {
+            LOG(log_.warn()) << "Got a write conflict at seq: " << seq << "; Stopping loader for time being...";
+            taskMan_ = nullptr;  // Seems like this hangs here
+            LOG(log_.info()) << "TASK MAN IS DONE!!!\n";
+            state_->isWriting = false;
+            state_->writeConflict = false;
+            // }));
+        }
+
         if (not state_->isWriting) {
             auto const diff = data::synchronousAndRetryOnTimeout([this, seq](auto yield) {
                 return backend_->fetchLedgerDiff(seq, yield);
@@ -252,6 +278,13 @@ ETLService::startMonitor(uint32_t seq)
 
         publisher_->publish(seq, {});
     });
+
+    monitorNoDbUpdateSubscription_ = monitor_->subscribeToNoDbUpdate([this]() {
+        LOG(log_.warn()) << "ETLService received NoDbUpdate signal from Monitor";
+        if (not state_->isReadOnly and not state_->isWriting)
+            attemptTakeoverWriter();
+    });
+
     monitor_->run();
 }
 
@@ -260,6 +293,17 @@ ETLService::startLoading(uint32_t seq)
 {
     taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq);
     taskMan_->run(config_.get().get<std::size_t>("extractor_threads"));
+}
+
+void
+ETLService::attemptTakeoverWriter()
+{
+    auto rng = backend_->hardFetchLedgerRangeNoThrow();
+    ASSERT(rng.has_value(), "Ledger range can't be null");
+
+    state_->isWriting = true;  // switch to writer
+    LOG(log_.info()) << "Taking over the ETL writer seat";
+    startLoading(rng->maxSequence + 1);
 }
 
 }  // namespace etlng
