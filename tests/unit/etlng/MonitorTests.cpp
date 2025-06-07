@@ -124,7 +124,7 @@ TEST_F(MonitorTests, NotifiesWhenForcedByLedgerLoaded)
     EXPECT_CALL(actionMock_, Call).WillOnce([&] { unblock.release(); });
 
     auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
-    monitor_.run(std::chrono::seconds{10});   // expected to be force-invoked sooner than in 10 sec
-    monitor_.notifyLedgerLoaded(kSTART_SEQ);  // notify about newly committed ledger
+    monitor_.run(std::chrono::seconds{10});     // expected to be force-invoked sooner than in 10 sec
+    monitor_.notifySequenceLoaded(kSTART_SEQ);  // notify about newly committed ledger
     unblock.acquire();
 }

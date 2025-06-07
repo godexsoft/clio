@@ -46,7 +46,14 @@ public:
      * @param seq The ledger sequence loaded
      */
     virtual void
-    notifyLedgerLoaded(uint32_t seq) = 0;
+    notifySequenceLoaded(uint32_t seq) = 0;
+
+    /**
+     * @brief Notifies the monitor of a write conflict
+     * @param seq The sequence number of the ledger that encountered a write conflict
+     */
+    virtual void
+    notifyWriteConflict(uint32_t seq) = 0;
 
     /**
      * @brief Allows clients to get notified when a new ledger becomes available in Clio's database

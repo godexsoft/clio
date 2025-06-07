@@ -165,10 +165,6 @@ public:
         boost::asio::post(publishStrand_, [this, lgrInfo = lgrInfo]() {
             LOG(log_.info()) << "Publishing ledger " << std::to_string(lgrInfo.seq);
 
-            // TODO: This should probably not be part of publisher in the future
-            if (not state_.get().isWriting)
-                backend_->updateRange(lgrInfo.seq);  // This can't be unit tested atm.
-
             setLastClose(lgrInfo.closeTime);
             auto age = lastCloseAgeSeconds();
 

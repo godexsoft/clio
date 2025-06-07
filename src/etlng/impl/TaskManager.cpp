@@ -26,6 +26,7 @@
 #include "etlng/SchedulerInterface.hpp"
 #include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/TaskQueue.hpp"
+#include "util/Constants.hpp"
 #include "util/LedgerUtils.hpp"
 #include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
@@ -108,22 +109,30 @@ TaskManager::spawnExtractor(TaskQueue& queue)
                 std::this_thread::sleep_for(kDELAY_BETWEEN_ATTEMPTS);
             }
         }
+
+        LOG(log_.info()) << "Extractor (one of) coroutine stopped";
     });
 }
 
 util::async::AnyOperation<void>
 TaskManager::spawnLoader(TaskQueue& queue)
 {
-    static constexpr auto kNANO_TO_SECOND = 1.0e9;
-
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
             if (auto data = queue.dequeue(); data.has_value()) {
                 // perhaps this should return an error if conflict happened, then we can stop loading immediately
-                auto nanos = util::timed<std::chrono::nanoseconds>([this, data = *data] { loader_.get().load(data); });
+                auto [maybeSuccess, nanos] =
+                    util::timed<std::chrono::nanoseconds>([this, data = *data] { return loader_.get().load(data); });
 
-                auto const seconds = nanos / kNANO_TO_SECOND;
+                if (not maybeSuccess) {
+                    LOG(log_.warn()) << "Immediately stopping loader: " << maybeSuccess.error()
+                                     << "; latest ledger cache loaded for " << data->seq;
+                    monitor_.get().notifyWriteConflict(data->seq);
+                    break;
+                }
+
+                auto const seconds = nanos / util::kNANO_PER_SECOND;
                 auto const txnCount = data->transactions.size();
                 auto const objCount = data->objects.size();
 
@@ -132,9 +141,11 @@ TaskManager::spawnLoader(TaskQueue& queue)
                                  << " seconds;"
                                  << " tps[" << txnCount / seconds << "], ops[" << objCount / seconds << "]";
 
-                monitor_.get().notifyLedgerLoaded(data->seq);
+                monitor_.get().notifySequenceLoaded(data->seq);
             }
         }
+
+        LOG(log_.info()) << "Loader coroutine stopped";
     });
 }
 

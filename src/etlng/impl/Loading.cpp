@@ -23,9 +23,11 @@
 #include "etl/SystemState.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
+#include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/RegistryInterface.hpp"
 #include "util/Assert.hpp"
+#include "util/Constants.hpp"
 #include "util/LedgerUtils.hpp"
 #include "util/Profiler.hpp"
 #include "util/log/Logger.hpp"
@@ -57,11 +59,12 @@ Loader::Loader(
 {
 }
 
-void
+std::expected<void, Error>
 Loader::load(model::LedgerData const& data)
 {
     try {
-        // perform cache updates and all writes from extensions
+        // Perform cache updates and all writes from extensions
+        // TODO: maybe this readonly logic should be removed?
         registry_->dispatch(data);
 
         // Only a writer should attempt to commit to DB
@@ -74,13 +77,17 @@ Loader::load(model::LedgerData const& data)
 
             if (not success) {
                 state_->writeConflict = true;
+                return std::unexpected("write conflict");
                 LOG(log_.warn()) << "Another node wrote a ledger into the DB - we have a write conflict";
             }
         }
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load " << data.seq << ": " << e.what();
         amendmentBlockHandler_->notifyAmendmentBlocked();
+        return std::unexpected("amendment blocked");
     }
+
+    return {};
 };
 
 void
@@ -90,13 +97,32 @@ Loader::onInitialLoadGotMoreObjects(
     std::optional<std::string> lastKey
 )
 {
+    static constexpr std::size_t kLOG_INTERVAL = 1000u;
+    static auto kINITIAL_LOAD_START_TIME = std::chrono::steady_clock::now();
+
     try {
-        LOG(log_.debug()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
+        LOG(log_.trace()) << "On initial load: got more objects for seq " << seq << ". size = " << data.size();
         registry_->dispatchInitialObjects(
             seq,
             data,
             std::move(lastKey).value_or(std::string{})  // TODO: perhaps use optional all the way to extensions?
         );
+
+        initialLoadWrittenObjects_ += data.size();
+        ++initialLoadWrites_;
+        if (initialLoadWrites_ % kLOG_INTERVAL == 0u && initialLoadWrites_ != 0u) {
+            auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - kINITIAL_LOAD_START_TIME
+            );
+            auto elapsedSeconds = totalElapsed.count() / static_cast<double>(util::kMILLISECONDS_PER_SECOND);
+            auto objectsPerSecond =
+                elapsedSeconds > 0.0 ? static_cast<double>(initialLoadWrittenObjects_) / elapsedSeconds : 0.0;
+
+            LOG(log_.info()) << "Wrote " << initialLoadWrittenObjects_
+                             << " initial ledger objects so far with average rate of " << objectsPerSecond
+                             << " objects per second";
+        }
+
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load initial objects for " << seq << ": " << e.what();
         amendmentBlockHandler_->notifyAmendmentBlocked();

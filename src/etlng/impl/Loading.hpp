@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -53,6 +54,8 @@ class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
     std::shared_ptr<etl::SystemState> state_;
 
+    std::size_t initialLoadWrittenObjects_{0u};
+    std::size_t initialLoadWrites_{0u};
     util::Logger log_{"ETL"};
 
 public:
@@ -74,7 +77,7 @@ public:
     Loader&
     operator=(Loader&&) = delete;
 
-    void
+    std::expected<void, Error>
     load(model::LedgerData const& data) override;
 
     void

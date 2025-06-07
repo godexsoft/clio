@@ -106,6 +106,7 @@ TEST_F(LoadingTests, LoadInitialLedger)
 
 TEST_F(LoadingTests, LoadSuccess)
 {
+    state_->isWriting = true;  // writer is active
     auto const data = createTestData();
 
     EXPECT_CALL(*backend_, doFinishWrites());
@@ -116,6 +117,7 @@ TEST_F(LoadingTests, LoadSuccess)
 
 TEST_F(LoadingTests, LoadFailure)
 {
+    state_->isWriting = true;  // writer is active
     auto const data = createTestData();
 
     EXPECT_CALL(*backend_, doFinishWrites()).Times(0);

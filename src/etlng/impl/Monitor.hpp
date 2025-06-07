@@ -22,6 +22,7 @@
 #include "data/BackendInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etlng/MonitorInterface.hpp"
+#include "util/Mutex.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
 #include "util/async/AnyStrand.hpp"
@@ -30,6 +31,7 @@
 #include <boost/signals2/connection.hpp>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -43,16 +45,20 @@ class Monitor : public MonitorInterface {
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers_;
 
-    uint32_t nextSequence_;
+    std::atomic_uint32_t nextSequence_;
     std::optional<util::async::AnyOperation<void>> repeatedTask_;
     std::optional<boost::signals2::scoped_connection> subscription_;  // network validated ledgers subscription
 
     SignalType notificationChannel_;
     NoDbUpdateSignalType noDbUpdateChannel_;
 
-    std::chrono::steady_clock::duration noDbUpdateTimeout_;
-    std::chrono::steady_clock::time_point lastDbProgressTime_;
-    uint32_t lastSeenMaxSeqInDb_ = 0u;
+    struct UpdateData {
+        std::chrono::steady_clock::duration noDbUpdateTimeout;
+        std::chrono::steady_clock::time_point lastDbProgressTime;
+        uint32_t lastSeenMaxSeqInDb = 0u;
+    };
+
+    util::Mutex<UpdateData> updateData_;
 
     util::Logger log_{"ETL"};
 
@@ -67,7 +73,10 @@ public:
     ~Monitor() override;
 
     void
-    notifyLedgerLoaded(uint32_t seq) override;
+    notifySequenceLoaded(uint32_t seq) override;
+
+    void
+    notifyWriteConflict(uint32_t seq) override;
 
     void
     run(std::chrono::steady_clock::duration repeatInterval) override;

@@ -49,9 +49,11 @@ Monitor::Monitor(
     , backend_(std::move(backend))
     , validatedLedgers_(std::move(validatedLedgers))
     , nextSequence_(startSequence)
-    , noDbUpdateTimeout_(noDbUpdateTimeout)
-    , lastDbProgressTime_(std::chrono::steady_clock::now())
-    , lastSeenMaxSeqInDb_(startSequence > 0 ? startSequence - 1 : 0)
+    , updateData_({
+          .noDbUpdateTimeout = noDbUpdateTimeout,
+          .lastDbProgressTime = std::chrono::steady_clock::now(),
+          .lastSeenMaxSeqInDb = startSequence > 0 ? startSequence - 1 : 0,
+      })
 {
 }
 
@@ -61,24 +63,36 @@ Monitor::~Monitor()
 }
 
 void
-Monitor::notifyLedgerLoaded(uint32_t seq)
+Monitor::notifySequenceLoaded(uint32_t seq)
 {
     LOG(log_.debug()) << "Loader notified Monitor about newly committed ledger " << seq;
     {
-        lastSeenMaxSeqInDb_ = std::max(seq, lastSeenMaxSeqInDb_);
-        lastDbProgressTime_ = std::chrono::steady_clock::now();
+        auto lck = updateData_.lock();
+        lck->lastSeenMaxSeqInDb = std::max(seq, lck->lastSeenMaxSeqInDb);
+        lck->lastDbProgressTime = std::chrono::steady_clock::now();
     }
     repeatedTask_->invoke();  // force-invoke doWork immediately
 };
 
 void
+Monitor::notifyWriteConflict(uint32_t seq)
+{
+    LOG(log_.warn()) << "Loader notified Monitor about write conflict at " << seq;
+    nextSequence_ = seq + 1;  //  we already loaded the cache for seq just before we detected conflict
+    LOG(log_.warn()) << "Resume monitoring from " << nextSequence_;
+}
+
+void
 Monitor::run(std::chrono::steady_clock::duration repeatInterval)
 {
     ASSERT(not repeatedTask_.has_value(), "Monitor attempted to run more than once");
-    LOG(log_.debug()) << "Starting monitor with repeat interval: "
-                      << std::chrono::duration_cast<std::chrono::seconds>(repeatInterval).count()
-                      << "s and no DB update timeout: "
-                      << std::chrono::duration_cast<std::chrono::seconds>(noDbUpdateTimeout_).count() << "s";
+    {
+        auto lck = updateData_.lock();
+        LOG(log_.debug()) << "Starting monitor with repeat interval: "
+                          << std::chrono::duration_cast<std::chrono::seconds>(repeatInterval).count()
+                          << "s and noDbUpdateTimeout: "
+                          << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateTimeout).count() << "s";
+    }
 
     repeatedTask_ = strand_.executeRepeatedly(repeatInterval, std::bind_front(&Monitor::doWork, this));
     subscription_ = validatedLedgers_->subscribe(std::bind_front(&Monitor::onNextSequence, this));
@@ -90,6 +104,7 @@ Monitor::stop()
     if (repeatedTask_.has_value())
         repeatedTask_->abort();
 
+    subscription_ = std::nullopt;
     repeatedTask_ = std::nullopt;
 }
 
@@ -108,7 +123,8 @@ Monitor::subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber
 void
 Monitor::onNextSequence(uint32_t seq)
 {
-    LOG(log_.debug()) << "rippled published sequence " << seq;
+    ASSERT(repeatedTask_.has_value(), "Ledger subscription without repeated task is a logic error");
+    LOG(log_.debug()) << "Notified about new sequence on the network: " << seq;
     repeatedTask_->invoke();  // force-invoke immediately
 }
 
@@ -117,35 +133,36 @@ Monitor::doWork()
 {
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     bool dbProgressedThisCycle = false;
+    auto lck = updateData_.lock();
 
     if (rng) {
-        if (rng->maxSequence > lastSeenMaxSeqInDb_) {
-            LOG(log_.info()) << "DB progressed. Old max seq = " << lastSeenMaxSeqInDb_
-                             << ", new max seq = " << rng->maxSequence;
-            lastSeenMaxSeqInDb_ = rng->maxSequence;
+        if (rng->maxSequence > lck->lastSeenMaxSeqInDb) {
+            LOG(log_.trace()) << "DB progressed. Old max seq = " << lck->lastSeenMaxSeqInDb
+                              << ", new max seq = " << rng->maxSequence;
+            lck->lastSeenMaxSeqInDb = rng->maxSequence;
             dbProgressedThisCycle = true;
         }
 
-        while (lastSeenMaxSeqInDb_ >= nextSequence_) {
-            LOG(log_.info()) << "Publishing from Monitor::doWork. nextSequence_ = " << nextSequence_
-                             << ", lastSeenMaxSeqInDb_ = " << lastSeenMaxSeqInDb_;
+        while (lck->lastSeenMaxSeqInDb >= nextSequence_) {
+            LOG(log_.trace()) << "Publishing from Monitor::doWork. nextSequence_ = " << nextSequence_
+                              << ", lastSeenMaxSeqInDb_ = " << lck->lastSeenMaxSeqInDb;
             notificationChannel_(nextSequence_++);
             dbProgressedThisCycle = true;
         }
     } else {
-        LOG(log_.trace()) << "DB range is not available or empty. lastSeenMaxSeqInDb_ = " << lastSeenMaxSeqInDb_
+        LOG(log_.trace()) << "DB range is not available or empty. lastSeenMaxSeqInDb_ = " << lck->lastSeenMaxSeqInDb
                           << ", nextSequence_ = " << nextSequence_;
     }
 
     if (dbProgressedThisCycle) {
-        lastDbProgressTime_ = std::chrono::steady_clock::now();
-    } else if (std::chrono::steady_clock::now() - lastDbProgressTime_ > noDbUpdateTimeout_) {
-        LOG(log_.warn()) << "No DB update detected for "
-                         << std::chrono::duration_cast<std::chrono::seconds>(noDbUpdateTimeout_).count()
-                         << " seconds. Firing noDbUpdateChannel. Last seen max seq in DB: " << lastSeenMaxSeqInDb_
+        lck->lastDbProgressTime = std::chrono::steady_clock::now();
+    } else if (std::chrono::steady_clock::now() - lck->lastDbProgressTime > lck->noDbUpdateTimeout) {
+        LOG(log_.info()) << "No DB update detected for "
+                         << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateTimeout).count()
+                         << " seconds. Firing noDbUpdateChannel. Last seen max seq in DB: " << lck->lastSeenMaxSeqInDb
                          << ". Expecting next: " << nextSequence_;
         noDbUpdateChannel_();
-        lastDbProgressTime_ = std::chrono::steady_clock::now();
+        lck->lastDbProgressTime = std::chrono::steady_clock::now();
     }
 }
 

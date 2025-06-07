@@ -53,7 +53,6 @@
 #include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
-#include "util/async/context/SystemExecutionContext.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/object.hpp>
@@ -211,7 +210,8 @@ ETLService::loadInitialLedgerIfNeeded()
         LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
         if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
             auto const seq = *mostRecentValidated;
-            LOG(log_.info()) << "Ledger " << seq << " has been validated. Downloading... ";
+            LOG(log_.info()) << "Ledger " << seq << " has been validated. "
+                             << "Downloading and extracting (takes a while)...";
 
             auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
                 return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
@@ -260,20 +260,17 @@ ETLService::startMonitor(uint32_t seq)
         LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;
 
         if (state_->writeConflict) {
-            // gTest.emplace(util::async::SystemExecutionContext::instance().execute([this, seq] {
-            LOG(log_.warn()) << "Got a write conflict at seq: " << seq << "; Stopping loader for time being...";
-            taskMan_ = nullptr;  // Seems like this hangs here
-            LOG(log_.info()) << "TASK MAN IS DONE!!!\n";
-            state_->isWriting = false;
-            state_->writeConflict = false;
-            // }));
+            LOG(log_.warn()) << "Got a write conflict; Stopping task manager for time being...";
+            giveupWriter();
         }
 
         if (not state_->isWriting) {
             auto const diff = data::synchronousAndRetryOnTimeout([this, seq](auto yield) {
                 return backend_->fetchLedgerDiff(seq, yield);
             });
+
             cacheUpdater_->update(seq, diff);
+            backend_->updateRange(seq);
         }
 
         publisher_->publish(seq, {});
@@ -291,6 +288,7 @@ ETLService::startMonitor(uint32_t seq)
 void
 ETLService::startLoading(uint32_t seq)
 {
+    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
     taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq);
     taskMan_->run(config_.get().get<std::size_t>("extractor_threads"));
 }
@@ -298,12 +296,22 @@ ETLService::startLoading(uint32_t seq)
 void
 ETLService::attemptTakeoverWriter()
 {
+    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     ASSERT(rng.has_value(), "Ledger range can't be null");
 
     state_->isWriting = true;  // switch to writer
     LOG(log_.info()) << "Taking over the ETL writer seat";
     startLoading(rng->maxSequence + 1);
+}
+
+void
+ETLService::giveupWriter()
+{
+    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
+    state_->isWriting = false;
+    state_->writeConflict = false;
+    taskMan_ = nullptr;
 }
 
 }  // namespace etlng

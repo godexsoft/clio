@@ -186,6 +186,9 @@ private:
 
     void
     attemptTakeoverWriter();
+
+    void
+    giveupWriter();
 };
 
 }  // namespace etlng

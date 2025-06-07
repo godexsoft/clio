@@ -71,7 +71,8 @@ constinit auto const kSEQ = 100;
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 struct MockMonitor : public etlng::MonitorInterface {
-    MOCK_METHOD(void, notifyLedgerLoaded, (uint32_t), (override));
+    MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
+    MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
     MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
     MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
     MOCK_METHOD(void, stop, (), (override));
@@ -83,7 +84,8 @@ struct MockExtractor : etlng::ExtractorInterface {
 };
 
 struct MockLoader : etlng::LoaderInterface {
-    MOCK_METHOD(void, load, (etlng::model::LedgerData const&), (override));
+    using ExpectedType = std::expected<void, etlng::Error>;
+    MOCK_METHOD(ExpectedType, load, (etlng::model::LedgerData const&), (override));
     MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (etlng::model::LedgerData const&), (override));
 };
 
@@ -150,6 +152,7 @@ struct ETLServiceTests : util::prometheus::WithPrometheus, MockBackendTest {
 protected:
     SameThreadTestContext ctx_;
     util::config::ClioConfigDefinition config_{
+        {"read_only", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
         {"extractor_threads", ConfigValue{ConfigType::Integer}.defaultValue(4)},
         {"io_threads", ConfigValue{ConfigType::Integer}.defaultValue(2)},
         {"cache.num_diffs", ConfigValue{ConfigType::Integer}.defaultValue(32)},
@@ -279,15 +282,10 @@ TEST_F(ETLServiceTests, RunWithEmptyDatabase)
 
 TEST_F(ETLServiceTests, RunWithPopulatedDatabase)
 {
-    auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
-
     EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_))
         .WillRepeatedly(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
     EXPECT_CALL(*ledgers_, getMostRecent()).WillRepeatedly(testing::Return(kSEQ));
     EXPECT_CALL(*cacheLoader_, load(kSEQ));
-    EXPECT_CALL(*mockTaskManager, run(testing::_));
-    EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
-        .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
 
     service_.run();
 }
