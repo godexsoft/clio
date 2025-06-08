@@ -150,6 +150,8 @@ ETLService::stop()
 {
     LOG(log_.info()) << "Stop called";
 
+    if (mainLoop_)
+        mainLoop_->wait();
     if (taskMan_)
         taskMan_->stop();
     if (monitor_)

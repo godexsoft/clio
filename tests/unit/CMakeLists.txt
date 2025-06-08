@@ -52,6 +52,7 @@ target_sources(
           etlng/LoadBalancerTests.cpp
           etlng/NetworkValidatedLedgersTests.cpp
           etlng/MonitorTests.cpp
+          etlng/ETLMultiNodeTests.cpp
           etlng/SourceImplTests.cpp
           etlng/ext/CoreTests.cpp
           etlng/ext/CacheTests.cpp
