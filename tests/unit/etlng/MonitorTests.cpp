@@ -33,6 +33,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <semaphore>
 
 using namespace etlng::impl;
@@ -40,7 +41,7 @@ using namespace data;
 
 namespace {
 constexpr auto kSTART_SEQ = 123u;
-constexpr auto kNO_NEW_LEDGER_REPORT_DELAY = std::chrono::seconds(10u);
+constexpr auto kNO_NEW_LEDGER_REPORT_DELAY = std::chrono::milliseconds(1u);
 }  // namespace
 
 struct MonitorTests : util::prometheus::WithPrometheus, MockBackendTest {
@@ -48,6 +49,7 @@ protected:
     util::async::CoroExecutionContext ctx_;
     StrictMockNetworkValidatedLedgersPtr ledgers_;
     testing::StrictMock<testing::MockFunction<void(uint32_t)>> actionMock_;
+    testing::StrictMock<testing::MockFunction<void()>> noDbUpdateMock_;
 
     etlng::impl::Monitor monitor_ =
         etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ, kNO_NEW_LEDGER_REPORT_DELAY);
@@ -126,5 +128,46 @@ TEST_F(MonitorTests, NotifiesWhenForcedByLedgerLoaded)
     auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
     monitor_.run(std::chrono::seconds{10});     // expected to be force-invoked sooner than in 10 sec
     monitor_.notifySequenceLoaded(kSTART_SEQ);  // notify about newly committed ledger
+    unblock.acquire();
+}
+
+TEST_F(MonitorTests, ResumesMonitoringFromNextSequenceAfterWriteConflict)
+{
+    constexpr uint32_t kCONFLICT_SEQ = 456u;
+    constexpr uint32_t kEXPECTED_NEXT_SEQ = kCONFLICT_SEQ + 1;
+
+    LedgerRange const rangeBeforeConflict(kSTART_SEQ, kSTART_SEQ);
+    LedgerRange const rangeAfterConflict(kEXPECTED_NEXT_SEQ, kEXPECTED_NEXT_SEQ);
+    std::binary_semaphore unblock(0);
+
+    EXPECT_CALL(*ledgers_, subscribe(testing::_));
+
+    {
+        testing::InSequence seq;  // second call will produce conflict
+        EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(rangeBeforeConflict));
+        EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(rangeAfterConflict));
+    }
+
+    EXPECT_CALL(actionMock_, Call(kEXPECTED_NEXT_SEQ)).WillOnce([&](uint32_t seq) {
+        EXPECT_EQ(seq, kEXPECTED_NEXT_SEQ);
+        unblock.release();
+    });
+
+    auto subscription = monitor_.subscribe(actionMock_.AsStdFunction());
+    monitor_.run(std::chrono::nanoseconds{100});
+    monitor_.notifyWriteConflict(kCONFLICT_SEQ);
+    unblock.acquire();
+}
+
+TEST_F(MonitorTests, NoDbUpdateChannelTriggeredWhenTimeoutExceeded)
+{
+    std::binary_semaphore unblock(0);
+
+    EXPECT_CALL(*ledgers_, subscribe(testing::_));
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillRepeatedly(testing::Return(std::nullopt));
+    EXPECT_CALL(noDbUpdateMock_, Call()).WillOnce([&]() { unblock.release(); });
+
+    auto subscription = monitor_.subscribeToNoDbUpdate(noDbUpdateMock_.AsStdFunction());
+    monitor_.run(std::chrono::nanoseconds{100});
     unblock.acquire();
 }
