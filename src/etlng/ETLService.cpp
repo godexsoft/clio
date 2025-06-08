@@ -35,13 +35,13 @@
 #include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/MonitorInterface.hpp"
+#include "etlng/MonitorProviderInterface.hpp"
 #include "etlng/TaskManagerProviderInterface.hpp"
 #include "etlng/impl/AmendmentBlockHandler.hpp"
 #include "etlng/impl/CacheUpdater.hpp"
 #include "etlng/impl/Extraction.hpp"
 #include "etlng/impl/LedgerPublisher.hpp"
 #include "etlng/impl/Loading.hpp"
-#include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/Registry.hpp"
 #include "etlng/impl/Scheduling.hpp"
 #include "etlng/impl/TaskManager.hpp"
@@ -87,6 +87,7 @@ ETLService::ETLService(
     std::shared_ptr<LoaderInterface> loader,
     std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
     std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider,
+    std::shared_ptr<etlng::MonitorProviderInterface> monitorProvider,
     std::shared_ptr<etl::SystemState> state
 )
     : ctx_(std::move(ctx))
@@ -101,6 +102,7 @@ ETLService::ETLService(
     , loader_(std::move(loader))
     , initialLoadObserver_(std::move(initialLoadObserver))
     , taskManagerProvider_(std::move(taskManagerProvider))
+    , monitorProvider_(std::move(monitorProvider))
     , state_(std::move(state))
 {
     LOG(log_.info()) << "Creating ETLng...";
@@ -256,7 +258,7 @@ ETLService::startMonitor(uint32_t seq)
             std::chrono::duration<float>(takeoverTimeoutSeconds)
         );
 
-    monitor_ = std::make_unique<impl::Monitor>(ctx_, backend_, ledgers_, seq, noDbUpdateTimeout);
+    monitor_ = monitorProvider_->make(ctx_, backend_, ledgers_, seq, noDbUpdateTimeout);
 
     monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
         LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;

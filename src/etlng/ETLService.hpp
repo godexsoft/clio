@@ -35,6 +35,7 @@
 #include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/MonitorInterface.hpp"
+#include "etlng/MonitorProviderInterface.hpp"
 #include "etlng/TaskManagerInterface.hpp"
 #include "etlng/TaskManagerProviderInterface.hpp"
 #include "etlng/impl/AmendmentBlockHandler.hpp"
@@ -42,7 +43,6 @@
 #include "etlng/impl/Extraction.hpp"
 #include "etlng/impl/LedgerPublisher.hpp"
 #include "etlng/impl/Loading.hpp"
-#include "etlng/impl/Monitor.hpp"
 #include "etlng/impl/Registry.hpp"
 #include "etlng/impl/Scheduling.hpp"
 #include "etlng/impl/TaskManager.hpp"
@@ -106,6 +106,7 @@ class ETLService : public ETLServiceInterface {
     std::shared_ptr<LoaderInterface> loader_;
     std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver_;
     std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider_;
+    std::shared_ptr<etlng::MonitorProviderInterface> monitorProvider_;
     std::shared_ptr<etl::SystemState> state_;
 
     std::unique_ptr<MonitorInterface> monitor_;
@@ -132,6 +133,7 @@ public:
      * @param loader Interface for loading data
      * @param initialLoadObserver The observer for initial data loading
      * @param taskManagerProvider The provider of the task manager instance
+     * @param monitorProvider The provider of the monitor instance
      * @param state System state tracking object
      */
     ETLService(
@@ -147,6 +149,7 @@ public:
         std::shared_ptr<LoaderInterface> loader,
         std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
         std::shared_ptr<etlng::TaskManagerProviderInterface> taskManagerProvider,
+        std::shared_ptr<etlng::MonitorProviderInterface> monitorProvider,
         std::shared_ptr<etl::SystemState> state
     );
 

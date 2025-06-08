@@ -38,6 +38,7 @@
 #include "etlng/LoadBalancer.hpp"
 #include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/impl/LedgerPublisher.hpp"
+#include "etlng/impl/MonitorProvider.hpp"
 #include "etlng/impl/TaskManagerProvider.hpp"
 #include "etlng/impl/ext/Cache.hpp"
 #include "etlng/impl/ext/Core.hpp"
@@ -93,6 +94,7 @@ ETLService::makeETLService(
         auto cacheLoader = std::make_shared<etl::CacheLoader<>>(config, backend, backend->cache());
         auto cacheUpdater = std::make_shared<etlng::impl::CacheUpdater>(backend->cache());
         auto amendmentBlockHandler = std::make_shared<etlng::impl::AmendmentBlockHandler>(ctx, *state);
+        auto monitorProvider = std::make_shared<etlng::impl::MonitorProvider>();
 
         auto loader = std::make_shared<etlng::impl::Loader>(
             backend,
@@ -123,6 +125,7 @@ ETLService::makeETLService(
             loader,  // loader itself
             loader,  // initial load observer
             taskManagerProvider,
+            monitorProvider,
             state
         );
     } else {
