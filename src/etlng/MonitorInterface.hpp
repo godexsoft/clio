@@ -71,7 +71,7 @@ public:
      * @return A connection object that automatically disconnects the subscription once destroyed
      */
     [[nodiscard]] virtual boost::signals2::scoped_connection
-    subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber) = 0;
+    subscribeToDbStaled(NoDbUpdateSignalType::slot_type const& subscriber) = 0;
 
     /**
      * @brief Run the monitor service

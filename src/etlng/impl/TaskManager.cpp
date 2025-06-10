@@ -122,11 +122,11 @@ TaskManager::spawnLoader(TaskQueue& queue)
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
             if (auto data = queue.dequeue(); data.has_value()) {
                 // perhaps this should return an error if conflict happened, then we can stop loading immediately
-                auto [maybeSuccess, nanos] =
+                auto [expectedSuccess, nanos] =
                     util::timed<std::chrono::nanoseconds>([this, data = *data] { return loader_.get().load(data); });
 
-                if (not maybeSuccess) {
-                    LOG(log_.warn()) << "Immediately stopping loader: " << maybeSuccess.error()
+                if (not expectedSuccess.has_value()) {
+                    LOG(log_.warn()) << "Immediately stopping loader: " << expectedSuccess.error()
                                      << "; latest ledger cache loaded for " << data->seq;
                     monitor_.get().notifyWriteConflict(data->seq);
                     break;

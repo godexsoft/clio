@@ -71,9 +71,9 @@ Loader::load(model::LedgerData const& data)
         // This is also where conflicts with other writer nodes will be detected
         if (state_->isWriting) {
             auto [success, duration] =
-                ::util::timed<std::chrono::duration<double>>([&]() { return backend_->finishWrites(data.seq); });
+                ::util::timed<std::chrono::milliseconds>([&]() { return backend_->finishWrites(data.seq); });
             LOG(log_.info()) << "Finished writes to DB for " << data.seq << ": " << (success ? "YES" : "NO")
-                             << "; took " << duration;
+                             << "; took " << duration << "ms";
 
             if (not success) {
                 state_->writeConflict = true;

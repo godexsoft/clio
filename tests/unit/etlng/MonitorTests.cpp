@@ -167,7 +167,7 @@ TEST_F(MonitorTests, NoDbUpdateChannelTriggeredWhenTimeoutExceeded)
     EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillRepeatedly(testing::Return(std::nullopt));
     EXPECT_CALL(noDbUpdateMock_, Call()).WillOnce([&]() { unblock.release(); });
 
-    auto subscription = monitor_.subscribeToNoDbUpdate(noDbUpdateMock_.AsStdFunction());
+    auto subscription = monitor_.subscribeToDbStaled(noDbUpdateMock_.AsStdFunction());
     monitor_.run(std::chrono::nanoseconds{100});
     unblock.acquire();
 }

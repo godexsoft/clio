@@ -88,7 +88,7 @@ public:
     subscribeToNewSequence(NewSequenceSignalType::slot_type const& subscriber) override;
 
     boost::signals2::scoped_connection
-    subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber) override;
+    subscribeToDbStaled(NoDbUpdateSignalType::slot_type const& subscriber) override;
 
 private:
     void

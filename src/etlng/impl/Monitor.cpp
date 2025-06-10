@@ -116,7 +116,7 @@ Monitor::subscribeToNewSequence(NewSequenceSignalType::slot_type const& subscrib
 }
 
 boost::signals2::scoped_connection
-Monitor::subscribeToNoDbUpdate(NoDbUpdateSignalType::slot_type const& subscriber)
+Monitor::subscribeToDbStaled(NoDbUpdateSignalType::slot_type const& subscriber)
 {
     return noDbUpdateChannel_.connect(subscriber);
 }

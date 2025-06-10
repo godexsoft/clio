@@ -101,10 +101,7 @@ ETLService::ETLService(
     , monitorProvider_(std::move(monitorProvider))
     , state_(std::move(state))
 {
-    LOG(log_.info()) << "Creating ETLng...";
-    state_->isReadOnly = config_.get().get<bool>("read_only");
-    state_->isWriting = false;  // regardless of write/read mode we need to start as a reader
-
+    ASSERT(not state_->isWriting, "ETL should never start in writer mode");
     LOG(log_.info()) << "Starting in " << (state_->isReadOnly ? "STRICT READONLY MODE" : "WRITE MODE");
 }
 
@@ -250,12 +247,12 @@ ETLService::startMonitor(uint32_t seq)
 {
     monitor_ = monitorProvider_->make(ctx_, backend_, ledgers_, seq);
 
-    monitorSubscription_ = monitor_->subscribeToNewSequence([this](uint32_t seq) {
+    monitorNewSeqSubscription_ = monitor_->subscribeToNewSequence([this](uint32_t seq) {
         LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;
 
         if (state_->writeConflict) {
             LOG(log_.warn()) << "Got a write conflict; Stopping task manager for time being...";
-            giveupWriter();
+            giveUpWriter();
         }
 
         if (not state_->isWriting) {
@@ -270,7 +267,7 @@ ETLService::startMonitor(uint32_t seq)
         publisher_->publish(seq, {});
     });
 
-    monitorNoDbUpdateSubscription_ = monitor_->subscribeToNoDbUpdate([this]() {
+    monitorDbStaledSubscription_ = monitor_->subscribeToDbStaled([this]() {
         LOG(log_.warn()) << "ETLService received NoDbUpdate signal from Monitor";
         if (not state_->isReadOnly and not state_->isWriting)
             attemptTakeoverWriter();
@@ -300,7 +297,7 @@ ETLService::attemptTakeoverWriter()
 }
 
 void
-ETLService::giveupWriter()
+ETLService::giveUpWriter()
 {
     ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
     state_->isWriting = false;

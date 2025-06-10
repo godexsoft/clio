@@ -78,7 +78,7 @@ struct MockMonitor : etlng::MonitorInterface {
     );
     MOCK_METHOD(
         boost::signals2::scoped_connection,
-        subscribeToNoDbUpdate,
+        subscribeToDbStaled,
         (NoDbUpdateSignalType::slot_type const&),
         (override)
     );

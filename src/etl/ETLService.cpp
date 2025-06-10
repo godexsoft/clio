@@ -87,6 +87,7 @@ ETLService::makeETLService(
         );
 
         auto state = std::make_shared<etl::SystemState>();
+        state->isReadOnly = config.get<bool>("read_only");
 
         auto fetcher = std::make_shared<etl::impl::LedgerFetcher>(backend, balancer);
         auto extractor = std::make_shared<etlng::impl::Extractor>(fetcher);
