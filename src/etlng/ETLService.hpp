@@ -69,6 +69,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -177,7 +178,6 @@ public:
     lastCloseAgeSeconds() const override;
 
 private:
-    // TODO: this better be std::expected
     std::optional<data::LedgerRange>
     loadInitialLedgerIfNeeded();
 

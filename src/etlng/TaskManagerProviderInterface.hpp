@@ -44,7 +44,7 @@ struct TaskManagerProviderInterface {
      * @param seq The sequence to start at
      * @return A unique pointer to a TaskManager implementation
      */
-    virtual std::unique_ptr<TaskManagerInterface>
+    [[nodiscard]] virtual std::unique_ptr<TaskManagerInterface>
     make(util::async::AnyExecutionContext ctx, std::reference_wrapper<MonitorInterface> monitor, uint32_t seq) = 0;
 };
 

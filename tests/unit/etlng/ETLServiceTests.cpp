@@ -64,9 +64,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <semaphore>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -79,7 +77,12 @@ constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1
 struct MockMonitor : public etlng::MonitorInterface {
     MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
     MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
-    MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
+    MOCK_METHOD(
+        boost::signals2::scoped_connection,
+        subscribeToNewSequence,
+        (NewSequenceSignalType::slot_type const&),
+        (override)
+    );
     MOCK_METHOD(
         boost::signals2::scoped_connection,
         subscribeToNoDbUpdate,
@@ -344,7 +347,7 @@ TEST_F(ETLServiceTests, HandlesWriteConflictInMonitorSubscription)
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
 
-    EXPECT_CALL(*mockMonitor, subscribe(testing::_)).WillOnce([&capturedCallback](auto&& callback) {
+    EXPECT_CALL(*mockMonitor, subscribeToNewSequence(testing::_)).WillOnce([&capturedCallback](auto&& callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
@@ -376,7 +379,7 @@ TEST_F(ETLServiceTests, NormalFlowInMonitorSubscription)
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
 
-    EXPECT_CALL(*mockMonitor, subscribe(testing::_)).WillOnce([&capturedCallback](auto callback) {
+    EXPECT_CALL(*mockMonitor, subscribeToNewSequence(testing::_)).WillOnce([&capturedCallback](auto callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
@@ -409,7 +412,8 @@ TEST_F(ETLServiceTests, AttemptTakeoverWriter)
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
 
-    EXPECT_CALL(*mockMonitor, subscribe(testing::_)).WillOnce(testing::Return(boost::signals2::scoped_connection{}));
+    EXPECT_CALL(*mockMonitor, subscribeToNewSequence(testing::_))
+        .WillOnce(testing::Return(boost::signals2::scoped_connection{}));
     EXPECT_CALL(*mockMonitor, subscribeToNoDbUpdate(testing::_)).WillOnce([&capturedNoDbUpdateCallback](auto callback) {
         capturedNoDbUpdateCallback = callback;
         return boost::signals2::scoped_connection{};
@@ -445,7 +449,7 @@ TEST_F(ETLServiceTests, GiveupWriterAfterWriteConflict)
 
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
-    EXPECT_CALL(*mockMonitor, subscribe(testing::_)).WillOnce([&capturedCallback](auto callback) {
+    EXPECT_CALL(*mockMonitor, subscribeToNewSequence(testing::_)).WillOnce([&capturedCallback](auto callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });

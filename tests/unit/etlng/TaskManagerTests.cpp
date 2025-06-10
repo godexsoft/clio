@@ -70,7 +70,12 @@ struct MockLoader : etlng::LoaderInterface {
 struct MockMonitor : etlng::MonitorInterface {
     MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
     MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
-    MOCK_METHOD(boost::signals2::scoped_connection, subscribe, (SignalType::slot_type const&), (override));
+    MOCK_METHOD(
+        boost::signals2::scoped_connection,
+        subscribeToNewSequence,
+        (NewSequenceSignalType::slot_type const&),
+        (override)
+    );
     MOCK_METHOD(
         boost::signals2::scoped_connection,
         subscribeToNoDbUpdate,
@@ -199,20 +204,16 @@ TEST_F(TaskManagerTests, WriteConflictHandling)
             return {};
         });
 
-    // We should get notifications for successful loads before the conflict
     EXPECT_CALL(*mockMonitorPtr_, notifySequenceLoaded(testing::_)).Times(kCONFLICT_AFTER - 1);
-    // And only one notification about write conflict
     EXPECT_CALL(*mockMonitorPtr_, notifyWriteConflict(kSEQ + kCONFLICT_AFTER - 1));
 
     taskManager_.run(kEXTRACTORS);
     done.acquire();
     taskManager_.stop();
 
-    // We should only have loaded kCONFLICT_AFTER ledgers
     EXPECT_EQ(loaded.size(), kCONFLICT_AFTER);
     EXPECT_TRUE(conflictOccurred);
 
-    // Verify the loaded sequences
     for (std::size_t i = 0; i < loaded.size(); ++i) {
         EXPECT_EQ(loaded[i], kSEQ + i);
     }

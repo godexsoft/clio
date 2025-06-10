@@ -68,10 +68,6 @@
 #include <string>
 #include <utility>
 
-namespace {
-std::optional<util::async::AnyOperation<void>> gTest;
-}  // namespace
-
 namespace etlng {
 
 ETLService::ETLService(
@@ -209,7 +205,7 @@ ETLService::loadInitialLedgerIfNeeded()
         );
 
         LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
-        state_->isWriting = true;  // immediately become writer as this as db is empty
+        state_->isWriting = true;  // immediately become writer as the db is empty
 
         LOG(log_.info()) << "Waiting for next ledger to be validated by network...";
         if (auto const mostRecentValidated = ledgers_->getMostRecent(); mostRecentValidated.has_value()) {
@@ -252,15 +248,9 @@ ETLService::loadInitialLedgerIfNeeded()
 void
 ETLService::startMonitor(uint32_t seq)
 {
-    auto takeoverTimeoutSeconds = 10.0f;
-    std::chrono::steady_clock::duration noDbUpdateTimeout =
-        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-            std::chrono::duration<float>(takeoverTimeoutSeconds)
-        );
+    monitor_ = monitorProvider_->make(ctx_, backend_, ledgers_, seq);
 
-    monitor_ = monitorProvider_->make(ctx_, backend_, ledgers_, seq, noDbUpdateTimeout);
-
-    monitorSubscription_ = monitor_->subscribe([this](uint32_t seq) {
+    monitorSubscription_ = monitor_->subscribeToNewSequence([this](uint32_t seq) {
         LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;
 
         if (state_->writeConflict) {

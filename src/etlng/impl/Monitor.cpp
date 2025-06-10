@@ -43,14 +43,14 @@ Monitor::Monitor(
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
     uint32_t startSequence,
-    std::chrono::steady_clock::duration noDbUpdateTimeout
+    std::chrono::steady_clock::duration noDbUpdateReportDelay
 )
     : strand_(ctx.makeStrand())
     , backend_(std::move(backend))
     , validatedLedgers_(std::move(validatedLedgers))
     , nextSequence_(startSequence)
     , updateData_({
-          .noDbUpdateTimeout = noDbUpdateTimeout,
+          .noDbUpdateReportDelay = noDbUpdateReportDelay,
           .lastDbProgressTime = std::chrono::steady_clock::now(),
           .lastSeenMaxSeqInDb = startSequence > 0 ? startSequence - 1 : 0,
       })
@@ -90,8 +90,9 @@ Monitor::run(std::chrono::steady_clock::duration repeatInterval)
         auto lck = updateData_.lock();
         LOG(log_.debug()) << "Starting monitor with repeat interval: "
                           << std::chrono::duration_cast<std::chrono::seconds>(repeatInterval).count()
-                          << "s and noDbUpdateTimeout: "
-                          << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateTimeout).count() << "s";
+                          << "s and noDbUpdateReportDelay: "
+                          << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateReportDelay).count()
+                          << "s";
     }
 
     repeatedTask_ = strand_.executeRepeatedly(repeatInterval, std::bind_front(&Monitor::doWork, this));
@@ -109,7 +110,7 @@ Monitor::stop()
 }
 
 boost::signals2::scoped_connection
-Monitor::subscribe(SignalType::slot_type const& subscriber)
+Monitor::subscribeToNewSequence(NewSequenceSignalType::slot_type const& subscriber)
 {
     return notificationChannel_.connect(subscriber);
 }
@@ -156,9 +157,9 @@ Monitor::doWork()
 
     if (dbProgressedThisCycle) {
         lck->lastDbProgressTime = std::chrono::steady_clock::now();
-    } else if (std::chrono::steady_clock::now() - lck->lastDbProgressTime > lck->noDbUpdateTimeout) {
+    } else if (std::chrono::steady_clock::now() - lck->lastDbProgressTime > lck->noDbUpdateReportDelay) {
         LOG(log_.info()) << "No DB update detected for "
-                         << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateTimeout).count()
+                         << std::chrono::duration_cast<std::chrono::seconds>(lck->noDbUpdateReportDelay).count()
                          << " seconds. Firing noDbUpdateChannel. Last seen max seq in DB: " << lck->lastSeenMaxSeqInDb
                          << ". Expecting next: " << nextSequence_;
         noDbUpdateChannel_();

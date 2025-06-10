@@ -42,7 +42,7 @@ struct LoaderInterface {
      * @param data The data to load
      * @return Nothing or error as std::expected
      */
-    virtual std::expected<void, Error>
+    [[nodiscard]] virtual std::expected<void, Error>
     load(model::LedgerData const& data) = 0;
 
     /**

@@ -35,19 +35,17 @@ namespace etlng::impl {
 
 class MonitorProvider : public MonitorProviderInterface {
 public:
-    MonitorProvider() = default;
-
     std::unique_ptr<MonitorInterface>
     make(
         util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
-        std::chrono::steady_clock::duration noDbUpdateTimeout
+        std::chrono::steady_clock::duration noDbUpdateReportDelay
     ) override
     {
         return std::make_unique<Monitor>(
-            std::move(ctx), std::move(backend), std::move(validatedLedgers), startSequence, noDbUpdateTimeout
+            std::move(ctx), std::move(backend), std::move(validatedLedgers), startSequence, noDbUpdateReportDelay
         );
     }
 };

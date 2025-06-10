@@ -76,10 +76,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderSkipDueToAge)
     auto dummyState = etl::SystemState{};
     auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
 
-    // Set up the backend to be called during publish
     backend_->setRange(kSEQ - 1, kSEQ);
-
-    // Publish the ledger header
     publisher.publish(dummyLedgerHeader);
 
     // Verify last published sequence is set immediately
@@ -110,20 +107,15 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderWithinAgeLimit)
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
-    // Mock fetch fee - this should be called since age is within limits
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
-
-    // Mock fetch transactions - should be called with empty result
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kSEQ, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{}));
 
-    // Publication should happen
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 0));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
 
     ctx_.run();
-    // Last publish time should be set
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -135,7 +127,6 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderIsWritingTrue)
     auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
 
-    // setLastPublishedSequence not in strand, should verify before run
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
@@ -154,7 +145,6 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
 
     publisher.publish(dummyLedgerHeader);
 
-    // mock fetch fee
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
@@ -166,10 +156,8 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
                       .peekData();
     t1.ledgerSequence = kSEQ;
 
-    // mock fetch transactions
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger).WillOnce(Return(std::vector<TransactionAndMetadata>{t1}));
 
-    // setLastPublishedSequence not in strand, should verify before run
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
@@ -179,7 +167,6 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction);
 
     ctx_.run();
-    // last publish time should be set
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -198,7 +185,6 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
     auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
 
-    // mock fetch fee
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
@@ -210,21 +196,17 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
                       .peekData();
     t1.ledgerSequence = kSEQ;
 
-    // mock fetch transactions
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kSEQ, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{t1}));
 
-    // setLastPublishedSequence not in strand, should verify before run
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 1));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
-    // mock 1 transaction
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction);
 
     ctx_.run();
-    // last publish time should be set
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -277,7 +259,6 @@ TEST_F(ETLLedgerPublisherNgTest, PublishMultipleTxInOrder)
 
     publisher.publish(dummyLedgerHeader);
 
-    // mock fetch fee
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
 
@@ -299,23 +280,20 @@ TEST_F(ETLLedgerPublisherNgTest, PublishMultipleTxInOrder)
     t2.ledgerSequence = kSEQ;
     t2.date = 2;
 
-    // mock fetch transactions
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kSEQ, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{t1, t2}));
 
-    // setLastPublishedSequence not in strand, should verify before run
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 2));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
-    // should call pubTransaction t2 first (greater tx index)
+
     Sequence const s;
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction(t2, _)).InSequence(s);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction(t1, _)).InSequence(s);
 
     ctx_.run();
-    // last publish time should be set
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
