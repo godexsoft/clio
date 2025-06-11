@@ -85,8 +85,8 @@ struct MockMonitor : public etlng::MonitorInterface {
     );
     MOCK_METHOD(
         boost::signals2::scoped_connection,
-        subscribeToDbStaled,
-        (NoDbUpdateSignalType::slot_type const&),
+        subscribeToDbStalled,
+        (DbStalledSignalType::slot_type const&),
         (override)
     );
     MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
@@ -351,7 +351,7 @@ TEST_F(ETLServiceTests, HandlesWriteConflictInMonitorSubscription)
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStaled);
+    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
     EXPECT_CALL(*mockMonitor, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
@@ -382,7 +382,7 @@ TEST_F(ETLServiceTests, NormalFlowInMonitorSubscription)
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStaled);
+    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
     EXPECT_CALL(*mockMonitor, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
@@ -405,14 +405,14 @@ TEST_F(ETLServiceTests, NormalFlowInMonitorSubscription)
 TEST_F(ETLServiceTests, AttemptTakeoverWriter)
 {
     auto mockMonitor = std::make_unique<testing::NiceMock<MockMonitor>>();
-    std::function<void()> capturedNoDbUpdateCallback;
+    std::function<void()> capturedDbStalledCallback;
 
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
 
     EXPECT_CALL(*mockMonitor, subscribeToNewSequence);
-    EXPECT_CALL(*mockMonitor, subscribeToDbStaled).WillOnce([&capturedNoDbUpdateCallback](auto callback) {
-        capturedNoDbUpdateCallback = callback;
+    EXPECT_CALL(*mockMonitor, subscribeToDbStalled).WillOnce([&capturedDbStalledCallback](auto callback) {
+        capturedDbStalledCallback = callback;
         return boost::signals2::scoped_connection{};
     });
     EXPECT_CALL(*mockMonitor, run);
@@ -423,8 +423,8 @@ TEST_F(ETLServiceTests, AttemptTakeoverWriter)
     EXPECT_CALL(*cacheLoader_, load(kSEQ));
 
     service_.run();
-    systemState_->isReadOnly = false;  // writer node
-    systemState_->isWriting = false;   // but starts in readonly as usual
+    systemState_->isStrictReadonly = false;  // writer node
+    systemState_->isWriting = false;         // but starts in readonly as usual
 
     auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
     EXPECT_CALL(*mockTaskManager, run);
@@ -432,8 +432,8 @@ TEST_F(ETLServiceTests, AttemptTakeoverWriter)
     EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
         .WillOnce(testing::Return(std::move(mockTaskManager)));
 
-    ASSERT_TRUE(capturedNoDbUpdateCallback);
-    capturedNoDbUpdateCallback();
+    ASSERT_TRUE(capturedDbStalledCallback);
+    capturedDbStalledCallback();
 
     EXPECT_TRUE(systemState_->isWriting);  // should attempt to become writer
 }
@@ -450,7 +450,7 @@ TEST_F(ETLServiceTests, GiveUpWriterAfterWriteConflict)
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStaled);
+    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
     EXPECT_CALL(*mockMonitor, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)

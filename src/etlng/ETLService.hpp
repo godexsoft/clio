@@ -114,7 +114,7 @@ class ETLService : public ETLServiceInterface {
     std::unique_ptr<TaskManagerInterface> taskMan_;
 
     boost::signals2::scoped_connection monitorNewSeqSubscription_;
-    boost::signals2::scoped_connection monitorDbStaledSubscription_;
+    boost::signals2::scoped_connection monitorDbStalledSubscription_;
 
     std::optional<util::async::AnyOperation<void>> mainLoop_;
 

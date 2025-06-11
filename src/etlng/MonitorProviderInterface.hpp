@@ -37,7 +37,7 @@ struct MonitorProviderInterface {
     /**
      * @brief The time Monitor should wait before reporting absence of updates to the database
      */
-    static constexpr auto kDEFAULT_NO_DB_UPDATE_REPORT_DELAY = std::chrono::seconds{10};
+    static constexpr auto kDEFAULT_DB_STALLED_REPORT_DELAY = std::chrono::seconds{10};
 
     virtual ~MonitorProviderInterface() = default;
 
@@ -48,7 +48,7 @@ struct MonitorProviderInterface {
      * @param backend Interface to the backend database
      * @param validatedLedgers Interface for accessing network validated ledgers
      * @param startSequence The sequence number to start monitoring from
-     * @param noDbUpdateReportDelay The timeout duration after which to signal no database updates
+     * @param dbStalledReportDelay The timeout duration after which to signal no database updates
      * @return A unique pointer to a Monitor implementation
      */
     [[nodiscard]] virtual std::unique_ptr<MonitorInterface>
@@ -57,7 +57,7 @@ struct MonitorProviderInterface {
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
-        std::chrono::steady_clock::duration noDbUpdateReportDelay = kDEFAULT_NO_DB_UPDATE_REPORT_DELAY
+        std::chrono::steady_clock::duration dbStalledReportDelay = kDEFAULT_DB_STALLED_REPORT_DELAY
     ) = 0;
 };
 

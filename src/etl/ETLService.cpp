@@ -87,7 +87,7 @@ ETLService::makeETLService(
         );
 
         auto state = std::make_shared<etl::SystemState>();
-        state->isReadOnly = config.get<bool>("read_only");
+        state->isStrictReadonly = config.get<bool>("read_only");
 
         auto fetcher = std::make_shared<etl::impl::LedgerFetcher>(backend, balancer);
         auto extractor = std::make_shared<etlng::impl::Extractor>(fetcher);
@@ -351,7 +351,7 @@ ETLService::doWork()
     worker_ = std::thread([this]() {
         beast::setCurrentThreadName("ETLService worker");
 
-        if (state_.isReadOnly) {
+        if (state_.isStrictReadonly) {
             monitorReadOnly();
         } else {
             monitor();
@@ -378,7 +378,7 @@ ETLService::ETLService(
 {
     startSequence_ = config.maybeValue<uint32_t>("start_sequence");
     finishSequence_ = config.maybeValue<uint32_t>("finish_sequence");
-    state_.isReadOnly = config.get<bool>("read_only");
+    state_.isStrictReadonly = config.get<bool>("read_only");
     extractorThreads_ = config.get<uint32_t>("extractor_threads");
 
     // This should probably be done in the backend factory but we don't have state available until here

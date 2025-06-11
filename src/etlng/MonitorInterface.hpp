@@ -37,7 +37,7 @@ class MonitorInterface {
 public:
     static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::seconds{1};
     using NewSequenceSignalType = boost::signals2::signal<void(uint32_t)>;
-    using NoDbUpdateSignalType = boost::signals2::signal<void()>;
+    using DbStalledSignalType = boost::signals2::signal<void()>;
 
     virtual ~MonitorInterface() = default;
 
@@ -71,7 +71,7 @@ public:
      * @return A connection object that automatically disconnects the subscription once destroyed
      */
     [[nodiscard]] virtual boost::signals2::scoped_connection
-    subscribeToDbStaled(NoDbUpdateSignalType::slot_type const& subscriber) = 0;
+    subscribeToDbStalled(DbStalledSignalType::slot_type const& subscriber) = 0;
 
     /**
      * @brief Run the monitor service

@@ -97,7 +97,7 @@ Loader::onInitialLoadGotMoreObjects(
     std::optional<std::string> lastKey
 )
 {
-    static constexpr std::size_t kLOG_INTERVAL = 1000u;
+    static constexpr std::size_t kLOG_STRIDE = 1000u;
     static auto kINITIAL_LOAD_START_TIME = std::chrono::steady_clock::now();
 
     try {
@@ -110,11 +110,11 @@ Loader::onInitialLoadGotMoreObjects(
 
         initialLoadWrittenObjects_ += data.size();
         ++initialLoadWrites_;
-        if (initialLoadWrites_ % kLOG_INTERVAL == 0u && initialLoadWrites_ != 0u) {
-            auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        if (initialLoadWrites_ % kLOG_STRIDE == 0u && initialLoadWrites_ != 0u) {
+            auto elapsedSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - kINITIAL_LOAD_START_TIME
             );
-            auto elapsedSeconds = totalElapsed.count() / static_cast<double>(util::kMILLISECONDS_PER_SECOND);
+            auto elapsedSeconds = elapsedSinceStart.count() / static_cast<double>(util::kMILLISECONDS_PER_SECOND);
             auto objectsPerSecond =
                 elapsedSeconds > 0.0 ? static_cast<double>(initialLoadWrittenObjects_) / elapsedSeconds : 0.0;
 

@@ -102,7 +102,7 @@ ETLService::ETLService(
     , state_(std::move(state))
 {
     ASSERT(not state_->isWriting, "ETL should never start in writer mode");
-    LOG(log_.info()) << "Starting in " << (state_->isReadOnly ? "STRICT READONLY MODE" : "WRITE MODE");
+    LOG(log_.info()) << "Starting in " << (state_->isStrictReadonly ? "STRICT READONLY MODE" : "WRITE MODE");
 }
 
 ETLService::~ETLService()
@@ -160,7 +160,7 @@ ETLService::getInfo() const
 
     result["etl_sources"] = balancer_->toJson();
     result["is_writer"] = static_cast<int>(state_->isWriting);
-    result["read_only"] = static_cast<int>(state_->isReadOnly);
+    result["read_only"] = static_cast<int>(state_->isStrictReadonly);
     auto last = publisher_->getLastPublish();
     if (last.time_since_epoch().count() != 0)
         result["last_publish_age_seconds"] = std::to_string(publisher_->lastPublishAgeSeconds());
@@ -197,7 +197,7 @@ ETLService::loadInitialLedgerIfNeeded()
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     if (not rng.has_value()) {
         ASSERT(
-            not state_->isReadOnly,
+            not state_->isStrictReadonly,
             "Database is empty but this node is in strict readonly mode. Can't write initial ledger."
         );
 
@@ -251,7 +251,7 @@ ETLService::startMonitor(uint32_t seq)
         LOG(log_.info()) << "ETLService (via Monitor) got new seq from db: " << seq;
 
         if (state_->writeConflict) {
-            LOG(log_.warn()) << "Got a write conflict; Stopping task manager for time being...";
+            LOG(log_.info()) << "Got a write conflict; Giving up writer seat immediately";
             giveUpWriter();
         }
 
@@ -267,9 +267,9 @@ ETLService::startMonitor(uint32_t seq)
         publisher_->publish(seq, {});
     });
 
-    monitorDbStaledSubscription_ = monitor_->subscribeToDbStaled([this]() {
-        LOG(log_.warn()) << "ETLService received NoDbUpdate signal from Monitor";
-        if (not state_->isReadOnly and not state_->isWriting)
+    monitorDbStalledSubscription_ = monitor_->subscribeToDbStalled([this]() {
+        LOG(log_.warn()) << "ETLService received DbStalled signal from Monitor";
+        if (not state_->isStrictReadonly and not state_->isWriting)
             attemptTakeoverWriter();
     });
 
@@ -279,7 +279,7 @@ ETLService::startMonitor(uint32_t seq)
 void
 ETLService::startLoading(uint32_t seq)
 {
-    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
+    ASSERT(not state_->isStrictReadonly, "This should only happen on writer nodes");
     taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq);
     taskMan_->run(config_.get().get<std::size_t>("extractor_threads"));
 }
@@ -287,7 +287,7 @@ ETLService::startLoading(uint32_t seq)
 void
 ETLService::attemptTakeoverWriter()
 {
-    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
+    ASSERT(not state_->isStrictReadonly, "This should only happen on writer nodes");
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     ASSERT(rng.has_value(), "Ledger range can't be null");
 
@@ -299,7 +299,7 @@ ETLService::attemptTakeoverWriter()
 void
 ETLService::giveUpWriter()
 {
-    ASSERT(not state_->isReadOnly, "This should only happen on writer nodes");
+    ASSERT(not state_->isStrictReadonly, "This should only happen on writer nodes");
     state_->isWriting = false;
     state_->writeConflict = false;
     taskMan_ = nullptr;

@@ -49,7 +49,7 @@ protected:
     util::async::CoroExecutionContext ctx_;
     StrictMockNetworkValidatedLedgersPtr ledgers_;
     testing::StrictMock<testing::MockFunction<void(uint32_t)>> actionMock_;
-    testing::StrictMock<testing::MockFunction<void()>> noDbUpdateMock_;
+    testing::StrictMock<testing::MockFunction<void()>> dbStalledMock_;
 
     etlng::impl::Monitor monitor_ =
         etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ, kNO_NEW_LEDGER_REPORT_DELAY);
@@ -159,15 +159,15 @@ TEST_F(MonitorTests, ResumesMonitoringFromNextSequenceAfterWriteConflict)
     unblock.acquire();
 }
 
-TEST_F(MonitorTests, NoDbUpdateChannelTriggeredWhenTimeoutExceeded)
+TEST_F(MonitorTests, DbStalledChannelTriggeredWhenTimeoutExceeded)
 {
     std::binary_semaphore unblock(0);
 
     EXPECT_CALL(*ledgers_, subscribe(testing::_));
     EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillRepeatedly(testing::Return(std::nullopt));
-    EXPECT_CALL(noDbUpdateMock_, Call()).WillOnce([&]() { unblock.release(); });
+    EXPECT_CALL(dbStalledMock_, Call()).WillOnce([&]() { unblock.release(); });
 
-    auto subscription = monitor_.subscribeToDbStaled(noDbUpdateMock_.AsStdFunction());
+    auto subscription = monitor_.subscribeToDbStalled(dbStalledMock_.AsStdFunction());
     monitor_.run(std::chrono::nanoseconds{100});
     unblock.acquire();
 }

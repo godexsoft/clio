@@ -50,10 +50,10 @@ class Monitor : public MonitorInterface {
     std::optional<boost::signals2::scoped_connection> subscription_;  // network validated ledgers subscription
 
     NewSequenceSignalType notificationChannel_;
-    NoDbUpdateSignalType noDbUpdateChannel_;
+    DbStalledSignalType dbStalledChannel_;
 
     struct UpdateData {
-        std::chrono::steady_clock::duration noDbUpdateReportDelay;
+        std::chrono::steady_clock::duration dbStalledReportDelay;
         std::chrono::steady_clock::time_point lastDbProgressTime;
         uint32_t lastSeenMaxSeqInDb = 0u;
     };
@@ -68,7 +68,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
-        std::chrono::steady_clock::duration noDbUpdateReportDelay
+        std::chrono::steady_clock::duration dbStalledReportDelay
     );
     ~Monitor() override;
 
@@ -88,7 +88,7 @@ public:
     subscribeToNewSequence(NewSequenceSignalType::slot_type const& subscriber) override;
 
     boost::signals2::scoped_connection
-    subscribeToDbStaled(NoDbUpdateSignalType::slot_type const& subscriber) override;
+    subscribeToDbStalled(DbStalledSignalType::slot_type const& subscriber) override;
 
 private:
     void

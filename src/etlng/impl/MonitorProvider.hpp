@@ -41,11 +41,11 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
-        std::chrono::steady_clock::duration noDbUpdateReportDelay
+        std::chrono::steady_clock::duration dbStalledReportDelay
     ) override
     {
         return std::make_unique<Monitor>(
-            std::move(ctx), std::move(backend), std::move(validatedLedgers), startSequence, noDbUpdateReportDelay
+            std::move(ctx), std::move(backend), std::move(validatedLedgers), startSequence, dbStalledReportDelay
         );
     }
 };

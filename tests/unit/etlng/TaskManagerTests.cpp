@@ -78,8 +78,8 @@ struct MockMonitor : etlng::MonitorInterface {
     );
     MOCK_METHOD(
         boost::signals2::scoped_connection,
-        subscribeToDbStaled,
-        (NoDbUpdateSignalType::slot_type const&),
+        subscribeToDbStalled,
+        (DbStalledSignalType::slot_type const&),
         (override)
     );
     MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
