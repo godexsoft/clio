@@ -16,7 +16,6 @@ set(COMPILER_FLAGS
     -Wnull-dereference
     -Wold-style-cast
     -Wpedantic
-    -Wunreachable-code
     -Wunused
     # FIXME: The following bunch are needed for gcc12 atm.
     -Wno-missing-requires

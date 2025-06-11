@@ -77,8 +77,8 @@ Loader::load(model::LedgerData const& data)
 
             if (not success) {
                 state_->writeConflict = true;
-                return std::unexpected("write conflict");
                 LOG(log_.warn()) << "Another node wrote a ledger into the DB - we have a write conflict";
+                return std::unexpected("write conflict");
             }
         }
     } catch (std::runtime_error const& e) {
