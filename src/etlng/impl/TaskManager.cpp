@@ -123,10 +123,10 @@ TaskManager::spawnLoader(TaskQueue& queue)
             if (auto data = queue.dequeue(); data.has_value()) {
                 // perhaps this should return an error if conflict happened, then we can stop loading immediately
                 auto [expectedSuccess, nanos] =
-                    util::timed<std::chrono::nanoseconds>([this, data = *data] { return loader_.get().load(data); });
+                    util::timed<std::chrono::nanoseconds>([&] { return loader_.get().load(*data); });
 
                 if (not expectedSuccess.has_value()) {
-                    LOG(log_.warn()) << "Immediately stopping loader: " << expectedSuccess.error()
+                    LOG(log_.warn()) << "Immediately stopping loader with error: " << expectedSuccess.error()
                                      << "; latest ledger cache loaded for " << data->seq;
                     monitor_.get().notifyWriteConflict(data->seq);
                     break;

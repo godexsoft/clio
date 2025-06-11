@@ -54,7 +54,7 @@ class Monitor : public MonitorInterface {
 
     struct UpdateData {
         std::chrono::steady_clock::duration dbStalledReportDelay;
-        std::chrono::steady_clock::time_point lastDbProgressTime;
+        std::chrono::steady_clock::time_point lastDbCheckTime;
         uint32_t lastSeenMaxSeqInDb = 0u;
     };
 

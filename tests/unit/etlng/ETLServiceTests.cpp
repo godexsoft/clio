@@ -292,6 +292,7 @@ TEST_F(ETLServiceTests, LastCloseAgeSeconds)
 TEST_F(ETLServiceTests, RunWithEmptyDatabase)
 {
     auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
+    auto& mockTaskManagerRef = *mockTaskManager;
     auto ledgerData = createTestData(kSEQ);
 
     testing::Sequence const s;
@@ -304,7 +305,7 @@ TEST_F(ETLServiceTests, RunWithEmptyDatabase)
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
         .InSequence(s)
         .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
-    EXPECT_CALL(*mockTaskManager, run);
+    EXPECT_CALL(mockTaskManagerRef, run);
     EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
         .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
@@ -342,17 +343,19 @@ TEST_F(ETLServiceTests, WaitForValidatedLedgerIsAborted)
 TEST_F(ETLServiceTests, HandlesWriteConflictInMonitorSubscription)
 {
     auto mockMonitor = std::make_unique<testing::NiceMock<MockMonitor>>();
+    auto& mockMonitorRef = *mockMonitor;
     std::function<void(uint32_t)> capturedCallback;
 
-    EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
-        .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
+    EXPECT_CALL(*monitorProvider_, make).WillOnce([&mockMonitor](auto, auto, auto, auto, auto) {
+        return std::move(mockMonitor);
+    });
 
-    EXPECT_CALL(*mockMonitor, subscribeToNewSequence).WillOnce([&capturedCallback](auto&& callback) {
+    EXPECT_CALL(mockMonitorRef, subscribeToNewSequence).WillOnce([&capturedCallback](auto&& callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
-    EXPECT_CALL(*mockMonitor, run);
+    EXPECT_CALL(mockMonitorRef, subscribeToDbStalled);
+    EXPECT_CALL(mockMonitorRef, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
         .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
@@ -373,17 +376,19 @@ TEST_F(ETLServiceTests, HandlesWriteConflictInMonitorSubscription)
 TEST_F(ETLServiceTests, NormalFlowInMonitorSubscription)
 {
     auto mockMonitor = std::make_unique<testing::NiceMock<MockMonitor>>();
+    auto& mockMonitorRef = *mockMonitor;
     std::function<void(uint32_t)> capturedCallback;
 
-    EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
-        .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
+    EXPECT_CALL(*monitorProvider_, make).WillOnce([&mockMonitor](auto, auto, auto, auto, auto) {
+        return std::move(mockMonitor);
+    });
 
-    EXPECT_CALL(*mockMonitor, subscribeToNewSequence).WillOnce([&capturedCallback](auto callback) {
+    EXPECT_CALL(mockMonitorRef, subscribeToNewSequence).WillOnce([&capturedCallback](auto callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
-    EXPECT_CALL(*mockMonitor, run);
+    EXPECT_CALL(mockMonitorRef, subscribeToDbStalled);
+    EXPECT_CALL(mockMonitorRef, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
         .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
@@ -405,17 +410,19 @@ TEST_F(ETLServiceTests, NormalFlowInMonitorSubscription)
 TEST_F(ETLServiceTests, AttemptTakeoverWriter)
 {
     auto mockMonitor = std::make_unique<testing::NiceMock<MockMonitor>>();
+    auto& mockMonitorRef = *mockMonitor;
     std::function<void()> capturedDbStalledCallback;
 
-    EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
-        .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
+    EXPECT_CALL(*monitorProvider_, make).WillOnce([&mockMonitor](auto, auto, auto, auto, auto) {
+        return std::move(mockMonitor);
+    });
 
-    EXPECT_CALL(*mockMonitor, subscribeToNewSequence);
-    EXPECT_CALL(*mockMonitor, subscribeToDbStalled).WillOnce([&capturedDbStalledCallback](auto callback) {
+    EXPECT_CALL(mockMonitorRef, subscribeToNewSequence);
+    EXPECT_CALL(mockMonitorRef, subscribeToDbStalled).WillOnce([&capturedDbStalledCallback](auto callback) {
         capturedDbStalledCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, run);
+    EXPECT_CALL(mockMonitorRef, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
         .WillRepeatedly(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
@@ -427,7 +434,8 @@ TEST_F(ETLServiceTests, AttemptTakeoverWriter)
     systemState_->isWriting = false;         // but starts in readonly as usual
 
     auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
-    EXPECT_CALL(*mockTaskManager, run);
+    auto& mockTaskManagerRef = *mockTaskManager;
+    EXPECT_CALL(mockTaskManagerRef, run);
 
     EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1))
         .WillOnce(testing::Return(std::move(mockTaskManager)));
@@ -441,17 +449,19 @@ TEST_F(ETLServiceTests, AttemptTakeoverWriter)
 TEST_F(ETLServiceTests, GiveUpWriterAfterWriteConflict)
 {
     auto mockMonitor = std::make_unique<testing::NiceMock<MockMonitor>>();
-    auto mockTaskManager = std::make_unique<testing::NiceMock<MockTaskManager>>();
+    auto& mockMonitorRef = *mockMonitor;
+
     std::function<void(uint32_t)> capturedCallback;
 
-    EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
-        .WillOnce([&mockMonitor](auto, auto, auto, auto, auto) { return std::move(mockMonitor); });
-    EXPECT_CALL(*mockMonitor, subscribeToNewSequence).WillOnce([&capturedCallback](auto callback) {
+    EXPECT_CALL(*monitorProvider_, make).WillOnce([&mockMonitor](auto, auto, auto, auto, auto) {
+        return std::move(mockMonitor);
+    });
+    EXPECT_CALL(mockMonitorRef, subscribeToNewSequence).WillOnce([&capturedCallback](auto callback) {
         capturedCallback = callback;
         return boost::signals2::scoped_connection{};
     });
-    EXPECT_CALL(*mockMonitor, subscribeToDbStalled);
-    EXPECT_CALL(*mockMonitor, run);
+    EXPECT_CALL(mockMonitorRef, subscribeToDbStalled);
+    EXPECT_CALL(mockMonitorRef, run);
 
     EXPECT_CALL(*backend_, hardFetchLedgerRange)
         .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));

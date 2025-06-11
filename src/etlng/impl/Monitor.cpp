@@ -50,7 +50,7 @@ Monitor::Monitor(
     , nextSequence_(startSequence)
     , updateData_({
           .dbStalledReportDelay = dbStalledReportDelay,
-          .lastDbProgressTime = std::chrono::steady_clock::now(),
+          .lastDbCheckTime = std::chrono::steady_clock::now(),
           .lastSeenMaxSeqInDb = startSequence > 0 ? startSequence - 1 : 0,
       })
 {
@@ -68,7 +68,7 @@ Monitor::notifySequenceLoaded(uint32_t seq)
     {
         auto lck = updateData_.lock();
         lck->lastSeenMaxSeqInDb = std::max(seq, lck->lastSeenMaxSeqInDb);
-        lck->lastDbProgressTime = std::chrono::steady_clock::now();
+        lck->lastDbCheckTime = std::chrono::steady_clock::now();
     }
     repeatedTask_->invoke();  // force-invoke doWork immediately
 };
@@ -154,14 +154,14 @@ Monitor::doWork()
     }
 
     if (dbProgressedThisCycle) {
-        lck->lastDbProgressTime = std::chrono::steady_clock::now();
-    } else if (std::chrono::steady_clock::now() - lck->lastDbProgressTime > lck->dbStalledReportDelay) {
+        lck->lastDbCheckTime = std::chrono::steady_clock::now();
+    } else if (std::chrono::steady_clock::now() - lck->lastDbCheckTime > lck->dbStalledReportDelay) {
         LOG(log_.info()) << "No DB update detected for "
                          << std::chrono::duration_cast<std::chrono::seconds>(lck->dbStalledReportDelay).count()
                          << " seconds. Firing dbStalledChannel. Last seen max seq in DB: " << lck->lastSeenMaxSeqInDb
                          << ". Expecting next: " << nextSequence_;
         dbStalledChannel_();
-        lck->lastDbProgressTime = std::chrono::steady_clock::now();
+        lck->lastDbCheckTime = std::chrono::steady_clock::now();
     }
 }
 
