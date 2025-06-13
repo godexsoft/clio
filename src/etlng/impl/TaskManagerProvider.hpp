@@ -67,10 +67,10 @@ public:
         util::async::AnyExecutionContext ctx,
         std::reference_wrapper<MonitorInterface> monitor,
         uint32_t startSeq,
-        std::optional<uint32_t> maxSeq
+        std::optional<uint32_t> finishSeq
     ) override
     {
-        auto scheduler = impl::makeScheduler(impl::ForwardScheduler{ledgers_, startSeq, maxSeq});
+        auto scheduler = impl::makeScheduler(impl::ForwardScheduler{ledgers_, startSeq, finishSeq});
         // TODO: add impl::BackfillScheduler{startSeq - 1, startSeq - ...},
 
         return std::make_unique<TaskManager>(

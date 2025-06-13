@@ -99,17 +99,16 @@ ETLService::ETLService(
     , taskManagerProvider_(std::move(taskManagerProvider))
     , monitorProvider_(std::move(monitorProvider))
     , state_(std::move(state))
+    , startSequence_(config.get().maybeValue<uint32_t>("start_sequence"))
+    , finishSequence_(config.get().maybeValue<uint32_t>("finish_sequence"))
 {
     ASSERT(not state_->isWriting, "ETL should never start in writer mode");
 
-    startSequence_ = config_.get().maybeValue<uint32_t>("start_sequence");
-    finishSequence_ = config_.get().maybeValue<uint32_t>("finish_sequence");
-
     if (startSequence_.has_value())
-        LOG(log_.info()) << "Start sequence: " << startSequence_.value();
+        LOG(log_.info()) << "Start sequence: " << *startSequence_;
 
     if (finishSequence_.has_value())
-        LOG(log_.info()) << "Finish sequence: " << finishSequence_.value();
+        LOG(log_.info()) << "Finish sequence: " << *finishSequence_;
 
     LOG(log_.info()) << "Starting in " << (state_->isStrictReadonly ? "STRICT READONLY MODE" : "WRITE MODE");
 }
@@ -221,7 +220,7 @@ ETLService::loadInitialLedgerIfNeeded()
         if (auto const maybeSeq = startSequence_.or_else(getMostRecent); maybeSeq.has_value()) {
             auto const seq = *maybeSeq;
             LOG(log_.info()) << "Starting from sequence " << seq
-                             << ". Initial ledger download and extraction can take a while..";
+                             << ". Initial ledger download and extraction can take a while...";
 
             auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
                 return extractor_->extractLedgerOnly(seq).and_then([this, seq](auto&& data) {
