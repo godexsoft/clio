@@ -25,11 +25,16 @@
 
 #include <expected>
 #include <optional>
-#include <string>
 
 namespace etlng {
 
-using Error = std::string;
+/**
+ * @brief Enumeration of possible errors that can occur during loading operations
+ */
+enum class Error {
+    AmendmentBlocked, /*< Error indicating that an operation is blocked by an amendment */
+    WriteConflict,    /*< Error indicating that a write operation resulted in a conflict */
+};
 
 /**
  * @brief An interface for a ETL Loader

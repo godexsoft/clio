@@ -193,7 +193,7 @@ TEST_F(TaskManagerTests, WriteConflictHandling)
             if (loaded.size() == kCONFLICT_AFTER) {
                 conflictOccurred = true;
                 done.release();
-                return std::unexpected("write conflict");
+                return std::unexpected(etlng::Error::WriteConflict);
             }
 
             // Only release semaphore if we reach kTOTAL without conflict

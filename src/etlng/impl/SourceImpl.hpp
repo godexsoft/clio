@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "etl/impl/ForwardingSource.hpp"
 #include "etl/impl/SubscriptionSource.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
 #include "etlng/Source.hpp"
+#include "etlng/impl/ForwardingSource.hpp"
 #include "etlng/impl/GrpcSource.hpp"
 #include "rpc/Errors.hpp"
 
@@ -53,7 +53,7 @@ namespace etlng::impl {
 template <
     typename GrpcSourceType = GrpcSource,
     typename SubscriptionSourceTypePtr = std::unique_ptr<etl::impl::SubscriptionSource>,
-    typename ForwardingSourceType = etl::impl::ForwardingSource>
+    typename ForwardingSourceType = etlng::impl::ForwardingSource>
 class SourceImpl : public SourceBase {
     std::string ip_;
     std::string wsPort_;
