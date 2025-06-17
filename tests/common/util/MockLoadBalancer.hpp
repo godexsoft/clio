@@ -42,7 +42,7 @@ struct MockNgLoadBalancer : etlng::LoadBalancerInterface {
     using RawLedgerObjectType = FakeLedgerObject;
 
     MOCK_METHOD(
-        etlng::InitialLedgerLoadResult<std::vector<std::string>>,
+        etlng::InitialLedgerLoadResult,
         loadInitialLedger,
         (uint32_t, etlng::InitialLoadObserverInterface&, std::chrono::steady_clock::duration),
         (override)

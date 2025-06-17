@@ -204,7 +204,7 @@ public:
      * @param loader InitialLoadObserverInterface implementation
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
-    InitialLedgerLoadResult<std::vector<std::string>>
+    InitialLedgerLoadResult
     loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etlng::InitialLoadObserverInterface& loader) final
     {
         return grpcSource_.loadInitialLedger(sequence, numMarkers, loader);

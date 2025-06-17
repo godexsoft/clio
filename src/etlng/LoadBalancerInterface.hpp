@@ -43,12 +43,15 @@ namespace etlng {
  * @brief Represents possible errors for initial ledger load
  */
 enum class InitialLedgerLoadError {
-    Cancel,
-    Error,
+    Cancel, /*< Indicating the initial load got cancelled by user */
+    Error,  /*< Indicating some error happened during initial ledger load */
 };
 
-template <typename T>
-using InitialLedgerLoadResult = std::expected<T, InitialLedgerLoadError>;
+/**
+ * @brief The result type of the initial ledger load
+ * @note The value channel represents edge keys
+ */
+using InitialLedgerLoadResult = std::expected<std::vector<std::string>, InitialLedgerLoadError>;
 
 /**
  * @brief An interface for LoadBalancer
@@ -70,7 +73,7 @@ public:
      * @param retryAfter Time to wait between retries (2 seconds by default)
      * @return A std::vector<std::string> The ledger data
      */
-    [[nodiscard]] virtual InitialLedgerLoadResult<std::vector<std::string>>
+    [[nodiscard]] virtual InitialLedgerLoadResult
     loadInitialLedger(
         uint32_t sequence,
         etlng::InitialLoadObserverInterface& loader,

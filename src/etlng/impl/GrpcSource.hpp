@@ -67,7 +67,7 @@ public:
      * @param observer InitialLoadObserverInterface implementation
      * @return Downloaded data or an indication of error or cancellation
      */
-    InitialLedgerLoadResult<std::vector<std::string>>
+    InitialLedgerLoadResult
     loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etlng::InitialLoadObserverInterface& observer);
 
     void stop(boost::asio::yield_context);

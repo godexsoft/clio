@@ -53,7 +53,7 @@ struct GrpcSourceMock {
     using FetchLedgerReturnType = std::pair<grpc::Status, org::xrpl::rpc::v1::GetLedgerResponse>;
     MOCK_METHOD(FetchLedgerReturnType, fetchLedger, (uint32_t, bool, bool));
 
-    using LoadLedgerReturnType = etlng::InitialLedgerLoadResult<std::vector<std::string>>;
+    using LoadLedgerReturnType = etlng::InitialLedgerLoadResult;
     MOCK_METHOD(LoadLedgerReturnType, loadInitialLedger, (uint32_t, uint32_t, etlng::InitialLoadObserverInterface&));
 
     MOCK_METHOD(void, stop, (boost::asio::yield_context), ());
@@ -213,7 +213,7 @@ TEST_F(SourceImplNgTest, loadInitialLedgerSuccessPath)
 {
     uint32_t const ledgerSeq = 123;
     uint32_t const numMarkers = 3;
-    auto response = etlng::InitialLedgerLoadResult<std::vector<std::string>>{{"1", "2", "3"}};
+    auto response = etlng::InitialLedgerLoadResult{{"1", "2", "3"}};
 
     auto observerMock = testing::StrictMock<InitialLoadObserverMock>();
 

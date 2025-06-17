@@ -108,7 +108,7 @@ GrpcSource::fetchLedger(uint32_t sequence, bool getObjects, bool getObjectNeighb
     return {status, std::move(response)};
 }
 
-InitialLedgerLoadResult<std::vector<std::string>>
+InitialLedgerLoadResult
 GrpcSource::loadInitialLedger(
     uint32_t const sequence,
     uint32_t const numMarkers,

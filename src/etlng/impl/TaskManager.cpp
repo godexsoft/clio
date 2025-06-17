@@ -125,14 +125,14 @@ TaskManager::spawnLoader(TaskQueue& queue)
                     util::timed<std::chrono::nanoseconds>([&] { return loader_.get().load(*data); });
 
                 if (not expectedSuccess.has_value()) {
-                    if (expectedSuccess.error() == Error::WriteConflict) {
+                    if (expectedSuccess.error() == LoaderError::WriteConflict) {
                         LOG(log_.warn()) << "Immediately stopping loader on write conflict"
                                          << "; latest ledger cache loaded for " << data->seq;
                         monitor_.get().notifyWriteConflict(data->seq);
                         break;
                     }
 
-                    if (expectedSuccess.error() == Error::AmendmentBlocked) {
+                    if (expectedSuccess.error() == LoaderError::AmendmentBlocked) {
                         LOG(log_.warn()) << "Immediately stopping loader on amendment block";
                         break;
                     }

@@ -210,14 +210,14 @@ LoadBalancer::LoadBalancer(
     }
 }
 
-InitialLedgerLoadResult<std::vector<std::string>>
+InitialLedgerLoadResult
 LoadBalancer::loadInitialLedger(
     uint32_t sequence,
     etlng::InitialLoadObserverInterface& loadObserver,
     std::chrono::steady_clock::duration retryAfter
 )
 {
-    InitialLedgerLoadResult<std::vector<std::string>> response;
+    InitialLedgerLoadResult response;
 
     execute(
         [this, &response, &sequence, &loadObserver](auto& source) {

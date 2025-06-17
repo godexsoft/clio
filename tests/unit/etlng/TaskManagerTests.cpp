@@ -62,7 +62,7 @@ struct MockExtractor : etlng::ExtractorInterface {
 };
 
 struct MockLoader : etlng::LoaderInterface {
-    using ExpectedType = std::expected<void, etlng::Error>;
+    using ExpectedType = std::expected<void, etlng::LoaderError>;
     MOCK_METHOD(ExpectedType, load, (LedgerData const&), (override));
     MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (LedgerData const&), (override));
 };
@@ -142,7 +142,7 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 
     EXPECT_CALL(*mockLoaderPtr_, load(testing::_))
         .Times(kTOTAL)
-        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::Error> {
+        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::LoaderError> {
             loaded.push_back(data.seq);
             if (loaded.size() == kTOTAL) {
                 done.release();
@@ -187,13 +187,13 @@ TEST_F(TaskManagerTests, WriteConflictHandling)
 
     // First kCONFLICT_AFTER calls succeed, then we get a write conflict
     EXPECT_CALL(*mockLoaderPtr_, load(testing::_))
-        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::Error> {
+        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::LoaderError> {
             loaded.push_back(data.seq);
 
             if (loaded.size() == kCONFLICT_AFTER) {
                 conflictOccurred = true;
                 done.release();
-                return std::unexpected(etlng::Error::WriteConflict);
+                return std::unexpected(etlng::LoaderError::WriteConflict);
             }
 
             // Only release semaphore if we reach kTOTAL without conflict

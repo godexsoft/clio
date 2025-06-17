@@ -31,7 +31,7 @@ namespace etlng {
 /**
  * @brief Enumeration of possible errors that can occur during loading operations
  */
-enum class Error {
+enum class LoaderError {
     AmendmentBlocked, /*< Error indicating that an operation is blocked by an amendment */
     WriteConflict,    /*< Error indicating that a write operation resulted in a conflict */
 };
@@ -47,7 +47,7 @@ struct LoaderInterface {
      * @param data The data to load
      * @return Nothing or error as std::expected
      */
-    [[nodiscard]] virtual std::expected<void, Error>
+    [[nodiscard]] virtual std::expected<void, LoaderError>
     load(model::LedgerData const& data) = 0;
 
     /**

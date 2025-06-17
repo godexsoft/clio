@@ -100,7 +100,7 @@ struct MockExtractor : etlng::ExtractorInterface {
 };
 
 struct MockLoader : etlng::LoaderInterface {
-    using ExpectedType = std::expected<void, etlng::Error>;
+    using ExpectedType = std::expected<void, etlng::LoaderError>;
     MOCK_METHOD(ExpectedType, load, (etlng::model::LedgerData const&), (override));
     MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (etlng::model::LedgerData const&), (override));
 };

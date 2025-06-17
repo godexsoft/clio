@@ -131,7 +131,7 @@ public:
      * @param loader InitialLoadObserverInterface implementation
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
-    virtual InitialLedgerLoadResult<std::vector<std::string>>
+    virtual InitialLedgerLoadResult
     loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etlng::InitialLoadObserverInterface& loader) = 0;
 
     /**

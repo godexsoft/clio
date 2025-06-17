@@ -62,7 +62,7 @@ struct MockSourceNg : etlng::SourceBase {
         (override)
     );
     MOCK_METHOD(
-        etlng::InitialLedgerLoadResult<std::vector<std::string>>,
+        etlng::InitialLedgerLoadResult,
         loadInitialLedger,
         (uint32_t, uint32_t, etlng::InitialLoadObserverInterface&),
         (override)
@@ -137,7 +137,7 @@ public:
         return mock_->fetchLedger(sequence, getObjects, getObjectNeighbors);
     }
 
-    etlng::InitialLedgerLoadResult<std::vector<std::string>>
+    etlng::InitialLedgerLoadResult
     loadInitialLedger(uint32_t sequence, uint32_t maxLedger, etlng::InitialLoadObserverInterface& observer) override
     {
         return mock_->loadInitialLedger(sequence, maxLedger, observer);

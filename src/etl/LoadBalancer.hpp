@@ -184,7 +184,7 @@ public:
      * @param retryAfter Time to wait between retries (2 seconds by default)
      * @return A std::vector<std::string> The ledger data
      */
-    etlng::InitialLedgerLoadResult<std::vector<std::string>>
+    etlng::InitialLedgerLoadResult
     loadInitialLedger(
         [[maybe_unused]] uint32_t sequence,
         [[maybe_unused]] etlng::InitialLoadObserverInterface& observer,

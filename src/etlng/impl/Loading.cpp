@@ -59,7 +59,7 @@ Loader::Loader(
 {
 }
 
-std::expected<void, Error>
+std::expected<void, LoaderError>
 Loader::load(model::LedgerData const& data)
 {
     try {
@@ -78,13 +78,13 @@ Loader::load(model::LedgerData const& data)
             if (not success) {
                 state_->writeConflict = true;
                 LOG(log_.warn()) << "Another node wrote a ledger into the DB - we have a write conflict";
-                return std::unexpected(Error::WriteConflict);
+                return std::unexpected(LoaderError::WriteConflict);
             }
         }
     } catch (std::runtime_error const& e) {
         LOG(log_.fatal()) << "Failed to load " << data.seq << ": " << e.what();
         amendmentBlockHandler_->notifyAmendmentBlocked();
-        return std::unexpected(Error::AmendmentBlocked);
+        return std::unexpected(LoaderError::AmendmentBlocked);
     }
 
     return {};

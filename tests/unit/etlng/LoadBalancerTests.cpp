@@ -460,7 +460,7 @@ struct LoadBalancerLoadInitialLedgerNgTests : LoadBalancerOnConnectHookNgTests {
 protected:
     uint32_t const sequence_ = 123;
     uint32_t const numMarkers_ = 16;
-    InitialLedgerLoadResult<std::vector<std::string>> const response_{std::vector<std::string>{"1", "2", "3"}};
+    InitialLedgerLoadResult const response_{std::vector<std::string>{"1", "2", "3"}};
     testing::StrictMock<InitialLoadObserverMock> observer_;
 };
 
@@ -509,7 +509,7 @@ struct LoadBalancerLoadInitialLedgerCustomNumMarkersNgTests : LoadBalancerConstr
 protected:
     uint32_t const numMarkers_ = 16;
     uint32_t const sequence_ = 123;
-    InitialLedgerLoadResult<std::vector<std::string>> const response_{std::vector<std::string>{"1", "2", "3"}};
+    InitialLedgerLoadResult const response_{std::vector<std::string>{"1", "2", "3"}};
     testing::StrictMock<InitialLoadObserverMock> observer_;
 };
 
