@@ -20,11 +20,13 @@
 #include "etlng/impl/GrpcSource.hpp"
 
 #include "etlng/InitialLoadObserverInterface.hpp"
+#include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/impl/AsyncGrpcCall.hpp"
 #include "util/Assert.hpp"
 #include "util/log/Logger.hpp"
 #include "web/Resolver.hpp"
 
+#include <boost/asio/spawn.hpp>
 #include <fmt/core.h>
 #include <grpcpp/client_context.h>
 #include <grpcpp/security/credentials.h>
@@ -33,9 +35,11 @@
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -60,6 +64,7 @@ namespace etlng::impl {
 
 GrpcSource::GrpcSource(std::string const& ip, std::string const& grpcPort)
     : log_(fmt::format("ETL_Grpc[{}:{}]", ip, grpcPort))
+    , initialLoadShouldStop_(std::make_unique<std::atomic_bool>(false))
 {
     try {
         grpc::ChannelArguments chArgs;
@@ -103,7 +108,7 @@ GrpcSource::fetchLedger(uint32_t sequence, bool getObjects, bool getObjectNeighb
     return {status, std::move(response)};
 }
 
-std::pair<std::vector<std::string>, bool>
+InitialLedgerLoadResult<std::vector<std::string>>
 GrpcSource::loadInitialLedger(
     uint32_t const sequence,
     uint32_t const numMarkers,
@@ -111,7 +116,7 @@ GrpcSource::loadInitialLedger(
 )
 {
     if (!stub_)
-        return {{}, false};
+        return std::unexpected{InitialLedgerLoadError::Error};
 
     std::vector<AsyncGrpcCall> calls = AsyncGrpcCall::makeAsyncCalls(sequence, numMarkers);
 
@@ -131,9 +136,9 @@ GrpcSource::loadInitialLedger(
         ASSERT(tag != nullptr, "Tag can't be null.");
         auto ptr = static_cast<AsyncGrpcCall*>(tag);
 
-        if (!ok) {
-            LOG(log_.error()) << "loadInitialLedger - ok is false";
-            return {{}, false};  // cancelled
+        if (not ok or initialLoadShouldStop_->load()) {
+            LOG(log_.error()) << "loadInitialLedger cancelled";
+            return std::unexpected{InitialLedgerLoadError::Cancel};
         }
 
         LOG(log_.trace()) << "Marker prefix = " << ptr->getMarkerPrefix();
@@ -151,7 +156,16 @@ GrpcSource::loadInitialLedger(
             abort = true;
     }
 
-    return {std::move(edgeKeys), !abort};
+    if (abort)
+        return std::unexpected{InitialLedgerLoadError::Error};
+
+    return std::move(edgeKeys);
+}
+
+void
+GrpcSource::stop(boost::asio::yield_context)
+{
+    initialLoadShouldStop_->store(true);
 }
 
 }  // namespace etlng::impl

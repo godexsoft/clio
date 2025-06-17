@@ -210,30 +210,34 @@ LoadBalancer::LoadBalancer(
     }
 }
 
-std::vector<std::string>
+InitialLedgerLoadResult<std::vector<std::string>>
 LoadBalancer::loadInitialLedger(
     uint32_t sequence,
     etlng::InitialLoadObserverInterface& loadObserver,
     std::chrono::steady_clock::duration retryAfter
 )
 {
-    std::vector<std::string> response;
+    InitialLedgerLoadResult<std::vector<std::string>> response;
+
     execute(
         [this, &response, &sequence, &loadObserver](auto& source) {
-            auto [data, res] = source->loadInitialLedger(sequence, downloadRanges_, loadObserver);
+            auto res = source->loadInitialLedger(sequence, downloadRanges_, loadObserver);
 
-            if (!res) {
-                LOG(log_.error()) << "Failed to download initial ledger."
-                                  << " Sequence = " << sequence << " source = " << source->toString();
-            } else {
-                response = std::move(data);
+            if (not res.has_value()) {
+                if (res.error() == InitialLedgerLoadError::Error) {
+                    LOG(log_.error()) << "Failed to download initial ledger."
+                                      << " Sequence = " << sequence << " source = " << source->toString();
+                    return false;  // should retry on error
+                }
             }
 
-            return res;
+            response = std::move(res);  // cancelled or data received
+            return true;
         },
         sequence,
         retryAfter
     );
+
     return response;
 }
 

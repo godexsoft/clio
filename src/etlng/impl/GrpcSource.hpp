@@ -20,12 +20,15 @@
 #pragma once
 
 #include "etlng/InitialLoadObserverInterface.hpp"
+#include "etlng/LoadBalancerInterface.hpp"
 #include "util/log/Logger.hpp"
 
+#include <boost/asio/spawn.hpp>
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -37,6 +40,7 @@ namespace etlng::impl {
 class GrpcSource {
     util::Logger log_;
     std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> stub_;
+    std::unique_ptr<std::atomic_bool> initialLoadShouldStop_;
 
 public:
     GrpcSource(std::string const& ip, std::string const& grpcPort);
@@ -61,10 +65,12 @@ public:
      * @param sequence Sequence of the ledger to download
      * @param numMarkers Number of markers to generate for async calls
      * @param observer InitialLoadObserverInterface implementation
-     * @return A std::pair of the data and a bool indicating whether the download was successful
+     * @return Downloaded data or an indication of error or cancellation
      */
-    std::pair<std::vector<std::string>, bool>
+    InitialLedgerLoadResult<std::vector<std::string>>
     loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etlng::InitialLoadObserverInterface& observer);
+
+    void stop(boost::asio::yield_context);
 };
 
 }  // namespace etlng::impl

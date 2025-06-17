@@ -133,9 +133,7 @@ std::optional<ripple::LedgerHeader>
 Loader::loadInitialLedger(model::LedgerData const& data)
 {
     try {
-        // check that database is actually empty
-        auto rng = backend_->hardFetchLedgerRangeNoThrow();
-        if (rng) {
+        if (auto const rng = backend_->hardFetchLedgerRangeNoThrow(); rng.has_value()) {
             ASSERT(false, "Database is not empty");
             return std::nullopt;
         }

@@ -488,9 +488,7 @@ TEST_F(ETLServiceTests, GiveUpWriterAfterWriteConflict)
     EXPECT_FALSE(systemState_->writeConflict);  // and removes write conflict flag
 }
 
-struct ETLServiceAssertTests : common::util::WithMockAssert, ETLServiceTests {};
-
-TEST_F(ETLServiceAssertTests, FailToLoadInitialLedger)
+TEST_F(ETLServiceTests, CancelledLoadInitialLedger)
 {
     EXPECT_CALL(*backend_, hardFetchLedgerRange).WillOnce(testing::Return(std::nullopt));
     EXPECT_CALL(*ledgers_, getMostRecent()).WillRepeatedly(testing::Return(kSEQ));
@@ -501,10 +499,10 @@ TEST_F(ETLServiceAssertTests, FailToLoadInitialLedger)
     EXPECT_CALL(*loader_, loadInitialLedger).Times(0);
     EXPECT_CALL(*taskManagerProvider_, make).Times(0);
 
-    EXPECT_CLIO_ASSERT_FAIL({ service_.run(); });
+    service_.run();
 }
 
-TEST_F(ETLServiceAssertTests, WaitForValidatedLedgerIsAbortedLeadToFailToLoadInitialLedger)
+TEST_F(ETLServiceTests, WaitForValidatedLedgerIsAbortedLeadToFailToLoadInitialLedger)
 {
     testing::Sequence const s;
     EXPECT_CALL(*backend_, hardFetchLedgerRange).WillOnce(testing::Return(std::nullopt));
@@ -517,5 +515,5 @@ TEST_F(ETLServiceAssertTests, WaitForValidatedLedgerIsAbortedLeadToFailToLoadIni
     EXPECT_CALL(*loader_, loadInitialLedger).Times(0);
     EXPECT_CALL(*taskManagerProvider_, make).Times(0);
 
-    EXPECT_CLIO_ASSERT_FAIL({ service_.run(); });
+    service_.run();
 }

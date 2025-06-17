@@ -184,9 +184,8 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, GetLedgerDataNotFound)
             return grpc::Status{grpc::StatusCode::NOT_FOUND, "Not found"};
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
-    EXPECT_TRUE(data.empty());
-    EXPECT_FALSE(success);
+    auto const res = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    EXPECT_FALSE(res.has_value());
 }
 
 TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
@@ -219,12 +218,12 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
             EXPECT_EQ(data.size(), 1);
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    auto const res = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
 
-    EXPECT_TRUE(success);
-    EXPECT_EQ(data.size(), numMarkers_);
+    EXPECT_TRUE(res.has_value());
+    EXPECT_EQ(res.value().size(), numMarkers_);
 
-    EXPECT_EQ(data, std::vector<std::string>(4, keyStr));
+    EXPECT_EQ(res.value(), std::vector<std::string>(4, keyStr));
 }
 
 TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
@@ -284,10 +283,10 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorre
             total += data.size();
         });
 
-    auto const [data, success] = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
+    auto const res = grpcSource_.loadInitialLedger(sequence_, numMarkers_, observer_);
 
-    EXPECT_TRUE(success);
-    EXPECT_EQ(data.size(), numMarkers_);
+    EXPECT_TRUE(res.has_value());
+    EXPECT_EQ(res.value().size(), numMarkers_);
     EXPECT_EQ(total, totalKeys);
     EXPECT_EQ(totalWithLastKey + totalWithoutLastKey, numMarkers_ * batchesPerMarker);
     EXPECT_EQ(totalWithoutLastKey, numMarkers_);
