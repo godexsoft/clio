@@ -159,7 +159,7 @@ GrpcSource::loadInitialLedger(
     if (abort)
         return std::unexpected{InitialLedgerLoadError::Error};
 
-    return std::move(edgeKeys);
+    return edgeKeys;
 }
 
 void
