@@ -27,6 +27,7 @@
 #include "etlng/ETLService.hpp"
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
+#include "etlng/LoadBalancerInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/MonitorInterface.hpp"
@@ -516,4 +517,27 @@ TEST_F(ETLServiceTests, WaitForValidatedLedgerIsAbortedLeadToFailToLoadInitialLe
     EXPECT_CALL(*taskManagerProvider_, make).Times(0);
 
     service_.run();
+}
+
+TEST_F(ETLServiceTests, RunStopsIfInitialLoadIsCancelledByBalancer)
+{
+    constexpr uint32_t kMOCK_START_SEQUENCE = 123u;
+    systemState_->isStrictReadonly = false;
+
+    testing::Sequence const s;
+    EXPECT_CALL(*backend_, hardFetchLedgerRange).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*ledgers_, getMostRecent).InSequence(s).WillOnce(testing::Return(kMOCK_START_SEQUENCE));
+    EXPECT_CALL(*ledgers_, getMostRecent).InSequence(s).WillOnce(testing::Return(kMOCK_START_SEQUENCE + 10));
+
+    auto dummyLedgerData = createTestData(kMOCK_START_SEQUENCE);
+    EXPECT_CALL(*extractor_, extractLedgerOnly(kMOCK_START_SEQUENCE)).WillOnce(testing::Return(dummyLedgerData));
+    EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_))
+        .WillOnce(testing::Return(std::unexpected{etlng::InitialLedgerLoadError::Cancel}));
+
+    service_.run();
+    service_.stop();
+
+    EXPECT_TRUE(systemState_->isWriting);
+    EXPECT_FALSE(service_.isAmendmentBlocked());
+    EXPECT_FALSE(service_.isCorruptionDetected());
 }
