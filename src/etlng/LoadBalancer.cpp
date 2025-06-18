@@ -223,12 +223,10 @@ LoadBalancer::loadInitialLedger(
         [this, &response, &sequence, &loadObserver](auto& source) {
             auto res = source->loadInitialLedger(sequence, downloadRanges_, loadObserver);
 
-            if (not res.has_value()) {
-                if (res.error() == InitialLedgerLoadError::Error) {
-                    LOG(log_.error()) << "Failed to download initial ledger."
-                                      << " Sequence = " << sequence << " source = " << source->toString();
-                    return false;  // should retry on error
-                }
+            if (not res.has_value() and res.error() == InitialLedgerLoadError::Error) {
+                LOG(log_.error()) << "Failed to download initial ledger."
+                                  << " Sequence = " << sequence << " source = " << source->toString();
+                return false;  // should retry on error
             }
 
             response = std::move(res);  // cancelled or data received

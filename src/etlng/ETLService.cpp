@@ -235,7 +235,7 @@ ETLService::loadInitialLedgerIfNeeded()
                         // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
                         auto res = balancer_->loadInitialLedger(seq, *initialLoadObserver_);
                         if (not res.has_value() and res.error() == InitialLedgerLoadError::Cancel) {
-                            LOG(log_.info()) << "Initial ledger load got cancelled";
+                            LOG(log_.debug()) << "Initial ledger load got cancelled";
                             return std::nullopt;
                         }
 
