@@ -124,19 +124,26 @@ TaskManager::spawnLoader(TaskQueue& queue)
                 auto [expectedSuccess, nanos] =
                     util::timed<std::chrono::nanoseconds>([&] { return loader_.get().load(*data); });
 
-                if (not expectedSuccess.has_value()) {
-                    if (expectedSuccess.error() == LoaderError::WriteConflict) {
-                        LOG(log_.warn()) << "Immediately stopping loader on write conflict"
-                                         << "; latest ledger cache loaded for " << data->seq;
-                        monitor_.get().notifyWriteConflict(data->seq);
-                        break;
+                auto const shouldExitOnError = [&] {
+                    if (expectedSuccess.has_value())
+                        return false;
+
+                    switch (expectedSuccess.error()) {
+                        case LoaderError::WriteConflict:
+                            LOG(log_.warn()) << "Immediately stopping loader on write conflict"
+                                             << "; latest ledger cache loaded for " << data->seq;
+                            monitor_.get().notifyWriteConflict(data->seq);
+                            return true;
+                        case LoaderError::AmendmentBlocked:
+                            LOG(log_.warn()) << "Immediately stopping loader on amendment block";
+                            return true;
                     }
 
-                    if (expectedSuccess.error() == LoaderError::AmendmentBlocked) {
-                        LOG(log_.warn()) << "Immediately stopping loader on amendment block";
-                        break;
-                    }
-                }
+                    std::unreachable();
+                }();
+
+                if (shouldExitOnError)
+                    break;
 
                 auto const seconds = nanos / util::kNANO_PER_SECOND;
                 auto const txnCount = data->transactions.size();

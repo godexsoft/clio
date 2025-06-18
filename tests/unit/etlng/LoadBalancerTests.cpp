@@ -497,7 +497,7 @@ TEST_F(LoadBalancerLoadInitialLedgerNgTests, load_source0ReturnsStatusFalse)
 {
     EXPECT_CALL(sourceFactory_.sourceAt(0), hasLedger(sequence_)).WillOnce(Return(true));
     EXPECT_CALL(sourceFactory_.sourceAt(0), loadInitialLedger(sequence_, numMarkers_, testing::_))
-        .WillOnce(Return(std::unexpected{InitialLedgerLoadError::Error}));
+        .WillOnce(Return(std::unexpected{InitialLedgerLoadError::Errored}));
     EXPECT_CALL(sourceFactory_.sourceAt(1), hasLedger(sequence_)).WillOnce(Return(true));
     EXPECT_CALL(sourceFactory_.sourceAt(1), loadInitialLedger(sequence_, numMarkers_, testing::_))
         .WillOnce(Return(response_));

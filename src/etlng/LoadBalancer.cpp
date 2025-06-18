@@ -223,7 +223,7 @@ LoadBalancer::loadInitialLedger(
         [this, &response, &sequence, &loadObserver](auto& source) {
             auto res = source->loadInitialLedger(sequence, downloadRanges_, loadObserver);
 
-            if (not res.has_value() and res.error() == InitialLedgerLoadError::Error) {
+            if (not res.has_value() and res.error() == InitialLedgerLoadError::Errored) {
                 LOG(log_.error()) << "Failed to download initial ledger."
                                   << " Sequence = " << sequence << " source = " << source->toString();
                 return false;  // should retry on error

@@ -203,7 +203,7 @@ TEST_F(SourceImplNgTest, loadInitialLedgerErrorPath)
     auto observerMock = testing::StrictMock<InitialLoadObserverMock>();
 
     EXPECT_CALL(grpcSourceMock_, loadInitialLedger(ledgerSeq, numMarkers, testing::_))
-        .WillOnce(Return(std::unexpected{etlng::InitialLedgerLoadError::Error}));
+        .WillOnce(Return(std::unexpected{etlng::InitialLedgerLoadError::Errored}));
     auto const res = source_.loadInitialLedger(ledgerSeq, numMarkers, observerMock);
 
     EXPECT_FALSE(res.has_value());

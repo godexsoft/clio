@@ -43,13 +43,13 @@ namespace etlng {
  * @brief Represents possible errors for initial ledger load
  */
 enum class InitialLedgerLoadError {
-    Cancel, /*< Indicating the initial load got cancelled by user */
-    Error,  /*< Indicating some error happened during initial ledger load */
+    Cancelled, /*< Indicating the initial load got cancelled by user */
+    Errored,   /*< Indicating some error happened during initial ledger load */
 };
 
 /**
  * @brief The result type of the initial ledger load
- * @note The value channel represents edge keys
+ * @note The successful value represents edge keys
  */
 using InitialLedgerLoadResult = std::expected<std::vector<std::string>, InitialLedgerLoadError>;
 

@@ -356,5 +356,5 @@ TEST_F(GrpcSourceStopTests, LoadInitialLedgerStopsWhenRequested)
     auto const res = loadTask.get();
 
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error(), etlng::InitialLedgerLoadError::Cancel);
+    EXPECT_EQ(res.error(), etlng::InitialLedgerLoadError::Cancelled);
 }

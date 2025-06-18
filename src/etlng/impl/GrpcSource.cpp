@@ -39,6 +39,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -115,8 +116,11 @@ GrpcSource::loadInitialLedger(
     etlng::InitialLoadObserverInterface& observer
 )
 {
+    if (*initialLoadShouldStop_)
+        return std::unexpected{InitialLedgerLoadError::Cancelled};
+
     if (!stub_)
-        return std::unexpected{InitialLedgerLoadError::Error};
+        return std::unexpected{InitialLedgerLoadError::Errored};
 
     std::vector<AsyncGrpcCall> calls = AsyncGrpcCall::makeAsyncCalls(sequence, numMarkers);
 
@@ -136,9 +140,9 @@ GrpcSource::loadInitialLedger(
         ASSERT(tag != nullptr, "Tag can't be null.");
         auto ptr = static_cast<AsyncGrpcCall*>(tag);
 
-        if (not ok or initialLoadShouldStop_->load()) {
+        if (not ok or *initialLoadShouldStop_) {
             LOG(log_.error()) << "loadInitialLedger cancelled";
-            return std::unexpected{InitialLedgerLoadError::Cancel};
+            return std::unexpected{InitialLedgerLoadError::Cancelled};
         }
 
         LOG(log_.trace()) << "Marker prefix = " << ptr->getMarkerPrefix();
@@ -157,7 +161,7 @@ GrpcSource::loadInitialLedger(
     }
 
     if (abort)
-        return std::unexpected{InitialLedgerLoadError::Error};
+        return std::unexpected{InitialLedgerLoadError::Errored};
 
     return edgeKeys;
 }

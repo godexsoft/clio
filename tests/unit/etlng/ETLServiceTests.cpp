@@ -532,7 +532,7 @@ TEST_F(ETLServiceTests, RunStopsIfInitialLoadIsCancelledByBalancer)
     auto const dummyLedgerData = createTestData(kMOCK_START_SEQUENCE);
     EXPECT_CALL(*extractor_, extractLedgerOnly(kMOCK_START_SEQUENCE)).WillOnce(testing::Return(dummyLedgerData));
     EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_))
-        .WillOnce(testing::Return(std::unexpected{etlng::InitialLedgerLoadError::Cancel}));
+        .WillOnce(testing::Return(std::unexpected{etlng::InitialLedgerLoadError::Cancelled}));
 
     service_.run();
 
