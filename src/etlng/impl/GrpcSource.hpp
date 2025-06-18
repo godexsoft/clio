@@ -69,7 +69,13 @@ public:
     InitialLedgerLoadResult
     loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etlng::InitialLoadObserverInterface& observer);
 
-    void stop(boost::asio::yield_context);
+    /**
+     * @brief Stop any ongoing operations
+     * @note This is used to cancel any ongoing initial ledger downloads
+     * @param yield The coroutine context
+     */
+    void
+    stop(boost::asio::yield_context yield);
 };
 
 }  // namespace etlng::impl

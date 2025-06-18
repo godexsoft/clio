@@ -529,13 +529,12 @@ TEST_F(ETLServiceTests, RunStopsIfInitialLoadIsCancelledByBalancer)
     EXPECT_CALL(*ledgers_, getMostRecent).InSequence(s).WillOnce(testing::Return(kMOCK_START_SEQUENCE));
     EXPECT_CALL(*ledgers_, getMostRecent).InSequence(s).WillOnce(testing::Return(kMOCK_START_SEQUENCE + 10));
 
-    auto dummyLedgerData = createTestData(kMOCK_START_SEQUENCE);
+    auto const dummyLedgerData = createTestData(kMOCK_START_SEQUENCE);
     EXPECT_CALL(*extractor_, extractLedgerOnly(kMOCK_START_SEQUENCE)).WillOnce(testing::Return(dummyLedgerData));
     EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_))
         .WillOnce(testing::Return(std::unexpected{etlng::InitialLedgerLoadError::Cancel}));
 
     service_.run();
-    service_.stop();
 
     EXPECT_TRUE(systemState_->isWriting);
     EXPECT_FALSE(service_.isAmendmentBlocked());

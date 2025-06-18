@@ -71,7 +71,7 @@ public:
      * @param sequence Sequence of ledger to download
      * @param loader InitialLoadObserverInterface implementation
      * @param retryAfter Time to wait between retries (2 seconds by default)
-     * @return A std::vector<std::string> The ledger data
+     * @return A std::expected with ledger edge keys on success, or InitialLedgerLoadError on failure
      */
     [[nodiscard]] virtual InitialLedgerLoadResult
     loadInitialLedger(
