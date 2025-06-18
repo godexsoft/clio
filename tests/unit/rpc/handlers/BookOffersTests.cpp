@@ -327,8 +327,8 @@ generateParameterBookOffersTestBundles()
                 },
                 "domain": 0
             })JSON",
-            .expectedError = "invalidParams",
-            .expectedErrorMessage = "Invalid parameters."
+            .expectedError = "domainMalformed",
+            .expectedErrorMessage = "Unable to parse domain."
         },
         ParameterTestBundle{
             .testName = "Domain_InvalidInt",
@@ -344,8 +344,8 @@ generateParameterBookOffersTestBundles()
                 },
                 "domain": "123"
             })JSON",
-            .expectedError = "invalidParams",
-            .expectedErrorMessage = "domainMalformed"
+            .expectedError = "domainMalformed",
+            .expectedErrorMessage = "Unable to parse domain."
         },
         ParameterTestBundle{
             .testName = "Domain_InvalidObject",
@@ -361,8 +361,8 @@ generateParameterBookOffersTestBundles()
                 },
                 "domain": {}
             })JSON",
-            .expectedError = "invalidParams",
-            .expectedErrorMessage = "Invalid parameters."
+            .expectedError = "domainMalformed",
+            .expectedErrorMessage = "Unable to parse domain."
         },
         ParameterTestBundle{
             .testName = "LimitNotInt",
@@ -1495,7 +1495,7 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaIntSequence)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
+    static auto const kINPUT = json::parse(fmt::format(
         R"JSON({{
             "ledger_index": 30,
             "taker_gets":
@@ -1526,7 +1526,7 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaSequence)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
+    static auto const kINPUT = json::parse(fmt::format(
         R"JSON({{
             "ledger_index": "30",
             "taker_gets":
@@ -1558,7 +1558,7 @@ TEST_F(RPCBookOffersHandlerTest, LedgerNonExistViaHash)
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
+    static auto const kINPUT = json::parse(fmt::format(
         R"JSON({{
             "ledger_hash": "{}",
             "taker_gets":
@@ -1635,7 +1635,7 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto static const kINPUT = json::parse(fmt::format(
+    static auto const kINPUT = json::parse(fmt::format(
         R"JSON({{
             "taker_gets":
             {{
@@ -1709,7 +1709,7 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto static const kINPUT = json::parse(fmt::format(
+    static auto const kINPUT = json::parse(fmt::format(
         R"JSON({{
             "taker_gets":
             {{
