@@ -21,10 +21,10 @@
 #include "rpc/common/Types.hpp"
 #include "rpc/handlers/VersionHandler.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
@@ -53,11 +53,11 @@ TEST_F(RPCVersionHandlerTest, Default)
     };
 
     boost::json::value jsonData = boost::json::parse(fmt::format(
-        R"({{
+        R"JSON({{
             "api_version.min": {},
             "api_version.max": {},
             "api_version.default": {}
-        }})",
+        }})JSON",
         kMIN_API_VERSION,
         kMAX_API_VERSION,
         kDEFAULT_API_VERSION

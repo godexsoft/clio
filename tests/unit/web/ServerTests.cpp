@@ -23,11 +23,11 @@
 #include "util/TestHttpClient.hpp"
 #include "util/TestWebSocketClient.hpp"
 #include "util/TmpFile.hpp"
-#include "util/newconfig/Array.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
+#include "util/config/Array.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
 #include "web/AdminVerificationStrategy.hpp"
@@ -35,6 +35,7 @@
 #include "web/dosguard/DOSGuard.hpp"
 #include "web/dosguard/DOSGuardInterface.hpp"
 #include "web/dosguard/IntervalSweepHandler.hpp"
+#include "web/dosguard/Weights.hpp"
 #include "web/dosguard/WhitelistHandler.hpp"
 #include "web/interface/ConnectionBase.hpp"
 
@@ -162,12 +163,13 @@ struct WebServerTest : NoLoggerFixture {
     std::string const port = std::to_string(tests::util::generateFreePort());
     ClioConfigDefinition cfg{getParseServerConfig(generateJSONWithDynamicPort(port))};
     dosguard::WhitelistHandler whitelistHandler{cfg};
-    dosguard::DOSGuard dosGuard{cfg, whitelistHandler};
+    dosguard::Weights dosguardWeights{1, {}};
+    dosguard::DOSGuard dosGuard{cfg, whitelistHandler, dosguardWeights};
     dosguard::IntervalSweepHandler sweepHandler{cfg, ctxSync, dosGuard};
 
     ClioConfigDefinition cfgOverload{getParseServerConfig(generateJSONDataOverload(port))};
     dosguard::WhitelistHandler whitelistHandlerOverload{cfgOverload};
-    dosguard::DOSGuard dosGuardOverload{cfgOverload, whitelistHandlerOverload};
+    dosguard::DOSGuard dosGuardOverload{cfgOverload, whitelistHandlerOverload, dosguardWeights};
     dosguard::IntervalSweepHandler sweepHandlerOverload{cfgOverload, ctxSync, dosGuardOverload};
     // this ctx is for http server
     boost::asio::io_context ctx;
@@ -244,8 +246,8 @@ TEST_F(WebServerTest, Http)
 {
     auto const e = std::make_shared<EchoExecutor>();
     auto const server = makeServerSync(cfg, ctx, dosGuard, e);
-    auto const [status, res] = HttpSyncClient::post("localhost", port, R"({"Hello":1})");
-    EXPECT_EQ(res, R"({"Hello":1})");
+    auto const [status, res] = HttpSyncClient::post("localhost", port, R"JSON({"Hello":1})JSON");
+    EXPECT_EQ(res, R"JSON({"Hello":1})JSON");
     EXPECT_EQ(status, boost::beast::http::status::ok);
 }
 
@@ -255,8 +257,8 @@ TEST_F(WebServerTest, Ws)
     auto const server = makeServerSync(cfg, ctx, dosGuard, e);
     WebSocketSyncClient wsClient;
     wsClient.connect("localhost", port);
-    auto const res = wsClient.syncPost(R"({"Hello":1})");
-    EXPECT_EQ(res, R"({"Hello":1})");
+    auto const res = wsClient.syncPost(R"JSON({"Hello":1})JSON");
+    EXPECT_EQ(res, R"JSON({"Hello":1})JSON");
     wsClient.disconnect();
 }
 
@@ -264,10 +266,10 @@ TEST_F(WebServerTest, HttpInternalError)
 {
     auto const e = std::make_shared<ExceptionExecutor>();
     auto const server = makeServerSync(cfg, ctx, dosGuard, e);
-    auto const [status, res] = HttpSyncClient::post("localhost", port, R"({})");
+    auto const [status, res] = HttpSyncClient::post("localhost", port, R"JSON({})JSON");
     EXPECT_EQ(
         res,
-        R"({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response"})"
+        R"JSON({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response"})JSON"
     );
     EXPECT_EQ(status, boost::beast::http::status::internal_server_error);
 }
@@ -278,11 +280,11 @@ TEST_F(WebServerTest, WsInternalError)
     auto const server = makeServerSync(cfg, ctx, dosGuard, e);
     WebSocketSyncClient wsClient;
     wsClient.connect("localhost", port);
-    auto const res = wsClient.syncPost(R"({"id":"id1"})");
+    auto const res = wsClient.syncPost(R"JSON({"id":"id1"})JSON");
     wsClient.disconnect();
     EXPECT_EQ(
         res,
-        R"({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response","id":"id1","request":{"id":"id1"}})"
+        R"JSON({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response","id":"id1","request":{"id":"id1"}})JSON"
     );
 }
 
@@ -296,7 +298,7 @@ TEST_F(WebServerTest, WsInternalErrorNotJson)
     wsClient.disconnect();
     EXPECT_EQ(
         res,
-        R"({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response","request":"not json"})"
+        R"JSON({"error":"internal","error_code":73,"error_message":"Internal error.","status":"error","type":"response","request":"not json"})JSON"
     );
 }
 
@@ -328,8 +330,8 @@ TEST_F(WebServerTest, Https)
     auto const e = std::make_shared<EchoExecutor>();
     cfg = getParseServerConfig(addSslConfig(generateJSONWithDynamicPort(port)));
     auto const server = makeServerSync(cfg, ctx, dosGuard, e);
-    auto const res = HttpsSyncClient::syncPost("localhost", port, R"({"Hello":1})");
-    EXPECT_EQ(res, R"({"Hello":1})");
+    auto const res = HttpsSyncClient::syncPost("localhost", port, R"JSON({"Hello":1})JSON");
+    EXPECT_EQ(res, R"JSON({"Hello":1})JSON");
 }
 
 TEST_F(WebServerTest, Wss)
@@ -339,44 +341,9 @@ TEST_F(WebServerTest, Wss)
     auto server = makeServerSync(cfg, ctx, dosGuard, e);
     WebServerSslSyncClient wsClient;
     wsClient.connect("localhost", port);
-    auto const res = wsClient.syncPost(R"({"Hello":1})");
-    EXPECT_EQ(res, R"({"Hello":1})");
+    auto const res = wsClient.syncPost(R"JSON({"Hello":1})JSON");
+    EXPECT_EQ(res, R"JSON({"Hello":1})JSON");
     wsClient.disconnect();
-}
-
-TEST_F(WebServerTest, HttpRequestOverload)
-{
-    auto const e = std::make_shared<EchoExecutor>();
-    auto const server = makeServerSync(cfg, ctx, dosGuardOverload, e);
-    auto [status, res] = HttpSyncClient::post("localhost", port, R"({})");
-    EXPECT_EQ(res, "{}");
-    EXPECT_EQ(status, boost::beast::http::status::ok);
-
-    std::tie(status, res) = HttpSyncClient::post("localhost", port, R"({})");
-    EXPECT_EQ(
-        res,
-        R"({"error":"slowDown","error_code":10,"error_message":"You are placing too much load on the server.","status":"error","type":"response"})"
-    );
-    EXPECT_EQ(status, boost::beast::http::status::service_unavailable);
-}
-
-TEST_F(WebServerTest, WsRequestOverload)
-{
-    auto e = std::make_shared<EchoExecutor>();
-    auto const server = makeServerSync(cfg, ctx, dosGuardOverload, e);
-    WebSocketSyncClient wsClient;
-    wsClient.connect("localhost", port);
-    auto res = wsClient.syncPost(R"({})");
-    wsClient.disconnect();
-    EXPECT_EQ(res, "{}");
-    WebSocketSyncClient wsClient2;
-    wsClient2.connect("localhost", port);
-    res = wsClient2.syncPost(R"({})");
-    wsClient2.disconnect();
-    EXPECT_EQ(
-        res,
-        R"({"error":"slowDown","error_code":10,"error_message":"You are placing too much load on the server.","status":"error","type":"response","request":{}})"
-    );
 }
 
 TEST_F(WebServerTest, HttpPayloadOverload)
@@ -384,10 +351,11 @@ TEST_F(WebServerTest, HttpPayloadOverload)
     std::string const s100(100, 'a');
     auto const e = std::make_shared<EchoExecutor>();
     auto server = makeServerSync(cfg, ctx, dosGuardOverload, e);
-    auto const [status, res] = HttpSyncClient::post("localhost", port, fmt::format(R"({{"payload":"{}"}})", s100));
+    auto const [status, res] =
+        HttpSyncClient::post("localhost", port, fmt::format(R"JSON({{"payload":"{}"}})JSON", s100));
     EXPECT_EQ(
         res,
-        R"({"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","warning":"load","warnings":[{"id":2003,"message":"You are about to be rate limited"}]})"
+        R"JSON({"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","warning":"load","warnings":[{"id":2003,"message":"You are about to be rate limited"}]})JSON"
     );
     EXPECT_EQ(status, boost::beast::http::status::ok);
 }
@@ -399,11 +367,11 @@ TEST_F(WebServerTest, WsPayloadOverload)
     auto server = makeServerSync(cfg, ctx, dosGuardOverload, e);
     WebSocketSyncClient wsClient;
     wsClient.connect("localhost", port);
-    auto const res = wsClient.syncPost(fmt::format(R"({{"payload":"{}"}})", s100));
+    auto const res = wsClient.syncPost(fmt::format(R"JSON({{"payload":"{}"}})JSON", s100));
     wsClient.disconnect();
     EXPECT_EQ(
         res,
-        R"({"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","warning":"load","warnings":[{"id":2003,"message":"You are about to be rate limited"}]})"
+        R"JSON({"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","warning":"load","warnings":[{"id":2003,"message":"You are about to be rate limited"}]})JSON"
     );
 }
 

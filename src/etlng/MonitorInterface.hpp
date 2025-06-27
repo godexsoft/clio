@@ -36,9 +36,24 @@ namespace etlng {
 class MonitorInterface {
 public:
     static constexpr auto kDEFAULT_REPEAT_INTERVAL = std::chrono::seconds{1};
-    using SignalType = boost::signals2::signal<void(uint32_t)>;
+    using NewSequenceSignalType = boost::signals2::signal<void(uint32_t)>;
+    using DbStalledSignalType = boost::signals2::signal<void()>;
 
     virtual ~MonitorInterface() = default;
+
+    /**
+     * @brief Allows the loading process to notify of a freshly committed ledger
+     * @param seq The ledger sequence loaded
+     */
+    virtual void
+    notifySequenceLoaded(uint32_t seq) = 0;
+
+    /**
+     * @brief Notifies the monitor of a write conflict
+     * @param seq The sequence number of the ledger that encountered a write conflict
+     */
+    virtual void
+    notifyWriteConflict(uint32_t seq) = 0;
 
     /**
      * @brief Allows clients to get notified when a new ledger becomes available in Clio's database
@@ -47,7 +62,16 @@ public:
      * @return A connection object that automatically disconnects the subscription once destroyed
      */
     [[nodiscard]] virtual boost::signals2::scoped_connection
-    subscribe(SignalType::slot_type const& subscriber) = 0;
+    subscribeToNewSequence(NewSequenceSignalType::slot_type const& subscriber) = 0;
+
+    /**
+     * @brief Allows clients to get notified when no database update is detected for a configured period.
+     *
+     * @param subscriber The slot to connect
+     * @return A connection object that automatically disconnects the subscription once destroyed
+     */
+    [[nodiscard]] virtual boost::signals2::scoped_connection
+    subscribeToDbStalled(DbStalledSignalType::slot_type const& subscriber) = 0;
 
     /**
      * @brief Run the monitor service

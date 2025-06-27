@@ -37,15 +37,18 @@
 #include "rpc/WorkQueue.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/HandlerProvider.hpp"
+#include "util/Random.hpp"
+#include "util/async/context/BasicExecutionContext.hpp"
 #include "util/build/Build.hpp"
+#include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
 #include "util/prometheus/Prometheus.hpp"
 #include "web/AdminVerificationStrategy.hpp"
 #include "web/RPCServerHandler.hpp"
 #include "web/Server.hpp"
 #include "web/dosguard/DOSGuard.hpp"
 #include "web/dosguard/IntervalSweepHandler.hpp"
+#include "web/dosguard/Weights.hpp"
 #include "web/dosguard/WhitelistHandler.hpp"
 #include "web/ng/Connection.hpp"
 #include "web/ng/RPCServerHandler.hpp"
@@ -138,9 +141,14 @@ ClioApplication::run(bool const useNgWebServer)
     // This is not the only io context in the application.
     boost::asio::io_context ioc{threads};
 
+    // Similarly we need a context to run ETLng on
+    // In the future we can remove the raw ioc and use ctx instead
+    util::async::CoroExecutionContext ctx{threads};
+
     // Rate limiter, to prevent abuse
     auto whitelistHandler = web::dosguard::WhitelistHandler{config_};
-    auto dosGuard = web::dosguard::DOSGuard{config_, whitelistHandler};
+    auto const dosguardWeights = web::dosguard::Weights::make(config_);
+    auto dosGuard = web::dosguard::DOSGuard{config_, whitelistHandler, dosguardWeights};
     auto sweepHandler = web::dosguard::IntervalSweepHandler{config_, ioc, dosGuard};
     auto cache = data::LedgerCache{};
 
@@ -173,14 +181,19 @@ ClioApplication::run(bool const useNgWebServer)
     // The server uses the balancer to forward RPCs to a rippled node.
     // The balancer itself publishes to streams (transactions_proposed and accounts_proposed)
     auto balancer = [&] -> std::shared_ptr<etlng::LoadBalancerInterface> {
-        if (config_.get<bool>("__ng_etl"))
-            return etlng::LoadBalancer::makeLoadBalancer(config_, ioc, backend, subscriptions, ledgers);
+        if (config_.get<bool>("__ng_etl")) {
+            return etlng::LoadBalancer::makeLoadBalancer(
+                config_, ioc, backend, subscriptions, std::make_unique<util::MTRandomGenerator>(), ledgers
+            );
+        }
 
-        return etl::LoadBalancer::makeLoadBalancer(config_, ioc, backend, subscriptions, ledgers);
+        return etl::LoadBalancer::makeLoadBalancer(
+            config_, ioc, backend, subscriptions, std::make_unique<util::MTRandomGenerator>(), ledgers
+        );
     }();
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
-    auto etl = etl::ETLService::makeETLService(config_, ioc, backend, subscriptions, balancer, ledgers);
+    auto etl = etl::ETLService::makeETLService(config_, ioc, ctx, backend, subscriptions, balancer, ledgers);
 
     auto workQueue = rpc::WorkQueue::makeWorkQueue(config_);
     auto counters = rpc::Counters::makeCounters(workQueue);
@@ -194,7 +207,7 @@ ClioApplication::run(bool const useNgWebServer)
         RPCEngineType::makeRPCEngine(config_, backend, balancer, dosGuard, workQueue, counters, handlerProvider);
 
     if (useNgWebServer or config_.get<bool>("server.__ng_web_server")) {
-        web::ng::RPCServerHandler<RPCEngineType> handler{config_, backend, rpcEngine, etl};
+        web::ng::RPCServerHandler<RPCEngineType> handler{config_, backend, rpcEngine, etl, dosGuard};
 
         auto expectedAdminVerifier = web::makeAdminVerificationStrategy(config_);
         if (not expectedAdminVerifier.has_value()) {
@@ -212,7 +225,7 @@ ClioApplication::run(bool const useNgWebServer)
 
         httpServer->onGet("/metrics", MetricsHandler{adminVerifier});
         httpServer->onGet("/health", HealthCheckHandler{});
-        auto requestHandler = RequestHandler{adminVerifier, handler, dosGuard};
+        auto requestHandler = RequestHandler{adminVerifier, handler};
         httpServer->onPost("/", requestHandler);
         httpServer->onWs(std::move(requestHandler));
 
@@ -253,7 +266,7 @@ ClioApplication::run(bool const useNgWebServer)
     }
 
     // Init the web server
-    auto handler = std::make_shared<web::RPCServerHandler<RPCEngineType>>(config_, backend, rpcEngine, etl);
+    auto handler = std::make_shared<web::RPCServerHandler<RPCEngineType>>(config_, backend, rpcEngine, etl, dosGuard);
 
     auto const httpServer = web::makeHttpServer(config_, ioc, dosGuard, handler);
 

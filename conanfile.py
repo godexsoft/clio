@@ -1,10 +1,11 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
-class Clio(ConanFile):
+
+class ClioConan(ConanFile):
     name = 'clio'
     license = 'ISC'
-    author = 'Alex Kremer <akremer@ripple.com>, John Freeman <jfreeman@ripple.com>'
+    author = 'Alex Kremer <akremer@ripple.com>, John Freeman <jfreeman@ripple.com>, Ayaz Salikhov <asalikhov@ripple.com>'
     url = 'https://github.com/xrplf/clio'
     description = 'Clio RPC server'
     settings = 'os', 'compiler', 'build_type', 'arch'
@@ -20,17 +21,18 @@ class Clio(ConanFile):
         'coverage': [True, False],            # build for test coverage report; create custom target `clio_tests-ccov`
         'lint': [True, False],                # run clang-tidy checks during compilation
         'snapshot': [True, False],            # build export/import snapshot tool
+        'time_trace': [True, False]           # build using -ftime-trace to create compiler trace reports
     }
 
     requires = [
         'boost/1.83.0',
         'cassandra-cpp-driver/2.17.0',
         'fmt/10.1.1',
-        'protobuf/3.21.9',
+        'protobuf/3.21.12',
         'grpc/1.50.1',
         'openssl/1.1.1v',
-        'xrpl/2.4.0',
-        'clioStubs/1.0',
+        'xrpl/2.5.0-rc1',
+        'clio-stubs/1.0',
         'zlib/1.3.1',
         'libbacktrace/cci.20210118'
     ]
@@ -47,7 +49,8 @@ class Clio(ConanFile):
         'lint': False,
         'docs': False,
         'snapshot': False,
-        
+        'time_trace': False,
+
         'xrpl/*:tests': False,
         'xrpl/*:rocksdb': False,
         'cassandra-cpp-driver/*:shared': False,
@@ -79,11 +82,12 @@ class Clio(ConanFile):
 
     def layout(self):
         cmake_layout(self)
-        # Fix this setting to follow the default introduced in Conan 1.48 
+        # Fix this setting to follow the default introduced in Conan 1.48
         # to align with our build instructions.
         self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
+
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['verbose'] = self.options.verbose
@@ -96,6 +100,11 @@ class Clio(ConanFile):
         tc.variables['packaging'] = self.options.packaging
         tc.variables['benchmark'] = self.options.benchmark
         tc.variables['snapshot'] = self.options.snapshot
+        tc.variables['time_trace'] = self.options.time_trace
+
+        if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:
+            tc.extra_cxxflags = ["-DBOOST_ASIO_DISABLE_CONCEPTS"]
+
         tc.generate()
 
     def build(self):

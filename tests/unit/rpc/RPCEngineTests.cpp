@@ -33,14 +33,15 @@
 #include "util/MockPrometheus.hpp"
 #include "util/NameGenerator.hpp"
 #include "util/Taggable.hpp"
-#include "util/newconfig/Array.hpp"
-#include "util/newconfig/ConfigConstraints.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
+#include "util/config/Array.hpp"
+#include "util/config/ConfigConstraints.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "web/Context.hpp"
 #include "web/dosguard/DOSGuard.hpp"
+#include "web/dosguard/Weights.hpp"
 #include "web/dosguard/WhitelistHandler.hpp"
 
 #include <boost/json/object.hpp>
@@ -52,7 +53,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <variant>
 #include <vector>
 
 using namespace data;
@@ -100,7 +100,8 @@ struct RPCEngineTest : util::prometheus::WithPrometheus,
     util::TagDecoratorFactory tagFactory{cfg};
     WorkQueue queue = WorkQueue::makeWorkQueue(cfg);
     web::dosguard::WhitelistHandler whitelistHandler{cfg};
-    web::dosguard::DOSGuard dosGuard{cfg, whitelistHandler};
+    web::dosguard::Weights weights{1, {}};
+    web::dosguard::DOSGuard dosGuard{cfg, whitelistHandler, weights};
     std::shared_ptr<MockHandlerProvider> handlerProvider = std::make_shared<MockHandlerProvider>();
 };
 
@@ -256,13 +257,11 @@ TEST_P(RPCEngineFlowParameterTest, Test)
         );
 
         auto const res = engine->buildResponse(ctx);
-        auto const status = std::get_if<rpc::Status>(&res.response);
-        auto const response = std::get_if<boost::json::object>(&res.response);
-        ASSERT_EQ(status == nullptr, testBundle.response.has_value());
+        ASSERT_EQ(res.response.has_value(), testBundle.response.has_value());
         if (testBundle.response.has_value()) {
-            EXPECT_EQ(*response, testBundle.response.value());
+            EXPECT_EQ(res.response.value(), testBundle.response.value());
         } else {
-            EXPECT_TRUE(*status == testBundle.status.value());
+            EXPECT_EQ(res.response.error(), testBundle.status.value());
         }
     });
 }
@@ -293,9 +292,8 @@ TEST_F(RPCEngineTest, ThrowDatabaseError)
         );
 
         auto const res = engine->buildResponse(ctx);
-        auto const status = std::get_if<rpc::Status>(&res.response);
-        ASSERT_TRUE(status != nullptr);
-        EXPECT_TRUE(*status == Status{RippledError::rpcTOO_BUSY});
+        ASSERT_FALSE(res.response.has_value());
+        EXPECT_EQ(res.response.error(), Status{RippledError::rpcTOO_BUSY});
     });
 }
 
@@ -325,9 +323,8 @@ TEST_F(RPCEngineTest, ThrowException)
         );
 
         auto const res = engine->buildResponse(ctx);
-        auto const status = std::get_if<rpc::Status>(&res.response);
-        ASSERT_TRUE(status != nullptr);
-        EXPECT_TRUE(*status == Status{RippledError::rpcINTERNAL});
+        ASSERT_FALSE(res.response.has_value());
+        EXPECT_EQ(res.response.error(), Status{RippledError::rpcINTERNAL});
     });
 }
 
@@ -452,8 +449,8 @@ TEST_P(RPCEngineCacheParameterTest, Test)
             );
 
             auto const res = engine->buildResponse(ctx);
-            auto const response = std::get_if<boost::json::object>(&res.response);
-            EXPECT_TRUE(*response == boost::json::parse(R"JSON({ "computed": "world_50"})JSON").as_object());
+            ASSERT_TRUE(res.response.has_value());
+            EXPECT_EQ(res.response.value(), boost::json::parse(R"JSON({ "computed": "world_50"})JSON").as_object());
         });
     }
 }
@@ -497,8 +494,8 @@ TEST_F(RPCEngineTest, NotCacheIfErrorHappen)
             );
 
             auto const res = engine->buildResponse(ctx);
-            auto const error = std::get_if<rpc::Status>(&res.response);
-            EXPECT_TRUE(*error == rpc::Status{"Very custom error"});
+            ASSERT_FALSE(res.response.has_value());
+            EXPECT_EQ(res.response.error(), rpc::Status{"Very custom error"});
         });
     }
 }

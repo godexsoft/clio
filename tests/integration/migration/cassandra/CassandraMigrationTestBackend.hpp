@@ -72,10 +72,10 @@ public:
     void
     writeTxIndexExample(std::string const& hash, std::string const& txType)
     {
-        auto static kINSERT_TX_INDEX_EXAMPLE = [this]() {
+        static auto kINSERT_TX_INDEX_EXAMPLE = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
-                INSERT INTO {} 
+                INSERT INTO {}
                        (hash, tx_type)
                 VALUES (?, ?)
                 )",
@@ -96,7 +96,7 @@ public:
     std::optional<std::string>
     fetchTxTypeViaID(std::string const& hash, boost::asio::yield_context ctx)
     {
-        auto static kFETCH_TX_TYPE = [this]() {
+        static auto kFETCH_TX_TYPE = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
                 SELECT tx_type FROM {} WHERE hash = ?
@@ -129,7 +129,7 @@ public:
     std::optional<std::uint64_t>
     fetchTxIndexTableSize(boost::asio::yield_context ctx)
     {
-        auto static kINSERT_TX_INDEX_EXAMPLE = [this]() {
+        static auto kINSERT_TX_INDEX_EXAMPLE = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
                 SELECT COUNT(*) FROM {}
@@ -168,10 +168,10 @@ public:
     void
     writeLedgerAccountHash(std::uint64_t sequence, std::string const& accountHash)
     {
-        auto static kINSERT_LEDGER_EXAMPLE = [this]() {
+        static auto kINSERT_LEDGER_EXAMPLE = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
-                INSERT INTO {} 
+                INSERT INTO {}
                        (sequence, account_hash)
                 VALUES (?, ?)
                 )",
@@ -192,7 +192,7 @@ public:
     std::optional<ripple::uint256>
     fetchAccountHashViaSequence(std::uint64_t sequence, boost::asio::yield_context ctx)
     {
-        auto static kFETCH_ACCOUNT_HASH = [this]() {
+        static auto kFETCH_ACCOUNT_HASH = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
                 SELECT account_hash FROM {} WHERE sequence = ?
@@ -225,7 +225,7 @@ public:
     std::optional<std::uint64_t>
     fetchLedgerTableSize(boost::asio::yield_context ctx)
     {
-        auto static kINSERT_LEDGER_EXAMPLE = [this]() {
+        static auto kINSERT_LEDGER_EXAMPLE = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
                 SELECT COUNT(*) FROM {}
@@ -280,7 +280,7 @@ public:
     std::optional<std::uint64_t>
     fetchDiffTableSize(boost::asio::yield_context ctx)
     {
-        auto static kCOUNT_DIFF = [this]() {
+        static auto kCOUNT_DIFF = [this]() {
             return handle_.prepare(fmt::format(
                 R"(
                 SELECT COUNT(*) FROM {}
@@ -319,11 +319,11 @@ private:
         statements.emplace_back(fmt::format(
             R"(
             CREATE TABLE IF NOT EXISTS {}
-                   (      
+                   (
                         hash blob,
                      tx_type text,
-                     PRIMARY KEY (hash) 
-                   ) 
+                     PRIMARY KEY (hash)
+                   )
             )",
             data::cassandra::qualifiedTableName(settingsProvider_, "tx_index_example")
         ));
@@ -331,11 +331,11 @@ private:
         statements.emplace_back(fmt::format(
             R"(
             CREATE TABLE IF NOT EXISTS {}
-                   (      
+                   (
                         sequence bigint,
                     account_hash blob,
-                         PRIMARY KEY (sequence) 
-                   ) 
+                         PRIMARY KEY (sequence)
+                   )
             )",
             data::cassandra::qualifiedTableName(settingsProvider_, "ledger_example")
         ));

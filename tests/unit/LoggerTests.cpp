@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include "util/LoggerFixtures.hpp"
+#include "util/config/Array.hpp"
+#include "util/config/ConfigConstraints.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/Array.hpp"
-#include "util/newconfig/ConfigConstraints.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
 
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
@@ -137,7 +137,7 @@ TEST_F(LoggerInitTest, DefaultLogLevel)
 
 TEST_F(LoggerInitTest, ChannelLogLevel)
 {
-    std::string const configStr = R"json(
+    std::string const configStr = R"JSON(
     {
         "log_level": "error",
         "log_channels": [
@@ -147,7 +147,7 @@ TEST_F(LoggerInitTest, ChannelLogLevel)
             }
         ]
     }
-    )json";
+    )JSON";
 
     auto const parsingErrors = config_.parse(ConfigFileJson{boost::json::parse(configStr).as_object()});
     ASSERT_FALSE(parsingErrors.has_value());
@@ -190,7 +190,7 @@ TEST_F(LoggerInitTest, InitReturnsErrorIfCouldNotCreateLogDirectory)
 
 TEST_F(LoggerInitTest, InitReturnsErrorIfProvidedInvalidChannel)
 {
-    auto const jsonStr = R"json(
+    auto const jsonStr = R"JSON(
     {
         "log_channels": [
             {
@@ -198,7 +198,7 @@ TEST_F(LoggerInitTest, InitReturnsErrorIfProvidedInvalidChannel)
                 "log_level": "warn"
             }
         ]
-    })json";
+    })JSON";
 
     auto const json = boost::json::parse(jsonStr).as_object();
     auto const parsingErrors = config_.parse(ConfigFileJson{json});
@@ -216,11 +216,11 @@ TEST_F(LoggerInitTest, LogSizeAndHourRotationCannotBeZero)
     };
 
     auto const jsonStr = fmt::format(
-        R"json({{
+        R"JSON({{
         "{}": 0,
         "{}": 0,
         "{}": 0
-    }})json",
+    }})JSON",
         keys[0],
         keys[1],
         keys[2]

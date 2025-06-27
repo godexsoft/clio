@@ -22,11 +22,11 @@
 #include "data/cassandra/Handle.hpp"
 #include "util/AsioContextTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
-#include "util/newconfig/ConfigConstraints.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
+#include "util/config/ConfigConstraints.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 
 #include <TestGlobals.hpp>
 #include <boost/json/parse.hpp>
@@ -43,7 +43,7 @@
 using namespace util::config;
 
 struct BackendCassandraFactoryTest : SyncAsioContextTest, util::prometheus::WithPrometheus {
-    constexpr static auto kKEYSPACE = "factory_test";
+    static constexpr auto kKEYSPACE = "factory_test";
 
 protected:
     ClioConfigDefinition cfg_{
@@ -84,9 +84,8 @@ protected:
 };
 
 class BackendCassandraFactoryTestWithDB : public BackendCassandraFactoryTest {
-protected:
-    void
-    TearDown() override
+public:
+    ~BackendCassandraFactoryTestWithDB() override
     {
         // drop the keyspace for next test
         data::cassandra::Handle const handle{TestGlobals::instance().backendHost};
@@ -97,21 +96,21 @@ protected:
 
 TEST_F(BackendCassandraFactoryTest, NoSuchBackend)
 {
-    useConfig(R"json( {"database": {"type": "unknown"}} )json");
+    useConfig(R"JSON( {"database": {"type": "unknown"}} )JSON");
     auto cache = data::LedgerCache{};
     EXPECT_THROW(data::makeBackend(cfg_, cache), std::runtime_error);
 }
 
 TEST_F(BackendCassandraFactoryTest, CreateCassandraBackendDBDisconnect)
 {
-    useConfig(R"json(
+    useConfig(R"JSON(
         {"database": {
             "type": "cassandra",
             "cassandra": {
                 "contact_points": "127.0.0.2"
             }
         }}
-    )json");
+    )JSON");
 
     auto cache = data::LedgerCache{};
     EXPECT_THROW(data::makeBackend(cfg_, cache), std::runtime_error);
@@ -147,7 +146,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackend)
 
 TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithEmptyDB)
 {
-    useConfig(R"json( {"read_only": true} )json");
+    useConfig(R"JSON( {"read_only": true} )JSON");
     auto cache = data::LedgerCache{};
     EXPECT_THROW(data::makeBackend(cfg_, cache), std::runtime_error);
 }
@@ -155,7 +154,7 @@ TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithEmpt
 TEST_F(BackendCassandraFactoryTestWithDB, CreateCassandraBackendReadOnlyWithDBReady)
 {
     auto cfgReadOnly = cfg_;
-    ASSERT_FALSE(cfgReadOnly.parse(ConfigFileJson{boost::json::parse(R"json( {"read_only": true} )json").as_object()}));
+    ASSERT_FALSE(cfgReadOnly.parse(ConfigFileJson{boost::json::parse(R"JSON( {"read_only": true} )JSON").as_object()}));
 
     auto cache = data::LedgerCache{};
     EXPECT_TRUE(data::makeBackend(cfg_, cache));

@@ -1,8 +1,9 @@
 name: Restore cache
 description: Find and restores conan and ccache cache
+
 inputs:
   conan_dir:
-    description: Path to .conan directory
+    description: Path to Conan directory
     required: true
   conan_profile:
     description: Conan profile name
@@ -17,7 +18,7 @@ inputs:
   code_coverage:
     description: Whether code coverage is on
     required: true
-    default: 'false'
+    default: "false"
 outputs:
   conan_hash:
     description: Hash to use as a part of conan cache key
@@ -28,6 +29,7 @@ outputs:
   ccache_cache_hit:
     description: True if ccache cache has been downloaded
     value: ${{ steps.ccache_cache.outputs.cache-hit }}
+
 runs:
   using: composite
   steps:
@@ -39,10 +41,10 @@ runs:
       id: conan_hash
       shell: bash
       run: |
-        conan info . -j info.json -o clio:tests=True
-        packages_info=$(cat info.json | jq '.[] | "\(.display_name): \(.id)"' | grep -v 'clio')
+        conan graph info . --format json --out-file info.json -o '&:tests=True' --profile:all ${{ inputs.conan_profile }}
+        packages_info="$(cat info.json | jq -r '.graph.nodes[]?.ref' | grep -v 'clio')"
         echo "$packages_info"
-        hash=$(echo "$packages_info" | shasum -a 256 | cut -d ' ' -f 1)
+        hash="$(echo "$packages_info" | shasum -a 256 | cut -d ' ' -f 1)"
         rm info.json
         echo "hash=$hash" >> $GITHUB_OUTPUT
 
@@ -50,7 +52,7 @@ runs:
       uses: actions/cache/restore@v4
       id: conan_cache
       with:
-        path: ${{ inputs.conan_dir }}/data
+        path: ${{ inputs.conan_dir }}/p
         key: clio-conan_data-${{ runner.os }}-${{ inputs.build_type }}-${{ inputs.conan_profile }}-develop-${{ steps.conan_hash.outputs.hash }}
 
     - name: Restore ccache cache

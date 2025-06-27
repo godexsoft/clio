@@ -110,6 +110,7 @@ public:
         std::optional<uint32_t> createAccountClaimId;
         std::optional<ripple::uint256> oracleNode;
         std::optional<ripple::uint256> credential;
+        std::optional<boost::json::object> delegate;
         bool includeDeleted = false;
     };
 
@@ -392,6 +393,23 @@ public:
                      },
                  },
              }}},
+            {JS(delegate),
+             meta::WithCustomError{
+                 validation::Type<std::string, boost::json::object>{}, Status(ClioError::RpcMalformedRequest)
+             },
+             meta::IfType<std::string>{kMALFORMED_REQUEST_HEX_STRING_VALIDATOR},
+             meta::IfType<boost::json::object>{meta::Section{
+                 {JS(account),
+                  meta::WithCustomError{validation::Required{}, Status(ClioError::RpcMalformedRequest)},
+                  meta::WithCustomError{
+                      validation::CustomValidators::accountBase58Validator, Status(ClioError::RpcMalformedAddress)
+                  }},
+                 {JS(authorize),
+                  meta::WithCustomError{validation::Required{}, Status(ClioError::RpcMalformedRequest)},
+                  meta::WithCustomError{
+                      validation::CustomValidators::accountBase58Validator, Status(ClioError::RpcMalformedAddress)
+                  }}
+             }}},
             {JS(ledger), check::Deprecated{}},
             {"include_deleted", validation::Type<bool>{}},
         };
@@ -412,7 +430,7 @@ public:
 private:
     // dir_root and owner can not be both empty or filled at the same time
     // This function will return an error if this is the case
-    static std::variant<ripple::uint256, Status>
+    static std::expected<ripple::uint256, Status>
     composeKeyFromDirectory(boost::json::object const& directory) noexcept;
 
     /**

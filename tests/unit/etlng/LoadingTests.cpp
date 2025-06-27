@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "data/Types.hpp"
+#include "etl/SystemState.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
 #include "etlng/Models.hpp"
 #include "etlng/RegistryInterface.hpp"
@@ -64,13 +65,11 @@ struct MockLoadObserver : etlng::InitialLoadObserverInterface {
     );
 };
 
-struct LoadingTests : util::prometheus::WithPrometheus,
-                      MockBackendTest,
-                      MockLedgerFetcherTest,
-                      MockAmendmentBlockHandlerTest {
+struct LoadingTests : util::prometheus::WithPrometheus, MockBackendTest, MockAmendmentBlockHandlerTest {
 protected:
     std::shared_ptr<MockRegistry> mockRegistryPtr_ = std::make_shared<MockRegistry>();
-    Loader loader_{backend_, mockLedgerFetcherPtr_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_};
+    std::shared_ptr<etl::SystemState> state_ = std::make_shared<etl::SystemState>();
+    Loader loader_{backend_, mockRegistryPtr_, mockAmendmentBlockHandlerPtr_, state_};
 };
 
 struct LoadingAssertTest : common::util::WithMockAssert, LoadingTests {};
@@ -107,6 +106,7 @@ TEST_F(LoadingTests, LoadInitialLedger)
 
 TEST_F(LoadingTests, LoadSuccess)
 {
+    state_->isWriting = true;  // writer is active
     auto const data = createTestData();
 
     EXPECT_CALL(*backend_, doFinishWrites());
@@ -117,6 +117,7 @@ TEST_F(LoadingTests, LoadSuccess)
 
 TEST_F(LoadingTests, LoadFailure)
 {
+    state_->isWriting = true;  // writer is active
     auto const data = createTestData();
 
     EXPECT_CALL(*backend_, doFinishWrites()).Times(0);
@@ -146,6 +147,33 @@ TEST_F(LoadingTests, OnInitialLoadGotMoreObjectsWithoutKey)
     EXPECT_CALL(*mockRegistryPtr_, dispatchInitialObjects(kSEQ, data.objects, std::string{}));
 
     loader_.onInitialLoadGotMoreObjects(kSEQ, data.objects, lastKey);
+}
+
+TEST_F(LoadingTests, OnInitialLoadGotMoreObjectsFailure)
+{
+    auto const data = createTestData();
+    auto const lastKey = std::optional<std::string>{};
+
+    EXPECT_CALL(*mockRegistryPtr_, dispatchInitialObjects(kSEQ, data.objects, std::string{}))
+        .WillOnce([](auto, auto, auto) { throw std::runtime_error("some error"); });
+    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, notifyAmendmentBlocked());
+
+    loader_.onInitialLoadGotMoreObjects(kSEQ, data.objects, lastKey);
+}
+
+TEST_F(LoadingTests, LoadInitialLedgerFailure)
+{
+    auto const data = createTestData();
+
+    EXPECT_CALL(*backend_, hardFetchLedgerRange(testing::_)).WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*backend_, doFinishWrites()).Times(0);
+    EXPECT_CALL(*mockRegistryPtr_, dispatchInitialData(data)).WillOnce([](auto const&) {
+        throw std::runtime_error("some error");
+    });
+    EXPECT_CALL(*mockAmendmentBlockHandlerPtr_, notifyAmendmentBlocked());
+
+    auto const res = loader_.loadInitialLedger(data);
+    EXPECT_FALSE(res.has_value());
 }
 
 TEST_F(LoadingAssertTest, LoadInitialLedgerHasDataInDB)

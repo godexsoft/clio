@@ -20,6 +20,7 @@
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
 #include "etlng/impl/Loading.hpp"
 #include "etlng/impl/TaskManager.hpp"
@@ -29,11 +30,13 @@
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 
+#include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -59,22 +62,44 @@ struct MockExtractor : etlng::ExtractorInterface {
 };
 
 struct MockLoader : etlng::LoaderInterface {
-    MOCK_METHOD(void, load, (LedgerData const&), (override));
+    using ExpectedType = std::expected<void, etlng::Error>;
+    MOCK_METHOD(ExpectedType, load, (LedgerData const&), (override));
     MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (LedgerData const&), (override));
+};
+
+struct MockMonitor : etlng::MonitorInterface {
+    MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
+    MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
+    MOCK_METHOD(
+        boost::signals2::scoped_connection,
+        subscribeToNewSequence,
+        (NewSequenceSignalType::slot_type const&),
+        (override)
+    );
+    MOCK_METHOD(
+        boost::signals2::scoped_connection,
+        subscribeToDbStalled,
+        (DbStalledSignalType::slot_type const&),
+        (override)
+    );
+    MOCK_METHOD(void, run, (std::chrono::steady_clock::duration), (override));
+    MOCK_METHOD(void, stop, (), (override));
 };
 
 struct TaskManagerTests : NoLoggerFixture {
     using MockSchedulerType = testing::NiceMock<MockScheduler>;
     using MockExtractorType = testing::NiceMock<MockExtractor>;
     using MockLoaderType = testing::NiceMock<MockLoader>;
+    using MockMonitorType = testing::NiceMock<MockMonitor>;
 
 protected:
     util::async::CoroExecutionContext ctx_{2};
     std::shared_ptr<MockSchedulerType> mockSchedulerPtr_ = std::make_shared<MockSchedulerType>();
     std::shared_ptr<MockExtractorType> mockExtractorPtr_ = std::make_shared<MockExtractorType>();
     std::shared_ptr<MockLoaderType> mockLoaderPtr_ = std::make_shared<MockLoaderType>();
+    std::shared_ptr<MockMonitorType> mockMonitorPtr_ = std::make_shared<MockMonitorType>();
 
-    TaskManager taskManager_{ctx_, *mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_};
+    TaskManager taskManager_{ctx_, mockSchedulerPtr_, *mockExtractorPtr_, *mockLoaderPtr_, *mockMonitorPtr_, kSEQ};
 };
 
 auto
@@ -97,8 +122,7 @@ createTestData(uint32_t seq)
 TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
 {
     static constexpr auto kTOTAL = 64uz;
-    static constexpr auto kEXTRACTORS = 5uz;
-    static constexpr auto kLOADERS = 1uz;
+    static constexpr auto kEXTRACTORS = 4uz;
 
     std::atomic_uint32_t seq = kSEQ;
     std::vector<uint32_t> loaded;
@@ -116,21 +140,80 @@ TEST_F(TaskManagerTests, LoaderGetsDataIfNextSequenceIsExtracted)
             return createTestData(seq);
         });
 
-    EXPECT_CALL(*mockLoaderPtr_, load(testing::_)).Times(kTOTAL).WillRepeatedly([&](LedgerData data) {
-        loaded.push_back(data.seq);
+    EXPECT_CALL(*mockLoaderPtr_, load(testing::_))
+        .Times(kTOTAL)
+        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::Error> {
+            loaded.push_back(data.seq);
+            if (loaded.size() == kTOTAL) {
+                done.release();
+            }
+            return {};
+        });
 
-        if (loaded.size() == kTOTAL) {
-            done.release();
-        }
-    });
+    EXPECT_CALL(*mockMonitorPtr_, notifySequenceLoaded(testing::_)).Times(kTOTAL);
 
-    auto loop = ctx_.execute([&] { taskManager_.run({.numExtractors = kEXTRACTORS, .numLoaders = kLOADERS}); });
+    taskManager_.run(kEXTRACTORS);
     done.acquire();
-
     taskManager_.stop();
-    loop.wait();
 
     EXPECT_EQ(loaded.size(), kTOTAL);
+    for (std::size_t i = 0; i < loaded.size(); ++i) {
+        EXPECT_EQ(loaded[i], kSEQ + i);
+    }
+}
+
+TEST_F(TaskManagerTests, WriteConflictHandling)
+{
+    static constexpr auto kTOTAL = 64uz;
+    static constexpr auto kCONFLICT_AFTER = 32uz;  // Conflict after 32 ledgers
+    static constexpr auto kEXTRACTORS = 4uz;
+
+    std::atomic_uint32_t seq = kSEQ;
+    std::vector<uint32_t> loaded;
+    std::binary_semaphore done{0};
+    bool conflictOccurred = false;
+
+    EXPECT_CALL(*mockSchedulerPtr_, next()).WillRepeatedly([&]() {
+        return Task{.priority = Task::Priority::Higher, .seq = seq++};
+    });
+
+    EXPECT_CALL(*mockExtractorPtr_, extractLedgerWithDiff(testing::_))
+        .WillRepeatedly([](uint32_t seq) -> std::optional<LedgerData> {
+            if (seq > kSEQ + kTOTAL - 1)
+                return std::nullopt;
+
+            return createTestData(seq);
+        });
+
+    // First kCONFLICT_AFTER calls succeed, then we get a write conflict
+    EXPECT_CALL(*mockLoaderPtr_, load(testing::_))
+        .WillRepeatedly([&](LedgerData data) -> std::expected<void, etlng::Error> {
+            loaded.push_back(data.seq);
+
+            if (loaded.size() == kCONFLICT_AFTER) {
+                conflictOccurred = true;
+                done.release();
+                return std::unexpected("write conflict");
+            }
+
+            // Only release semaphore if we reach kTOTAL without conflict
+            if (loaded.size() == kTOTAL) {
+                done.release();
+            }
+
+            return {};
+        });
+
+    EXPECT_CALL(*mockMonitorPtr_, notifySequenceLoaded(testing::_)).Times(kCONFLICT_AFTER - 1);
+    EXPECT_CALL(*mockMonitorPtr_, notifyWriteConflict(kSEQ + kCONFLICT_AFTER - 1));
+
+    taskManager_.run(kEXTRACTORS);
+    done.acquire();
+    taskManager_.stop();
+
+    EXPECT_EQ(loaded.size(), kCONFLICT_AFTER);
+    EXPECT_TRUE(conflictOccurred);
+
     for (std::size_t i = 0; i < loaded.size(); ++i) {
         EXPECT_EQ(loaded[i], kSEQ + i);
     }

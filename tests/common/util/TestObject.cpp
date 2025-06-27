@@ -89,6 +89,8 @@ createLedgerHeader(std::string_view ledgerHash, ripple::LedgerIndex seq, std::op
     ledgerHeader.seq = seq;
 
     if (age) {
+        // Note: be cautious of using age values close to each other as the underlying NetClock precision is seconds
+        // and the small time difference may lead to comparison bugs
         auto const now = duration_cast<seconds>(system_clock::now().time_since_epoch());
         auto const closeTime = (now - seconds{age.value()}).count() - kRIPPLE_EPOCH_START;
         ledgerHeader.closeTime = ripple::NetClock::time_point{seconds{closeTime}};
@@ -326,18 +328,21 @@ createMetaDataForBookChange(
     std::string_view issueId,
     uint32_t transactionIndex,
     int finalTakerGets,
-    int perviousTakerGets,
+    int previousTakerGets,
     int finalTakerPays,
-    int perviousTakerPays
+    int previousTakerPays,
+    std::optional<std::string_view> domain
 )
 {
     ripple::STObject finalFields(ripple::sfFinalFields);
     ripple::Issue const issue1 = getIssue(currency, issueId);
     finalFields.setFieldAmount(ripple::sfTakerPays, ripple::STAmount(issue1, finalTakerPays));
     finalFields.setFieldAmount(ripple::sfTakerGets, ripple::STAmount(finalTakerGets, false));
+    if (domain.has_value())
+        finalFields.setFieldH256(ripple::sfDomainID, ripple::uint256{*domain});
     ripple::STObject previousFields(ripple::sfPreviousFields);
-    previousFields.setFieldAmount(ripple::sfTakerPays, ripple::STAmount(issue1, perviousTakerPays));
-    previousFields.setFieldAmount(ripple::sfTakerGets, ripple::STAmount(perviousTakerGets, false));
+    previousFields.setFieldAmount(ripple::sfTakerPays, ripple::STAmount(issue1, previousTakerPays));
+    previousFields.setFieldAmount(ripple::sfTakerGets, ripple::STAmount(previousTakerGets, false));
     ripple::STObject metaObj(ripple::sfTransactionMetaData);
     ripple::STArray metaArray{1};
     ripple::STObject node(ripple::sfModifiedNode);
@@ -481,7 +486,8 @@ createOfferLedgerObject(
     std::string_view paysCurrency,
     std::string_view getsIssueId,
     std::string_view paysIssueId,
-    std::string_view dirId
+    std::string_view dirId,
+    std::optional<std::string_view> domain
 )
 {
     ripple::STObject offer(ripple::sfLedgerEntry);
@@ -499,6 +505,8 @@ createOfferLedgerObject(
     offer.setFieldH256(ripple::sfBookDirectory, ripple::uint256{dirId});
     offer.setFieldH256(ripple::sfPreviousTxnID, ripple::uint256{});
     offer.setFieldU32(ripple::sfPreviousTxnLgrSeq, 0);
+    if (domain.has_value())
+        offer.setFieldH256(ripple::sfDomainID, ripple::uint256{*domain});
     return offer;
 }
 
@@ -1510,6 +1518,31 @@ createPermissionedDomainObject(
     object.setFieldU32(ripple::sfPreviousTxnLgrSeq, previousTxSeq);
     object.setFieldU32(ripple::sfFlags, 0);
     object.setFieldU16(ripple::sfLedgerEntryType, ripple::ltPERMISSIONED_DOMAIN);
+
+    return object;
+}
+
+ripple::STObject
+createDelegateObject(
+    std::string_view accountId,
+    std::string_view authorize,
+    std::string_view ledgerIndex,
+    uint64_t ownerNode,
+    ripple::uint256 previousTxId,
+    uint32_t previousTxSeq
+)
+{
+    ripple::STObject object(ripple::sfLedgerEntry);
+
+    object.setFieldH256(ripple::sfLedgerIndex, ripple::uint256(ledgerIndex));
+    object.setFieldU16(ripple::sfLedgerEntryType, ripple::ltDELEGATE);
+    object.setAccountID(ripple::sfAccount, getAccountIdWithString(accountId));
+    object.setAccountID(ripple::sfAuthorize, getAccountIdWithString(authorize));
+    object.setFieldArray(ripple::sfPermissions, ripple::STArray{});
+    object.setFieldU64(ripple::sfOwnerNode, ownerNode);
+    object.setFieldH256(ripple::sfPreviousTxnID, previousTxId);
+    object.setFieldU32(ripple::sfPreviousTxnLgrSeq, previousTxSeq);
+    object.setFieldU32(ripple::sfFlags, 0);
 
     return object;
 }

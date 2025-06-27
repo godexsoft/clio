@@ -19,10 +19,10 @@
 
 #include "util/LoggerFixtures.hpp"
 #include "util/NameGenerator.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "web/AdminVerificationStrategy.hpp"
 
 #include <boost/beast/http/field.hpp>
@@ -169,27 +169,27 @@ INSTANTIATE_TEST_SUITE_P(
         },
         MakeAdminVerificationStrategyFromConfigTestParams{
             .testName = "OnlyPassword",
-            .config = R"({"server": {"admin_password": "password"}})",
+            .config = R"JSON({"server": {"admin_password": "password"}})JSON",
             .expectedError = false
         },
         MakeAdminVerificationStrategyFromConfigTestParams{
             .testName = "OnlyLocalAdmin",
-            .config = R"({"server": {"local_admin": true}})",
+            .config = R"JSON({"server": {"local_admin": true}})JSON",
             .expectedError = false
         },
         MakeAdminVerificationStrategyFromConfigTestParams{
             .testName = "OnlyLocalAdminDisabled",
-            .config = R"({"server": {"local_admin": false}})",
+            .config = R"JSON({"server": {"local_admin": false}})JSON",
             .expectedError = true
         },
         MakeAdminVerificationStrategyFromConfigTestParams{
             .testName = "LocalAdminAndPassword",
-            .config = R"({"server": {"local_admin": true, "admin_password": "password"}})",
+            .config = R"JSON({"server": {"local_admin": true, "admin_password": "password"}})JSON",
             .expectedError = true
         },
         MakeAdminVerificationStrategyFromConfigTestParams{
             .testName = "LocalAdminDisabledAndPassword",
-            .config = R"({"server": {"local_admin": false, "admin_password": "password"}})",
+            .config = R"JSON({"server": {"local_admin": false, "admin_password": "password"}})JSON",
             .expectedError = false
         }
     ),

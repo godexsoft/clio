@@ -78,164 +78,167 @@ generateTestValuesForParametersTest()
     return std::vector<NFTHistoryParamTestCaseBundle>{
         NFTHistoryParamTestCaseBundle{
             .testName = "MissingNFTID",
-            .testJson = R"({})",
+            .testJson = R"JSON({})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'nft_id' missing"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "BinaryNotBool",
-            .testJson = R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "binary": 1})",
+            .testJson =
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "binary": 1})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ForwardNotBool",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "forward": 1})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "forward": 1})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_index_minNotInt",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index_min": "x"})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index_min": "x"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_index_maxNotInt",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index_max": "x"})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index_max": "x"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_indexInvalid",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index": "x"})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index": "x"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "ledgerIndexMalformed"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_hashInvalid",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": "x"})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": "x"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "ledger_hashMalformed"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_hashNotString",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": 123})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": 123})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "ledger_hashNotString"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "limitNotInt",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": "123"})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": "123"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
-            .testName = "limitNagetive",
-            .testJson = R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": -1})",
+            .testName = "limitNegative",
+            .testJson =
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": -1})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "limitZero",
-            .testJson = R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": 0})",
+            .testJson =
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "limit": 0})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "MarkerNotObject",
             .testJson =
-                R"({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "marker": 101})",
+                R"JSON({"nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "marker": 101})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "invalidMarker"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "MarkerMissingSeq",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "marker": {"ledger": 123}
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'seq' missing"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "MarkerMissingLedger",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "marker":{"seq": 123}
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'ledger' missing"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "MarkerLedgerNotInt",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
-                "marker": 
+                "marker":
                 {
                     "seq": "string",
                     "ledger": 1
                 }
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "MarkerSeqNotInt",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
-                "marker": 
+                "marker":
                 {
                     "ledger": "string",
                     "seq": 1
                 }
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "LedgerIndexMinLessThanMinSeq",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "ledger_index_min": 9
-            })",
+            })JSON",
             .expectedError = "lgrIdxMalformed",
             .expectedErrorMessage = "ledgerSeqMinOutOfRange"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "LedgerIndexMaxLargeThanMaxSeq",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "ledger_index_max": 31
-            })",
+            })JSON",
             .expectedError = "lgrIdxMalformed",
             .expectedErrorMessage = "ledgerSeqMaxOutOfRange"
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "LedgerIndexMaxLessThanLedgerIndexMin",
-            .testJson = R"({
+            .testJson = R"JSON({
                 "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "ledger_index_max": 11,
                 "ledger_index_min": 20
-            })",
+            })JSON",
             .expectedError = "lgrIdxsInvalid",
             .expectedErrorMessage = "Ledger indexes invalid."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "LedgerIndexMaxMinAndLedgerIndex",
-            .testJson = R"({
-                "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", 
+            .testJson = R"JSON({
+                "nft_id":"00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                 "ledger_index_max": 20,
                 "ledger_index_min": 11,
                 "ledger_index": 10
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "containsLedgerSpecifierAndRange"
         },
@@ -307,13 +310,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": true
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 1,
             kMAX_SEQ - 1
@@ -323,7 +326,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 1);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
     });
@@ -331,7 +334,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardTrue)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 {
-    constexpr auto kOUTPUT = R"({
+    constexpr auto kOUTPUT = R"JSON({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,
@@ -432,7 +435,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
                                     "ledger": 12,
                                     "seq": 34
                                 }
-                                })";
+                                })JSON";
 
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{.txns = transactions, .cursor = TransactionsCursor{12, 34}};
@@ -451,13 +454,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 1,
             kMAX_SEQ - 1
@@ -470,7 +473,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV1)
 
 TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 {
-    constexpr auto kOUTPUT = R"({
+    constexpr auto kOUTPUT = R"JSON({
                                 "nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004",
                                 "ledger_index_min": 11,
                                 "ledger_index_max": 29,
@@ -583,7 +586,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
                                     "ledger": 12,
                                     "seq": 34
                                 }
-                                })";
+                                })JSON";
 
     auto const transactions = genTransactions(kMIN_SEQ + 1, kMAX_SEQ - 1);
     auto const transCursor = TransactionsAndCursor{.txns = transactions, .cursor = TransactionsCursor{12, 34}};
@@ -605,13 +608,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexSpecificForwardFalseV2)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 1,
             kMAX_SEQ - 1
@@ -637,13 +640,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": true
-            }})",
+            }})JSON",
             kNFT_ID,
             -1,
             -1
@@ -653,7 +656,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardTrue)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
     });
@@ -678,13 +681,13 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false
-            }})",
+            }})JSON",
             kNFT_ID,
             -1,
             -1
@@ -694,7 +697,7 @@ TEST_F(RPCNFTHistoryHandlerTest, IndexNotSpecificForwardFalse)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
     });
@@ -719,13 +722,13 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "binary": true
-            }})",
+            }})JSON",
             kNFT_ID,
             -1,
             -1
@@ -735,7 +738,7 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV1)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_EQ(
             output.result->at("transactions").as_array()[0].as_object().at("meta").as_string(),
@@ -773,13 +776,13 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "binary": true
-            }})",
+            }})JSON",
             kNFT_ID,
             -1,
             -1
@@ -789,7 +792,7 @@ TEST_F(RPCNFTHistoryHandlerTest, BinaryTrueV2)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_EQ(
             output.result->at("transactions").as_array()[0].as_object().at("meta_blob").as_string(),
@@ -824,15 +827,15 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "limit": 2,
                 "forward": false,
                 "marker": {{"ledger":10,"seq":11}}
-            }})",
+            }})JSON",
             kNFT_ID,
             -1,
             -1
@@ -843,7 +846,7 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitAndMarker)
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ);
         EXPECT_EQ(output.result->at("limit").as_uint64(), 2);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
     });
 }
@@ -872,11 +875,11 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerIndex)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index":{}
-            }})",
+            }})JSON",
             kNFT_ID,
             kMAX_SEQ - 1
         ));
@@ -898,11 +901,11 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerIntIndex)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index":{}
-            }})",
+            }})JSON",
             kNFT_ID,
             kMAX_SEQ - 1
         ));
@@ -921,11 +924,11 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificNonexistLedgerStringIndex)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index":"{}"
-            }})",
+            }})JSON",
             kNFT_ID,
             kMAX_SEQ - 1
         ));
@@ -961,11 +964,11 @@ TEST_F(RPCNFTHistoryHandlerTest, SpecificLedgerHash)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_hash":"{}"
-            }})",
+            }})JSON",
             kNFT_ID,
             kLEDGER_HASH
         ));
@@ -999,13 +1002,13 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLessThanMinSeq)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 2,
             kMAX_SEQ - 1
@@ -1040,13 +1043,13 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 1,
             kMAX_SEQ - 2
@@ -1058,7 +1061,7 @@ TEST_F(RPCNFTHistoryHandlerTest, TxLargerThanMaxSeq)
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 2);
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 1);
         EXPECT_FALSE(output.result->as_object().contains("limit"));
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
     });
 }
 
@@ -1081,14 +1084,14 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NFTHistoryHandler{backend_}};
-        auto static const kINPUT = json::parse(fmt::format(
-            R"({{
+        static auto const kINPUT = json::parse(fmt::format(
+            R"JSON({{
                 "nft_id":"{}",
                 "ledger_index_min": {},
                 "ledger_index_max": {},
                 "forward": false,
                 "limit": {}
-            }})",
+            }})JSON",
             kNFT_ID,
             kMIN_SEQ + 1,
             kMAX_SEQ - 1,
@@ -1099,7 +1102,7 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
         EXPECT_EQ(output.result->at("nft_id").as_string(), kNFT_ID);
         EXPECT_EQ(output.result->at("ledger_index_min").as_uint64(), kMIN_SEQ + 1);
         EXPECT_EQ(output.result->at("ledger_index_max").as_uint64(), kMAX_SEQ - 1);
-        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"({"ledger":12,"seq":34})"));
+        EXPECT_EQ(output.result->at("marker").as_object(), json::parse(R"JSON({"ledger":12,"seq":34})JSON"));
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
         EXPECT_EQ(output.result->as_object().at("limit").as_uint64(), NFTHistoryHandler::kLIMIT_MAX);
     });

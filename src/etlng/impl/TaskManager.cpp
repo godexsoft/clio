@@ -22,15 +22,22 @@
 #include "etlng/ExtractorInterface.hpp"
 #include "etlng/LoaderInterface.hpp"
 #include "etlng/Models.hpp"
+#include "etlng/MonitorInterface.hpp"
 #include "etlng/SchedulerInterface.hpp"
+#include "etlng/impl/Monitor.hpp"
+#include "etlng/impl/TaskQueue.hpp"
+#include "util/Constants.hpp"
+#include "util/LedgerUtils.hpp"
+#include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
-#include "util/async/AnyStrand.hpp"
 #include "util/log/Logger.hpp"
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <ranges>
 #include <thread>
 #include <utility>
@@ -39,12 +46,19 @@
 namespace etlng::impl {
 
 TaskManager::TaskManager(
-    util::async::AnyExecutionContext&& ctx,
-    std::reference_wrapper<SchedulerInterface> scheduler,
+    util::async::AnyExecutionContext ctx,
+    std::shared_ptr<SchedulerInterface> scheduler,
     std::reference_wrapper<ExtractorInterface> extractor,
-    std::reference_wrapper<LoaderInterface> loader
+    std::reference_wrapper<LoaderInterface> loader,
+    std::reference_wrapper<MonitorInterface> monitor,
+    uint32_t startSeq
 )
-    : ctx_(std::move(ctx)), schedulers_(scheduler), extractor_(extractor), loader_(loader)
+    : ctx_(std::move(ctx))
+    , schedulers_(std::move(scheduler))
+    , extractor_(extractor)
+    , loader_(loader)
+    , monitor_(monitor)
+    , queue_({.startSeq = startSeq, .increment = 1u, .limit = kQUEUE_SIZE_LIMIT})
 {
 }
 
@@ -54,37 +68,32 @@ TaskManager::~TaskManager()
 }
 
 void
-TaskManager::run(Settings settings)
+TaskManager::run(std::size_t numExtractors)
 {
-    static constexpr auto kQUEUE_SIZE_LIMIT = 2048uz;
+    LOG(log_.debug()) << "Starting task manager with " << numExtractors << " extractors...\n";
 
-    auto schedulingStrand = ctx_.makeStrand();
-    PriorityQueue queue(ctx_.makeStrand(), kQUEUE_SIZE_LIMIT);
+    stop();
+    extractors_.clear();
+    loaders_.clear();
 
-    LOG(log_.debug()) << "Starting task manager...\n";
+    extractors_.reserve(numExtractors);
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, numExtractors))
+        extractors_.push_back(spawnExtractor(queue_));
 
-    extractors_.reserve(settings.numExtractors);
-    for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numExtractors))
-        extractors_.push_back(spawnExtractor(schedulingStrand, queue));
-
-    loaders_.reserve(settings.numLoaders);
-    for ([[maybe_unused]] auto _ : std::views::iota(0uz, settings.numLoaders))
-        loaders_.push_back(spawnLoader(queue));
-
-    wait();
-    LOG(log_.debug()) << "All finished in task manager..\n";
+    // Only one forward loader for now. Backfill to be added here later
+    loaders_.push_back(spawnLoader(queue_));
 }
 
 util::async::AnyOperation<void>
-TaskManager::spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue)
+TaskManager::spawnExtractor(TaskQueue& queue)
 {
     // TODO: these values may be extracted to config later and/or need to be fine-tuned on a realistic system
     static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{100u};
     static constexpr auto kDELAY_BETWEEN_ENQUEUE_ATTEMPTS = std::chrono::milliseconds{1u};
 
-    return strand.execute([this, &queue](auto stopRequested) {
+    return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
-            if (auto task = schedulers_.get().next(); task.has_value()) {
+            if (auto task = schedulers_->next(); task.has_value()) {
                 if (auto maybeBatch = extractor_.get().extractLedgerWithDiff(task->seq); maybeBatch.has_value()) {
                     LOG(log_.debug()) << "Adding data after extracting diff";
                     while (not queue.enqueue(*maybeBatch)) {
@@ -94,27 +103,49 @@ TaskManager::spawnExtractor(util::async::AnyStrand& strand, PriorityQueue& queue
                         if (stopRequested)
                             break;
                     }
-                } else {
-                    // TODO: how do we signal to the loaders that it's time to shutdown? some special task?
-                    break;  // TODO: handle server shutdown or other node took over ETL
                 }
             } else {
                 // TODO (https://github.com/XRPLF/clio/issues/1852)
                 std::this_thread::sleep_for(kDELAY_BETWEEN_ATTEMPTS);
             }
         }
+
+        LOG(log_.info()) << "Extractor (one of) coroutine stopped";
     });
 }
 
 util::async::AnyOperation<void>
-TaskManager::spawnLoader(PriorityQueue& queue)
+TaskManager::spawnLoader(TaskQueue& queue)
 {
     return ctx_.execute([this, &queue](auto stopRequested) {
         while (not stopRequested) {
             // TODO (https://github.com/XRPLF/clio/issues/66): does not tell the loader whether it's out of order or not
-            if (auto data = queue.dequeue(); data.has_value())
-                loader_.get().load(*data);
+            if (auto data = queue.dequeue(); data.has_value()) {
+                // perhaps this should return an error if conflict happened, then we can stop loading immediately
+                auto [expectedSuccess, nanos] =
+                    util::timed<std::chrono::nanoseconds>([&] { return loader_.get().load(*data); });
+
+                if (not expectedSuccess.has_value()) {
+                    LOG(log_.warn()) << "Immediately stopping loader with error: " << expectedSuccess.error()
+                                     << "; latest ledger cache loaded for " << data->seq;
+                    monitor_.get().notifyWriteConflict(data->seq);
+                    break;
+                }
+
+                auto const seconds = nanos / util::kNANO_PER_SECOND;
+                auto const txnCount = data->transactions.size();
+                auto const objCount = data->objects.size();
+
+                LOG(log_.info()) << "Wrote ledger " << data->seq << " with header: " << util::toString(data->header)
+                                 << ". txns[" << txnCount << "]; objs[" << objCount << "]; in " << seconds
+                                 << " seconds;"
+                                 << " tps[" << txnCount / seconds << "], ops[" << objCount / seconds << "]";
+
+                monitor_.get().notifySequenceLoaded(data->seq);
+            }
         }
+
+        LOG(log_.info()) << "Loader coroutine stopped";
     });
 }
 

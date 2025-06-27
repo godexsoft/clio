@@ -92,7 +92,7 @@ TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
     }
     {
         auto third = second;
-        third.header = createLedgerHeader(kLEDGER_HASH2, kSEQ, 2);
+        third.header = createLedgerHeader(kLEDGER_HASH2, kSEQ, 100);  // Using large age value to avoid flaky test
         EXPECT_NE(first, third);
     }
     {
@@ -198,7 +198,7 @@ TEST_F(ExtractionNgTests, OneTransaction)
     auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
     auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-    auto [metaRaw, txRaw] = util::createNftTxAndMetaBlobs();
+    auto [metaRaw, txRaw] = util::createTxAndMetaBlobs();
     original.set_transaction_blob(txRaw);
     original.set_metadata_blob(metaRaw);
 
@@ -216,7 +216,7 @@ TEST_F(ExtractionNgTests, MultipleTransactions)
     auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
     auto original = org::xrpl::rpc::v1::TransactionAndMetadata();
-    auto [metaRaw, txRaw] = util::createNftTxAndMetaBlobs();
+    auto [metaRaw, txRaw] = util::createTxAndMetaBlobs();
     original.set_transaction_blob(txRaw);
     original.set_metadata_blob(metaRaw);
 

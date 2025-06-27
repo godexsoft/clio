@@ -3,7 +3,6 @@ add_executable(clio_tests)
 target_sources(
   clio_tests
   PRIVATE # Common
-          ConfigTests.cpp
           app/CliArgsTests.cpp
           app/StopperTests.cpp
           app/VerifyConfigTests.cpp
@@ -14,6 +13,7 @@ target_sources(
           data/LedgerCacheTests.cpp
           data/cassandra/AsyncExecutorTests.cpp
           data/cassandra/ExecutionStrategyTests.cpp
+          data/cassandra/LedgerHeaderCacheTests.cpp
           data/cassandra/RetryPolicyTests.cpp
           data/cassandra/SettingsProviderTests.cpp
           # Cluster
@@ -40,9 +40,11 @@ target_sources(
           etl/TransformerTests.cpp
           # ETLng
           etlng/AmendmentBlockHandlerTests.cpp
+          etlng/ETLServiceTests.cpp
           etlng/ExtractionTests.cpp
           etlng/ForwardingSourceTests.cpp
           etlng/GrpcSourceTests.cpp
+          etlng/LedgerPublisherTests.cpp
           etlng/RegistryTests.cpp
           etlng/SchedulingTests.cpp
           etlng/TaskManagerTests.cpp
@@ -53,6 +55,7 @@ target_sources(
           etlng/SourceImplTests.cpp
           etlng/ext/CoreTests.cpp
           etlng/ext/CacheTests.cpp
+          etlng/ext/MPTTests.cpp
           etlng/ext/NFTTests.cpp
           etlng/ext/SuccessorTests.cpp
           # Feed
@@ -89,6 +92,7 @@ target_sources(
           rpc/common/CheckersTests.cpp
           rpc/common/SpecsTests.cpp
           rpc/common/TypesTests.cpp
+          rpc/common/impl/HandlerProviderTests.cpp
           rpc/handlers/AccountChannelsTests.cpp
           rpc/handlers/AccountCurrenciesTests.cpp
           rpc/handlers/AccountInfoTests.cpp
@@ -140,10 +144,11 @@ target_sources(
           util/async/AnyStrandTests.cpp
           util/async/AsyncExecutionContextTests.cpp
           util/BatchingTests.cpp
+          util/BlockingCacheTests.cpp
           util/ConceptsTests.cpp
           util/CoroutineGroupTests.cpp
           util/LedgerUtilsTests.cpp
-          util/StrandedPriorityQueueTests.cpp
+          util/StringHashTests.cpp
           # Prometheus support
           util/prometheus/BoolTests.cpp
           util/prometheus/CounterTests.cpp
@@ -161,6 +166,7 @@ target_sources(
           # Common utils
           util/AccountUtilsTests.cpp
           util/AssertTests.cpp
+          util/CoroutineTest.cpp
           util/MoveTrackerTests.cpp
           util/RandomTests.cpp
           util/RetryTests.cpp
@@ -175,6 +181,7 @@ target_sources(
           web/AdminVerificationTests.cpp
           web/dosguard/DOSGuardTests.cpp
           web/dosguard/IntervalSweepHandlerTests.cpp
+          web/dosguard/WeightsTests.cpp
           web/dosguard/WhitelistHandlerTests.cpp
           web/impl/ErrorHandlingTests.cpp
           web/ng/ResponseTests.cpp
@@ -190,14 +197,14 @@ target_sources(
           web/RPCServerHandlerTests.cpp
           web/ServerTests.cpp
           web/SubscriptionContextTests.cpp
-          # New Config
-          util/newconfig/ArrayTests.cpp
-          util/newconfig/ArrayViewTests.cpp
-          util/newconfig/ClioConfigDefinitionTests.cpp
-          util/newconfig/ConfigValueTests.cpp
-          util/newconfig/ObjectViewTests.cpp
-          util/newconfig/ConfigFileJsonTests.cpp
-          util/newconfig/ValueViewTests.cpp
+          # Config
+          util/config/ArrayTests.cpp
+          util/config/ArrayViewTests.cpp
+          util/config/ClioConfigDefinitionTests.cpp
+          util/config/ConfigValueTests.cpp
+          util/config/ObjectViewTests.cpp
+          util/config/ConfigFileJsonTests.cpp
+          util/config/ValueViewTests.cpp
 )
 
 # See https://github.com/google/googletest/issues/3475

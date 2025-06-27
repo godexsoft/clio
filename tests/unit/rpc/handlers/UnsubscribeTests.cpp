@@ -76,169 +76,169 @@ generateTestValuesForParametersTest()
     return std::vector<UnsubscribeParamTestCaseBundle>{
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsNotArray",
-            .testJson = R"({"accounts": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"})",
+            .testJson = R"JSON({"accounts": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "accountsNotArray"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsItemNotString",
-            .testJson = R"({"accounts": [123]})",
+            .testJson = R"JSON({"accounts": [123]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "accounts'sItemNotString"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsItemInvalidString",
-            .testJson = R"({"accounts": ["123"]})",
+            .testJson = R"JSON({"accounts": ["123"]})JSON",
             .expectedError = "actMalformed",
             .expectedErrorMessage = "accounts'sItemMalformed"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsEmptyArray",
-            .testJson = R"({"accounts": []})",
+            .testJson = R"JSON({"accounts": []})JSON",
             .expectedError = "actMalformed",
             .expectedErrorMessage = "accounts malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsProposedNotArray",
-            .testJson = R"({"accounts_proposed": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"})",
+            .testJson = R"JSON({"accounts_proposed": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "accounts_proposedNotArray"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsProposedItemNotString",
-            .testJson = R"({"accounts_proposed": [123]})",
+            .testJson = R"JSON({"accounts_proposed": [123]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "accounts_proposed'sItemNotString"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsProposedItemInvalidString",
-            .testJson = R"({"accounts_proposed": ["123"]})",
+            .testJson = R"JSON({"accounts_proposed": ["123"]})JSON",
             .expectedError = "actMalformed",
             .expectedErrorMessage = "accounts_proposed'sItemMalformed"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "AccountsProposedEmptyArray",
-            .testJson = R"({"accounts_proposed": []})",
+            .testJson = R"JSON({"accounts_proposed": []})JSON",
             .expectedError = "actMalformed",
             .expectedErrorMessage = "accounts_proposed malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamsNotArray",
-            .testJson = R"({"streams": 1})",
+            .testJson = R"JSON({"streams": 1})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "streamsNotArray"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamNotString",
-            .testJson = R"({"streams": [1]})",
+            .testJson = R"JSON({"streams": [1]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "streamNotString"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamNotValid",
-            .testJson = R"({"streams": ["1"]})",
+            .testJson = R"JSON({"streams": ["1"]})JSON",
             .expectedError = "malformedStream",
             .expectedErrorMessage = "Stream malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksNotArray",
-            .testJson = R"({"books": "1"})",
+            .testJson = R"JSON({"books": "1"})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "booksNotArray"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemNotObject",
-            .testJson = R"({"books": ["1"]})",
+            .testJson = R"JSON({"books": ["1"]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "booksItemNotObject"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemMissingTakerPays",
-            .testJson = R"({"books": [{"taker_gets": {"currency": "XRP"}}]})",
+            .testJson = R"JSON({"books": [{"taker_gets": {"currency": "XRP"}}]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Missing field 'taker_pays'"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemMissingTakerGets",
-            .testJson = R"({"books": [{"taker_pays": {"currency": "XRP"}}]})",
+            .testJson = R"JSON({"books": [{"taker_pays": {"currency": "XRP"}}]})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Missing field 'taker_gets'"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsNotObject",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
                         "taker_gets": "USD"
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Field 'taker_gets' is not an object"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysNotObject",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
                         "taker_pays": "USD"
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Field 'taker_pays' is not an object"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysMissingCurrency",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
                         "taker_pays": {}
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcCurMalformed",
             .expectedErrorMessage = "Source currency is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsMissingCurrency",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
                         "taker_gets": {}
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstAmtMalformed",
             .expectedErrorMessage = "Destination amount/currency/issuer is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysCurrencyNotString",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
@@ -248,17 +248,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcCurMalformed",
             .expectedErrorMessage = "Source currency is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsCurrencyNotString",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -268,17 +268,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstAmtMalformed",
             .expectedErrorMessage = "Destination amount/currency/issuer is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysInvalidCurrency",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
@@ -288,17 +288,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcCurMalformed",
             .expectedErrorMessage = "Source currency is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsInvalidCurrency",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -308,17 +308,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstAmtMalformed",
             .expectedErrorMessage = "Destination amount/currency/issuer is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysMissingIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
@@ -327,17 +327,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcIsrMalformed",
             .expectedErrorMessage = "Invalid field 'taker_pays.issuer', expected non-XRP issuer."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsMissingIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -346,17 +346,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstIsrMalformed",
             .expectedErrorMessage = "Invalid field 'taker_gets.issuer', expected non-XRP issuer."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysIssuerNotString",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
@@ -366,17 +366,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "takerPaysIssuerNotString"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsIssuerNotString",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -386,17 +386,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "taker_gets.issuer should be string"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysInvalidIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_gets": 
+                        "taker_gets":
                         {
                             "currency": "XRP"
                         },
@@ -406,17 +406,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcIsrMalformed",
             .expectedErrorMessage = "Source issuer is malformed."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsInvalidIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -426,17 +426,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstIsrMalformed",
             .expectedErrorMessage = "Invalid field 'taker_gets.issuer', bad issuer."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerGetsXRPHasIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "USD",
                             "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
@@ -447,17 +447,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "dstIsrMalformed",
             .expectedErrorMessage = "Unneeded field 'taker_gets.issuer' for XRP currency specification."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemTakerPaysXRPHasIssuer",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP",
                             "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
@@ -468,17 +468,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "srcIsrMalformed",
             .expectedErrorMessage = "Unneeded field 'taker_pays.issuer' for XRP currency specification."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemBadMartket",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -487,17 +487,17 @@ generateTestValuesForParametersTest()
                         }
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "badMarket",
             .expectedErrorMessage = "badMarket"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "BooksItemInvalidBoth",
-            .testJson = R"({
-                "books": 
+            .testJson = R"JSON({
+                "books":
                 [
                     {
-                        "taker_pays": 
+                        "taker_pays":
                         {
                             "currency": "XRP"
                         },
@@ -508,25 +508,25 @@ generateTestValuesForParametersTest()
                         "both": 0
                     }
                 ]
-            })",
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "bothNotBool"
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamPeerStatusNotSupport",
-            .testJson = R"({"streams": ["peer_status"]})",
+            .testJson = R"JSON({"streams": ["peer_status"]})JSON",
             .expectedError = "notSupported",
             .expectedErrorMessage = "Operation not supported."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamConsensusNotSupport",
-            .testJson = R"({"streams": ["consensus"]})",
+            .testJson = R"JSON({"streams": ["consensus"]})JSON",
             .expectedError = "notSupported",
             .expectedErrorMessage = "Operation not supported."
         },
         UnsubscribeParamTestCaseBundle{
             .testName = "StreamServerNotSupport",
-            .testJson = R"({"streams": ["server"]})",
+            .testJson = R"JSON({"streams": ["server"]})JSON",
             .expectedError = "notSupported",
             .expectedErrorMessage = "Operation not supported."
         },
@@ -558,7 +558,7 @@ TEST_F(RPCUnsubscribeTest, EmptyResponse)
 {
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{UnsubscribeHandler{mockSubscriptionManagerPtr_}};
-        auto const output = handler.process(json::parse(R"({})"), Context{yield, session_});
+        auto const output = handler.process(json::parse(R"JSON({})JSON"), Context{yield, session_});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().empty());
     });
@@ -567,9 +567,9 @@ TEST_F(RPCUnsubscribeTest, EmptyResponse)
 TEST_F(RPCUnsubscribeTest, Streams)
 {
     auto const input = json::parse(
-        R"({
+        R"JSON({
             "streams": ["transactions_proposed","transactions","validations","manifests","book_changes","ledger"]
-        })"
+        })JSON"
     );
 
     EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubLedger).Times(1);
@@ -590,9 +590,9 @@ TEST_F(RPCUnsubscribeTest, Streams)
 TEST_F(RPCUnsubscribeTest, Accounts)
 {
     auto const input = json::parse(fmt::format(
-        R"({{
+        R"JSON({{
             "accounts": ["{}","{}"]
-        }})",
+        }})JSON",
         kACCOUNT,
         kACCOUNT2
     ));
@@ -612,9 +612,9 @@ TEST_F(RPCUnsubscribeTest, Accounts)
 TEST_F(RPCUnsubscribeTest, AccountsProposed)
 {
     auto const input = json::parse(fmt::format(
-        R"({{
+        R"JSON({{
             "accounts_proposed": ["{}","{}"]
-        }})",
+        }})JSON",
         kACCOUNT,
         kACCOUNT2
     ));
@@ -635,7 +635,7 @@ TEST_F(RPCUnsubscribeTest, AccountsProposed)
 TEST_F(RPCUnsubscribeTest, Books)
 {
     auto const input = json::parse(fmt::format(
-        R"({{
+        R"JSON({{
             "books": [
                 {{
                     "taker_pays": {{
@@ -648,12 +648,12 @@ TEST_F(RPCUnsubscribeTest, Books)
                     "both": true
                 }}
             ]
-        }})",
+        }})JSON",
         kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
-    auto const book = std::get<ripple::Book>(parsedBookMaybe);
+    auto const book = parsedBookMaybe.value();
 
     EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubBook(book, _)).Times(1);
     EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubBook(ripple::reversed(book), _)).Times(1);
@@ -669,7 +669,7 @@ TEST_F(RPCUnsubscribeTest, Books)
 TEST_F(RPCUnsubscribeTest, SingleBooks)
 {
     auto const input = json::parse(fmt::format(
-        R"({{
+        R"JSON({{
             "books": [
                 {{
                     "taker_pays": {{
@@ -681,12 +681,12 @@ TEST_F(RPCUnsubscribeTest, SingleBooks)
                     }}
                 }}
             ]
-        }})",
+        }})JSON",
         kACCOUNT
     ));
 
     auto const parsedBookMaybe = rpc::parseBook(input.as_object().at("books").as_array()[0].as_object());
-    auto const book = std::get<ripple::Book>(parsedBookMaybe);
+    auto const book = parsedBookMaybe.value();
 
     EXPECT_CALL(*mockSubscriptionManagerPtr_, unsubBook(book, _)).Times(1);
 

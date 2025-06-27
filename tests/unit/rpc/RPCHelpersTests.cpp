@@ -24,15 +24,21 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
 #include "util/AsioContextTestFixture.hpp"
+#include "util/LoggerFixtures.hpp"
 #include "util/MockAmendmentCenter.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/NameGenerator.hpp"
+#include "util/Taggable.hpp"
 #include "util/TestObject.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 
 #include <boost/asio/impl/spawn.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
+#include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
 #include <fmt/core.h>
 #include <gmock/gmock.h>
@@ -48,6 +54,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -55,7 +62,6 @@
 #include <string>
 #include <string_view>
 #include <tuple>
-#include <variant>
 #include <vector>
 
 using namespace data;
@@ -79,16 +85,10 @@ constexpr auto kAMM_ID = 54321;
 }  // namespace
 
 class RPCHelpersTest : public util::prometheus::WithPrometheus, public MockBackendTest, public SyncAsioContextTest {
-    void
-    SetUp() override
+public:
+    RPCHelpersTest()
     {
         backend_->setRange(10, 300);
-        SyncAsioContextTest::SetUp();
-    }
-    void
-    TearDown() override
-    {
-        SyncAsioContextTest::TearDown();
     }
 
 protected:
@@ -102,10 +102,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
         auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,10", yield, [](auto) {
 
         });
-        auto status = std::get_if<Status>(&ret);
-        EXPECT_TRUE(status != nullptr);
-        EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
-        EXPECT_EQ(status->message, "Malformed cursor.");
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Malformed cursor.");
     });
     ctx_.run();
 }
@@ -117,10 +116,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
         auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,abc", yield, [](auto) {
 
         });
-        auto status = std::get_if<Status>(&ret);
-        EXPECT_TRUE(status != nullptr);
-        EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
-        EXPECT_EQ(status->message, "Malformed cursor.");
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Malformed cursor.");
     });
     ctx_.run();
 }
@@ -147,13 +145,10 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
     boost::asio::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
-        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [](auto) {
-
-        });
-        auto cursor = std::get_if<AccountCursor>(&ret);
-        EXPECT_TRUE(cursor != nullptr);
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [](auto) {});
+        EXPECT_TRUE(ret.has_value());
         EXPECT_EQ(
-            cursor->toString(),
+            ret.value().toString(),
             "0000000000000000000000000000000000000000000000000000000000000000,"
             "0"
         );
@@ -191,10 +186,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
     boost::asio::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [&](auto) { count++; });
-        auto cursor = std::get_if<AccountCursor>(&ret);
-        EXPECT_TRUE(cursor != nullptr);
+        EXPECT_TRUE(ret.has_value());
         EXPECT_EQ(count, 10);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},0", kINDEX1));
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},0", kINDEX1));
     });
     ctx_.run();
 }
@@ -243,10 +237,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
     boost::asio::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
         auto count = 0;
         auto ret = traverseOwnedNodes(*backend_, account, 9, kLIMIT, {}, yield, [&](auto) { count++; });
-        auto cursor = std::get_if<AccountCursor>(&ret);
-        EXPECT_TRUE(cursor != nullptr);
+        EXPECT_TRUE(ret.has_value());
         EXPECT_EQ(count, kLIMIT);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", kINDEX1, kNEXT_PAGE));
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kNEXT_PAGE));
     });
     ctx_.run();
 }
@@ -290,10 +283,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
         auto ret = traverseOwnedNodes(
             *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX1, kPAGE_NUM), yield, [&](auto) { count++; }
         );
-        auto cursor = std::get_if<AccountCursor>(&ret);
-        EXPECT_TRUE(cursor != nullptr);
+        EXPECT_TRUE(ret.has_value());
         EXPECT_EQ(count, kLIMIT);
-        EXPECT_EQ(cursor->toString(), fmt::format("{},{}", kINDEX1, kPAGE_NUM));
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kPAGE_NUM));
     });
     ctx_.run();
 }
@@ -327,10 +319,9 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
         auto ret = traverseOwnedNodes(
             *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX2, kPAGE_NUM), yield, [&](auto) { count++; }
         );
-        auto status = std::get_if<Status>(&ret);
-        EXPECT_TRUE(status != nullptr);
-        EXPECT_EQ(*status, ripple::rpcINVALID_PARAMS);
-        EXPECT_EQ(status->message, "Invalid marker.");
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Invalid marker.");
     });
     ctx_.run();
 }
@@ -372,28 +363,28 @@ TEST_F(RPCHelpersTest, DecodeInvalidCTID)
 TEST_F(RPCHelpersTest, DeliverMaxAliasV1)
 {
     std::array<std::string, 3> const inputArray = {
-        R"({
+        R"JSON({
             "TransactionType": "Payment",
             "Amount": {
                 "test": "test"
             }
-        })",
-        R"({
+        })JSON",
+        R"JSON({
             "TransactionType": "OfferCreate",
             "Amount": {
                 "test": "test"
             }
-        })",
-        R"({
+        })JSON",
+        R"JSON({
             "TransactionType": "Payment",
             "Amount1": {
                 "test": "test"
             }
-        })"
+        })JSON"
     };
 
     std::array<std::string, 3> outputArray = {
-        R"({
+        R"JSON({
             "TransactionType": "Payment",
             "Amount": {
                 "test": "test"
@@ -401,19 +392,19 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV1)
             "DeliverMax": {
                 "test": "test"
             }
-        })",
-        R"({
+        })JSON",
+        R"JSON({
             "TransactionType": "OfferCreate",
             "Amount": {
                 "test": "test"
             }
-        })",
-        R"({
+        })JSON",
+        R"JSON({
             "TransactionType": "Payment",
             "Amount1": {
                 "test": "test"
             }
-        })"
+        })JSON"
     };
 
     for (size_t i = 0; i < inputArray.size(); i++) {
@@ -427,12 +418,12 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV1)
 TEST_F(RPCHelpersTest, DeliverMaxAliasV2)
 {
     auto req = boost::json::parse(
-                   R"({
+                   R"JSON({
                         "TransactionType": "Payment",
                         "Amount": {
                             "test": "test"
                         }
-                    })"
+                    })JSON"
     )
                    .as_object();
 
@@ -440,12 +431,12 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV2)
     EXPECT_EQ(
         req,
         boost::json::parse(
-            R"({
+            R"JSON({
                 "TransactionType": "Payment",
                 "DeliverMax": {
                     "test": "test"
                 }
-            })"
+            })JSON"
         )
     );
 }
@@ -455,14 +446,14 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
     auto const ledgerHeader = createLedgerHeader(kINDEX1, 30);
     auto const binJson = toJson(ledgerHeader, true, 1u);
 
-    constexpr auto kEXPECT_BIN = R"({
+    constexpr auto kEXPECT_BIN = R"JSON({
                                     "ledger_data": "0000001E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                                     "closed": true
-                                })";
+                                })JSON";
     EXPECT_EQ(binJson, boost::json::parse(kEXPECT_BIN));
 
     auto const expectJson = fmt::format(
-        R"({{
+        R"JSON({{
             "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "close_flags": 0,
             "close_time": 0,
@@ -475,7 +466,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
             "total_coins": "0",
             "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "closed": true
-        }})",
+        }})JSON",
         kINDEX1,
         30
     );
@@ -490,7 +481,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
     auto const ledgerHeader = createLedgerHeader(kINDEX1, 30);
 
     auto const expectJson = fmt::format(
-        R"({{
+        R"JSON({{
             "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "close_flags": 0,
             "close_time": 0,
@@ -503,7 +494,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderJsonV2)
             "total_coins": "0",
             "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "closed": true
-        }})",
+        }})JSON",
         kINDEX1,
         30
     );
@@ -532,34 +523,34 @@ TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV2)
 TEST_F(RPCHelpersTest, ParseIssue)
 {
     auto issue = parseIssue(boost::json::parse(
-                                R"({
+                                R"JSON({
                                         "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
                                         "currency": "JPY"
-                                    })"
+                                    })JSON"
     )
                                 .as_object());
     EXPECT_TRUE(issue.account == getAccountIdWithString(kACCOUNT2));
 
-    issue = parseIssue(boost::json::parse(R"({"currency": "XRP"})").as_object());
+    issue = parseIssue(boost::json::parse(R"JSON({"currency": "XRP"})JSON").as_object());
     EXPECT_TRUE(ripple::isXRP(issue.currency));
 
-    EXPECT_THROW(parseIssue(boost::json::parse(R"({"currency": 2})").as_object()), std::runtime_error);
+    EXPECT_THROW(parseIssue(boost::json::parse(R"JSON({"currency": 2})JSON").as_object()), std::runtime_error);
 
-    EXPECT_THROW(parseIssue(boost::json::parse(R"({"currency": "XRP2"})").as_object()), std::runtime_error);
+    EXPECT_THROW(parseIssue(boost::json::parse(R"JSON({"currency": "XRP2"})JSON").as_object()), std::runtime_error);
 
     EXPECT_THROW(
         parseIssue(boost::json::parse(
-                       R"({
+                       R"JSON({
                                 "issuer": "abcd",
                                 "currency": "JPY"
-                            })"
+                            })JSON"
         )
                        .as_object()),
         std::runtime_error
     );
 
     EXPECT_THROW(
-        parseIssue(boost::json::parse(R"({"issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"})").as_object()),
+        parseIssue(boost::json::parse(R"JSON({"issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"})JSON").as_object()),
         std::runtime_error
     );
 }
@@ -1089,67 +1080,111 @@ static auto
 generateTestValuesForParametersTest()
 {
     return std::vector<IsAdminCmdParamTestCaseBundle>{
-        {.testName = "ledgerEntry", .method = "ledger_entry", .testJson = R"({"type": false})", .expected = false},
+        {.testName = "ledgerEntry",
+         .method = "ledger_entry",
+         .testJson = R"JSON({"type": false})JSON",
+         .expected = false},
 
         {.testName = "featureVetoedTrue",
          .method = "feature",
-         .testJson = R"({"vetoed": true, "feature": "foo"})",
+         .testJson = R"JSON({"vetoed": true, "feature": "foo"})JSON",
          .expected = true},
         {.testName = "featureVetoedFalse",
          .method = "feature",
-         .testJson = R"({"vetoed": false, "feature": "foo"})",
+         .testJson = R"JSON({"vetoed": false, "feature": "foo"})JSON",
          .expected = true},
-        {.testName = "featureVetoedIsStr", .method = "feature", .testJson = R"({"vetoed": "String"})", .expected = true
-        },
+        {.testName = "featureVetoedIsStr",
+         .method = "feature",
+         .testJson = R"JSON({"vetoed": "String"})JSON",
+         .expected = true},
 
-        {.testName = "ledger", .method = "ledger", .testJson = R"({})", .expected = false},
-        {.testName = "ledgerWithType", .method = "ledger", .testJson = R"({"type": "fee"})", .expected = false},
-        {.testName = "ledgerFullTrue", .method = "ledger", .testJson = R"({"full": true})", .expected = true},
-        {.testName = "ledgerFullFalse", .method = "ledger", .testJson = R"({"full": false})", .expected = false},
-        {.testName = "ledgerFullIsStr", .method = "ledger", .testJson = R"({"full": "String"})", .expected = true},
-        {.testName = "ledgerFullIsEmptyStr", .method = "ledger", .testJson = R"({"full": ""})", .expected = false},
-        {.testName = "ledgerFullIsNumber1", .method = "ledger", .testJson = R"({"full": 1})", .expected = true},
-        {.testName = "ledgerFullIsNumber0", .method = "ledger", .testJson = R"({"full": 0})", .expected = false},
-        {.testName = "ledgerFullIsNull", .method = "ledger", .testJson = R"({"full": null})", .expected = false},
-        {.testName = "ledgerFullIsFloat0", .method = "ledger", .testJson = R"({"full": 0.0})", .expected = false},
-        {.testName = "ledgerFullIsFloat1", .method = "ledger", .testJson = R"({"full": 0.1})", .expected = true},
-        {.testName = "ledgerFullIsArray", .method = "ledger", .testJson = R"({"full": [1]})", .expected = true},
-        {.testName = "ledgerFullIsEmptyArray", .method = "ledger", .testJson = R"({"full": []})", .expected = false},
-        {.testName = "ledgerFullIsObject", .method = "ledger", .testJson = R"({"full": {"key": 1}})", .expected = true},
-        {.testName = "ledgerFullIsEmptyObject", .method = "ledger", .testJson = R"({"full": {}})", .expected = false},
-
-        {.testName = "ledgerAccountsTrue", .method = "ledger", .testJson = R"({"accounts": true})", .expected = true},
-        {.testName = "ledgerAccountsFalse", .method = "ledger", .testJson = R"({"accounts": false})", .expected = false
+        {.testName = "ledger", .method = "ledger", .testJson = R"JSON({})JSON", .expected = false},
+        {.testName = "ledgerWithType", .method = "ledger", .testJson = R"JSON({"type": "fee"})JSON", .expected = false},
+        {.testName = "ledgerFullTrue", .method = "ledger", .testJson = R"JSON({"full": true})JSON", .expected = true},
+        {.testName = "ledgerFullFalse", .method = "ledger", .testJson = R"JSON({"full": false})JSON", .expected = false
         },
+        {.testName = "ledgerFullIsStr",
+         .method = "ledger",
+         .testJson = R"JSON({"full": "String"})JSON",
+         .expected = true},
+        {.testName = "ledgerFullIsEmptyStr",
+         .method = "ledger",
+         .testJson = R"JSON({"full": ""})JSON",
+         .expected = false},
+        {.testName = "ledgerFullIsNumber1", .method = "ledger", .testJson = R"JSON({"full": 1})JSON", .expected = true},
+        {.testName = "ledgerFullIsNumber0", .method = "ledger", .testJson = R"JSON({"full": 0})JSON", .expected = false
+        },
+        {.testName = "ledgerFullIsNull", .method = "ledger", .testJson = R"JSON({"full": null})JSON", .expected = false
+        },
+        {.testName = "ledgerFullIsFloat0", .method = "ledger", .testJson = R"JSON({"full": 0.0})JSON", .expected = false
+        },
+        {.testName = "ledgerFullIsFloat1", .method = "ledger", .testJson = R"JSON({"full": 0.1})JSON", .expected = true
+        },
+        {.testName = "ledgerFullIsArray", .method = "ledger", .testJson = R"JSON({"full": [1]})JSON", .expected = true},
+        {.testName = "ledgerFullIsEmptyArray",
+         .method = "ledger",
+         .testJson = R"JSON({"full": []})JSON",
+         .expected = false},
+        {.testName = "ledgerFullIsObject",
+         .method = "ledger",
+         .testJson = R"JSON({"full": {"key": 1}})JSON",
+         .expected = true},
+        {.testName = "ledgerFullIsEmptyObject",
+         .method = "ledger",
+         .testJson = R"JSON({"full": {}})JSON",
+         .expected = false},
+
+        {.testName = "ledgerAccountsTrue",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": true})JSON",
+         .expected = true},
+        {.testName = "ledgerAccountsFalse",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": false})JSON",
+         .expected = false},
         {.testName = "ledgerAccountsIsStr",
          .method = "ledger",
-         .testJson = R"({"accounts": "String"})",
+         .testJson = R"JSON({"accounts": "String"})JSON",
          .expected = true},
         {.testName = "ledgerAccountsIsEmptyStr",
          .method = "ledger",
-         .testJson = R"({"accounts": ""})",
+         .testJson = R"JSON({"accounts": ""})JSON",
          .expected = false},
-        {.testName = "ledgerAccountsIsNumber1", .method = "ledger", .testJson = R"({"accounts": 1})", .expected = true},
-        {.testName = "ledgerAccountsIsNumber0", .method = "ledger", .testJson = R"({"accounts": 0})", .expected = false
-        },
-        {.testName = "ledgerAccountsIsNull", .method = "ledger", .testJson = R"({"accounts": null})", .expected = false
-        },
-        {.testName = "ledgerAccountsIsFloat0", .method = "ledger", .testJson = R"({"accounts": 0.0})", .expected = false
-        },
-        {.testName = "ledgerAccountsIsFloat1", .method = "ledger", .testJson = R"({"accounts": 0.1})", .expected = true
-        },
-        {.testName = "ledgerAccountsIsArray", .method = "ledger", .testJson = R"({"accounts": [1]})", .expected = true},
+        {.testName = "ledgerAccountsIsNumber1",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": 1})JSON",
+         .expected = true},
+        {.testName = "ledgerAccountsIsNumber0",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": 0})JSON",
+         .expected = false},
+        {.testName = "ledgerAccountsIsNull",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": null})JSON",
+         .expected = false},
+        {.testName = "ledgerAccountsIsFloat0",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": 0.0})JSON",
+         .expected = false},
+        {.testName = "ledgerAccountsIsFloat1",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": 0.1})JSON",
+         .expected = true},
+        {.testName = "ledgerAccountsIsArray",
+         .method = "ledger",
+         .testJson = R"JSON({"accounts": [1]})JSON",
+         .expected = true},
         {.testName = "ledgerAccountsIsEmptyArray",
          .method = "ledger",
-         .testJson = R"({"accounts": []})",
+         .testJson = R"JSON({"accounts": []})JSON",
          .expected = false},
         {.testName = "ledgerAccountsIsObject",
          .method = "ledger",
-         .testJson = R"({"accounts": {"key": 1}})",
+         .testJson = R"JSON({"accounts": {"key": 1}})JSON",
          .expected = true},
         {.testName = "ledgerAccountsIsEmptyObject",
          .method = "ledger",
-         .testJson = R"({"accounts": {}})",
+         .testJson = R"JSON({"accounts": {}})JSON",
          .expected = false},
     };
 }
@@ -1166,3 +1201,65 @@ TEST_P(IsAdminCmdParameterTest, Test)
     auto const testBundle = GetParam();
     EXPECT_EQ(isAdminCmd(testBundle.method, boost::json::parse(testBundle.testJson).as_object()), testBundle.expected);
 }
+
+struct RPCHelpersLogDurationTestBundle {
+    std::string testName;
+    std::chrono::milliseconds duration;
+    std::string expectedLogLevel;
+    bool expectDuration;
+};
+
+struct RPCHelpersLogDurationTest : LoggerFixture, testing::WithParamInterface<RPCHelpersLogDurationTestBundle> {
+    boost::json::object const request = {
+        {"method", "account_info"},
+        {"params",
+         boost::json::array{
+             boost::json::object{{"account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}, {"secret", "should be deleted"}}
+         }}
+    };
+    util::TagDecoratorFactory tagFactory{util::config::ClioConfigDefinition{
+        {"log_tag_style", util::config::ConfigValue{util::config::ConfigType::String}.defaultValue("none")}
+    }};
+    struct DummyTaggable : util::Taggable {
+        DummyTaggable(util::TagDecoratorFactory& f) : util::Taggable(f)
+        {
+        }
+    };
+    DummyTaggable taggable{tagFactory};
+};
+
+TEST_P(RPCHelpersLogDurationTest, LogDuration)
+{
+    auto const& tag = taggable.tag();
+
+    logDuration(request, tag, GetParam().duration);
+
+    std::string const output = getLoggerString();
+
+    EXPECT_NE(output.find(GetParam().expectedLogLevel), std::string::npos) << output;
+    EXPECT_NE(output.find(tag.toString()), std::string::npos);
+
+    if (GetParam().expectDuration) {
+        std::string const durationStr = std::to_string(GetParam().duration.count()) + " milliseconds";
+        EXPECT_NE(output.find(durationStr), std::string::npos);
+    }
+
+    EXPECT_NE(output.find("account_info"), std::string::npos);
+    EXPECT_EQ(output.find("should be deleted"), std::string::npos);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    RPCHelpersLogDurationTests,
+    RPCHelpersLogDurationTest,
+    testing::Values(
+        RPCHelpersLogDurationTestBundle{"ShortDurationLogsAsInfo", std::chrono::milliseconds(500), "RPC:NFO", true},
+        RPCHelpersLogDurationTestBundle{
+            "MediumDurationLogsAsWarning",
+            std::chrono::milliseconds(5000),
+            "RPC:WRN",
+            true
+        },
+        RPCHelpersLogDurationTestBundle{"LongDurationLogsAsError", std::chrono::milliseconds(15000), "RPC:ERR", true}
+    ),
+    tests::util::kNAME_GENERATOR
+);

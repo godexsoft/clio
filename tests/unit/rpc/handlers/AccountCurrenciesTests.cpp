@@ -73,10 +73,10 @@ TEST_F(RPCAccountCurrenciesHandlerTest, AccountNotExist)
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}"
-        }})",
+        }})JSON",
         kACCOUNT
     ));
     auto const handler = AnyHandler{AccountCurrenciesHandler{backend_}};
@@ -95,10 +95,10 @@ TEST_F(RPCAccountCurrenciesHandlerTest, LedgerNonExistViaIntSequence)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(30, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}"
-        }})",
+        }})JSON",
         kACCOUNT
     ));
     auto const handler = AnyHandler{AccountCurrenciesHandler{backend_}};
@@ -119,11 +119,11 @@ TEST_F(RPCAccountCurrenciesHandlerTest, LedgerNonExistViaStringSequence)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(12, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}",
             "ledger_index":"{}"
-        }})",
+        }})JSON",
         kACCOUNT,
         kSEQ
     ));
@@ -144,11 +144,11 @@ TEST_F(RPCAccountCurrenciesHandlerTest, LedgerNonExistViaHash)
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}",
             "ledger_hash":"{}"
-        }})",
+        }})JSON",
         kACCOUNT,
         kLEDGER_HASH
     ));
@@ -164,7 +164,7 @@ TEST_F(RPCAccountCurrenciesHandlerTest, LedgerNonExistViaHash)
 
 TEST_F(RPCAccountCurrenciesHandlerTest, DefaultParameter)
 {
-    static constexpr auto kOUTPUT = R"({
+    static constexpr auto kOUTPUT = R"JSON({
         "ledger_hash":"4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
         "ledger_index":30,
         "validated":true,
@@ -176,7 +176,7 @@ TEST_F(RPCAccountCurrenciesHandlerTest, DefaultParameter)
             "EUR",
             "USD"
         ]
-    })";
+    })JSON";
 
     // return valid ledgerHeader
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, 30);
@@ -210,10 +210,10 @@ TEST_F(RPCAccountCurrenciesHandlerTest, DefaultParameter)
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}"
-        }})",
+        }})JSON",
         kACCOUNT
     ));
     auto const handler = AnyHandler{AccountCurrenciesHandler{backend_}};
@@ -245,11 +245,11 @@ TEST_F(RPCAccountCurrenciesHandlerTest, RequestViaLegderHash)
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}",
             "ledger_hash":"{}"
-        }})",
+        }})JSON",
         kACCOUNT,
         kLEDGER_HASH
     ));
@@ -282,11 +282,11 @@ TEST_F(RPCAccountCurrenciesHandlerTest, RequestViaLegderSeq)
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
-    auto static const kINPUT = json::parse(fmt::format(
-        R"({{
+    static auto const kINPUT = json::parse(fmt::format(
+        R"JSON({{
             "account":"{}",
             "ledger_index":{}
-        }})",
+        }})JSON",
         kACCOUNT,
         ledgerSeq
     ));

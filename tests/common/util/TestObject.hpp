@@ -182,9 +182,10 @@ createMetaDataForBookChange(
     std::string_view issueId,
     uint32_t transactionIndex,
     int finalTakerGets,
-    int perviousTakerGets,
+    int previousTakerGets,
     int finalTakerPays,
-    int perviousTakerPays
+    int previousTakerPays,
+    std::optional<std::string_view> domain = std::nullopt
 );
 
 /*
@@ -257,7 +258,8 @@ createOfferLedgerObject(
     std::string_view paysCurrency,
     std::string_view getsIssueId,
     std::string_view paysIssueId,
-    std::string_view bookDirId
+    std::string_view bookDirId,
+    std::optional<std::string_view> domain = std::nullopt
 );
 
 [[nodiscard]] ripple::STObject
@@ -459,6 +461,16 @@ createPermissionedDomainObject(
     std::string_view accountId,
     std::string_view ledgerIndex,
     ripple::LedgerIndex seq,
+    uint64_t ownerNode,
+    ripple::uint256 previousTxId,
+    uint32_t previousTxSeq
+);
+
+[[nodiscard]] ripple::STObject
+createDelegateObject(
+    std::string_view accountId,
+    std::string_view authorize,
+    std::string_view ledgerIndex,
     uint64_t ownerNode,
     ripple::uint256 previousTxId,
     uint32_t previousTxSeq

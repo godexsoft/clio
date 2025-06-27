@@ -34,6 +34,7 @@
 
 #include <chrono>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace cluster {
@@ -50,7 +51,7 @@ class ClusterCommunicationService : public ClusterCommunicationServiceInterface 
     util::prometheus::Bool isHealthy_ = PrometheusService::boolMetric(
         "cluster_communication_is_healthy",
         {},
-        "Whether cluster communicaton service is operating healthy (1 - healthy, 0 - we have a problem)"
+        "Whether cluster communication service is operating healthy (1 - healthy, 0 - we have a problem)"
     );
 
     // TODO: Use util::async::CoroExecutionContext after https://github.com/XRPLF/clio/issues/1973 is implemented
@@ -125,9 +126,9 @@ public:
     /**
      * @brief Get the data of all nodes in the cluster (including self).
      *
-     * @return The data of all nodes in the cluster.
+     * @return The data of all nodes in the cluster or error if the service is not healthy.
      */
-    std::vector<ClioNode>
+    std::expected<std::vector<ClioNode>, std::string>
     clusterData() const override;
 
 private:

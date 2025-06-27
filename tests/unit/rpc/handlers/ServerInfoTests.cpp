@@ -56,22 +56,9 @@ constexpr auto kCLIENT_IP = "1.1.1.1";
 }  // namespace
 
 struct RPCServerInfoHandlerTest : HandlerBaseTest, MockLoadBalancerTest, MockCountersTest {
-    void
-    SetUp() override
+    RPCServerInfoHandlerTest()
     {
-        HandlerBaseTest::SetUp();
-        MockLoadBalancerTest::SetUp();
-        MockCountersTest::SetUp();
-
         backend_->setRange(10, 30);
-    }
-
-    void
-    TearDown() override
-    {
-        MockCountersTest::TearDown();
-        MockLoadBalancerTest::TearDown();
-        HandlerBaseTest::TearDown();
     }
 
     static void
@@ -412,11 +399,11 @@ TEST_F(RPCServerInfoHandlerTest, BackendCountersPresentWhenRequestWithParam)
     }};
 
     runSpawn([&](auto yield) {
-        auto const req = json::parse(R"(
+        auto const req = json::parse(R"JSON(
         {
             "backend_counters": true
         }
-        )");
+        )JSON");
         auto const output = handler.process(req, Context{yield, {}, true});
 
         validateNormalOutput(output);
@@ -441,7 +428,7 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
 
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(false));
 
-    auto const rippledObj = json::parse(R"({
+    auto const rippledObj = json::parse(R"JSON({
         "result": {
             "info": {
                 "build_version": "1234",
@@ -450,7 +437,7 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesPresent)
                 "network_id": 2
             }
         }
-    })");
+    })JSON");
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled).WillOnce(Return(rippledObj.as_object()));
 
     // admin calls
@@ -491,11 +478,11 @@ TEST_F(RPCServerInfoHandlerTest, RippledForwardedValuesMissingNoExceptionThrown)
 
     EXPECT_CALL(*rawETLServicePtr, isAmendmentBlocked).WillOnce(Return(false));
 
-    auto const rippledObj = json::parse(R"({
+    auto const rippledObj = json::parse(R"JSON({
         "result": {
             "info": {}
         }
-    })");
+    })JSON");
     EXPECT_CALL(*rawBalancerPtr, forwardToRippled).WillOnce(Return(rippledObj.as_object()));
 
     // admin calls

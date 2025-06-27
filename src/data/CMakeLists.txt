@@ -5,6 +5,7 @@ target_sources(
           BackendCounters.cpp
           BackendInterface.cpp
           LedgerCache.cpp
+          LedgerHeaderCache.cpp
           cassandra/impl/Future.cpp
           cassandra/impl/Cluster.cpp
           cassandra/impl/Batch.cpp
@@ -16,5 +17,5 @@ target_sources(
 )
 
 target_link_libraries(clio_data PUBLIC cassandra-cpp-driver::cassandra-cpp-driver clio_util)
-target_link_libraries(clio_data PUBLIC clioStubs::clioStubs)
-target_include_directories(clio_data PUBLIC clioStubs::clioStubs)
+target_link_libraries(clio_data PUBLIC clio-stubs::clio-stubs)
+target_include_directories(clio_data PUBLIC clio-stubs::clio-stubs)

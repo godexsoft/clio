@@ -26,10 +26,10 @@
 #include "util/MockLedgerCache.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
-#include "util/newconfig/ConfigFileJson.hpp"
-#include "util/newconfig/ConfigValue.hpp"
-#include "util/newconfig/Types.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigFileJson.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
@@ -207,7 +207,7 @@ TEST_P(ParametrizedCacheLoaderTest, CacheDisabledLeadsToCancellation)
 //
 TEST_F(CacheLoaderTest, SyncCacheLoaderWaitsTillFullyLoaded)
 {
-    auto const cfg = getParseCacheConfig(json::parse(R"({"cache": {"load": "sync"}})"));
+    auto const cfg = getParseCacheConfig(json::parse(R"JSON({"cache": {"load": "sync"}})JSON"));
     CacheLoader<> loader{cfg, backend_, cache};
 
     auto const diffs = diffProvider.getLatestDiff();
@@ -233,7 +233,7 @@ TEST_F(CacheLoaderTest, SyncCacheLoaderWaitsTillFullyLoaded)
 
 TEST_F(CacheLoaderTest, AsyncCacheLoaderCanBeStopped)
 {
-    auto const cfg = getParseCacheConfig(json::parse(R"({"cache": {"load": "async"}})"));
+    auto const cfg = getParseCacheConfig(json::parse(R"JSON({"cache": {"load": "async"}})JSON"));
     CacheLoader loader{cfg, backend_, cache};
 
     auto const diffs = diffProvider.getLatestDiff();
@@ -261,7 +261,7 @@ TEST_F(CacheLoaderTest, AsyncCacheLoaderCanBeStopped)
 
 TEST_F(CacheLoaderTest, DisabledCacheLoaderDoesNotLoadCache)
 {
-    auto const cfg = getParseCacheConfig(json::parse(R"({"cache": {"load": "none"}})"));
+    auto const cfg = getParseCacheConfig(json::parse(R"JSON({"cache": {"load": "none"}})JSON"));
     CacheLoader loader{cfg, backend_, cache};
 
     EXPECT_CALL(cache, updateImp).Times(0);
@@ -273,7 +273,7 @@ TEST_F(CacheLoaderTest, DisabledCacheLoaderDoesNotLoadCache)
 
 TEST_F(CacheLoaderTest, DisabledCacheLoaderCanCallStopAndWait)
 {
-    auto const cfg = getParseCacheConfig(json::parse(R"({"cache": {"load": "none"}})"));
+    auto const cfg = getParseCacheConfig(json::parse(R"JSON({"cache": {"load": "none"}})JSON"));
     CacheLoader loader{cfg, backend_, cache};
 
     EXPECT_CALL(cache, updateImp).Times(0);

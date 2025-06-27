@@ -1,1 +1,1 @@
-find_package(clioStubs REQUIRED CONFIG)
+find_package(clio-stubs REQUIRED CONFIG)

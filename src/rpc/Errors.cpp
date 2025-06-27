@@ -74,7 +74,7 @@ makeWarning(WarningCode code)
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    constexpr static ClioErrorInfo kINFOS[]{
+    static constexpr ClioErrorInfo kINFOS[]{
         {.code = ClioError::RpcMalformedCurrency, .error = "malformedCurrency", .message = "Malformed currency."},
         {.code = ClioError::RpcMalformedRequest, .error = "malformedRequest", .message = "Malformed request."},
         {.code = ClioError::RpcMalformedOwner, .error = "malformedOwner", .message = "Malformed owner."},
@@ -97,8 +97,8 @@ getErrorInfo(ClioError code)
          .message = "Method is not specified or is not a string."},
         {.code = ClioError::RpcCommandNotString, .error = "commandNotString", .message = "Method is not a string."},
         {.code = ClioError::RpcCommandIsEmpty, .error = "emptyCommand", .message = "Method is an empty string."},
-        {.code = ClioError::RpcParamsUnparseable,
-         .error = "paramsUnparseable",
+        {.code = ClioError::RpcParamsUnparsable,
+         .error = "paramsUnparsable",
          .message = "Params must be an array holding exactly one object."},
         // etl related errors
         {.code = ClioError::EtlConnectionError, .error = "connectionError", .message = "Couldn't connect to rippled."},

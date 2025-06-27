@@ -20,7 +20,7 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "etl/LedgerFetcherInterface.hpp"
+#include "etl/SystemState.hpp"
 #include "etl/impl/LedgerLoader.hpp"
 #include "etlng/AmendmentBlockHandlerInterface.hpp"
 #include "etlng/InitialLoadObserverInterface.hpp"
@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -49,10 +50,12 @@ namespace etlng::impl {
 
 class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
     std::shared_ptr<RegistryInterface> registry_;
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
+    std::shared_ptr<etl::SystemState> state_;
 
+    std::size_t initialLoadWrittenObjects_{0u};
+    std::size_t initialLoadWrites_{0u};
     util::Logger log_{"ETL"};
 
 public:
@@ -62,12 +65,19 @@ public:
 
     Loader(
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::LedgerFetcherInterface> fetcher,
         std::shared_ptr<RegistryInterface> registry,
-        std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler
+        std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler,
+        std::shared_ptr<etl::SystemState> state
     );
 
-    void
+    Loader(Loader const&) = delete;
+    Loader(Loader&&) = delete;
+    Loader&
+    operator=(Loader const&) = delete;
+    Loader&
+    operator=(Loader&&) = delete;
+
+    std::expected<void, Error>
     load(model::LedgerData const& data) override;
 
     void

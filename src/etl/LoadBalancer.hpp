@@ -29,9 +29,11 @@
 #include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
 #include "util/Mutex.hpp"
+#include "util/Random.hpp"
 #include "util/ResponseExpirationCache.hpp"
+#include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
-#include "util/newconfig/ConfigDefinition.hpp"
+#include "util/prometheus/Counter.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/asio/io_context.hpp>
@@ -44,6 +46,7 @@
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
 #include <chrono>
+#include <concepts>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -86,12 +89,22 @@ private:
     std::optional<util::ResponseExpirationCache> forwardingCache_;
     std::optional<std::string> forwardingXUserValue_;
 
+    std::unique_ptr<util::RandomGeneratorInterface> randomGenerator_;
+
     std::vector<SourcePtr> sources_;
     std::optional<ETLState> etlState_;
     std::uint32_t downloadRanges_ =
         kDEFAULT_DOWNLOAD_RANGES; /*< The number of markers to use when downloading initial ledger */
 
-    // Using mutext instead of atomic_bool because choosing a new source to
+    struct ForwardingCounters {
+        std::reference_wrapper<util::prometheus::CounterInt> successDuration;
+        std::reference_wrapper<util::prometheus::CounterInt> failDuration;
+        std::reference_wrapper<util::prometheus::CounterInt> retries;
+        std::reference_wrapper<util::prometheus::CounterInt> cacheHit;
+        std::reference_wrapper<util::prometheus::CounterInt> cacheMiss;
+    } forwardingCounters_;
+
+    // Using mutex instead of atomic_bool because choosing a new source to
     // forward messages should be done with a mutual exclusion otherwise there will be a race condition
     util::Mutex<bool> hasForwardingSource_{false};
 
@@ -113,6 +126,7 @@ public:
      * @param ioc The io_context to run on
      * @param backend BackendInterface implementation
      * @param subscriptions Subscription manager
+     * @param randomGenerator A random generator to use for selecting sources
      * @param validatedLedgers The network validated ledgers datastructure
      * @param sourceFactory A factory function to create a source
      */
@@ -121,6 +135,7 @@ public:
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
+        std::unique_ptr<util::RandomGeneratorInterface> randomGenerator,
         std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = makeSource
     );
@@ -132,7 +147,8 @@ public:
      * @param ioc The io_context to run on
      * @param backend BackendInterface implementation
      * @param subscriptions Subscription manager
-     * @param validatedLedgers The network validated ledgers datastructure
+     * @param randomGenerator A random generator to use for selecting sources
+     * @param validatedLedgers The network validated ledgers data structure
      * @param sourceFactory A factory function to create a source
      * @return A shared pointer to a new instance of LoadBalancer
      */
@@ -142,11 +158,10 @@ public:
         boost::asio::io_context& ioc,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
+        std::unique_ptr<util::RandomGeneratorInterface> randomGenerator,
         std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = makeSource
     );
-
-    ~LoadBalancer() override;
 
     /**
      * @brief Load the initial ledger, writing data to the queue.
@@ -218,7 +233,7 @@ public:
      * @param yield The coroutine context
      * @return Response received from rippled node as JSON object on success or error on failure
      */
-    std::expected<boost::json::object, rpc::ClioError>
+    std::expected<boost::json::object, rpc::CombinedError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& clientIp,
@@ -264,6 +279,14 @@ private:
      */
     void
     chooseForwardingSource();
+
+    std::expected<boost::json::object, rpc::CombinedError>
+    forwardToRippledImpl(
+        boost::json::object const& request,
+        std::optional<std::string> const& clientIp,
+        bool isAdmin,
+        boost::asio::yield_context yield
+    );
 };
 
 }  // namespace etl

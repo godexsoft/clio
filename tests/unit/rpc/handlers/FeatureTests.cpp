@@ -78,75 +78,75 @@ generateTestValuesForParametersTest()
         // Note: on rippled this and below returns "badFeature"
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureBool",
-            .testJson = R"({"feature": true})",
+            .testJson = R"JSON({"feature": true})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureInt",
-            .testJson = R"({"feature": 42})",
+            .testJson = R"JSON({"feature": 42})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureDouble",
-            .testJson = R"({"feature": 4.2})",
+            .testJson = R"JSON({"feature": 4.2})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureNull",
-            .testJson = R"({"feature": null})",
+            .testJson = R"JSON({"feature": null})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         // Note: this and below internal errors on rippled
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureObj",
-            .testJson = R"({"feature": {}})",
+            .testJson = R"JSON({"feature": {}})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeFeatureArray",
-            .testJson = R"({"feature": []})",
+            .testJson = R"JSON({"feature": []})JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         // "vetoed" should always be blocked
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "VetoedPassed",
-            .testJson = R"({"feature": "foo", "vetoed": true})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": true})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeVetoedString",
-            .testJson = R"({"feature": "foo", "vetoed": "test"})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": "test"})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeVetoedInt",
-            .testJson = R"({"feature": "foo", "vetoed": 42})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": 42})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeVetoedDouble",
-            .testJson = R"({"feature": "foo", "vetoed": 4.2})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": 4.2})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeVetoedObject",
-            .testJson = R"({"feature": "foo", "vetoed": {}})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": {}})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
         RPCFeatureHandlerParamTestCaseBundle{
             .testName = "InvalidTypeVetoedArray",
-            .testJson = R"({"feature": "foo", "vetoed": []})",
+            .testJson = R"JSON({"feature": "foo", "vetoed": []})JSON",
             .expectedError = "noPermission",
             .expectedErrorMessage = "The admin portion of feature API is not available through Clio."
         },
@@ -182,9 +182,9 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
-            R"({{
+            R"JSON({{
                 "ledger_index": {}
-            }})",
+            }})JSON",
             kRANGE_MAX
         ));
         auto const output = handler.process(req, Context{yield});
@@ -202,9 +202,9 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
-            R"({{
+            R"JSON({{
                 "ledger_index": "{}"
-            }})",
+            }})JSON",
             kRANGE_MAX
         ));
         auto const output = handler.process(req, Context{yield});
@@ -223,9 +223,9 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const req = boost::json::parse(fmt::format(
-            R"({{
+            R"JSON({{
                 "ledger_hash": "{}"
-            }})",
+            }})JSON",
             kLEDGER_HASH
         ));
         auto const output = handler.process(req, Context{yield});
@@ -241,7 +241,7 @@ TEST_F(RPCFeatureHandlerTest, AlwaysNoPermissionForVetoed)
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output =
-            handler.process(boost::json::parse(R"({"vetoed": true, "feature": "foo"})"), Context{yield});
+            handler.process(boost::json::parse(R"JSON({"vetoed": true, "feature": "foo"})JSON"), Context{yield});
 
         ASSERT_FALSE(output);
 
@@ -279,24 +279,25 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
-        R"({{
-            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": 
+        R"JSON({{
+            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
             {{
-                "name": "fixUniversalNumber", 
-                "enabled": true, 
+                "name": "fixUniversalNumber",
+                "enabled": true,
                 "supported": true
             }},
-            "ledger_hash": "{}", 
-            "ledger_index": {}, 
+            "ledger_hash": "{}",
+            "ledger_index": {},
             "validated": true
-        }})",
+        }})JSON",
         kLEDGER_HASH,
         kSEQ
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const output = handler.process(boost::json::parse(R"({"feature": "fixUniversalNumber"})"), Context{yield});
+        auto const output =
+            handler.process(boost::json::parse(R"JSON({"feature": "fixUniversalNumber"})JSON"), Context{yield});
 
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
@@ -329,17 +330,17 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(testing::Return(ledgerHeader));
 
     auto const expectedOutput = fmt::format(
-        R"({{
-            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": 
+        R"JSON({{
+            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
             {{
-                "name": "fixUniversalNumber", 
-                "enabled": true, 
+                "name": "fixUniversalNumber",
+                "enabled": true,
                 "supported": true
             }},
-            "ledger_hash": "{}", 
-            "ledger_index": {}, 
+            "ledger_hash": "{}",
+            "ledger_index": {},
             "validated": true
-        }})",
+        }})JSON",
         kLEDGER_HASH,
         kSEQ
     );
@@ -347,7 +348,9 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
     runSpawn([this, &expectedOutput](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
         auto const output = handler.process(
-            boost::json::parse(R"({"feature": "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0"})"),
+            boost::json::parse(
+                R"JSON({"feature": "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0"})JSON"
+            ),
             Context{yield}
         );
 
@@ -372,7 +375,8 @@ TEST_F(RPCFeatureHandlerTest, BadFeaturePath)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const output = handler.process(boost::json::parse(R"({"feature": "nonexistent"})"), Context{yield});
+        auto const output =
+            handler.process(boost::json::parse(R"JSON({"feature": "nonexistent"})JSON"), Context{yield});
 
         ASSERT_FALSE(output);
 
@@ -412,32 +416,32 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
         createAmendmentsObject({Amendments::fixUniversalNumber, Amendments::fixRemoveNFTokenAutoTrustLine});
 
     auto const expectedOutput = fmt::format(
-        R"({{
+        R"JSON({{
             "features": {{
-                "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": 
+                "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
                 {{
-                    "name": "fixUniversalNumber", 
-                    "enabled": true, 
+                    "name": "fixUniversalNumber",
+                    "enabled": true,
                     "supported": true
                 }},
                 "DF8B4536989BDACE3F934F29423848B9F1D76D09BE6A1FCFE7E7F06AA26ABEAD":
                 {{
-                    "name": "fixRemoveNFTokenAutoTrustLine", 
-                    "enabled": false, 
+                    "name": "fixRemoveNFTokenAutoTrustLine",
+                    "enabled": false,
                     "supported": false
                 }}
             }},
-            "ledger_hash": "{}", 
-            "ledger_index": {}, 
+            "ledger_hash": "{}",
+            "ledger_index": {},
             "validated": true
-        }})",
+        }})JSON",
         kLEDGER_HASH,
         kSEQ
     );
 
     runSpawn([this, &expectedOutput](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const output = handler.process(boost::json::parse(R"({})"), Context{yield});
+        auto const output = handler.process(boost::json::parse(R"JSON({})JSON"), Context{yield});
 
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
