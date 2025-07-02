@@ -79,11 +79,11 @@ namespace app {
 
 namespace {
 
-struct ServerInfoHandlerImpl : public clio::ServerInfoHandlerBase<rpc::Context> {
-    std::expected<clio::model::ServerInfoResponse, clio::Error>
-    process(clio::model::ServerInfoRequestBase const& req, rpc::Context const& ctx) override
+struct ServerInfoHandlerImpl : public openapi_clio::ServerInfoHandlerBase<rpc::Context> {
+    std::expected<openapi_clio::model::ServerInfoResponse, openapi_clio::Error>
+    process(openapi_clio::model::ServerInfoRequestBase const& req, rpc::Context const& ctx) override
     {
-        using namespace clio::model;  // generated name of namespace can be adjusted in openapi
+        using namespace openapi_clio::model;  // generated name of namespace can be adjusted in openapi
 
         LOG(util::LogService::info()) << "+++ client ip: " << ctx.clientIp << "; req.isCounters: " << req.isCounters();
 
@@ -92,7 +92,7 @@ struct ServerInfoHandlerImpl : public clio::ServerInfoHandlerBase<rpc::Context> 
         info.setBuildVersion("2.4.0 test");
 
         auto resp = ServerInfoSuccessResponse{};
-        resp.setStatus(clio::model::ServerInfoSuccessResponseBase::StatusEnum::SUCCESS);
+        resp.setStatus(openapi_clio::model::ServerInfoSuccessResponseBase::StatusEnum::SUCCESS);
         resp.setInfo(std::move(info));
 
         auto tmp = ServerInfoResponse{};
@@ -229,8 +229,8 @@ ClioApplication::run(bool const useNgWebServer)
         httpServer->onPost("/", requestHandler);
         httpServer->onWs(std::move(requestHandler));
 
-        clio::HandlerRegistry<rpc::Context> reg;
-        reg.bind<clio::ServerInfoHandlerTag>(std::make_shared<ServerInfoHandlerImpl>());
+        openapi_clio::HandlerRegistry<rpc::Context> reg;
+        reg.bind<openapi_clio::ServerInfoHandlerTag>(std::make_shared<ServerInfoHandlerImpl>());
 
         for (auto [endpoint, handler] : reg.endpoints()) {
             LOG(util::LogService::info()) << "+++ endpoint from openapi: " << endpoint;
