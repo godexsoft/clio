@@ -19,7 +19,7 @@
 
 #include "data/DBHelpers.hpp"
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
@@ -138,7 +138,8 @@ getNFTokenMintData(ripple::TxMeta const& txMeta, ripple::STTx const& sttx)
     // There should always be a difference so the returned finalIDs
     // iterator should never be end().  But better safe than sorry.
     if (finalIDs.size() != prevIDs.size() + 1 || diff.first == finalIDs.end() || !owner) {
-        throw std::runtime_error(fmt::format(" - unexpected NFTokenMint data in tx {}", strHex(sttx.getTransactionID()))
+        throw std::runtime_error(
+            fmt::format(" - unexpected NFTokenMint data in tx {}", strHex(sttx.getTransactionID()))
         );
     }
 
