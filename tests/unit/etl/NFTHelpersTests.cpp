@@ -26,6 +26,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -466,6 +467,10 @@ TEST_F(NFTHelpersTest, NFTCreateOffer)
 
 TEST_F(NFTHelpersTest, NFTDataFromLedgerObject)
 {
+    ripple::uint256 constexpr kNFT_PAGE_MASK(
+        std::string_view("0000000000000000000000000000000000000000ffffffffffffffffffffffff")
+    );
+
     std::string const url1 = "abcd1";
     std::string const url2 = "abcd2";
     ripple::Blob const uri1Blob(url1.begin(), url1.end());
@@ -474,12 +479,11 @@ TEST_F(NFTHelpersTest, NFTDataFromLedgerObject)
     auto const nftPage = createNftTokenPage({{kNFT_ID, url1}, {kNFT_ID2, url2}}, std::nullopt);
     auto const serializerNftPage = nftPage.getSerializer();
 
-    int constexpr kSEQ{5};
+    uint32_t constexpr kSEQ{5};
     auto const account = getAccountIdWithString(kACCOUNT);
-
     auto const nftDatas = etl::getNFTDataFromObj(
         kSEQ,
-        std::string(reinterpret_cast<char const*>(account.data()), ripple::AccountID::size()),
+        std::string(account.begin(), account.end()) + ripple::strHex(ripple::uint256(kNFT_ID) & kNFT_PAGE_MASK),
         std::string(static_cast<char const*>(serializerNftPage.getDataPtr()), serializerNftPage.getDataLength())
     );
 
