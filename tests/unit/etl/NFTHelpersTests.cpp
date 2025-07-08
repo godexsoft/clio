@@ -472,15 +472,16 @@ TEST_F(NFTHelpersTest, NFTDataFromLedgerObject)
     ripple::Blob const uri1Blob(url1.begin(), url1.end());
     ripple::Blob const uri2Blob(url2.begin(), url2.end());
 
+    auto const account = getAccountIdWithString(kACCOUNT);
     auto const nftPage = createNftTokenPage({{kNFT_ID, url1}, {kNFT_ID2, url2}}, std::nullopt);
     auto const serializerNftPage = nftPage.getSerializer();
-    auto const account = getAccountIdWithString(kACCOUNT);
+    auto const blob =
+        std::string(static_cast<char const*>(serializerNftPage.getDataPtr()), serializerNftPage.getDataLength());
 
     // key is a token made up from owner's account ID followed by unused (in Clio) value described here:
     // https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0020-non-fungible-tokens#tokenpage-id-format
-    auto const key = std::string(std::begin(account), std::end(account)) + "000000000000";
-    auto const blob =
-        std::string(static_cast<char const*>(serializerNftPage.getDataPtr()), serializerNftPage.getDataLength());
+    auto constexpr kPADDING_BYTES = "000000000000";
+    auto const key = std::string(std::begin(account), std::end(account)) + kPADDING_BYTES;
 
     uint32_t constexpr kSEQ{5};
     auto const nftDatas = etl::getNFTDataFromObj(kSEQ, key, blob);
