@@ -241,6 +241,10 @@ template <typename T>
 inline bool
 isDirNode(T const& object)
 {
+    static constexpr auto kMIN_SIZE_REQUIRED = 3;
+    if (std::size(object) < kMIN_SIZE_REQUIRED)
+        return false;
+
     static constexpr short kDIR_NODE_SPACE_KEY = 0x0064;
     short const spaceKey = (object.data()[1] << 8) | object.data()[2];
     return spaceKey == kDIR_NODE_SPACE_KEY;
