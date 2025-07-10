@@ -30,6 +30,7 @@
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
+#include <boost/signals2/connection.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 
@@ -63,20 +64,27 @@ void
 ClusterCommunicationService::run()
 {
     boost::asio::spawn(strand_, [this](boost::asio::yield_context yield) {
-        boost::asio::steady_timer timer(yield.get_executor());
-        while (true) {
-            timer.expires_after(readInterval_);
-            timer.async_wait(yield);
-            doRead(yield);
+        auto timer = std::make_shared<boost::asio::steady_timer>(yield.get_executor());
+        boost::signals2::scoped_connection connection =
+            stopSignal_.connect([yield, &timer]() { boost::asio::spawn(yield, [timer](auto&&) { timer->cancel(); }); });
+        boost::system::error_code error;
+        while (not stopped_) {
+            timer->expires_after(readInterval_);
+            timer->async_wait(yield[error]);
+            if (not stopped_)
+                doRead(yield);
         }
     });
 
     boost::asio::spawn(strand_, [this](boost::asio::yield_context yield) {
-        boost::asio::steady_timer timer(yield.get_executor());
-        while (true) {
+        auto timer = std::make_shared<boost::asio::steady_timer>(yield.get_executor());
+        boost::signals2::scoped_connection connection =
+            stopSignal_.connect([yield, timer]() { boost::asio::spawn(yield, [timer](auto&&) { timer->cancel(); }); });
+        boost::system::error_code error;
+        while (not stopped_) {
             doWrite();
-            timer.expires_after(writeInterval_);
-            timer.async_wait(yield);
+            timer->expires_after(writeInterval_);
+            timer->async_wait(yield[error]);
         }
     });
 }
@@ -92,9 +100,9 @@ ClusterCommunicationService::stop()
     if (stopped_)
         return;
 
-    ctx_.stop();
-    ctx_.join();
     stopped_ = true;
+    stopSignal_();
+    ctx_.join();
 }
 
 std::shared_ptr<boost::uuids::uuid>

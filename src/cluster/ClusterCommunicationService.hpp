@@ -30,8 +30,10 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/uuid/uuid.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -68,7 +70,8 @@ class ClusterCommunicationService : public ClusterCommunicationServiceInterface 
     ClioNode selfData_;
     std::vector<ClioNode> otherNodesData_;
 
-    bool stopped_ = false;
+    std::atomic_bool stopped_ = false;
+    boost::signals2::signal<void()> stopSignal_;
 
 public:
     static constexpr std::chrono::milliseconds kDEFAULT_READ_INTERVAL{2100};
