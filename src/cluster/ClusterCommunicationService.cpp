@@ -66,7 +66,7 @@ ClusterCommunicationService::run()
     boost::asio::spawn(strand_, [this](boost::asio::yield_context yield) {
         auto timer = std::make_shared<boost::asio::steady_timer>(yield.get_executor());
         boost::signals2::scoped_connection connection =
-            stopSignal_.connect([yield, &timer]() { boost::asio::spawn(yield, [timer](auto&&) { timer->cancel(); }); });
+            stopSignal_.connect([yield, timer]() { boost::asio::spawn(yield, [timer](auto&&) { timer->cancel(); }); });
         boost::system::error_code error;
         while (not stopped_) {
             timer->expires_after(readInterval_);
