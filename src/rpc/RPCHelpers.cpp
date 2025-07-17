@@ -266,7 +266,7 @@ toExpandedJson(
 
     if (nftEnabled == NFTokenjson::ENABLE) {
         Json::Value nftJson;
-        ripple::insertNFTSyntheticInJson(nftJson, txn, *meta);
+        ripple::RPC::insertNFTSyntheticInJson(nftJson, txn, *meta);
         // if there is no nft fields, the nftJson will be {"meta":null}
         auto const nftBoostJson = toBoostJson(nftJson).as_object();
         if (nftBoostJson.contains(JS(meta)) and nftBoostJson.at(JS(meta)).is_object()) {
@@ -1283,10 +1283,9 @@ postProcessOrderBook(
             } else {
                 saTakerGetsFunded = saOwnerFundsLimit;
                 offerJson["taker_gets_funded"] = toBoostJson(saTakerGetsFunded.getJson(ripple::JsonOptions::none));
-                offerJson["taker_pays_funded"] = toBoostJson(
-                    std::min(saTakerPays, ripple::multiply(saTakerGetsFunded, dirRate, saTakerPays.issue()))
-                        .getJson(ripple::JsonOptions::none)
-                );
+                offerJson["taker_pays_funded"] =
+                    toBoostJson(std::min(saTakerPays, ripple::multiply(saTakerGetsFunded, dirRate, saTakerPays.issue()))
+                                    .getJson(ripple::JsonOptions::none));
             }
 
             ripple::STAmount const saOwnerPays = (ripple::parityRate == offerRate)
