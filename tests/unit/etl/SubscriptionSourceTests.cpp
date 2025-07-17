@@ -25,6 +25,7 @@
 #include "util/TestWsServer.hpp"
 #include "util/prometheus/Gauge.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/serialize.hpp>
@@ -53,7 +54,7 @@ struct SubscriptionSourceConnectionTestsBase : SyncAsioContextTest {
     void
     stopSubscriptionSource()
     {
-        boost::asio::spawn(ctx_, [this](auto&& yield) { subscriptionSource_.stop(yield); });
+        boost::asio::spawn(ctx_, [this](auto&& yield) { subscriptionSource_.stop(yield); }, boost::asio::detached);
     }
 
     [[maybe_unused]] TestWsConnection
@@ -117,10 +118,14 @@ TEST_F(SubscriptionSourceConnectionTests, ConnectionFailed_Retry_ConnectionFaile
 
 TEST_F(SubscriptionSourceConnectionTests, ReadError)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = serverConnection(yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = serverConnection(yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -129,10 +134,14 @@ TEST_F(SubscriptionSourceConnectionTests, ReadError)
 
 TEST_F(SubscriptionSourceConnectionTests, ReadTimeout)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = serverConnection(yield);
-        std::this_thread::sleep_for(std::chrono::milliseconds{10});
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = serverConnection(yield);
+            std::this_thread::sleep_for(std::chrono::milliseconds{10});
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -141,12 +150,16 @@ TEST_F(SubscriptionSourceConnectionTests, ReadTimeout)
 
 TEST_F(SubscriptionSourceConnectionTests, ReadError_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        for (int i = 0; i < 2; ++i) {
-            auto connection = serverConnection(yield);
-            connection.close(yield);
-        }
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            for (int i = 0; i < 2; ++i) {
+                auto connection = serverConnection(yield);
+                connection.close(yield);
+            }
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -156,10 +169,14 @@ TEST_F(SubscriptionSourceConnectionTests, ReadError_Reconnect)
 TEST_F(SubscriptionSourceConnectionTests, IsConnected)
 {
     EXPECT_FALSE(subscriptionSource_.isConnected());
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = serverConnection(yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = serverConnection(yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).WillOnce([this]() { EXPECT_TRUE(subscriptionSource_.isConnected()); });
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() {
@@ -184,12 +201,16 @@ struct SubscriptionSourceReadTests : util::prometheus::WithPrometheus, Subscript
 
 TEST_F(SubscriptionSourceReadTests, GotWrongMessage_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage("something", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage("something", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -198,10 +219,14 @@ TEST_F(SubscriptionSourceReadTests, GotWrongMessage_Reconnect)
 
 TEST_F(SubscriptionSourceReadTests, GotResult)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"result":{})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -210,10 +235,14 @@ TEST_F(SubscriptionSourceReadTests, GotResult)
 
 TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndex)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{"ledger_index":123}})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"result":{"ledger_index":123}})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -223,12 +252,16 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndex)
 
 TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndexAsString_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{"ledger_index":"123"}})JSON", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"result":{"ledger_index":"123"}})JSON", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -237,12 +270,16 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndexAsString_Reconnect)
 
 TEST_F(SubscriptionSourceReadTests, GotResultWithValidatedLedgersAsNumber_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{"validated_ledgers":123}})JSON", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"result":{"validated_ledgers":123}})JSON", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -261,10 +298,15 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithValidatedLedgers)
     EXPECT_FALSE(subscriptionSource_.hasLedger(789));
     EXPECT_FALSE(subscriptionSource_.hasLedger(790));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{"validated_ledgers":"123-456,789,32"}})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection =
+                connectAndSendMessage(R"JSON({"result":{"validated_ledgers":"123-456,789,32"}})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -285,12 +327,17 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithValidatedLedgers)
 
 TEST_F(SubscriptionSourceReadTests, GotResultWithValidatedLedgersWrongValue_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"result":{"validated_ledgers":"123-456-789,32"}})JSON", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection =
+                connectAndSendMessage(R"JSON({"result":{"validated_ledgers":"123-456-789,32"}})JSON", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -305,11 +352,15 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndexAndValidatedLedgers)
     EXPECT_FALSE(subscriptionSource_.hasLedger(3));
     EXPECT_FALSE(subscriptionSource_.hasLedger(4));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection =
-            connectAndSendMessage(R"JSON({"result":{"ledger_index":123,"validated_ledgers":"1-3"}})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection =
+                connectAndSendMessage(R"JSON({"result":{"ledger_index":123,"validated_ledgers":"1-3"}})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -326,10 +377,14 @@ TEST_F(SubscriptionSourceReadTests, GotResultWithLedgerIndexAndValidatedLedgers)
 
 TEST_F(SubscriptionSourceReadTests, GotLedgerClosed)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -340,10 +395,14 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedForwardingIsSet)
 {
     subscriptionSource_.setForwarding(true);
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type": "ledgerClosed"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type": "ledgerClosed"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onLedgerClosedHook_, Call());
@@ -356,10 +415,14 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedForwardingIsSet)
 
 TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndex)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type": "ledgerClosed","ledger_index": 123})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type": "ledgerClosed","ledger_index": 123})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -369,12 +432,16 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndex)
 
 TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndexAsString_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed","ledger_index":"123"}})JSON", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed","ledger_index":"123"}})JSON", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -383,12 +450,17 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndexAsString_Recon
 
 TEST_F(SubscriptionSourceReadTests, GorLedgerClosedWithValidatedLedgersAsNumber_Reconnect)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed","validated_ledgers":123})JSON", yield);
-        // We have to schedule receiving to receive close frame and boost will handle it automatically
-        connection.receive(yield);
-        serverConnection(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection =
+                connectAndSendMessage(R"JSON({"type":"ledgerClosed","validated_ledgers":123})JSON", yield);
+            // We have to schedule receiving to receive close frame and boost will handle it automatically
+            connection.receive(yield);
+            serverConnection(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call()).Times(2);
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([]() {}).WillOnce([this]() { stopSubscriptionSource(); });
@@ -402,10 +474,15 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithValidatedLedgers)
     EXPECT_FALSE(subscriptionSource_.hasLedger(2));
     EXPECT_FALSE(subscriptionSource_.hasLedger(3));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"ledgerClosed","validated_ledgers":"1-2"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection =
+                connectAndSendMessage(R"JSON({"type":"ledgerClosed","validated_ledgers":"1-2"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -425,12 +502,16 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndexAndValidatedLe
     EXPECT_FALSE(subscriptionSource_.hasLedger(2));
     EXPECT_FALSE(subscriptionSource_.hasLedger(3));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(
-            R"JSON({"type":"ledgerClosed","ledger_index":123,"validated_ledgers":"1-2"})JSON", yield
-        );
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(
+                R"JSON({"type":"ledgerClosed","ledger_index":123,"validated_ledgers":"1-2"})JSON", yield
+            );
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -446,10 +527,14 @@ TEST_F(SubscriptionSourceReadTests, GotLedgerClosedWithLedgerIndexAndValidatedLe
 
 TEST_F(SubscriptionSourceReadTests, GotTransactionIsForwardingFalse)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"transaction":"some_transaction_data"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"transaction":"some_transaction_data"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -461,10 +546,14 @@ TEST_F(SubscriptionSourceReadTests, GotTransactionIsForwardingTrue)
     subscriptionSource_.setForwarding(true);
     boost::json::object const message = {{"transaction", "some_transaction_data"}};
 
-    boost::asio::spawn(ctx_, [&message, this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&message, this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(true)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -477,10 +566,14 @@ TEST_F(SubscriptionSourceReadTests, GotTransactionWithMetaIsForwardingFalse)
     subscriptionSource_.setForwarding(true);
     boost::json::object const message = {{"transaction", "some_transaction_data"}, {"meta", "some_meta_data"}};
 
-    boost::asio::spawn(ctx_, [&message, this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&message, this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(true)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -490,10 +583,14 @@ TEST_F(SubscriptionSourceReadTests, GotTransactionWithMetaIsForwardingFalse)
 
 TEST_F(SubscriptionSourceReadTests, GotValidationReceivedIsForwardingFalse)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"validationReceived"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type":"validationReceived"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -505,10 +602,14 @@ TEST_F(SubscriptionSourceReadTests, GotValidationReceivedIsForwardingTrue)
     subscriptionSource_.setForwarding(true);
     boost::json::object const message = {{"type", "validationReceived"}};
 
-    boost::asio::spawn(ctx_, [&message, this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&message, this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(true)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -518,10 +619,14 @@ TEST_F(SubscriptionSourceReadTests, GotValidationReceivedIsForwardingTrue)
 
 TEST_F(SubscriptionSourceReadTests, GotManiefstReceivedIsForwardingFalse)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(R"JSON({"type":"manifestReceived"})JSON", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(R"JSON({"type":"manifestReceived"})JSON", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -533,10 +638,14 @@ TEST_F(SubscriptionSourceReadTests, GotManifestReceivedIsForwardingTrue)
     subscriptionSource_.setForwarding(true);
     boost::json::object const message = {{"type", "manifestReceived"}};
 
-    boost::asio::spawn(ctx_, [&message, this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&message, this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage(boost::json::serialize(message), yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(true)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -546,10 +655,14 @@ TEST_F(SubscriptionSourceReadTests, GotManifestReceivedIsForwardingTrue)
 
 TEST_F(SubscriptionSourceReadTests, LastMessageTime)
 {
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage("some_message", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage("some_message", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });
@@ -569,10 +682,14 @@ TEST_F(SubscriptionSourcePrometheusCounterTests, LastMessageTime)
     auto& lastMessageTimeMock = makeMock<util::prometheus::GaugeInt>(
         "subscription_source_last_message_time", fmt::format("{{source=\"127.0.0.1:{}\"}}", wsServer_.port())
     );
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto connection = connectAndSendMessage("some_message", yield);
-        connection.close(yield);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [this](boost::asio::yield_context yield) {
+            auto connection = connectAndSendMessage("some_message", yield);
+            connection.close(yield);
+        },
+        boost::asio::detached
+    );
 
     EXPECT_CALL(onConnectHook_, Call());
     EXPECT_CALL(onDisconnectHook_, Call(false)).WillOnce([this]() { stopSubscriptionSource(); });

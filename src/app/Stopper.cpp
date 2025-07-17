@@ -19,6 +19,7 @@
 
 #include "app/Stopper.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 
 #include <functional>
@@ -36,7 +37,7 @@ Stopper::~Stopper()
 void
 Stopper::setOnStop(std::function<void(boost::asio::yield_context)> cb)
 {
-    boost::asio::spawn(ctx_, std::move(cb));
+    boost::asio::spawn(ctx_, std::move(cb), boost::asio::detached);
 }
 
 void

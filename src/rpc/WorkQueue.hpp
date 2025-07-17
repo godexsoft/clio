@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "util/Assert.hpp"
 #include "util/Mutex.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -26,6 +27,7 @@
 #include "util/prometheus/Gauge.hpp"
 
 #include <boost/asio.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/json.hpp>
@@ -144,7 +146,8 @@ public:
                     ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
                     onTasksComplete->operator()();
                 }
-            }
+            },
+            boost::asio::detached
         );
 
         return true;

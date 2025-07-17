@@ -20,6 +20,7 @@
 #include "util/AsioContextTestFixture.hpp"
 #include "util/CoroutineGroup.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <gmock/gmock.h>
@@ -183,12 +184,16 @@ TEST_F(CoroutineGroupTests, SpawnForeign)
 
         [&]() { ASSERT_FALSE(group.registerForeign(yield).has_value()); }();
 
-        boost::asio::spawn(ctx_, [this, &onForeignComplete](boost::asio::yield_context innerYield) {
-            boost::asio::steady_timer timer{innerYield.get_executor(), std::chrono::milliseconds{2}};
-            timer.async_wait(innerYield);
-            callback1_.Call();
-            onForeignComplete->operator()();
-        });
+        boost::asio::spawn(
+            ctx_,
+            [this, &onForeignComplete](boost::asio::yield_context innerYield) {
+                boost::asio::steady_timer timer{innerYield.get_executor(), std::chrono::milliseconds{2}};
+                timer.async_wait(innerYield);
+                callback1_.Call();
+                onForeignComplete->operator()();
+            },
+            boost::asio::detached
+        );
 
         group.asyncWait(yield);
         callback2_.Call();

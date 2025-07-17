@@ -21,6 +21,7 @@
 
 #include "util/Assert.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -48,10 +49,14 @@ CoroutineGroup::spawn(boost::asio::yield_context yield, std::function<void(boost
         return false;
 
     ++childrenCounter_;
-    boost::asio::spawn(yield, [this, fn = std::move(fn)](boost::asio::yield_context yield) {
-        fn(yield);
-        onCoroutineCompleted();
-    });
+    boost::asio::spawn(
+        yield,
+        [this, fn = std::move(fn)](boost::asio::yield_context yield) {
+            fn(yield);
+            onCoroutineCompleted();
+        },
+        boost::asio::detached
+    );
     return true;
 }
 
@@ -64,7 +69,9 @@ CoroutineGroup::registerForeign(boost::asio::yield_context yield)
     ++childrenCounter_;
     // It is important to spawn onCoroutineCompleted() to the same coroutine as will be calling asyncWait().
     // timer_ here is not thread safe, so without spawn there could be a data race.
-    return [this, yield]() { boost::asio::spawn(yield, [this](auto&&) { onCoroutineCompleted(); }); };
+    return [this, yield]() {
+        boost::asio::spawn(yield, [this](auto&&) { onCoroutineCompleted(); }, boost::asio::detached);
+    };
 }
 
 void

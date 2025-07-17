@@ -22,9 +22,9 @@
 #include "util/Coroutine.hpp"
 #include "util/LoggerFixtures.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/io_service.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -43,7 +43,7 @@
 struct AsyncAsioContextTest : virtual public NoLoggerFixture {
     AsyncAsioContextTest()
     {
-        work_.emplace(ctx_);  // make sure ctx does not stop on its own
+        work_.emplace(boost::asio::make_work_guard(ctx_));  // make sure ctx does not stop on its own
         runner_.emplace([&] { ctx_.run(); });
     }
 
@@ -68,7 +68,7 @@ protected:
     boost::asio::io_context ctx_;
 
 private:
-    std::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::optional<std::thread> runner_;
 };
 
@@ -106,10 +106,14 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
         if (allowMockLeak)
             testing::Mock::AllowLeak(&call);
 
-        spawn(ctx_, [&, _ = make_work_guard(ctx_)](yield_context yield) {
-            f(yield);
-            call.Call();
-        });
+        spawn(
+            ctx_,
+            [&, _ = make_work_guard(ctx_)](yield_context yield) {
+                f(yield);
+                call.Call();
+            },
+            boost::asio::detached
+        );
 
         EXPECT_CALL(call, Call());
         runContext();
@@ -123,22 +127,30 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
 
         boost::asio::io_context timerCtx;
         steady_timer timer{timerCtx, timeout};
-        spawn(timerCtx, [this, &timer](yield_context yield) {
-            boost::system::error_code errorCode;
-            timer.async_wait(yield[errorCode]);
-            ctx_.stop();
-            EXPECT_TRUE(false) << "Test timed out";
-        });
+        spawn(
+            timerCtx,
+            [this, &timer](yield_context yield) {
+                boost::system::error_code errorCode;
+                timer.async_wait(yield[errorCode]);
+                ctx_.stop();
+                EXPECT_TRUE(false) << "Test timed out";
+            },
+            boost::asio::detached
+        );
         std::thread timerThread{[&timerCtx]() { timerCtx.run(); }};
 
         testing::MockFunction<void()> call;
         if (allowMockLeak)
             testing::Mock::AllowLeak(&call);
 
-        spawn(ctx_, [&](yield_context yield) {
-            f(yield);
-            call.Call();
-        });
+        spawn(
+            ctx_,
+            [&](yield_context yield) {
+                f(yield);
+                call.Call();
+            },
+            boost::asio::detached
+        );
 
         EXPECT_CALL(call, Call());
         runContext();
@@ -151,22 +163,22 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
     runContext()
     {
         ctx_.run();
-        ctx_.reset();
+        ctx_.restart();
     }
 
     void
     runContextFor(std::chrono::milliseconds duration)
     {
         ctx_.run_for(duration);
-        ctx_.reset();
+        ctx_.restart();
     }
 
     template <typename F>
     static void
     runSyncOperation(F&& f)
     {
-        boost::asio::io_service ioc;
-        boost::asio::spawn(ioc, f);
+        boost::asio::io_context ioc;
+        boost::asio::spawn(ioc, f, boost::asio::detached);
         ioc.run();
     }
 

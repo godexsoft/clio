@@ -22,6 +22,7 @@
 #include "util/TestObject.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/parse.hpp>
@@ -62,12 +63,16 @@ TEST_F(FeedLedgerTest, SubPub)
             "reserve_inc": 2
         })JSON";
     boost::asio::io_context ioContext;
-    boost::asio::spawn(ioContext, [this](boost::asio::yield_context yield) {
-        EXPECT_CALL(*mockSessionPtr, onDisconnect);
-        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
-        // check the response
-        EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
-    });
+    boost::asio::spawn(
+        ioContext,
+        [this](boost::asio::yield_context yield) {
+            EXPECT_CALL(*mockSessionPtr, onDisconnect);
+            auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
+            // check the response
+            EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
+        },
+        boost::asio::detached
+    );
     ioContext.run();
     EXPECT_EQ(testFeedPtr->count(), 1);
 
@@ -120,11 +125,18 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
-        // check the response
-        EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
-    });
+    boost::asio::io_context ioContext;
+    boost::asio::spawn(
+        ioContext,
+        [this](boost::asio::yield_context yield) {
+            auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
+            // check the response
+            EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
+        },
+        boost::asio::detached
+    );
+
+    ioContext.run();
     EXPECT_EQ(testFeedPtr->count(), 1);
     EXPECT_CALL(*mockSessionPtr, send(_)).Times(0);
 

@@ -22,6 +22,7 @@
 #include "util/Assert.hpp"
 #include "util/Mutex.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -203,10 +204,14 @@ private:
         std::optional<std::expected<ValueType, ErrorType>> result;
         boost::signals2::scoped_connection const slot =
             updateFinished_.connect([yield, &timer, &result](std::expected<ValueType, ErrorType> value) {
-                boost::asio::spawn(yield, [&timer, &result, value = std::move(value)](auto&&) {
-                    result = std::move(value);
-                    timer.cancel();
-                });
+                boost::asio::spawn(
+                    yield,
+                    [&timer, &result, value = std::move(value)](auto&&) {
+                        result = std::move(value);
+                        timer.cancel();
+                    },
+                    boost::asio::detached
+                );
             });
 
         if (state_ == State::Updating) {

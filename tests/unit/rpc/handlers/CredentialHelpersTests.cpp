@@ -25,6 +25,7 @@
 #include "util/MockPrometheus.hpp"
 #include "util/TestObject.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
@@ -117,15 +118,19 @@ TEST_F(CredentialHelperTest, GetInvalidCredentialArray)
     boost::json::array credentialsArray = {kCREDENTIAL_ID};
     auto const info = createLedgerHeader(kINDEX1, 30);
 
-    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
-        auto const ret = credentials::fetchCredentialArray(
-            credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, info, yield
-        );
-        ASSERT_FALSE(ret.has_value());
-        auto const status = ret.error();
-        EXPECT_EQ(status, RippledError::rpcBAD_CREDENTIALS);
-        EXPECT_EQ(status.message, "credentials don't exist.");
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&](boost::asio::yield_context yield) {
+            auto const ret = credentials::fetchCredentialArray(
+                credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, info, yield
+            );
+            ASSERT_FALSE(ret.has_value());
+            auto const status = ret.error();
+            EXPECT_EQ(status, RippledError::rpcBAD_CREDENTIALS);
+            EXPECT_EQ(status.message, "credentials don't exist.");
+        },
+        boost::asio::detached
+    );
     ctx_.run();
 }
 
@@ -149,12 +154,16 @@ TEST_F(CredentialHelperTest, GetValidCredentialArray)
     );
     expectedAuthCreds.push_back(std::move(credential));
 
-    boost::asio::spawn(ctx_, [&](boost::asio::yield_context yield) {
-        auto const result = credentials::fetchCredentialArray(
-            credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, ledgerHeader, yield
-        );
-        ASSERT_TRUE(result.has_value());
-        EXPECT_EQ(result.value(), expectedAuthCreds);
-    });
+    boost::asio::spawn(
+        ctx_,
+        [&](boost::asio::yield_context yield) {
+            auto const result = credentials::fetchCredentialArray(
+                credentialsArray, getAccountIdWithString(kACCOUNT), *backend_, ledgerHeader, yield
+            );
+            ASSERT_TRUE(result.has_value());
+            EXPECT_EQ(result.value(), expectedAuthCreds);
+        },
+        boost::asio::detached
+    );
     ctx_.run();
 }

@@ -34,6 +34,7 @@
 #include "web/ng/impl/MockHttpConnection.hpp"
 #include "web/ng/impl/MockWsConnection.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -484,7 +485,7 @@ TEST_F(ConnectionHandlerSequentialProcessingTest, Stop)
         .WillRepeatedly([&](auto&&, auto&&) {
             ++numCalls;
             if (numCalls == 3)
-                boost::asio::spawn(ctx_, [this](auto yield) { connectionHandler.stop(yield); });
+                boost::asio::spawn(ctx_, [this](auto yield) { connectionHandler.stop(yield); }, boost::asio::detached);
 
             return std::nullopt;
         });

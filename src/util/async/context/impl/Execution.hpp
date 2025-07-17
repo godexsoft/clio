@@ -22,6 +22,7 @@
 #include "util/async/Concepts.hpp"
 #include "util/async/context/impl/Timer.hpp"
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -45,7 +46,8 @@ struct SpawnDispatchStrategy {
                 } else {
                     fn(outcome);
                 }
-            }
+            },
+            boost::asio::detached
         );
 
         return op;

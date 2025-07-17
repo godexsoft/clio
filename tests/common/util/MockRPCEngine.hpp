@@ -22,6 +22,7 @@
 #include "web/Context.hpp"
 
 #include <boost/asio.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <gtest/gtest.h>
@@ -38,10 +39,14 @@ struct MockAsyncRPCEngine {
         using namespace boost::asio;
         io_context ioc;
 
-        spawn(ioc, [handler = std::forward<Fn>(func), _ = make_work_guard(ioc)](auto yield) mutable {
-            handler(yield);
-            ;
-        });
+        spawn(
+            ioc,
+            [handler = std::forward<Fn>(func), _ = make_work_guard(ioc)](auto yield) mutable {
+                handler(yield);
+                ;
+            },
+            boost::asio::detached
+        );
 
         ioc.run();
         return true;
