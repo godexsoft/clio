@@ -419,15 +419,13 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV1)
 
 TEST_F(RPCHelpersTest, DeliverMaxAliasV2)
 {
-    auto req = boost::json::parse(
-                   R"JSON({
-                        "TransactionType": "Payment",
-                        "Amount": {
-                            "test": "test"
-                        }
-                    })JSON"
-    )
-                   .as_object();
+    auto constexpr kJSON = R"JSON({
+         "TransactionType": "Payment",
+         "Amount": {
+             "test": "test"
+         }
+     })JSON";
+    auto req = boost::json::parse(kJSON).as_object();
 
     insertDeliverMaxAlias(req, 2);
     EXPECT_EQ(
@@ -524,15 +522,11 @@ TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV2)
 
 TEST_F(RPCHelpersTest, ParseIssue)
 {
-    auto issue = parseIssue(
-        boost::json::parse(
-            R"JSON({
-                                    "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                                    "currency": "JPY"
-                                })JSON"
-        )
-            .as_object()
-    );
+    auto constexpr kJSON = R"JSON({
+        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+        "currency": "JPY"
+    })JSON";
+    auto issue = parseIssue(boost::json::parse(kJSON).as_object());
     EXPECT_TRUE(issue.account == getAccountIdWithString(kACCOUNT2));
 
     issue = parseIssue(boost::json::parse(R"JSON({"currency": "XRP"})JSON").as_object());
@@ -542,18 +536,11 @@ TEST_F(RPCHelpersTest, ParseIssue)
 
     EXPECT_THROW(parseIssue(boost::json::parse(R"JSON({"currency": "XRP2"})JSON").as_object()), std::runtime_error);
 
-    EXPECT_THROW(
-        parseIssue(
-            boost::json::parse(
-                R"JSON({
-                            "issuer": "abcd",
-                            "currency": "JPY"
-                        })JSON"
-            )
-                .as_object()
-        ),
-        std::runtime_error
-    );
+    auto constexpr kJSON2 = R"JSON({
+        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+        "currency": "JPY"
+    })JSON";
+    EXPECT_THROW(parseIssue(boost::json::parse(kJSON2).as_object()), std::runtime_error);
 
     EXPECT_THROW(
         parseIssue(boost::json::parse(R"JSON({"issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"})JSON").as_object()),
