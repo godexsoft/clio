@@ -29,13 +29,13 @@
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/NameGenerator.hpp"
+#include "util/Spawn.hpp"
 #include "util/Taggable.hpp"
 #include "util/TestObject.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ConfigValue.hpp"
 #include "util/config/Types.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/impl/spawn.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -99,37 +99,29 @@ protected:
 
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
 {
-    boost::asio::spawn(
-        ctx_,
-        [this](boost::asio::yield_context yield) {
-            auto account = getAccountIdWithString(kACCOUNT);
-            auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,10", yield, [](auto) {
+    util::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto account = getAccountIdWithString(kACCOUNT);
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,10", yield, [](auto) {
 
-            });
-            EXPECT_FALSE(ret.has_value());
-            EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
-            EXPECT_EQ(ret.error().message, "Malformed cursor.");
-        },
-        boost::asio::detached
-    );
+        });
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Malformed cursor.");
+    });
     ctx_.run();
 }
 
 TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
 {
-    boost::asio::spawn(
-        ctx_,
-        [this](boost::asio::yield_context yield) {
-            auto account = getAccountIdWithString(kACCOUNT);
-            auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,abc", yield, [](auto) {
+    util::spawn(ctx_, [this](boost::asio::yield_context yield) {
+        auto account = getAccountIdWithString(kACCOUNT);
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, "nothex,abc", yield, [](auto) {
 
-            });
-            EXPECT_FALSE(ret.has_value());
-            EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
-            EXPECT_EQ(ret.error().message, "Malformed cursor.");
-        },
-        boost::asio::detached
-    );
+        });
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Malformed cursor.");
+    });
     ctx_.run();
 }
 
@@ -154,19 +146,15 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarker)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(
-        ctx_,
-        [this, &account](boost::asio::yield_context yield) {
-            auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [](auto) {});
-            EXPECT_TRUE(ret.has_value());
-            EXPECT_EQ(
-                ret.value().toString(),
-                "0000000000000000000000000000000000000000000000000000000000000000,"
-                "0"
-            );
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [](auto) {});
+        EXPECT_TRUE(ret.has_value());
+        EXPECT_EQ(
+            ret.value().toString(),
+            "0000000000000000000000000000000000000000000000000000000000000000,"
+            "0"
+        );
+    });
     ctx_.run();
 }
 
@@ -197,17 +185,13 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnSamePageMarker)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(
-        ctx_,
-        [this, &account](boost::asio::yield_context yield) {
-            auto count = 0;
-            auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [&](auto) { count++; });
-            EXPECT_TRUE(ret.has_value());
-            EXPECT_EQ(count, 10);
-            EXPECT_EQ(ret.value().toString(), fmt::format("{},0", kINDEX1));
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [this, &account](boost::asio::yield_context yield) {
+        auto count = 0;
+        auto ret = traverseOwnedNodes(*backend_, account, 9, 10, {}, yield, [&](auto) { count++; });
+        EXPECT_TRUE(ret.has_value());
+        EXPECT_EQ(count, 10);
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},0", kINDEX1));
+    });
     ctx_.run();
 }
 
@@ -252,17 +236,13 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesNoInputMarkerReturnOtherPageMarker)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto count = 0;
-            auto ret = traverseOwnedNodes(*backend_, account, 9, kLIMIT, {}, yield, [&](auto) { count++; });
-            EXPECT_TRUE(ret.has_value());
-            EXPECT_EQ(count, kLIMIT);
-            EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kNEXT_PAGE));
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto count = 0;
+        auto ret = traverseOwnedNodes(*backend_, account, 9, kLIMIT, {}, yield, [&](auto) { count++; });
+        EXPECT_TRUE(ret.has_value());
+        EXPECT_EQ(count, kLIMIT);
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kNEXT_PAGE));
+    });
     ctx_.run();
 }
 
@@ -300,19 +280,15 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithMarkerReturnSamePageMarker)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto count = 0;
-            auto ret = traverseOwnedNodes(
-                *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX1, kPAGE_NUM), yield, [&](auto) { count++; }
-            );
-            EXPECT_TRUE(ret.has_value());
-            EXPECT_EQ(count, kLIMIT);
-            EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kPAGE_NUM));
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto count = 0;
+        auto ret = traverseOwnedNodes(
+            *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX1, kPAGE_NUM), yield, [&](auto) { count++; }
+        );
+        EXPECT_TRUE(ret.has_value());
+        EXPECT_EQ(count, kLIMIT);
+        EXPECT_EQ(ret.value().toString(), fmt::format("{},{}", kINDEX1, kPAGE_NUM));
+    });
     ctx_.run();
 }
 
@@ -340,19 +316,15 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesWithUnexistingIndexMarker)
     ON_CALL(*backend_, doFetchLedgerObject(ownerDir2Kk, testing::_, testing::_))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto count = 0;
-            auto ret = traverseOwnedNodes(
-                *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX2, kPAGE_NUM), yield, [&](auto) { count++; }
-            );
-            EXPECT_FALSE(ret.has_value());
-            EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
-            EXPECT_EQ(ret.error().message, "Invalid marker.");
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto count = 0;
+        auto ret = traverseOwnedNodes(
+            *backend_, account, 9, kLIMIT, fmt::format("{},{}", kINDEX2, kPAGE_NUM), yield, [&](auto) { count++; }
+        );
+        EXPECT_FALSE(ret.has_value());
+        EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
+        EXPECT_EQ(ret.error().message, "Invalid marker.");
+    });
     ctx_.run();
 }
 
@@ -886,23 +858,19 @@ TEST_F(RPCHelpersTest, AccountHoldsFixLPTAmendmentDisabled)
     EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(testing::_, Amendments::fixFrozenLPTokenTransfer, testing::_))
         .WillOnce(Return(false));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto ret = accountHolds(
-                *backend_,
-                *mockAmendmentCenterPtr_,
-                0,
-                account,
-                ripple::to_currency(kLPTOKEN_CURRENCY),
-                ammAccount,
-                true,
-                yield
-            );
-            EXPECT_EQ(ret.mantissa(), 1000000000000000);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto ret = accountHolds(
+            *backend_,
+            *mockAmendmentCenterPtr_,
+            0,
+            account,
+            ripple::to_currency(kLPTOKEN_CURRENCY),
+            ammAccount,
+            true,
+            yield
+        );
+        EXPECT_EQ(ret.mantissa(), 1000000000000000);
+    });
     ctx_.run();
 }
 
@@ -930,16 +898,12 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenNotAMMAccount)
         .Times(2)
         .WillRepeatedly(Return(account2Root.getSerializer().peekData()));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto ret = accountHolds(
-                *backend_, *mockAmendmentCenterPtr_, 0, account, ripple::to_currency("USD"), account2, true, yield
-            );
-            EXPECT_EQ(ret.mantissa(), 1000000000000000);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto ret = accountHolds(
+            *backend_, *mockAmendmentCenterPtr_, 0, account, ripple::to_currency("USD"), account2, true, yield
+        );
+        EXPECT_EQ(ret.mantissa(), 1000000000000000);
+    });
     ctx_.run();
 }
 
@@ -981,23 +945,19 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenAsset1Frozen)
     EXPECT_CALL(*backend_, doFetchLedgerObject(issuerKk, testing::_, testing::_))
         .WillOnce(Return(issuerAccountRoot.getSerializer().peekData()));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto ret = accountHolds(
-                *backend_,
-                *mockAmendmentCenterPtr_,
-                0,
-                account,
-                ripple::to_currency(kLPTOKEN_CURRENCY),
-                ammAccount,
-                true,
-                yield
-            );
-            EXPECT_EQ(ret.mantissa(), 0);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto ret = accountHolds(
+            *backend_,
+            *mockAmendmentCenterPtr_,
+            0,
+            account,
+            ripple::to_currency(kLPTOKEN_CURRENCY),
+            ammAccount,
+            true,
+            yield
+        );
+        EXPECT_EQ(ret.mantissa(), 0);
+    });
     ctx_.run();
 }
 
@@ -1038,23 +998,19 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenAsset2Frozen)
     EXPECT_CALL(*backend_, doFetchLedgerObject(issuerKk, testing::_, testing::_))
         .WillOnce(Return(issuerAccountRoot.getSerializer().peekData()));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto ret = accountHolds(
-                *backend_,
-                *mockAmendmentCenterPtr_,
-                0,
-                account,
-                ripple::to_currency(kLPTOKEN_CURRENCY),
-                ammAccount,
-                true,
-                yield
-            );
-            EXPECT_EQ(ret.mantissa(), 0);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto ret = accountHolds(
+            *backend_,
+            *mockAmendmentCenterPtr_,
+            0,
+            account,
+            ripple::to_currency(kLPTOKEN_CURRENCY),
+            ammAccount,
+            true,
+            yield
+        );
+        EXPECT_EQ(ret.mantissa(), 0);
+    });
     ctx_.run();
 }
 
@@ -1102,23 +1058,19 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenUnfrozen)
     EXPECT_CALL(*backend_, doFetchLedgerObject(usdRippleStateKk, testing::_, testing::_))
         .WillOnce(Return(usdRippleState.getSerializer().peekData()));
 
-    boost::asio::spawn(
-        ctx_,
-        [&, this](boost::asio::yield_context yield) {
-            auto ret = accountHolds(
-                *backend_,
-                *mockAmendmentCenterPtr_,
-                0,
-                account,
-                ripple::to_currency(kLPTOKEN_CURRENCY),
-                ammAccount,
-                true,
-                yield
-            );
-            EXPECT_EQ(ret.mantissa(), 1000000000000000);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&, this](boost::asio::yield_context yield) {
+        auto ret = accountHolds(
+            *backend_,
+            *mockAmendmentCenterPtr_,
+            0,
+            account,
+            ripple::to_currency(kLPTOKEN_CURRENCY),
+            ammAccount,
+            true,
+            yield
+        );
+        EXPECT_EQ(ret.mantissa(), 1000000000000000);
+    });
     ctx_.run();
 }
 

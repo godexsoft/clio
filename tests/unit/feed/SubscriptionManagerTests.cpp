@@ -25,12 +25,12 @@
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockWsBase.hpp"
+#include "util/Spawn.hpp"
 #include "util/TestObject.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/async/context/SyncExecutionContext.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
@@ -292,16 +292,12 @@ TEST_F(SubscriptionManagerTest, LedgerTest)
             "reserve_inc": 2
         })JSON";
     boost::asio::io_context ctx;
-    boost::asio::spawn(
-        ctx,
-        [this](boost::asio::yield_context yield) {
-            EXPECT_CALL(*sessionPtr_, onDisconnect);
-            auto const res = subscriptionManagerPtr_->subLedger(yield, session_);
-            // check the response
-            EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx, [this](boost::asio::yield_context yield) {
+        EXPECT_CALL(*sessionPtr_, onDisconnect);
+        auto const res = subscriptionManagerPtr_->subLedger(yield, session_);
+        // check the response
+        EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
+    });
     ctx.run();
     EXPECT_EQ(subscriptionManagerPtr_->report()["ledger"], 1);
 

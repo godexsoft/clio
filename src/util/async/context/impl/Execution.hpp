@@ -19,10 +19,10 @@
 
 #pragma once
 
+#include "util/Spawn.hpp"
 #include "util/async/Concepts.hpp"
 #include "util/async/context/impl/Timer.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -36,7 +36,7 @@ struct SpawnDispatchStrategy {
     {
         auto op = outcome.getOperation();
 
-        boost::asio::spawn(
+        util::spawn(
             ctx.getExecutor(),
             [outcome = std::forward<decltype(outcome)>(outcome),
              fn = std::forward<decltype(fn)>(fn)](auto yield) mutable {
@@ -46,8 +46,7 @@ struct SpawnDispatchStrategy {
                 } else {
                     fn(outcome);
                 }
-            },
-            boost::asio::detached
+            }
         );
 
         return op;

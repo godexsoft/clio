@@ -22,6 +22,7 @@
 #include "util/LoggerFixtures.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/NameGenerator.hpp"
+#include "util/Spawn.hpp"
 #include "util/Taggable.hpp"
 #include "util/TestHttpClient.hpp"
 #include "util/TestWebSocketClient.hpp"
@@ -37,7 +38,6 @@
 #include "web/ng/Response.hpp"
 #include "web/ng/Server.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/address_v4.hpp>
@@ -242,19 +242,15 @@ struct ServerHttpTest : ServerTest, testing::WithParamInterface<ServerHttpTestBu
 TEST_F(ServerHttpTest, ClientDisconnects)
 {
     HttpAsyncClient client{ctx_};
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            client.disconnect();
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.disconnect();
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     server_->run();
     runContext();
@@ -284,41 +280,37 @@ TEST_F(ServerHttpTest, OnConnectCheck)
 
     HttpAsyncClient client{ctx_};
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            boost::asio::steady_timer timer{yield.get_executor()};
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        boost::asio::steady_timer timer{yield.get_executor()};
 
-            EXPECT_CALL(onConnectCheck, Call)
-                .WillOnce([&timer](Connection const& connection) -> std::expected<void, Response> {
-                    EXPECT_EQ(connection.ip(), "127.0.0.1");
-                    timer.cancel();
-                    return {};
-                });
+        EXPECT_CALL(onConnectCheck, Call)
+            .WillOnce([&timer](Connection const& connection) -> std::expected<void, Response> {
+                EXPECT_EQ(connection.ip(), "127.0.0.1");
+                timer.cancel();
+                return {};
+            });
 
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-            // appear
-            client.send(
-                http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
-                yield,
-                std::chrono::milliseconds{100}
-            );
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
+        // appear
+        client.send(
+            http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
+            yield,
+            std::chrono::milliseconds{100}
+        );
 
-            // Wait for the onConnectCheck to be called
-            timer.expires_after(std::chrono::milliseconds{100});
-            boost::system::error_code error;  // Unused
-            timer.async_wait(yield[error]);
+        // Wait for the onConnectCheck to be called
+        timer.expires_after(std::chrono::milliseconds{100});
+        boost::system::error_code error;  // Unused
+        timer.async_wait(yield[error]);
 
-            client.gracefulShutdown();
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.gracefulShutdown();
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     server.run();
 
@@ -356,33 +348,29 @@ TEST_F(ServerHttpTest, OnConnectCheckFailed)
         };
     });
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-            // appear
-            client.send(
-                http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
-                yield,
-                std::chrono::milliseconds{100}
-            );
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
+        // appear
+        client.send(
+            http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
+            yield,
+            std::chrono::milliseconds{100}
+        );
 
-            auto const response = client.receive(yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_TRUE(response.has_value()) << response.error().message(); }();
-            EXPECT_EQ(response->result(), http::status::too_many_requests);
-            EXPECT_EQ(response->body(), R"JSON({"error":"some error"})JSON");
-            EXPECT_EQ(response->version(), 11);
+        auto const response = client.receive(yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_TRUE(response.has_value()) << response.error().message(); }();
+        EXPECT_EQ(response->result(), http::status::too_many_requests);
+        EXPECT_EQ(response->body(), R"JSON({"error":"some error"})JSON");
+        EXPECT_EQ(response->version(), 11);
 
-            client.gracefulShutdown();
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.gracefulShutdown();
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     server.run();
 
@@ -413,34 +401,30 @@ TEST_F(ServerHttpTest, OnDisconnectHook)
 
     HttpAsyncClient client{ctx_};
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            boost::asio::steady_timer timer{ctx_.get_executor(), std::chrono::milliseconds{100}};
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        boost::asio::steady_timer timer{ctx_.get_executor(), std::chrono::milliseconds{100}};
 
-            EXPECT_CALL(onDisconnectHookMock, Call).WillOnce([&timer](auto&&) { timer.cancel(); });
+        EXPECT_CALL(onDisconnectHookMock, Call).WillOnce([&timer](auto&&) { timer.cancel(); });
 
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            client.send(
-                http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
-                yield,
-                std::chrono::milliseconds{100}
-            );
+        client.send(
+            http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
+            yield,
+            std::chrono::milliseconds{100}
+        );
 
-            client.gracefulShutdown();
+        client.gracefulShutdown();
 
-            // Wait for OnDisconnectHook is called
-            boost::system::error_code error;
-            timer.async_wait(yield[error]);
+        // Wait for OnDisconnectHook is called
+        boost::system::error_code error;
+        timer.async_wait(yield[error]);
 
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     server.run();
 
@@ -450,31 +434,27 @@ TEST_F(ServerHttpTest, OnDisconnectHook)
 TEST_F(ServerHttpTest, ClientIsDisconnectedIfServerStopped)
 {
     HttpAsyncClient client{ctx_};
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-            // appear
-            maybeError = client.send(
-                http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
-                yield,
-                std::chrono::milliseconds{100}
-            );
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
+        // appear
+        maybeError = client.send(
+            http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
+            yield,
+            std::chrono::milliseconds{100}
+        );
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            auto message = client.receive(yield, std::chrono::milliseconds{100});
-            EXPECT_TRUE(message.has_value()) << message.error().message();
-            EXPECT_EQ(message->result(), http::status::service_unavailable);
-            EXPECT_EQ(message->body(), "This Clio node is shutting down. Please try another node.");
+        auto message = client.receive(yield, std::chrono::milliseconds{100});
+        EXPECT_TRUE(message.has_value()) << message.error().message();
+        EXPECT_EQ(message->result(), http::status::service_unavailable);
+        EXPECT_EQ(message->body(), "This Clio node is shutting down. Please try another node.");
 
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        ctx_.stop();
+    });
 
     server_->run();
     runSyncOperation([this](auto yield) { server_->stop(yield); });
@@ -490,29 +470,25 @@ TEST_P(ServerHttpTest, RequestResponse)
 
     Response const response{http::status::ok, "some response", Request{request}};
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
-                maybeError = client.send(request, yield, std::chrono::milliseconds{100});
-                EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
+            maybeError = client.send(request, yield, std::chrono::milliseconds{100});
+            EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
-                auto const expectedResponse = client.receive(yield, std::chrono::milliseconds{100});
-                [&]() { ASSERT_TRUE(expectedResponse.has_value()) << expectedResponse.error().message(); }();
-                EXPECT_EQ(expectedResponse->result(), http::status::ok);
-                EXPECT_EQ(expectedResponse->body(), response.message());
-            }
+            auto const expectedResponse = client.receive(yield, std::chrono::milliseconds{100});
+            [&]() { ASSERT_TRUE(expectedResponse.has_value()) << expectedResponse.error().message(); }();
+            EXPECT_EQ(expectedResponse->result(), http::status::ok);
+            EXPECT_EQ(expectedResponse->body(), response.message());
+        }
 
-            client.gracefulShutdown();
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.gracefulShutdown();
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     auto& handler = GetParam().method == http::verb::get ? getHandler_ : postHandler_;
 
@@ -544,19 +520,15 @@ TEST_F(ServerTest, WsClientDisconnects)
 {
     WebSocketAsyncClient client{ctx_};
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            client.close();
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.close();
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     server_->run();
 
@@ -570,28 +542,24 @@ TEST_F(ServerTest, WsRequestResponse)
     Request::HttpHeaders const headers{};
     Response const response{http::status::ok, "some response", Request{requestMessage_, headers}};
 
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-            for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
-                maybeError = client.send(yield, requestMessage_, std::chrono::milliseconds{100});
-                EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
+        for ([[maybe_unused]] auto i : std::ranges::iota_view{0, 3}) {
+            maybeError = client.send(yield, requestMessage_, std::chrono::milliseconds{100});
+            EXPECT_FALSE(maybeError.has_value()) << maybeError->message();
 
-                auto const expectedResponse = client.receive(yield, std::chrono::milliseconds{100});
-                [&]() { ASSERT_TRUE(expectedResponse.has_value()) << expectedResponse.error().message(); }();
-                EXPECT_EQ(expectedResponse.value(), response.message());
-            }
+            auto const expectedResponse = client.receive(yield, std::chrono::milliseconds{100});
+            [&]() { ASSERT_TRUE(expectedResponse.has_value()) << expectedResponse.error().message(); }();
+            EXPECT_EQ(expectedResponse.value(), response.message());
+        }
 
-            client.gracefulClose(yield, std::chrono::milliseconds{100});
-            server_->stop(yield);
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        client.gracefulClose(yield, std::chrono::milliseconds{100});
+        server_->stop(yield);
+        ctx_.stop();
+    });
 
     EXPECT_CALL(wsHandler_, Call)
         .Times(3)
@@ -612,18 +580,14 @@ TEST_F(ServerTest, WsRequestResponse)
 TEST_F(ServerTest, WsClientIsDisconnectedIfServerStopped)
 {
     WebSocketAsyncClient client{ctx_};
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto maybeError =
-                client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
-            EXPECT_TRUE(maybeError.has_value());
-            EXPECT_EQ(maybeError.value().value(), static_cast<int>(boost::beast::websocket::error::upgrade_declined));
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto maybeError =
+            client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
+        EXPECT_TRUE(maybeError.has_value());
+        EXPECT_EQ(maybeError.value().value(), static_cast<int>(boost::beast::websocket::error::upgrade_declined));
 
-            ctx_.stop();
-        },
-        boost::asio::detached
-    );
+        ctx_.stop();
+    });
 
     server_->run();
     runSyncOperation([this](auto yield) { server_->stop(yield); });

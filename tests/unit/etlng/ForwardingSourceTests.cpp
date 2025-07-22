@@ -20,9 +20,9 @@
 #include "etlng/impl/ForwardingSource.hpp"
 #include "rpc/Errors.hpp"
 #include "util/AsioContextTestFixture.hpp"
+#include "util/Spawn.hpp"
 #include "util/TestWsServer.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
@@ -79,23 +79,18 @@ protected:
 TEST_F(ForwardingSourceOperationsNgTests, XUserHeader)
 {
     std::string const xUserValue = "some_user";
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto connection = serverConnection(yield);
-            auto headers = connection.headers();
-            ASSERT_FALSE(headers.empty());
-            auto it = std::ranges::find_if(headers, [](auto const& header) {
-                return std::holds_alternative<std::string>(header.name) &&
-                    std::get<std::string>(header.name) == "X-User";
-            });
-            ASSERT_FALSE(it == headers.end());
-            EXPECT_EQ(std::get<std::string>(it->name), "X-User");
-            EXPECT_EQ(it->value, xUserValue);
-            connection.close(yield);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto connection = serverConnection(yield);
+        auto headers = connection.headers();
+        ASSERT_FALSE(headers.empty());
+        auto it = std::ranges::find_if(headers, [](auto const& header) {
+            return std::holds_alternative<std::string>(header.name) && std::get<std::string>(header.name) == "X-User";
+        });
+        ASSERT_FALSE(it == headers.end());
+        EXPECT_EQ(std::get<std::string>(it->name), "X-User");
+        EXPECT_EQ(it->value, xUserValue);
+        connection.close(yield);
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result =
@@ -107,14 +102,10 @@ TEST_F(ForwardingSourceOperationsNgTests, XUserHeader)
 
 TEST_F(ForwardingSourceOperationsNgTests, ReadFailed)
 {
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto connection = serverConnection(yield);
-            connection.close(yield);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto connection = serverConnection(yield);
+        connection.close(yield);
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result = forwardingSource_.forwardToRippled(boost::json::parse(message_).as_object(), {}, {}, yield);
@@ -126,13 +117,9 @@ TEST_F(ForwardingSourceOperationsNgTests, ReadFailed)
 TEST_F(ForwardingSourceOperationsNgTests, ReadTimeout)
 {
     TestWsConnectionPtr connection;
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            connection = std::make_unique<TestWsConnection>(serverConnection(yield));
-        },
-        boost::asio::detached
-    );
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        connection = std::make_unique<TestWsConnection>(serverConnection(yield));
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result = forwardingSource_.forwardToRippled(boost::json::parse(message_).as_object(), {}, {}, yield);
@@ -143,22 +130,18 @@ TEST_F(ForwardingSourceOperationsNgTests, ReadTimeout)
 
 TEST_F(ForwardingSourceOperationsNgTests, ParseFailed)
 {
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto connection = serverConnection(yield);
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto connection = serverConnection(yield);
 
-            auto receivedMessage = connection.receive(yield);
-            [&]() { ASSERT_TRUE(receivedMessage); }();
-            EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
+        auto receivedMessage = connection.receive(yield);
+        [&]() { ASSERT_TRUE(receivedMessage); }();
+        EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
 
-            auto sendError = connection.send("invalid_json", yield);
-            [&]() { ASSERT_FALSE(sendError) << *sendError; }();
+        auto sendError = connection.send("invalid_json", yield);
+        [&]() { ASSERT_FALSE(sendError) << *sendError; }();
 
-            connection.close(yield);
-        },
-        boost::asio::detached
-    );
+        connection.close(yield);
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result = forwardingSource_.forwardToRippled(boost::json::parse(message_).as_object(), {}, {}, yield);
@@ -169,23 +152,19 @@ TEST_F(ForwardingSourceOperationsNgTests, ParseFailed)
 
 TEST_F(ForwardingSourceOperationsNgTests, GotNotAnObject)
 {
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto connection = serverConnection(yield);
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto connection = serverConnection(yield);
 
-            auto receivedMessage = connection.receive(yield);
-            [&]() { ASSERT_TRUE(receivedMessage); }();
-            EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
+        auto receivedMessage = connection.receive(yield);
+        [&]() { ASSERT_TRUE(receivedMessage); }();
+        EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
 
-            auto sendError = connection.send(R"(["some_value"])", yield);
+        auto sendError = connection.send(R"(["some_value"])", yield);
 
-            [&]() { ASSERT_FALSE(sendError) << *sendError; }();
+        [&]() { ASSERT_FALSE(sendError) << *sendError; }();
 
-            connection.close(yield);
-        },
-        boost::asio::detached
-    );
+        connection.close(yield);
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result = forwardingSource_.forwardToRippled(boost::json::parse(message_).as_object(), {}, {}, yield);
@@ -196,20 +175,16 @@ TEST_F(ForwardingSourceOperationsNgTests, GotNotAnObject)
 
 TEST_F(ForwardingSourceOperationsNgTests, Success)
 {
-    boost::asio::spawn(
-        ctx_,
-        [&](boost::asio::yield_context yield) {
-            auto connection = serverConnection(yield);
+    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
+        auto connection = serverConnection(yield);
 
-            auto receivedMessage = connection.receive(yield);
-            [&]() { ASSERT_TRUE(receivedMessage); }();
-            EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
+        auto receivedMessage = connection.receive(yield);
+        [&]() { ASSERT_TRUE(receivedMessage); }();
+        EXPECT_EQ(boost::json::parse(*receivedMessage), boost::json::parse(message_)) << *receivedMessage;
 
-            auto sendError = connection.send(boost::json::serialize(reply_), yield);
-            [&]() { ASSERT_FALSE(sendError) << *sendError; }();
-        },
-        boost::asio::detached
-    );
+        auto sendError = connection.send(boost::json::serialize(reply_), yield);
+        [&]() { ASSERT_FALSE(sendError) << *sendError; }();
+    });
 
     runSpawn([&](boost::asio::yield_context yield) {
         auto result =

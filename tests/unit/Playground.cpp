@@ -23,10 +23,97 @@
  */
 
 // #include <gmock/gmock.h>
-// #include <gtest/gtest.h>
+#include "util/Spawn.hpp"
 
-// using namespace testing;
+#include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/asio/strand.hpp>
+#include <gtest/gtest.h>
 
-// TEST(PlaygroundTest, Test)
-// {
-// }
+#include <stdexcept>
+
+using namespace testing;
+
+TEST(PlaygroundTest, TestSpawnWithDetach)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+
+        util::spawn(io, [](boost::asio::yield_context) {
+            throw std::runtime_error("Test exception in coroutine");
+            return 1;
+        });
+
+        io.run();
+    }());
+}
+
+TEST(PlaygroundTest, TestSpawnWithDetachVoid)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+
+        util::spawn(io, [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); });
+
+        io.run();
+    }());
+}
+
+TEST(PlaygroundTest, TestSpawnWithDetachVoidOnStrand)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+        auto str = boost::asio::make_strand(io);
+
+        util::spawn(str, [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); });
+
+        io.run();
+    }());
+}
+
+TEST(PlaygroundTest, TestWithDetach)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+
+        boost::asio::spawn(
+            io,
+            [](boost::asio::yield_context) {
+                throw std::runtime_error("Test exception in coroutine");
+                return 1;
+            },
+            util::kPROPAGATE_EXCEPTIONS
+        );
+
+        io.run();
+    }());
+}
+
+TEST(PlaygroundTest, TestWithDetachVoid)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+
+        boost::asio::spawn(
+            io,
+            [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); },
+            util::kPROPAGATE_EXCEPTIONS
+        );
+
+        io.run();
+    }());
+}
+
+TEST(PlaygroundTest, TestNoDetach)
+{
+    EXPECT_ANY_THROW([] {
+        boost::asio::io_context io;
+
+        boost::asio::spawn(io, [](boost::asio::yield_context) {
+            throw std::runtime_error("Test exception in coroutine");
+        });
+
+        io.run();
+    }());
+}

@@ -19,11 +19,12 @@
 
 #pragma once
 
+#include "util/Spawn.hpp"
+
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/cancellation_type.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/signals2/connection.hpp>
@@ -115,14 +116,10 @@ public:
     static void
     spawnNew(ExecutionContext& ioContext, Fn fn)
     {
-        boost::asio::spawn(
-            ioContext,
-            [fn = std::move(fn)](boost::asio::yield_context yield) {
-                Coroutine thisCoroutine{std::move(yield)};
-                fn(thisCoroutine);
-            },
-            boost::asio::detached
-        );
+        util::spawn(ioContext, [fn = std::move(fn)](boost::asio::yield_context yield) {
+            Coroutine thisCoroutine{std::move(yield)};
+            fn(thisCoroutine);
+        });
     }
 
     /**
@@ -138,14 +135,10 @@ public:
         if (isCancelled_)
             return;
 
-        boost::asio::spawn(
-            yield_,
-            [signal = familySignal_, fn = std::move(fn)](boost::asio::yield_context yield) mutable {
-                Coroutine coroutine(std::move(yield), std::move(signal));
-                fn(coroutine);
-            },
-            boost::asio::detached
-        );
+        util::spawn(yield_, [signal = familySignal_, fn = std::move(fn)](boost::asio::yield_context yield) mutable {
+            Coroutine coroutine(std::move(yield), std::move(signal));
+            fn(coroutine);
+        });
     }
 
     /**

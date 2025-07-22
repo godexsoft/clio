@@ -19,10 +19,10 @@
 
 #pragma once
 #include "rpc/common/Types.hpp"
+#include "util/Spawn.hpp"
 #include "web/Context.hpp"
 
 #include <boost/asio.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <gtest/gtest.h>
@@ -38,14 +38,9 @@ struct MockAsyncRPCEngine {
     {
         boost::asio::io_context ioc;
 
-        boost::asio::spawn(
-            ioc,
-            [handler = std::forward<Fn>(func), _ = make_work_guard(ioc)](auto yield) mutable {
-                handler(yield);
-                ;
-            },
-            boost::asio::detached
-        );
+        util::spawn(ioc, [handler = std::forward<Fn>(func), _ = make_work_guard(ioc)](auto yield) mutable {
+            handler(yield);
+        });
 
         ioc.run();
         return true;

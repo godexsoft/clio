@@ -21,13 +21,13 @@
 
 #include "util/Assert.hpp"
 #include "util/Mutex.hpp"
+#include "util/Spawn.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Gauge.hpp"
 
 #include <boost/asio.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/json.hpp>
@@ -129,7 +129,7 @@ public:
 
         // Each time we enqueue a job, we want to post a symmetrical job that will dequeue and run the job at the front
         // of the job queue.
-        boost::asio::spawn(
+        util::spawn(
             ioc_,
             [this, func = std::forward<FnType>(func), start = std::chrono::system_clock::now()](auto yield) mutable {
                 auto const run = std::chrono::system_clock::now();
@@ -146,8 +146,7 @@ public:
                     ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
                     onTasksComplete->operator()();
                 }
-            },
-            boost::asio::detached
+            }
         );
 
         return true;

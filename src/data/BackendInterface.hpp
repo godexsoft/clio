@@ -23,9 +23,9 @@
 #include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
 #include "etl/CorruptionDetector.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
@@ -109,18 +109,12 @@ synchronous(FnType&& func)
     using R = typename boost::result_of<FnType(boost::asio::yield_context)>::type;
     if constexpr (!std::is_same_v<R, void>) {
         R res;
-        boost::asio::spawn(
-            ctx,
-            [_ = boost::asio::make_work_guard(ctx), &func, &res](auto yield) { res = func(yield); },
-            boost::asio::detached
-        );
+        util::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func, &res](auto yield) { res = func(yield); });
 
         ctx.run();
         return res;
     } else {
-        boost::asio::spawn(
-            ctx, [_ = boost::asio::make_work_guard(ctx), &func](auto yield) { func(yield); }, boost::asio::detached
-        );
+        util::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func](auto yield) { func(yield); });
         ctx.run();
     }
 }

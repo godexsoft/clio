@@ -23,6 +23,7 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/JS.hpp"
 #include "util/Retry.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -30,7 +31,6 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
@@ -158,49 +158,44 @@ SubscriptionSource::stop(boost::asio::yield_context yield)
 void
 SubscriptionSource::subscribe()
 {
-    boost::asio::spawn(
-        strand_,
-        [this, _ = boost::asio::make_work_guard(strand_)](boost::asio::yield_context yield) {
-            if (auto connection = wsConnectionBuilder_.connect(yield); connection) {
-                wsConnection_ = std::move(connection).value();
-            } else {
-                handleError(connection.error(), yield);
+    util::spawn(strand_, [this, _ = boost::asio::make_work_guard(strand_)](boost::asio::yield_context yield) {
+        if (auto connection = wsConnectionBuilder_.connect(yield); connection) {
+            wsConnection_ = std::move(connection).value();
+        } else {
+            handleError(connection.error(), yield);
+            return;
+        }
+
+        auto const& subscribeCommand = getSubscribeCommandJson();
+
+        if (auto const writeErrorOpt = wsConnection_->write(subscribeCommand, yield, wsTimeout_); writeErrorOpt) {
+            handleError(writeErrorOpt.value(), yield);
+            return;
+        }
+
+        isConnected_ = true;
+        LOG(log_.info()) << "Connected";
+        onConnect_();
+
+        retry_.reset();
+
+        while (!stop_) {
+            auto const message = wsConnection_->read(yield, wsTimeout_);
+            if (not message) {
+                handleError(message.error(), yield);
                 return;
             }
 
-            auto const& subscribeCommand = getSubscribeCommandJson();
-
-            if (auto const writeErrorOpt = wsConnection_->write(subscribeCommand, yield, wsTimeout_); writeErrorOpt) {
-                handleError(writeErrorOpt.value(), yield);
+            if (auto const handleErrorOpt = handleMessage(message.value()); handleErrorOpt) {
+                handleError(handleErrorOpt.value(), yield);
                 return;
             }
-
-            isConnected_ = true;
-            LOG(log_.info()) << "Connected";
-            onConnect_();
-
-            retry_.reset();
-
-            while (!stop_) {
-                auto const message = wsConnection_->read(yield, wsTimeout_);
-                if (not message) {
-                    handleError(message.error(), yield);
-                    return;
-                }
-
-                if (auto const handleErrorOpt = handleMessage(message.value()); handleErrorOpt) {
-                    handleError(handleErrorOpt.value(), yield);
-                    return;
-                }
-            }
-            // Close the connection
-            handleError(
-                util::requests::RequestError{"Subscription source stopped", boost::asio::error::operation_aborted},
-                yield
-            );
-        },
-        boost::asio::detached
-    );
+        }
+        // Close the connection
+        handleError(
+            util::requests::RequestError{"Subscription source stopped", boost::asio::error::operation_aborted}, yield
+        );
+    });
 }
 
 std::optional<util::requests::RequestError>

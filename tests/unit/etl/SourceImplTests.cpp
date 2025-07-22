@@ -19,8 +19,8 @@
 
 #include "etl/impl/SourceImpl.hpp"
 #include "rpc/Errors.hpp"
+#include "util/Spawn.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
@@ -108,7 +108,7 @@ TEST_F(SourceImplTest, stop)
 {
     EXPECT_CALL(*subscriptionSourceMock_, stop);
     boost::asio::io_context ctx;
-    boost::asio::spawn(ctx, [&](boost::asio::yield_context yield) { source_.stop(yield); }, boost::asio::detached);
+    util::spawn(ctx, [&](boost::asio::yield_context yield) { source_.stop(yield); });
     ctx.run();
 }
 
@@ -193,13 +193,9 @@ TEST_F(SourceImplTest, forwardToRippled)
         .WillOnce(Return(request));
 
     boost::asio::io_context ioContext;
-    boost::asio::spawn(
-        ioContext,
-        [&](boost::asio::yield_context yield) {
-            auto const response = source_.forwardToRippled(request, clientIp, xUserValue, yield);
-            EXPECT_EQ(response, request);
-        },
-        boost::asio::detached
-    );
+    util::spawn(ioContext, [&](boost::asio::yield_context yield) {
+        auto const response = source_.forwardToRippled(request, clientIp, xUserValue, yield);
+        EXPECT_EQ(response, request);
+    });
     ioContext.run();
 }

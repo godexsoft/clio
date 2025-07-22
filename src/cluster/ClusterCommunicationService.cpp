@@ -21,9 +21,9 @@
 
 #include "cluster/ClioNode.hpp"
 #include "data/BackendInterface.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/json/parse.hpp>
@@ -63,31 +63,23 @@ ClusterCommunicationService::ClusterCommunicationService(
 void
 ClusterCommunicationService::run()
 {
-    boost::asio::spawn(
-        strand_,
-        [this](boost::asio::yield_context yield) {
-            boost::asio::steady_timer timer(yield.get_executor());
-            while (true) {
-                timer.expires_after(readInterval_);
-                timer.async_wait(yield);
-                doRead(yield);
-            }
-        },
-        boost::asio::detached
-    );
+    util::spawn(strand_, [this](boost::asio::yield_context yield) {
+        boost::asio::steady_timer timer(yield.get_executor());
+        while (true) {
+            timer.expires_after(readInterval_);
+            timer.async_wait(yield);
+            doRead(yield);
+        }
+    });
 
-    boost::asio::spawn(
-        strand_,
-        [this](boost::asio::yield_context yield) {
-            boost::asio::steady_timer timer(yield.get_executor());
-            while (true) {
-                doWrite();
-                timer.expires_after(writeInterval_);
-                timer.async_wait(yield);
-            }
-        },
-        boost::asio::detached
-    );
+    util::spawn(strand_, [this](boost::asio::yield_context yield) {
+        boost::asio::steady_timer timer(yield.get_executor());
+        while (true) {
+            doWrite();
+            timer.expires_after(writeInterval_);
+            timer.async_wait(yield);
+        }
+    });
 }
 
 ClusterCommunicationService::~ClusterCommunicationService()
@@ -117,9 +109,7 @@ ClioNode
 ClusterCommunicationService::selfData() const
 {
     ClioNode result{};
-    boost::asio::spawn(
-        strand_, [this, &result](boost::asio::yield_context) { result = selfData_; }, boost::asio::detached
-    );
+    util::spawn(strand_, [this, &result](boost::asio::yield_context) { result = selfData_; });
     return result;
 }
 
@@ -130,14 +120,10 @@ ClusterCommunicationService::clusterData() const
         return std::unexpected{"Service is not healthy"};
     }
     std::vector<ClioNode> result;
-    boost::asio::spawn(
-        strand_,
-        [this, &result](boost::asio::yield_context) {
-            result = otherNodesData_;
-            result.push_back(selfData_);
-        },
-        boost::asio::detached
-    );
+    util::spawn(strand_, [this, &result](boost::asio::yield_context) {
+        result = otherNodesData_;
+        result.push_back(selfData_);
+    });
     return result;
 }
 

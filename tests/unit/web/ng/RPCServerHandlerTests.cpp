@@ -24,6 +24,7 @@
 #include "util/MockETLService.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockRPCEngine.hpp"
+#include "util/Spawn.hpp"
 #include "util/Taggable.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ConfigValue.hpp"
@@ -34,7 +35,6 @@
 #include "web/ng/RPCServerHandler.hpp"
 #include "web/ng/Request.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/http/message.hpp>
@@ -174,14 +174,12 @@ TEST_F(NgRpcServerHandlerTest, CoroutineSleepsUntilRpcEngineFinishes)
         EXPECT_CALL(dosguard_, isOk(ip_)).WillOnce(Return(true));
         EXPECT_CALL(dosguard_, add(ip_, testing::_)).WillOnce(Return(true));
         EXPECT_CALL(*rpcEngine_, post).WillOnce([&](auto&& fn, auto&&) {
-            boost::asio::spawn(
-                ctx_,
-                [this, &rpcEngineDone, fn = std::forward<decltype(fn)>(fn)](boost::asio::yield_context yield) {
+            util::spawn(
+                ctx_, [this, &rpcEngineDone, fn = std::forward<decltype(fn)>(fn)](boost::asio::yield_context yield) {
                     EXPECT_CALL(*rpcEngine_, notifyBadSyntax);
                     fn(yield);
                     rpcEngineDone.Call();
-                },
-                boost::asio::detached
+                }
             );
             return true;
         });
