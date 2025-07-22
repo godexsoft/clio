@@ -49,7 +49,7 @@ inline constexpr struct PropagatingCompletionHandler {
      * @param ePtr The exception that was caught on the coroutine
      */
     template <typename... R>
-    constexpr void
+    void
     operator()(std::exception_ptr ePtr, R...)
     {
         if (ePtr)
