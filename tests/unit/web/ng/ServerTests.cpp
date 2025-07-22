@@ -294,8 +294,7 @@ TEST_F(ServerHttpTest, OnConnectCheck)
             client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-        // appear
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to appear
         client.send(
             http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
             yield,
@@ -353,8 +352,7 @@ TEST_F(ServerHttpTest, OnConnectCheckFailed)
             client.connect("127.0.0.1", std::to_string(serverPort), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-        // appear
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to appear
         client.send(
             http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
             yield,
@@ -439,8 +437,7 @@ TEST_F(ServerHttpTest, ClientIsDisconnectedIfServerStopped)
             client.connect("127.0.0.1", std::to_string(serverPort_), yield, std::chrono::milliseconds{100});
         [&]() { ASSERT_FALSE(maybeError.has_value()) << maybeError->message(); }();
 
-        // Have to send a request here because the server does async_detect_ssl() which waits for some data to
-        // appear
+        // Have to send a request here because the server does async_detect_ssl() which waits for some data to appear
         maybeError = client.send(
             http::request<http::string_body>{http::verb::get, "/", 11, requestMessage_},
             yield,

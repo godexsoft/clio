@@ -527,9 +527,9 @@ TEST_F(RPCHelpersTest, ParseIssue)
     auto issue = parseIssue(
         boost::json::parse(
             R"JSON({
-                                        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                                        "currency": "JPY"
-                                    })JSON"
+                                    "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                                    "currency": "JPY"
+                                })JSON"
         )
             .as_object()
     );
