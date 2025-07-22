@@ -29,7 +29,7 @@ class ClioConan(ConanFile):
         'protobuf/3.21.12',
         'grpc/1.50.1',
         'openssl/1.1.1v',
-        'xrpl/2.5.0@clio/boost-188',
+        'xrpl/2.5.0',
         'zlib/1.3.1',
         'libbacktrace/cci.20210118'
     ]
@@ -71,9 +71,6 @@ class ClioConan(ConanFile):
             self.requires('gtest/1.14.0')
         if self.options.benchmark:
             self.requires('benchmark/1.8.3')
-
-        self.requires('nudb/2.0.9', force=True)
-        self.requires('boost/1.88.0', force=True)
 
     def configure(self):
         if self.settings.compiler == 'apple-clang':
