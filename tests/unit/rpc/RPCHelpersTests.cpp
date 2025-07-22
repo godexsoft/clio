@@ -1080,7 +1080,6 @@ generateTestValuesForParametersTest()
             .testJson = R"JSON({"type": false})JSON",
             .expected = false,
         },
-
         {
             .testName = "featureVetoedTrue",
             .method = "feature",
@@ -1099,7 +1098,6 @@ generateTestValuesForParametersTest()
             .testJson = R"JSON({"vetoed": "String"})JSON",
             .expected = true,
         },
-
         {
             .testName = "ledger",
             .method = "ledger",
