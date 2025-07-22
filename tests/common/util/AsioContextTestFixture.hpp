@@ -100,15 +100,13 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
     void
     runSpawn(F&& f, bool allowMockLeak = false)
     {
-        using namespace boost::asio;
-
         testing::MockFunction<void()> call;
         if (allowMockLeak)
             testing::Mock::AllowLeak(&call);
 
-        spawn(
+        boost::asio::spawn(
             ctx_,
-            [&, _ = make_work_guard(ctx_)](yield_context yield) {
+            [&, _ = make_work_guard(ctx_)](boost::asio::yield_context yield) {
                 f(yield);
                 call.Call();
             },
@@ -123,13 +121,11 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
     void
     runSpawnWithTimeout(std::chrono::steady_clock::duration timeout, F&& f, bool allowMockLeak = false)
     {
-        using namespace boost::asio;
-
         boost::asio::io_context timerCtx;
-        steady_timer timer{timerCtx, timeout};
-        spawn(
+        boost::asio::steady_timer timer{timerCtx, timeout};
+        boost::asio::spawn(
             timerCtx,
-            [this, &timer](yield_context yield) {
+            [this, &timer](boost::asio::yield_context yield) {
                 boost::system::error_code errorCode;
                 timer.async_wait(yield[errorCode]);
                 ctx_.stop();
@@ -143,9 +139,9 @@ struct SyncAsioContextTest : virtual public NoLoggerFixture {
         if (allowMockLeak)
             testing::Mock::AllowLeak(&call);
 
-        spawn(
+        boost::asio::spawn(
             ctx_,
-            [&](yield_context yield) {
+            [&](boost::asio::yield_context yield) {
                 f(yield);
                 call.Call();
             },

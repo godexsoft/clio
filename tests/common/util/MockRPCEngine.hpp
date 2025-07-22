@@ -36,10 +36,9 @@ struct MockAsyncRPCEngine {
     bool
     post(Fn&& func, [[maybe_unused]] std::string const& ip = "")
     {
-        using namespace boost::asio;
-        io_context ioc;
+        boost::asio::io_context ioc;
 
-        spawn(
+        boost::asio::spawn(
             ioc,
             [handler = std::forward<Fn>(func), _ = make_work_guard(ioc)](auto yield) mutable {
                 handler(yield);
