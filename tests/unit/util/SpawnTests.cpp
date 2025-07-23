@@ -27,71 +27,36 @@
 
 #include <stdexcept>
 
-TEST(SpawnTest, SpawnOnIoContextWithIntResult)
+TEST(SpawnTest, SpawnOnIoContext)
 {
     EXPECT_ANY_THROW([] {
         boost::asio::io_context io;
-
-        util::spawn(io, [](boost::asio::yield_context) {
-            throw std::runtime_error("Test exception in coroutine");
-            return 1;
-        });
-
-        io.run();
-    }());
-}
-
-TEST(SpawnTest, SpawnOnIoContextWithVoidResult)
-{
-    EXPECT_ANY_THROW([] {
-        boost::asio::io_context io;
-
         util::spawn(io, [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); });
 
         io.run();
     }());
 }
 
-TEST(SpawnTest, SpawnOnStrandWithVoidResult)
+TEST(SpawnTest, SpawnOnStrand)
 {
     EXPECT_ANY_THROW([] {
         boost::asio::io_context io;
         auto str = boost::asio::make_strand(io);
-
         util::spawn(str, [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); });
 
         io.run();
     }());
 }
 
-TEST(SpawnTest, AsioSpawnPropagateExceptionsWithIntResult)
+TEST(SpawnTest, SpawnOnCoroutine)
 {
     EXPECT_ANY_THROW([] {
         boost::asio::io_context io;
-
-        boost::asio::spawn(
-            io,
-            [](boost::asio::yield_context) {
+        boost::asio::spawn(io, [](boost::asio::yield_context yield) {
+            util::spawn(yield, [](boost::asio::yield_context) {
                 throw std::runtime_error("Test exception in coroutine");
-                return 1;
-            },
-            util::kPROPAGATE_EXCEPTIONS
-        );
-
-        io.run();
-    }());
-}
-
-TEST(SpawnTest, AsioSpawnPropagateExceptionsWithVoidResult)
-{
-    EXPECT_ANY_THROW([] {
-        boost::asio::io_context io;
-
-        boost::asio::spawn(
-            io,
-            [](boost::asio::yield_context) { throw std::runtime_error("Test exception in coroutine"); },
-            util::kPROPAGATE_EXCEPTIONS
-        );
+            });
+        });
 
         io.run();
     }());
