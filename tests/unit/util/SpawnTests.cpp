@@ -19,7 +19,6 @@
 
 #include "util/Spawn.hpp"
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
@@ -52,7 +51,7 @@ TEST(SpawnTest, SpawnOnCoroutine)
 {
     EXPECT_ANY_THROW([] {
         boost::asio::io_context io;
-        boost::asio::spawn(io, [](boost::asio::yield_context yield) {
+        util::spawn(io, [](boost::asio::yield_context yield) {
             util::spawn(yield, [](boost::asio::yield_context) {
                 throw std::runtime_error("Test exception in coroutine");
             });
