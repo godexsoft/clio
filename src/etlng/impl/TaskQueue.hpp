@@ -20,13 +20,13 @@
 #pragma once
 
 #include "etlng/Models.hpp"
+#include "util/Assert.hpp"
 #include "util/Mutex.hpp"
 
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -48,29 +48,21 @@ struct ReverseOrderComparator {
  * @note This may be a candidate for future improvements if performance proves to be poor (e.g. use a lock free queue)
  */
 class TaskQueue {
-    struct SharedData {
-        struct Data {
-            std::uint32_t expectedSequence;
-            std::priority_queue<model::LedgerData, std::vector<model::LedgerData>, ReverseOrderComparator>
-                forwardLoadQueue;
+    struct Data {
+        std::uint32_t expectedSequence;
+        std::priority_queue<model::LedgerData, std::vector<model::LedgerData>, ReverseOrderComparator> forwardLoadQueue;
 
-            Data(std::uint32_t seq) : expectedSequence(seq)
-            {
-            }
-        };
-
-        SharedData(std::uint32_t seq) : data(seq)
+        Data(std::uint32_t seq) : expectedSequence(seq)
         {
         }
-
-        util::Mutex<Data> data;
-        std::condition_variable cv;
-        std::atomic_bool stopping = false;
     };
 
     std::size_t limit_;
     std::uint32_t increment_;
-    std::shared_ptr<SharedData> data_;
+    util::Mutex<Data> data_;
+
+    std::condition_variable cv_;
+    std::atomic_bool stopping_ = false;
 
 public:
     struct Settings {
@@ -85,17 +77,13 @@ public:
      * @note If limit is not set, the queue will have no limit
      */
     explicit TaskQueue(Settings settings)
-        : limit_(settings.limit.value_or(0uz))
-        , increment_(settings.increment)
-        , data_(std::make_shared<SharedData>(settings.startSeq))
+        : limit_(settings.limit.value_or(0uz)), increment_(settings.increment), data_(settings.startSeq)
     {
     }
 
     ~TaskQueue()
     {
-        // unblock all waiters
-        data_->stopping = true;
-        data_->cv.notify_all();
+        ASSERT(stopping_, "stop() must be called before destroying the TaskQueue");
     }
 
     /**
@@ -108,11 +96,11 @@ public:
     [[nodiscard]] bool
     enqueue(model::LedgerData item)
     {
-        auto lock = data_->data.lock();
+        auto lock = data_.lock();
 
         if (limit_ == 0uz or lock->forwardLoadQueue.size() < limit_) {
             lock->forwardLoadQueue.push(std::move(item));
-            data_->cv.notify_all();
+            cv_.notify_all();
 
             return true;
         }
@@ -128,7 +116,7 @@ public:
     [[nodiscard]] std::optional<model::LedgerData>
     dequeue()
     {
-        auto lock = data_->data.lock();
+        auto lock = data_.lock();
         std::optional<model::LedgerData> out;
 
         if (not lock->forwardLoadQueue.empty() && lock->forwardLoadQueue.top().seq == lock->expectedSequence) {
@@ -149,7 +137,7 @@ public:
     [[nodiscard]] bool
     empty()
     {
-        return data_->data.lock()->forwardLoadQueue.empty();
+        return data_.lock()->forwardLoadQueue.empty();
     }
 
     /**
@@ -159,8 +147,19 @@ public:
     void
     awaitTask()
     {
-        auto lock = data_->data.lock<std::unique_lock>();
-        data_->cv.wait(lock, [&lock, data = data_] { return data->stopping or not lock->forwardLoadQueue.empty(); });
+        if (stopping_)
+            return;
+
+        auto lock = data_.lock<std::unique_lock>();
+        cv_.wait(lock, [&] { return stopping_ or not lock->forwardLoadQueue.empty(); });
+    }
+
+    void
+    stop()
+    {
+        // unblock all waiters
+        stopping_ = true;
+        cv_.notify_all();
     }
 };
 
