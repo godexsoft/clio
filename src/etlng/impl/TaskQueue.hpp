@@ -154,6 +154,10 @@ public:
         cv_.wait(lock, [&] { return stopping_ or not lock->forwardLoadQueue.empty(); });
     }
 
+    /**
+     * @brief Notify the queue that it's no longer needed
+     * @note This must be called before the queue is destroyed
+     */
     void
     stop()
     {
