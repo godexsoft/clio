@@ -22,8 +22,12 @@
 #include "etlng/Models.hpp"
 #include "util/Mutex.hpp"
 
+#include <boost/atomic/atomic.hpp>
+
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <optional>
 #include <queue>
 #include <utility>
@@ -57,6 +61,8 @@ class TaskQueue {
     };
 
     util::Mutex<Data> data_;
+    std::condition_variable cv_;
+    boost::atomics::atomic_bool stopping_ = false;
 
 public:
     struct Settings {
@@ -67,11 +73,19 @@ public:
 
     /**
      * @brief Construct a new priority queue
-     * @param limit The limit of items allowed simultaneously in the queue
+     * @param settings Settings for the queue, including starting sequence, increment value, and optional limit
+     * @note If limit is not set, the queue will have no limit
      */
     explicit TaskQueue(Settings settings)
         : limit_(settings.limit.value_or(0uz)), increment_(settings.increment), data_(settings.startSeq)
     {
+    }
+
+    ~TaskQueue()
+    {
+        // unblock all waiters
+        stopping_ = true;
+        cv_.notify_all();
     }
 
     /**
@@ -88,6 +102,8 @@ public:
 
         if (limit_ == 0uz or lock->forwardLoadQueue.size() < limit_) {
             lock->forwardLoadQueue.push(std::move(item));
+            cv_.notify_all();
+
             return true;
         }
 
@@ -124,6 +140,17 @@ public:
     empty()
     {
         return data_.lock()->forwardLoadQueue.empty();
+    }
+
+    /**
+     * @brief Awaits for the queue to become non-empty
+     * @note This function blocks until there is a task or the queue is being destroyed
+     */
+    void
+    awaitTask()
+    {
+        auto lock = data_.lock<std::unique_lock>();
+        cv_.wait(lock, [&] { return stopping_ or not lock->forwardLoadQueue.empty(); });
     }
 };
 
