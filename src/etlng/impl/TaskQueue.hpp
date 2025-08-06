@@ -22,8 +22,7 @@
 #include "etlng/Models.hpp"
 #include "util/Mutex.hpp"
 
-#include <boost/atomic/atomic.hpp>
-
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -62,7 +61,7 @@ class TaskQueue {
 
     util::Mutex<Data> data_;
     std::condition_variable cv_;
-    boost::atomics::atomic_bool stopping_ = false;
+    boost::atomic_bool stopping_ = false;
 
 public:
     struct Settings {
