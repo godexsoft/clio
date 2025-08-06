@@ -178,13 +178,12 @@ TaskManager::wait()
 void
 TaskManager::stop()
 {
-    queue_.stop();
-
     for (auto& extractor : extractors_)
         extractor.abort();
     for (auto& loader : loaders_)
         loader.abort();
 
+    queue_.stop();
     wait();
 }
 
