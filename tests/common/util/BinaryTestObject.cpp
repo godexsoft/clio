@@ -33,10 +33,12 @@
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/digest.h>
 
 #include <optional>
 #include <string>
@@ -173,11 +175,17 @@ createObjectWithMPT()
     constexpr auto kACCOUNT = "rM2AGCCCRb373FRuD8wHyUwUsh2dV4BW5Q";
 
     auto const account = getAccountIdWithString(kACCOUNT);
-    auto const mptokenObject = createMpTokenObject(kACCOUNT, ripple::makeMptID(2, getAccountIdWithString(kACCOUNT)));
+    auto const mptID = ripple::makeMptID(2, getAccountIdWithString(kACCOUNT));
+    auto const mptokenObject = createMpTokenObject(kACCOUNT, mptID);
+
+    // key is a token made up from several fields described here:
+    // https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0033-multi-purpose-tokens#2121-mptoken-ledger-identifier
+    auto const keySha512Half = ripple::sha512Half(0x007F, mptID, account);
+    auto const key = std::string(std::begin(keySha512Half), std::end(keySha512Half));
 
     return {
         .key = {},
-        .keyRaw = std::string(reinterpret_cast<char const*>(account.data()), ripple::AccountID::size()),
+        .keyRaw = key,
         .data = {},
         .dataRaw = std::string(
             static_cast<char const*>(mptokenObject.getSerializer().getDataPtr()),
