@@ -47,7 +47,7 @@
 #include <vector>
 
 namespace {
-auto constexpr kTOTAL_WORKERS = 2uz;  // 1 reading and 1 writing worker (coroutines)
+constexpr auto kTOTAL_WORKERS = 2uz;  // 1 reading and 1 writing worker (coroutines)
 }  // namespace
 
 namespace cluster {
