@@ -25,13 +25,12 @@ class ClioConan(ConanFile):
     }
 
     requires = [
-        'boost/1.83.0',
         'cassandra-cpp-driver/2.17.0',
         'fmt/11.2.0',
         'protobuf/3.21.12',
         'grpc/1.50.1',
-        'openssl/1.1.1v',
-        'xrpl/2.5.0@clio/boost-odr',
+        'openssl/1.1.1w',
+        'xrpl/2.6.0@clio/boost-188',
         'zlib/1.3.1',
         'libbacktrace/cci.20210118',
         'spdlog/1.15.3',
@@ -71,6 +70,8 @@ class ClioConan(ConanFile):
     )
 
     def requirements(self):
+        self.requires('boost/1.88.0', force=True)
+
         if self.options.tests or self.options.integration_tests:
             self.requires('gtest/1.14.0')
         if self.options.benchmark:
