@@ -59,7 +59,6 @@ target_sources(
           etlng/ext/NFTTests.cpp
           etlng/ext/SuccessorTests.cpp
           # Feed
-          util/BytesConverterTests.cpp
           feed/BookChangesFeedTests.cpp
           feed/ForwardFeedTests.cpp
           feed/LedgerFeedTests.cpp
@@ -68,8 +67,12 @@ target_sources(
           feed/SubscriptionManagerTests.cpp
           feed/TrackableSignalTests.cpp
           feed/TransactionFeedTests.cpp
+          # Logging
+          util/log/LogServiceInitTests.cpp
+          util/log/LoggerTests.cpp
+          util/log/PrettyPathTests.cpp
+          # Other
           JsonUtilTests.cpp
-          LoggerTests.cpp
           Main.cpp
           Playground.cpp
           ProfilerTests.cpp
@@ -167,13 +170,16 @@ target_sources(
           # Common utils
           util/AccountUtilsTests.cpp
           util/AssertTests.cpp
+          util/BytesConverterTests.cpp
           util/CoroutineTest.cpp
           util/MoveTrackerTests.cpp
           util/RandomTests.cpp
           util/RepeatTests.cpp
           util/ResponseExpirationCacheTests.cpp
           util/RetryTests.cpp
+          util/ScopeGuardTests.cpp
           util/SignalsHandlerTests.cpp
+          util/ShasumTests.cpp
           util/SpawnTests.cpp
           util/StopHelperTests.cpp
           util/TimeUtilsTests.cpp
@@ -196,6 +202,7 @@ target_sources(
           web/ng/impl/HttpConnectionTests.cpp
           web/ng/impl/ServerSslContextTests.cpp
           web/ng/impl/WsConnectionTests.cpp
+          web/ProxyIpResolverTests.cpp
           web/RPCServerHandlerTests.cpp
           web/ServerTests.cpp
           web/SubscriptionContextTests.cpp
@@ -216,7 +223,7 @@ gtest_discover_tests(clio_tests DISCOVERY_TIMEOUT 90)
 target_compile_options(clio_options INTERFACE -gdwarf-4)
 
 target_include_directories(clio_tests PRIVATE .)
-target_link_libraries(clio_tests PUBLIC clio_testing_common)
+target_link_libraries(clio_tests PUBLIC clio_testing_common PRIVATE spdlog::spdlog)
 set_target_properties(clio_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Generate `coverage_report` target if coverage is enabled

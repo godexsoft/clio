@@ -57,7 +57,7 @@ using namespace util::config;
 struct WebHandlersTest : virtual NoLoggerFixture {
     DOSGuardStrictMock dosGuardMock;
     util::TagDecoratorFactory const tagFactory{
-        ClioConfigDefinition{{"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
+        ClioConfigDefinition{{"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
     };
     std::string const ip = "some ip";
     StrictMockConnection connectionMock{ip, boost::beast::flat_buffer{}, tagFactory};
@@ -90,6 +90,21 @@ TEST_F(OnConnectCheckTests, RateLimited)
     auto const httpResponse = std::move(response).error().intoHttpResponse();
     EXPECT_EQ(httpResponse.result(), boost::beast::http::status::too_many_requests);
     EXPECT_EQ(httpResponse.body(), "Too many requests");
+}
+
+struct IpChangeHookTests : WebHandlersTest {
+    IpChangeHook ipChangeHook{dosGuardMock};
+};
+
+TEST_F(IpChangeHookTests, CallsDecrementAndIncrement)
+{
+    std::string const oldIp = "old ip";
+    std::string const newIp = "new ip";
+
+    EXPECT_CALL(dosGuardMock, decrement(oldIp));
+    EXPECT_CALL(dosGuardMock, increment(newIp));
+
+    ipChangeHook(oldIp, newIp);
 }
 
 struct DisconnectHookTests : WebHandlersTest {

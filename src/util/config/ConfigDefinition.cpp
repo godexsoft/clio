@@ -237,6 +237,12 @@ ClioConfigDefinition::parse(ConfigFileInterface const& config)
         });
     }
 
+    for (auto const& key : config.getAllKeys()) {
+        if (!map_.contains(key) && !arrayPrefixesToKeysMap.contains(key)) {
+            listOfErrors.emplace_back("Unknown key: " + key);
+        }
+    }
+
     if (!listOfErrors.empty())
         return listOfErrors;
 
@@ -331,6 +337,8 @@ getClioConfig()
          {"server.ws_max_sending_queue_size",
           ConfigValue{ConfigType::Integer}.defaultValue(1500).withConstraint(gValidateUint32)},
          {"server.__ng_web_server", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
+         {"server.proxy.ips.[]", Array{ConfigValue{ConfigType::String}}},
+         {"server.proxy.tokens.[]", Array{ConfigValue{ConfigType::String}}},
 
          {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
          {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
@@ -351,31 +359,26 @@ getClioConfig()
          {"cache.page_fetch_size", ConfigValue{ConfigType::Integer}.defaultValue(512).withConstraint(gValidateUint16)},
          {"cache.load", ConfigValue{ConfigType::String}.defaultValue("async").withConstraint(gValidateLoadMode)},
 
-         {"log_channels.[].channel",
+         {"log.channels.[].channel",
           Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidateChannelName)}},
-         {"log_channels.[].log_level",
+         {"log.channels.[].level",
           Array{ConfigValue{ConfigType::String}.optional().withConstraint(gValidateLogLevelName)}},
 
-         {"log_level", ConfigValue{ConfigType::String}.defaultValue("info").withConstraint(gValidateLogLevelName)},
+         {"log.level", ConfigValue{ConfigType::String}.defaultValue("info").withConstraint(gValidateLogLevelName)},
 
-         {"log_format",
-          ConfigValue{ConfigType::String}.defaultValue(
-              R"(%TimeStamp% (%SourceLocation%) [%ThreadID%] %Channel%:%Severity% %Message%)"
-          )},
+         {"log.format", ConfigValue{ConfigType::String}.defaultValue(R"(%Y-%m-%d %H:%M:%S.%f %^%3!l:%n%$ - %v)")},
 
-         {"log_to_console", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
+         {"log.is_async", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
 
-         {"log_directory", ConfigValue{ConfigType::String}.optional()},
+         {"log.enable_console", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
 
-         {"log_rotation_size", ConfigValue{ConfigType::Integer}.defaultValue(2048).withConstraint(gValidateUint32)},
+         {"log.directory", ConfigValue{ConfigType::String}.optional()},
 
-         {"log_directory_max_size",
-          ConfigValue{ConfigType::Integer}.defaultValue(50 * 1024).withConstraint(gValidateUint32)},
+         {"log.rotation_size", ConfigValue{ConfigType::Integer}.defaultValue(2048).withConstraint(gValidateUint32)},
 
-         {"log_rotation_hour_interval",
-          ConfigValue{ConfigType::Integer}.defaultValue(12).withConstraint(gValidateUint32)},
+         {"log.directory_max_files", ConfigValue{ConfigType::Integer}.defaultValue(25).withConstraint(gValidateUint32)},
 
-         {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("none").withConstraint(gValidateLogTag)},
+         {"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("none").withConstraint(gValidateLogTag)},
 
          {"extractor_threads", ConfigValue{ConfigType::Integer}.defaultValue(1u).withConstraint(gValidateUint32)},
 

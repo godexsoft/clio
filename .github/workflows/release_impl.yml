@@ -42,7 +42,7 @@ jobs:
   release:
     runs-on: heavy
     container:
-      image: ghcr.io/xrplf/clio-ci:a446d85297b3006e6d2c4dc7640368f096afecf5
+      image: ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
@@ -56,11 +56,11 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare runner
-        uses: ./.github/actions/prepare_runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@7951b682e5a2973b28b0719a72f01fc4b0d0c34f
         with:
           disable_ccache: true
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: release_artifacts
           pattern: clio_server_*
@@ -76,7 +76,7 @@ jobs:
         shell: bash
         if: ${{ inputs.generate_changelog }}
         run: |
-          LAST_TAG="$(gh release view --json tagName -q .tagName)"
+          LAST_TAG="$(gh release view --json tagName -q .tagName --repo XRPLF/clio)"
           LAST_TAG_COMMIT="$(git rev-parse $LAST_TAG)"
           BASE_COMMIT="$(git merge-base HEAD $LAST_TAG_COMMIT)"
           git-cliff "${BASE_COMMIT}..HEAD" --ignore-tags "nightly|-b|-rc"

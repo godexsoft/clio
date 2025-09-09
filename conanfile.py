@@ -9,20 +9,7 @@ class ClioConan(ConanFile):
     url = 'https://github.com/xrplf/clio'
     description = 'Clio RPC server'
     settings = 'os', 'compiler', 'build_type', 'arch'
-    options = {
-        'static': [True, False],              # static linkage
-        'verbose': [True, False],
-        'tests': [True, False],               # build unit tests; create `clio_tests` binary
-        'integration_tests': [True, False],   # build integration tests; create `clio_integration_tests` binary
-        'benchmark': [True, False],           # build benchmarks; create `clio_benchmarks` binary
-        'docs': [True, False],                # doxygen API docs; create custom target 'docs'
-        'packaging': [True, False],           # create distribution packages
-        'coverage': [True, False],            # build for test coverage report; create custom target `clio_tests-ccov`
-        'lint': [True, False],                # run clang-tidy checks during compilation
-        'snapshot': [True, False],            # build export/import snapshot tool
-        'time_trace': [True, False],          # build using -ftime-trace to create compiler trace reports
-        'use_mold': [True, False],            # use mold linker for faster linking
-    }
+    options = {}
 
     requires = [
         'boost/1.83.0',
@@ -30,26 +17,14 @@ class ClioConan(ConanFile):
         'fmt/11.2.0',
         'protobuf/3.21.12',
         'grpc/1.50.1',
-        'openssl/1.1.1v',
-        'xrpl/2.5.0@clio/boost-odr',
+        'openssl/1.1.1w',
+        'xrpl/2.6.0',
         'zlib/1.3.1',
-        'libbacktrace/cci.20210118'
+        'libbacktrace/cci.20210118',
+        'spdlog/1.15.3',
     ]
 
     default_options = {
-        'static': False,
-        'verbose': False,
-        'tests': False,
-        'integration_tests': False,
-        'benchmark': False,
-        'packaging': False,
-        'coverage': False,
-        'lint': False,
-        'docs': False,
-        'snapshot': False,
-        'time_trace': False,
-        'use_mold': False,
-
         'xrpl/*:tests': False,
         'xrpl/*:rocksdb': False,
         'cassandra-cpp-driver/*:shared': False,
@@ -70,10 +45,8 @@ class ClioConan(ConanFile):
     )
 
     def requirements(self):
-        if self.options.tests or self.options.integration_tests:
-            self.requires('gtest/1.14.0')
-        if self.options.benchmark:
-            self.requires('benchmark/1.8.3')
+        self.requires('gtest/1.14.0')
+        self.requires('benchmark/1.9.4')
 
     def configure(self):
         if self.settings.compiler == 'apple-clang':
@@ -89,8 +62,6 @@ class ClioConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        for option_name, option_value in self.options.items():
-            tc.variables[option_name] = option_value
         tc.generate()
 
     def build(self):

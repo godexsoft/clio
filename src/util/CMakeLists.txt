@@ -8,6 +8,7 @@ target_sources(
           Coroutine.cpp
           CoroutineGroup.cpp
           log/Logger.cpp
+          log/PrettyPath.cpp
           prometheus/Http.cpp
           prometheus/Label.cpp
           prometheus/MetricBase.cpp
@@ -23,6 +24,7 @@ target_sources(
           requests/WsConnection.cpp
           requests/impl/SslContext.cpp
           ResponseExpirationCache.cpp
+          Shasum.cpp
           SignalsHandler.cpp
           StopHelper.cpp
           StringHash.cpp
@@ -50,8 +52,6 @@ target_link_libraries(
   clio_util
   PUBLIC Boost::headers
          Boost::iostreams
-         Boost::log
-         Boost::log_setup
          fmt::fmt
          openssl::openssl
          xrpl::libxrpl
@@ -59,6 +59,7 @@ target_link_libraries(
          clio_options
          clio_rpc_center
          clio_build_version
+  PRIVATE spdlog::spdlog
 )
 
 # FIXME: needed on gcc-12, clang-16 and AppleClang for now (known boost 1.82 issue for some compilers)

@@ -20,43 +20,60 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 USER root
 WORKDIR /root
 
-ARG LLVM_TOOLS_VERSION=20
-
-# Add repositories
+# Install common tools and dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
         curl \
+        dpkg-dev \
+        file \
+        git \
+        git-lfs \
         gnupg \
+        graphviz \
+        jq \
+        # libgmp, libmpfr and libncurses are gdb dependencies
+        libgmp-dev \
+        libmpfr-dev \
+        libncurses-dev \
+        make \
+        ninja-build \
         wget \
+        zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python tools
+ARG PYTHON_VERSION=3.13
+
+RUN add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends --no-install-suggests \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-venv \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${LLVM_TOOLS_VERSION} main" >> /etc/apt/sources.list \
+    && curl -sS https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
+
+# Create a virtual environment for python tools
+RUN python${PYTHON_VERSION} -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install -q --no-cache-dir \
+        cmake \
+        conan==2.20.1 \
+        gcovr \
+        pre-commit
+
+# Install LLVM tools
+ARG LLVM_TOOLS_VERSION=20
+
+RUN echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${LLVM_TOOLS_VERSION} main" >> /etc/apt/sources.list \
     && wget --progress=dot:giga -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-# Install packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
         clang-tidy-${LLVM_TOOLS_VERSION} \
         clang-tools-${LLVM_TOOLS_VERSION} \
-        git \
-        git-lfs \
-        graphviz \
-        jq \
-        make \
-        ninja-build \
-        python3 \
-        python3-pip \
-        zip \
-    && pip3 install -q --upgrade --no-cache-dir pip \
-    && pip3 install -q --no-cache-dir \
-        # TODO: Remove this once we switch to newer Ubuntu base image
-        # lxml 6.0.0 is not compatible with our image
-        'lxml<6.0.0' \
-        \
-        cmake \
-        conan==2.17.0 \
-        gcovr \
-        pre-commit \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -92,12 +109,13 @@ COPY --from=clio-tools \
     /usr/local/bin/ClangBuildAnalyzer \
     /usr/local/bin/git-cliff \
     /usr/local/bin/gh \
+    /usr/local/bin/gdb \
     /usr/local/bin/
 
 WORKDIR /root
 
 # Setup conan
-RUN conan remote add --index 0 ripple https://conan.ripplex.io
+RUN conan remote add --index 0 xrplf https://conan.ripplex.io
 
 WORKDIR /root/.conan2
 COPY conan/global.conf ./global.conf

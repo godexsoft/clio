@@ -33,7 +33,6 @@ using testing::StrictMock;
 
 #include <boost/asio/spawn.hpp>
 
-#include <chrono>
 #include <expected>
 #include <string>
 
@@ -157,7 +156,7 @@ TEST_P(BlockingCacheWaitTest, WaitForUpdate)
     if (GetParam().updateSuccessful)
         EXPECT_CALL(mockVerifier, Call(value)).WillOnce(Return(GetParam().verifierAccepts));
 
-    runSpawnWithTimeout(std::chrono::seconds{1}, [&](boost::asio::yield_context yield) {
+    runSpawn([&](boost::asio::yield_context yield) {
         auto result = cache->asyncGet(yield, mockUpdater.AsStdFunction(), mockVerifier.AsStdFunction());
 
         if (GetParam().updateSuccessful) {
@@ -244,7 +243,5 @@ TEST_F(BlockingCacheTest, UpdateFromTwoCoroutinesHappensOnlyOnce)
         ASSERT_EQ(result.value(), value);
     };
 
-    runSpawnWithTimeout(std::chrono::seconds{1}, [&](boost::asio::yield_context yield) {
-        util::spawn(yield, updatingCoroutine);
-    });
+    runSpawn([&](boost::asio::yield_context yield) { util::spawn(yield, updatingCoroutine); });
 }

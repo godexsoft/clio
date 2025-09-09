@@ -124,8 +124,10 @@ getParseServerConfig(boost::json::value val)
         {"server.port", ConfigValue{ConfigType::Integer}},
         {"server.admin_password", ConfigValue{ConfigType::String}.optional()},
         {"server.local_admin", ConfigValue{ConfigType::Boolean}.optional()},
+        {"server.proxy.ips.[]", Array{ConfigValue{ConfigType::String}}},
+        {"server.proxy.tokens.[]", Array{ConfigValue{ConfigType::String}}},
         {"server.ws_max_sending_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(1500)},
-        {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
+        {"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
         {"dos_guard.max_fetches", ConfigValue{ConfigType::Integer}},
         {"dos_guard.sweep_interval", ConfigValue{ConfigType::Integer}},
         {"dos_guard.max_connections", ConfigValue{ConfigType::Integer}},
@@ -519,13 +521,15 @@ getParseAdminServerConfig(boost::json::value val)
         {"server.admin_password", ConfigValue{ConfigType::String}.optional()},
         {"server.local_admin", ConfigValue{ConfigType::Boolean}.optional()},
         {"server.processing_policy", ConfigValue{ConfigType::String}.defaultValue("parallel")},
+        {"server.proxy.ips.[]", Array{ConfigValue{ConfigType::String}}},
+        {"server.proxy.tokens.[]", Array{ConfigValue{ConfigType::String}}},
         {"server.parallel_requests_limit", ConfigValue{ConfigType::Integer}.optional()},
         {"server.ws_max_sending_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(1500)},
         {"ssl_cert_file", ConfigValue{ConfigType::String}.optional()},
         {"ssl_key_file", ConfigValue{ConfigType::String}.optional()},
         {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
         {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
-        {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}
+        {"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}
     };
     auto const errors = config.parse(jsonVal);
     [&]() { ASSERT_FALSE(errors.has_value()); }();

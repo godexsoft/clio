@@ -419,12 +419,12 @@ TEST_F(RPCHelpersTest, DeliverMaxAliasV1)
 
 TEST_F(RPCHelpersTest, DeliverMaxAliasV2)
 {
-    auto constexpr kJSON = R"JSON({
-         "TransactionType": "Payment",
-         "Amount": {
-             "test": "test"
-         }
-     })JSON";
+    constexpr auto kJSON = R"JSON({
+        "TransactionType": "Payment",
+        "Amount": {
+            "test": "test"
+        }
+    })JSON";
     auto req = boost::json::parse(kJSON).as_object();
 
     insertDeliverMaxAlias(req, 2);
@@ -447,9 +447,9 @@ TEST_F(RPCHelpersTest, LedgerHeaderJson)
     auto const binJson = toJson(ledgerHeader, true, 1u);
 
     constexpr auto kEXPECT_BIN = R"JSON({
-                                    "ledger_data": "0000001E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                                    "closed": true
-                                })JSON";
+        "ledger_data": "0000001E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
     EXPECT_EQ(binJson, boost::json::parse(kEXPECT_BIN));
 
     auto const expectJson = fmt::format(
@@ -522,7 +522,7 @@ TEST_F(RPCHelpersTest, TransactionAndMetadataBinaryJsonV2)
 
 TEST_F(RPCHelpersTest, ParseIssue)
 {
-    auto constexpr kJSON = R"JSON({
+    constexpr auto kJSON = R"JSON({
         "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
         "currency": "JPY"
     })JSON";
@@ -536,7 +536,7 @@ TEST_F(RPCHelpersTest, ParseIssue)
 
     EXPECT_THROW(parseIssue(boost::json::parse(R"JSON({"currency": "XRP2"})JSON").as_object()), std::runtime_error);
 
-    auto constexpr kJSON2 = R"JSON({
+    constexpr auto kJSON2 = R"JSON({
         "issuer": "abcd",
         "currency": "JPY"
     })JSON";
@@ -1299,7 +1299,7 @@ struct RPCHelpersLogDurationTest : LoggerFixture, testing::WithParamInterface<RP
          }}
     };
     util::TagDecoratorFactory tagFactory{util::config::ClioConfigDefinition{
-        {"log_tag_style", util::config::ConfigValue{util::config::ConfigType::String}.defaultValue("none")}
+        {"log.tag_style", util::config::ConfigValue{util::config::ConfigType::String}.defaultValue("none")}
     }};
     struct DummyTaggable : util::Taggable {
         DummyTaggable(util::TagDecoratorFactory& f) : util::Taggable(f)
@@ -1333,14 +1333,14 @@ INSTANTIATE_TEST_SUITE_P(
     RPCHelpersLogDurationTests,
     RPCHelpersLogDurationTest,
     testing::Values(
-        RPCHelpersLogDurationTestBundle{"ShortDurationLogsAsInfo", std::chrono::milliseconds(500), "RPC:NFO", true},
+        RPCHelpersLogDurationTestBundle{"ShortDurationLogsAsInfo", std::chrono::milliseconds(500), "inf:RPC ", true},
         RPCHelpersLogDurationTestBundle{
             "MediumDurationLogsAsWarning",
             std::chrono::milliseconds(5000),
-            "RPC:WRN",
+            "war:RPC ",
             true
         },
-        RPCHelpersLogDurationTestBundle{"LongDurationLogsAsError", std::chrono::milliseconds(15000), "RPC:ERR", true}
+        RPCHelpersLogDurationTestBundle{"LongDurationLogsAsError", std::chrono::milliseconds(15000), "err:RPC ", true}
     ),
     tests::util::kNAME_GENERATOR
 );

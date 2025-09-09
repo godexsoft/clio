@@ -11,12 +11,11 @@ option(integration_tests "Build integration tests" FALSE)
 option(benchmark "Build benchmarks" FALSE)
 option(docs "Generate doxygen docs" FALSE)
 option(coverage "Build test coverage report" FALSE)
-option(packaging "Create distribution packages" FALSE)
+option(package "Create distribution packages" FALSE)
 option(lint "Run clang-tidy checks during compilation" FALSE)
 option(static "Statically linked Clio" FALSE)
 option(snapshot "Build snapshot tool" FALSE)
 option(time_trace "Build using -ftime-trace to create compiler trace reports" FALSE)
-option(use_mold "Use mold linker" FALSE)
 
 # ========================================================================== #
 set(san "" CACHE STRING "Add sanitizer instrumentation")
@@ -40,11 +39,6 @@ if (verbose)
   set(CMAKE_VERBOSE_MAKEFILE TRUE)
 endif ()
 
-if (packaging)
-  add_definitions(-DPKG=1)
-  target_compile_definitions(clio_options INTERFACE PKG=1)
-endif ()
-
 # Clio tweaks and checks
 include(CheckCompiler)
 include(Settings)
@@ -58,6 +52,7 @@ include(deps/Threads)
 include(deps/libfmt)
 include(deps/cassandra)
 include(deps/libbacktrace)
+include(deps/spdlog)
 
 add_subdirectory(src)
 add_subdirectory(tests)
@@ -93,8 +88,8 @@ if (docs)
 endif ()
 
 include(install/install)
-if (packaging)
-  include(cmake/packaging.cmake) # This file exists only in build runner
+if (package)
+  include(ClioPackage)
 endif ()
 
 if (snapshot)

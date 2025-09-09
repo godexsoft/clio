@@ -45,7 +45,7 @@ jobs:
         build_type: [Release, Debug]
         container:
           [
-            '{ "image": "ghcr.io/xrplf/clio-ci:a446d85297b3006e6d2c4dc7640368f096afecf5" }',
+            '{ "image": "ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d" }',
           ]
         static: [true]
 
@@ -73,7 +73,7 @@ jobs:
     uses: ./.github/workflows/build_impl.yml
     with:
       runs_on: heavy
-      container: '{ "image": "ghcr.io/xrplf/clio-ci:a446d85297b3006e6d2c4dc7640368f096afecf5" }'
+      container: '{ "image": "ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d" }'
       conan_profile: gcc
       build_type: Debug
       disable_cache: false
@@ -85,17 +85,34 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  package:
+    name: Build packages
+
+    uses: ./.github/workflows/build_impl.yml
+    with:
+      runs_on: heavy
+      container: '{ "image": "ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d" }'
+      conan_profile: gcc
+      build_type: Release
+      disable_cache: false
+      code_coverage: false
+      static: true
+      upload_clio_server: false
+      package: true
+      targets: package
+      analyze_build_time: false
+
   check_config:
     name: Check Config Description
     needs: build-and-test
     runs-on: heavy
     container:
-      image: ghcr.io/xrplf/clio-ci:a446d85297b3006e6d2c4dc7640368f096afecf5
+      image: ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: clio_server_Linux_Release_gcc
 
