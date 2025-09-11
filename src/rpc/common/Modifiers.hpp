@@ -70,7 +70,7 @@ public:
             return {};  // ignore. field does not exist, let 'required' fail instead
 
         // clamp to min_ and max_
-        auto const oldValue = value_to<Type>(value.as_object().at(key));
+        auto const oldValue = util::castValueTo<Type>(value.as_object().at(key));
         value.as_object()[key] = std::clamp<Type>(oldValue, min_, max_);
 
         return {};

@@ -22,10 +22,12 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/ValidationHelpers.hpp"
+#include "util/JsonUtils.hpp"
 
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
+#include <boost/json/value_to.hpp>
 #include <fmt/format.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -36,6 +38,7 @@
 #include <initializer_list>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -165,6 +168,8 @@ struct Type final {
 
 /**
  * @brief Validate that value is between specified min and max.
+ * @note It's caller's responsibility to provide a large enough type for their number range. Out of range numbers can
+ * wrap and trick the validator.
  */
 template <typename Type>
 class Between final {
@@ -197,7 +202,7 @@ public:
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
-        auto const res = value_to<Type>(value.as_object().at(key));
+        auto const res = util::castValueTo<Type>(value.as_object().at(key));
 
         // TODO: may want a way to make this code more generic (e.g. use a free
         // function that can be overridden for this comparison)
@@ -210,6 +215,8 @@ public:
 
 /**
  * @brief Validate that value is equal or greater than the specified min.
+ * @note It's caller's responsibility to provide a large enough type for their number range. Out of range numbers can
+ * wrap and trick the validator.
  */
 template <typename Type>
 class Min final {
@@ -240,7 +247,7 @@ public:
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
-        auto const res = value_to<Type>(value.as_object().at(key));
+        auto const res = util::castValueTo<Type>(value.as_object().at(key));
 
         if (res < min_)
             return Error{Status{RippledError::rpcINVALID_PARAMS}};
@@ -251,6 +258,8 @@ public:
 
 /**
  * @brief Validate that value is not greater than max.
+ * @note It's caller's responsibility to provide a large enough type for their number range. Out of range numbers can
+ * wrap and trick the validator.
  */
 template <typename Type>
 class Max final {
@@ -281,7 +290,7 @@ public:
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
-        auto const res = value_to<Type>(value.as_object().at(key));
+        auto const res = util::castValueTo<Type>(value.as_object().at(key));
 
         if (res > max_)
             return Error{Status{RippledError::rpcINVALID_PARAMS}};
@@ -349,7 +358,7 @@ public:
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
-        auto const res = value_to<Type>(value.as_object().at(key));
+        auto const res = util::castValueTo<Type>(value.as_object().at(key));
         if (res != original_)
             return Error{Status{RippledError::rpcINVALID_PARAMS}};
 
@@ -404,7 +413,7 @@ public:
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
-        auto const res = value_to<Type>(value.as_object().at(key));
+        auto const res = util::castValueTo<Type>(value.as_object().at(key));
         if (std::find(std::begin(options_), std::end(options_), res) == std::end(options_))
             return Error{Status{RippledError::rpcINVALID_PARAMS, fmt::format("Invalid field '{}'.", key)}};
 

@@ -21,9 +21,11 @@
 
 #include <boost/json.hpp>
 #include <boost/json/object.hpp>
+#include <boost/json/value_to.hpp>
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <string>
 
 /**
@@ -84,6 +86,28 @@ removeSecret(boost::json::object const& object)
     }
 
     return newObject;
+}
+
+/**
+ * @brief Converts a value using `value_to` and casts it back to the requested Type.
+ * @note This conversion can possibly cause wrapping around or UB. Use with caution.
+ *
+ * @tparam Type The type to cast to
+ * @param value The JSON value to cast
+ * @return Value casted to the requested type
+ */
+template <typename Type>
+Type
+castValueTo(boost::json::value const& value)
+{
+    if constexpr (std::is_integral_v<Type>) {
+        // This helps to mitigate the "not exact" exception from Boost.Json for large numbers when the number does not
+        // exactly fit in `Type`. In practice we don't need huge numbers that don't fit uint32_t but users can still
+        // send them through RPC and Clio needs to be able to process them without producing an internal error.
+        return static_cast<Type>(value_to<int64_t>(value));
+    } else {
+        return value_to<Type>(value);
+    }
 }
 
 }  // namespace util

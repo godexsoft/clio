@@ -37,6 +37,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -186,6 +187,15 @@ TEST_F(RPCBaseTest, BetweenValidator)
 
     auto failingInput2 = json::parse(R"JSON({ "amount": 21 })JSON");
     ASSERT_FALSE(spec.process(failingInput2));
+
+    // big number does not produce an error even if it wraps around
+    auto bigInput = json::parse(R"JSON({ "amount": 9999999999 })JSON");
+    ASSERT_FALSE(spec.process(bigInput));  // this fails because the number is too large after wrapping
+
+    // known issue: input can wrap around
+    uint64_t const wrappedInput = numeric_limits<uint32_t>::max() + 12ul;
+    auto edgeCaseInput = json::parse(fmt::format(R"JSON({{ "amount": {}}})JSON", wrappedInput));
+    ASSERT_TRUE(spec.process(edgeCaseInput));  // internally the input becomes 11 and therefore is inside the range
 }
 
 TEST_F(RPCBaseTest, MinValidator)
@@ -202,6 +212,15 @@ TEST_F(RPCBaseTest, MinValidator)
 
     auto failingInput = json::parse(R"JSON({ "amount": 5 })JSON");
     ASSERT_FALSE(spec.process(failingInput));
+
+    // big number does not produce an error even if it wraps around
+    auto bigInput = json::parse(R"JSON({ "amount": 9999999999 })JSON");
+    ASSERT_TRUE(spec.process(bigInput));  // this only works because the number wraps and is still bigger than 6
+
+    // known issue: input can wrap around
+    uint64_t const wrappedInput = numeric_limits<uint32_t>::max() + 4ul;
+    auto edgeCaseInput = json::parse(fmt::format(R"JSON({{ "amount": {}}})JSON", wrappedInput));
+    ASSERT_FALSE(spec.process(edgeCaseInput));  // internally the input becomes 3 and therefore is smaller than min
 }
 
 TEST_F(RPCBaseTest, MaxValidator)
@@ -218,6 +237,15 @@ TEST_F(RPCBaseTest, MaxValidator)
 
     auto failingInput = json::parse(R"JSON({ "amount": 7 })JSON");
     ASSERT_FALSE(spec.process(failingInput));
+
+    // big number does not produce an error even if it wraps around
+    auto bigInput = json::parse(R"JSON({ "amount": 9999999999 })JSON");
+    ASSERT_FALSE(spec.process(bigInput));  // this only works because the number wraps and is still bigger than 6
+
+    // known issue: input can wrap around
+    uint64_t const wrappedInput = numeric_limits<uint32_t>::max() + 8ul;
+    auto edgeCaseInput = json::parse(fmt::format(R"JSON({{ "amount": {}}})JSON", wrappedInput));
+    ASSERT_FALSE(spec.process(edgeCaseInput));  // internally the input becomes 7 and therefore is bigger than max
 }
 
 TEST_F(RPCBaseTest, OneOfValidator)
