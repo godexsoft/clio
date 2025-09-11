@@ -27,7 +27,6 @@
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <fmt/format.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -197,8 +196,6 @@ public:
     [[nodiscard]] MaybeError
     verify(boost::json::value const& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
@@ -242,8 +239,6 @@ public:
     [[nodiscard]] MaybeError
     verify(boost::json::value const& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
@@ -285,8 +280,6 @@ public:
     [[nodiscard]] MaybeError
     verify(boost::json::value const& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
@@ -353,8 +346,6 @@ public:
     [[nodiscard]] MaybeError
     verify(boost::json::value const& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 
@@ -408,8 +399,6 @@ public:
     [[nodiscard]] MaybeError
     verify(boost::json::value const& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 

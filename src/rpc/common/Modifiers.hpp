@@ -64,8 +64,6 @@ public:
     [[nodiscard]] MaybeError
     modify(boost::json::value& value, std::string_view key) const
     {
-        using boost::json::value_to;
-
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. field does not exist, let 'required' fail instead
 

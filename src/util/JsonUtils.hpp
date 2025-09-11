@@ -100,6 +100,8 @@ template <typename Type>
 Type
 castValueTo(boost::json::value const& value)
 {
+    using boost::json::value_to;
+
     if constexpr (std::is_integral_v<Type>) {
         // This helps to mitigate the "not exact" exception from Boost.Json for large numbers when the number does not
         // exactly fit in `Type`. In practice we don't need huge numbers that don't fit uint32_t but users can still

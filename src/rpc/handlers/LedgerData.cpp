@@ -29,7 +29,6 @@
 #include "util/log/Logger.hpp"
 
 #include <boost/json/conversion.hpp>
-#include <boost/json/kind.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
