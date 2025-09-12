@@ -37,6 +37,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -204,6 +205,18 @@ TEST_F(RPCBaseTest, MinValidator)
     ASSERT_FALSE(spec.process(failingInput));
 }
 
+TEST_F(RPCBaseTest, MinValidatorAfterType)
+{
+    auto spec = RpcSpec{
+        {"amount", Type<std::uint32_t>{}, Min{std::numeric_limits<uint32_t>::max()}},
+        {"amount2", Type<std::int32_t>{}, Min{std::numeric_limits<int32_t>::max()}},
+        {"amount3", Type<std::int32_t>{}, Min{std::numeric_limits<int32_t>::max()}},
+    };
+
+    auto bigInput = json::parse(R"JSON({ "amount": 9999999999, "amount2": 9999999999, "amount3": -9999999999 })JSON");
+    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's max value
+}
+
 TEST_F(RPCBaseTest, MaxValidator)
 {
     auto spec = RpcSpec{
@@ -218,6 +231,18 @@ TEST_F(RPCBaseTest, MaxValidator)
 
     auto failingInput = json::parse(R"JSON({ "amount": 7 })JSON");
     ASSERT_FALSE(spec.process(failingInput));
+}
+
+TEST_F(RPCBaseTest, MaxValidatorAfterType)
+{
+    auto spec = RpcSpec{
+        {"amount", Type<std::uint32_t>{}, Max{std::numeric_limits<uint32_t>::max()}},
+        {"amount2", Type<std::int32_t>{}, Max{std::numeric_limits<int32_t>::max()}},
+        {"amount3", Type<std::int32_t>{}, Max{std::numeric_limits<int32_t>::max()}},
+    };
+
+    auto bigInput = json::parse(R"JSON({ "amount": 9999999999, "amount2": 9999999999, "amount3": -9999999999 })JSON");
+    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's max value
 }
 
 TEST_F(RPCBaseTest, OneOfValidator)

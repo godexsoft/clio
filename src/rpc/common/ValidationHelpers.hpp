@@ -24,7 +24,9 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <string>
+#include <type_traits>
 
 namespace rpc::validation {
 
@@ -58,10 +60,64 @@ checkType(boost::json::value const& value)
     } else if constexpr (std::is_convertible_v<Expected, uint64_t> or std::is_convertible_v<Expected, int64_t>) {
         if (not value.is_int64() && not value.is_uint64())
             hasError = true;
-        // specify the type is unsigened, it can not be negative
+        // if the type specified is unsigned, it should not be negative
         if constexpr (std::is_unsigned_v<Expected>) {
             if (value.is_int64() and value.as_int64() < 0)
                 hasError = true;
+        }
+    }
+
+    return not hasError;
+}
+
+/**
+ * @brief Check that the type is the same as what was expected optionally clamping it into range.
+ *
+ * This is used to automatically clamp the value into the range available to the specified type. It is needed in
+ * order to avoid Min, Max and other validators throw "not exact" error from Boost.Json library if the value does not
+ * fit in the specified type.
+ *
+ * @tparam Expected The expected type that value should be convertible to
+ * @param value The json value to check the type of
+ * @return true if convertible; false otherwise
+ */
+template <typename Expected>
+[[nodiscard]] static bool
+checkTypeAndClamp(boost::json::value& value)
+{
+    auto hasError = false;
+
+    if (not checkType<Expected>(value))
+        return false;  // fails basic type check
+
+    if constexpr (std::is_integral_v<Expected> and not std::is_same_v<Expected, bool>) {
+        if constexpr (std::is_unsigned_v<Expected>) {
+            if (value.is_uint64()) {
+                auto const v = value.as_uint64();
+                if (v > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
+                    value = std::numeric_limits<Expected>::max();
+            } else if (value.is_int64()) {
+                auto const v = value.as_int64();
+                if (v > static_cast<int64_t>(std::numeric_limits<Expected>::max()))
+                    value = std::numeric_limits<Expected>::max();
+            } else {
+                hasError = true;
+            }
+        } else {
+            if (value.is_uint64()) {
+                auto const v = value.as_uint64();
+                if (v > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
+                    value = std::numeric_limits<Expected>::max();
+            } else if (value.is_int64()) {
+                auto const v = value.as_int64();
+                if (v > static_cast<int64_t>(std::numeric_limits<Expected>::max())) {
+                    value = std::numeric_limits<Expected>::max();
+                } else if (v < static_cast<int64_t>(std::numeric_limits<Expected>::min())) {
+                    value = std::numeric_limits<Expected>::max();
+                }
+            } else {
+                hasError = true;
+            }
         }
     }
 

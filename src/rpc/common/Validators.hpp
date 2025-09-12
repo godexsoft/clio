@@ -148,13 +148,13 @@ struct Type final {
      * @return `RippledError::rpcINVALID_PARAMS` if validation failed; otherwise no error is returned
      */
     [[nodiscard]] MaybeError
-    verify(boost::json::value const& value, std::string_view key) const
+    verify(boost::json::value& value, std::string_view key) const
     {
         if (not value.is_object() or not value.as_object().contains(key))
             return {};  // ignore. If field is supposed to exist, let 'required' fail instead
 
-        auto const& res = value.as_object().at(key);
-        auto const convertible = (checkType<Types>(res) || ...);
+        auto& res = value.as_object().at(key);
+        auto const convertible = (checkTypeAndClamp<Types>(res) || ...);
 
         if (not convertible)
             return Error{Status{RippledError::rpcINVALID_PARAMS}};
