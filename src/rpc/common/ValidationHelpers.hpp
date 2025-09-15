@@ -113,7 +113,7 @@ checkTypeAndClamp(boost::json::value& value)
                 if (v > static_cast<int64_t>(std::numeric_limits<Expected>::max())) {
                     value = std::numeric_limits<Expected>::max();
                 } else if (v < static_cast<int64_t>(std::numeric_limits<Expected>::min())) {
-                    value = std::numeric_limits<Expected>::max();
+                    value = std::numeric_limits<Expected>::min();
                 }
             } else {
                 hasError = true;

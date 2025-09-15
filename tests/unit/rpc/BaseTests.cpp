@@ -210,11 +210,11 @@ TEST_F(RPCBaseTest, MinValidatorAfterType)
     auto spec = RpcSpec{
         {"amount", Type<std::uint32_t>{}, Min{std::numeric_limits<uint32_t>::max()}},
         {"amount2", Type<std::int32_t>{}, Min{std::numeric_limits<int32_t>::max()}},
-        {"amount3", Type<std::int32_t>{}, Min{std::numeric_limits<int32_t>::max()}},
+        {"amount3", Type<std::int32_t>{}, Min{std::numeric_limits<int32_t>::min()}},
     };
 
     auto bigInput = json::parse(R"JSON({ "amount": 9999999999, "amount2": 9999999999, "amount3": -9999999999 })JSON");
-    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's max value
+    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's max/min value
 }
 
 TEST_F(RPCBaseTest, MaxValidator)
@@ -238,11 +238,11 @@ TEST_F(RPCBaseTest, MaxValidatorAfterType)
     auto spec = RpcSpec{
         {"amount", Type<std::uint32_t>{}, Max{std::numeric_limits<uint32_t>::max()}},
         {"amount2", Type<std::int32_t>{}, Max{std::numeric_limits<int32_t>::max()}},
-        {"amount3", Type<std::int32_t>{}, Max{std::numeric_limits<int32_t>::max()}},
+        {"amount3", Type<std::int32_t>{}, Max{std::numeric_limits<int32_t>::min()}},
     };
 
     auto bigInput = json::parse(R"JSON({ "amount": 9999999999, "amount2": 9999999999, "amount3": -9999999999 })JSON");
-    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's max value
+    ASSERT_TRUE(spec.process(bigInput));  // type check clamps to type's min/max value
 }
 
 TEST_F(RPCBaseTest, OneOfValidator)
