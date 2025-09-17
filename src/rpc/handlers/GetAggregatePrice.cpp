@@ -265,7 +265,7 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jv.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jv.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jv.at(JS(ledger_index))));
         }
@@ -285,10 +285,10 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
     input.quoteAsset = boost::json::value_to<std::string>(jv.at(JS(quote_asset)));
 
     if (jsonObject.contains(JS(trim)))
-        input.trim = util::integralValueFrom<uint8_t>(jv.at(JS(trim)));
+        input.trim = util::integralValueAs<uint8_t>(jv.at(JS(trim)));
 
     if (jsonObject.contains(JS(time_threshold)))
-        input.timeThreshold = util::integralValueFrom<uint32_t>(jv.at(JS(time_threshold)));
+        input.timeThreshold = util::integralValueAs<uint32_t>(jv.at(JS(time_threshold)));
 
     return input;
 }

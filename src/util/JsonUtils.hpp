@@ -99,7 +99,7 @@ removeSecret(boost::json::object const& object)
  */
 template <std::integral Type>
 Type
-integralValueFrom(boost::json::value const& value)
+integralValueAs(boost::json::value const& value)
 {
     if (value.is_uint64())
         return static_cast<Type>(value.as_uint64());

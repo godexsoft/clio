@@ -216,7 +216,7 @@ SubscriptionSource::handleMessage(std::string const& message)
         if (object.contains(JS(result))) {
             auto const& result = object.at(JS(result)).as_object();
             if (result.contains(JS(ledger_index)))
-                ledgerIndex = util::integralValueFrom<uint32_t>(result.at(JS(ledger_index)));
+                ledgerIndex = util::integralValueAs<uint32_t>(result.at(JS(ledger_index)));
 
             if (result.contains(JS(validated_ledgers))) {
                 auto validatedLedgers = boost::json::value_to<std::string>(result.at(JS(validated_ledgers)));
@@ -228,7 +228,7 @@ SubscriptionSource::handleMessage(std::string const& message)
             LOG(log_.debug()) << "Received a message of type 'ledgerClosed' on ledger subscription stream. Message: "
                               << object;
             if (object.contains(JS(ledger_index))) {
-                ledgerIndex = util::integralValueFrom<uint32_t>(object.at(JS(ledger_index)));
+                ledgerIndex = util::integralValueAs<uint32_t>(object.at(JS(ledger_index)));
             }
             if (object.contains(JS(validated_ledgers))) {
                 auto validatedLedgers = boost::json::value_to<std::string>(object.at(JS(validated_ledgers)));

@@ -436,7 +436,7 @@ ledgerHeaderFromRequest(std::shared_ptr<data::BackendInterface const> const& bac
                 ledgerSequence = parseStringAsUInt(stringIndex);
             }
         } else if (indexValue.is_int64() or indexValue.is_uint64()) {
-            ledgerSequence = util::integralValueFrom<uint32_t>(indexValue);
+            ledgerSequence = util::integralValueAs<uint32_t>(indexValue);
         }
     } else {
         ledgerSequence = ctx.range.maxSequence;

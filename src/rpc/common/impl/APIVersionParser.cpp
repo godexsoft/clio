@@ -63,7 +63,7 @@ ProductionAPIVersionParser::parse(boost::json::object const& request) const
         if (!request.at("api_version").is_int64())
             return Error{"API version must be an integer"};
 
-        auto const version = util::integralValueFrom<uint32_t>(request.at("api_version"));
+        auto const version = util::integralValueAs<uint32_t>(request.at("api_version"));
 
         if (version > maxVersion_)
             return Error{fmt::format("Requested API version is higher than maximum supported ({})", maxVersion_)};

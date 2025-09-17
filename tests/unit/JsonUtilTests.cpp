@@ -66,25 +66,25 @@ TEST(JsonUtils, RemoveSecrets)
     EXPECT_EQ(json2.at("passphrase").as_string(), "*");
 }
 
-TEST(JsonUtils, IntegralValueFrom)
+TEST(JsonUtils, integralValueAs)
 {
     auto const expectedResultUint64 = static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) + 1u;
     auto const uint64Json = boost::json::value(expectedResultUint64);
-    EXPECT_EQ(util::integralValueFrom<int32_t>(uint64Json), std::numeric_limits<int32_t>::min());
-    EXPECT_EQ(util::integralValueFrom<uint32_t>(uint64Json), expectedResultUint64);
-    EXPECT_EQ(util::integralValueFrom<int64_t>(uint64Json), expectedResultUint64);
-    EXPECT_EQ(util::integralValueFrom<uint64_t>(uint64Json), expectedResultUint64);
+    EXPECT_EQ(util::integralValueAs<int32_t>(uint64Json), std::numeric_limits<int32_t>::min());
+    EXPECT_EQ(util::integralValueAs<uint32_t>(uint64Json), expectedResultUint64);
+    EXPECT_EQ(util::integralValueAs<int64_t>(uint64Json), expectedResultUint64);
+    EXPECT_EQ(util::integralValueAs<uint64_t>(uint64Json), expectedResultUint64);
 
     auto const expectedResultInt64 = static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1u;
     auto const int64Json = boost::json::value(expectedResultInt64);
-    EXPECT_EQ(util::integralValueFrom<int32_t>(int64Json), std::numeric_limits<int32_t>::min());
-    EXPECT_EQ(util::integralValueFrom<uint32_t>(int64Json), expectedResultInt64);
-    EXPECT_EQ(util::integralValueFrom<int64_t>(int64Json), expectedResultInt64);
-    EXPECT_EQ(util::integralValueFrom<uint64_t>(int64Json), expectedResultInt64);
+    EXPECT_EQ(util::integralValueAs<int32_t>(int64Json), std::numeric_limits<int32_t>::min());
+    EXPECT_EQ(util::integralValueAs<uint32_t>(int64Json), expectedResultInt64);
+    EXPECT_EQ(util::integralValueAs<int64_t>(int64Json), expectedResultInt64);
+    EXPECT_EQ(util::integralValueAs<uint64_t>(int64Json), expectedResultInt64);
 
     auto const doubleJson = boost::json::value(3.14);
-    EXPECT_THROW(util::integralValueFrom<int>(doubleJson), std::logic_error);
+    EXPECT_THROW(util::integralValueAs<int>(doubleJson), std::logic_error);
 
     auto const stringJson = boost::json::value("not a number");
-    EXPECT_THROW(util::integralValueFrom<int>(stringJson), std::logic_error);
+    EXPECT_THROW(util::integralValueAs<int>(stringJson), std::logic_error);
 }

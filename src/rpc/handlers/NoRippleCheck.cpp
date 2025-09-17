@@ -188,7 +188,7 @@ tag_invoke(boost::json::value_to_tag<NoRippleCheckHandler::Input>, boost::json::
     input.roleGateway = jsonObject.at(JS(role)).as_string() == "gateway";
 
     if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueFrom<uint32_t>(jsonObject.at(JS(limit)));
+        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(transactions)))
         input.transactions = boost::json::value_to<JsonBool>(jsonObject.at(JS(transactions)));
@@ -198,7 +198,7 @@ tag_invoke(boost::json::value_to_tag<NoRippleCheckHandler::Input>, boost::json::
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jsonObject.at(JS(ledger_index))));
         }

@@ -205,19 +205,19 @@ tag_invoke(boost::json::value_to_tag<NFTHistoryHandler::Input>, boost::json::val
     input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
 
     if (jsonObject.contains(JS(ledger_index_min)) &&
-        util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
-        input.ledgerIndexMin = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index_min)));
+        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
+        input.ledgerIndexMin = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index_min)));
 
     if (jsonObject.contains(JS(ledger_index_max)) &&
-        util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
-        input.ledgerIndexMax = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index_max)));
+        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
+        input.ledgerIndexMax = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index_max)));
 
     if (jsonObject.contains(JS(ledger_hash)))
         input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jsonObject.at(JS(ledger_index))));
         }
@@ -230,12 +230,12 @@ tag_invoke(boost::json::value_to_tag<NFTHistoryHandler::Input>, boost::json::val
         input.forward = jsonObject.at(JS(forward)).as_bool();
 
     if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueFrom<uint32_t>(jsonObject.at(JS(limit)));
+        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(marker))) {
         input.marker = NFTHistoryHandler::Marker{
-            .ledger = util::integralValueFrom<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(ledger))),
-            .seq = util::integralValueFrom<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
+            .ledger = util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(ledger))),
+            .seq = util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
         };
     }
 

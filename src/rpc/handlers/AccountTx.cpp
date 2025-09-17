@@ -168,7 +168,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                         networkID = etlState->networkID;
 
                     auto const txnIdx =
-                        util::integralValueFrom<uint16_t>(obj[JS(meta)].as_object().at("TransactionIndex"));
+                        util::integralValueAs<uint16_t>(obj[JS(meta)].as_object().at("TransactionIndex"));
                     if (auto const& ctid = rpc::encodeCTID(txnPlusMeta.ledgerSequence, txnIdx, networkID); ctid)
                         obj[txKey].as_object()[JS(ctid)] = ctid.value();
                 }
@@ -247,19 +247,19 @@ tag_invoke(boost::json::value_to_tag<AccountTxHandler::Input>, boost::json::valu
     input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
 
     if (jsonObject.contains(JS(ledger_index_min)) &&
-        util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
-        input.ledgerIndexMin = util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_min)));
+        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
+        input.ledgerIndexMin = util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min)));
 
     if (jsonObject.contains(JS(ledger_index_max)) &&
-        util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
-        input.ledgerIndexMax = util::integralValueFrom<int32_t>(jsonObject.at(JS(ledger_index_max)));
+        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
+        input.ledgerIndexMax = util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max)));
 
     if (jsonObject.contains(JS(ledger_hash)))
         input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jsonObject.at(JS(ledger_index))));
         } else {
@@ -275,12 +275,12 @@ tag_invoke(boost::json::value_to_tag<AccountTxHandler::Input>, boost::json::valu
         input.forward = boost::json::value_to<JsonBool>(jsonObject.at(JS(forward)));
 
     if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueFrom<uint32_t>(jsonObject.at(JS(limit)));
+        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(marker))) {
         input.marker = AccountTxHandler::Marker{
-            .ledger = util::integralValueFrom<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(ledger))),
-            .seq = util::integralValueFrom<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
+            .ledger = util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(ledger))),
+            .seq = util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
         };
     }
 

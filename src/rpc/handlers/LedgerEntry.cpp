@@ -95,7 +95,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
         auto const id = util::parseBase58Wrapper<ripple::AccountID>(
             boost::json::value_to<std::string>(input.escrow->at(JS(owner)))
         );
-        key = ripple::keylet::escrow(*id, util::integralValueFrom<uint32_t>(input.escrow->at(JS(seq)))).key;
+        key = ripple::keylet::escrow(*id, util::integralValueAs<uint32_t>(input.escrow->at(JS(seq)))).key;
     } else if (input.depositPreauth) {
         auto const owner = util::parseBase58Wrapper<ripple::AccountID>(
             boost::json::value_to<std::string>(input.depositPreauth->at(JS(owner)))
@@ -129,7 +129,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
             boost::json::value_to<std::string>(input.ticket->at(JS(account)))
         );
 
-        key = ripple::getTicketIndex(*id, util::integralValueFrom<uint32_t>(input.ticket->at(JS(ticket_seq))));
+        key = ripple::getTicketIndex(*id, util::integralValueAs<uint32_t>(input.ticket->at(JS(ticket_seq))));
     } else if (input.amm) {
         auto const getIssuerFromJson = [](auto const& assetJson) {
             // the field check has been done in validator
@@ -183,12 +183,12 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
         auto const account = ripple::parseBase58<ripple::AccountID>(
             boost::json::value_to<std::string>(input.permissionedDomain->at(JS(account)))
         );
-        auto const seq = util::integralValueFrom<uint32_t>(input.permissionedDomain->at(JS(seq)));
+        auto const seq = util::integralValueAs<uint32_t>(input.permissionedDomain->at(JS(seq)));
         key = ripple::keylet::permissionedDomain(*account, seq).key;
     } else if (input.vault) {
         auto const account =
             ripple::parseBase58<ripple::AccountID>(boost::json::value_to<std::string>(input.vault->at(JS(owner))));
-        auto const seq = util::integralValueFrom<uint32_t>(input.vault->at(JS(seq)));
+        auto const seq = util::integralValueAs<uint32_t>(input.vault->at(JS(seq)));
         key = ripple::keylet::vault(*account, seq).key;
     } else if (input.delegate) {
         auto const account =
@@ -305,7 +305,7 @@ tag_invoke(boost::json::value_to_tag<LedgerEntryHandler::Input>, boost::json::va
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jv.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jv.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jv.at(JS(ledger_index))));
         }

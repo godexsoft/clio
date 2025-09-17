@@ -195,7 +195,7 @@ tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::val
     }
 
     if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueFrom<uint32_t>(jsonObject.at(JS(limit)));
+        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains("out_of_order"))
         input.outOfOrder = jsonObject.at("out_of_order").as_bool();
@@ -204,7 +204,7 @@ tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::val
         if (jsonObject.at(JS(marker)).is_string()) {
             input.marker = ripple::uint256{boost::json::value_to<std::string>(jsonObject.at(JS(marker))).data()};
         } else {
-            input.diffMarker = util::integralValueFrom<uint32_t>(jsonObject.at(JS(marker)));
+            input.diffMarker = util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)));
         }
     }
 
@@ -213,7 +213,7 @@ tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::val
 
     if (jsonObject.contains(JS(ledger_index))) {
         if (!jsonObject.at(JS(ledger_index)).is_string()) {
-            input.ledgerIndex = util::integralValueFrom<uint32_t>(jsonObject.at(JS(ledger_index)));
+            input.ledgerIndex = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index)));
         } else if (jsonObject.at(JS(ledger_index)).as_string() != "validated") {
             input.ledgerIndex = std::stoi(boost::json::value_to<std::string>(jsonObject.at(JS(ledger_index))));
         }
