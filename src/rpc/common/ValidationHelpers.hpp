@@ -34,7 +34,7 @@ namespace impl {
 
 template <std::unsigned_integral Expected>
 static void
-clampUnsigned(boost::json::value& value)
+clampAs(boost::json::value& value)
 {
     if (value.is_uint64()) {
         auto const valueUint = value.as_uint64();
@@ -49,7 +49,7 @@ clampUnsigned(boost::json::value& value)
 
 template <std::signed_integral Expected>
 static void
-clampSigned(boost::json::value& value)
+clampAs(boost::json::value& value)
 {
     if (value.is_uint64()) {
         auto const valueUint = value.as_uint64();
@@ -125,13 +125,8 @@ checkTypeAndClamp(boost::json::value& value)
     if (not checkType<Expected>(value))
         return false;  // fails basic type check
 
-    if constexpr (std::is_integral_v<Expected> and not std::is_same_v<Expected, bool>) {
-        if constexpr (std::is_unsigned_v<Expected>) {
-            impl::clampUnsigned<Expected>(value);
-        } else {
-            impl::clampSigned<Expected>(value);
-        }
-    }
+    if constexpr (std::is_integral_v<Expected> and not std::is_same_v<Expected, bool>)
+        impl::clampAs<Expected>(value);
 
     return true;
 }
