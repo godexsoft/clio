@@ -23,12 +23,49 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 
+#include <concepts>
 #include <cstdint>
 #include <limits>
 #include <string>
 #include <type_traits>
 
 namespace rpc::validation {
+namespace impl {
+
+template <std::unsigned_integral Expected>
+static void
+clampUnsigned(boost::json::value& value)
+{
+    if (value.is_uint64()) {
+        auto const valueUint = value.as_uint64();
+        if (valueUint > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
+            value = std::numeric_limits<Expected>::max();
+    } else if (value.is_int64()) {
+        auto const valueInt = value.as_int64();
+        if (valueInt > static_cast<int64_t>(std::numeric_limits<Expected>::max()))
+            value = std::numeric_limits<Expected>::max();
+    }
+}
+
+template <std::signed_integral Expected>
+static void
+clampSigned(boost::json::value& value)
+{
+    if (value.is_uint64()) {
+        auto const valueUint = value.as_uint64();
+        if (valueUint > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
+            value = std::numeric_limits<Expected>::max();
+    } else if (value.is_int64()) {
+        auto const valueInt = value.as_int64();
+        if (valueInt > static_cast<int64_t>(std::numeric_limits<Expected>::max())) {
+            value = std::numeric_limits<Expected>::max();
+        } else if (valueInt < static_cast<int64_t>(std::numeric_limits<Expected>::min())) {
+            value = std::numeric_limits<Expected>::min();
+        }
+    }
+}
+
+}  // namespace impl
 
 /**
  * @brief Check that the type is the same as what was expected.
@@ -85,43 +122,18 @@ template <typename Expected>
 [[nodiscard]] static bool
 checkTypeAndClamp(boost::json::value& value)
 {
-    auto hasError = false;
-
     if (not checkType<Expected>(value))
         return false;  // fails basic type check
 
     if constexpr (std::is_integral_v<Expected> and not std::is_same_v<Expected, bool>) {
         if constexpr (std::is_unsigned_v<Expected>) {
-            if (value.is_uint64()) {
-                auto const v = value.as_uint64();
-                if (v > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
-                    value = std::numeric_limits<Expected>::max();
-            } else if (value.is_int64()) {
-                auto const v = value.as_int64();
-                if (v > static_cast<int64_t>(std::numeric_limits<Expected>::max()))
-                    value = std::numeric_limits<Expected>::max();
-            } else {
-                hasError = true;
-            }
+            impl::clampUnsigned<Expected>(value);
         } else {
-            if (value.is_uint64()) {
-                auto const v = value.as_uint64();
-                if (v > static_cast<uint64_t>(std::numeric_limits<Expected>::max()))
-                    value = std::numeric_limits<Expected>::max();
-            } else if (value.is_int64()) {
-                auto const v = value.as_int64();
-                if (v > static_cast<int64_t>(std::numeric_limits<Expected>::max())) {
-                    value = std::numeric_limits<Expected>::max();
-                } else if (v < static_cast<int64_t>(std::numeric_limits<Expected>::min())) {
-                    value = std::numeric_limits<Expected>::min();
-                }
-            } else {
-                hasError = true;
-            }
+            impl::clampSigned<Expected>(value);
         }
     }
 
-    return not hasError;
+    return true;
 }
 
 }  // namespace rpc::validation
