@@ -33,7 +33,7 @@ namespace rpc::validation {
 namespace impl {
 
 template <std::unsigned_integral Expected>
-static void
+void
 clampAs(boost::json::value& value)
 {
     if (value.is_uint64()) {
@@ -48,7 +48,7 @@ clampAs(boost::json::value& value)
 }
 
 template <std::signed_integral Expected>
-static void
+void
 clampAs(boost::json::value& value)
 {
     if (value.is_uint64()) {
@@ -75,7 +75,7 @@ clampAs(boost::json::value& value)
  * @return true if convertible; false otherwise
  */
 template <typename Expected>
-[[nodiscard]] static bool
+[[nodiscard]] bool
 checkType(boost::json::value const& value)
 {
     auto hasError = false;
@@ -119,7 +119,7 @@ checkType(boost::json::value const& value)
  * @return true if convertible; false otherwise
  */
 template <typename Expected>
-[[nodiscard]] static bool
+[[nodiscard]] bool
 checkTypeAndClamp(boost::json::value& value)
 {
     if (not checkType<Expected>(value))
