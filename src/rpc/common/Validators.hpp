@@ -142,6 +142,8 @@ template <typename... Types>
 struct Type final {
     /**
      * @brief Verify that the JSON value is (one) of specified type(s).
+     * @note The value itself can only change for integral types and only if the value is outside of the range of the
+     * expected integer type (see checkTypeAndClamp).
      *
      * @param value The JSON value representing the outer object
      * @param key The key used to retrieve the tested value from the outer object
