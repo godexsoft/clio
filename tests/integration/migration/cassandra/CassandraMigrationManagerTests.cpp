@@ -86,7 +86,7 @@ makeMigrationTestManagerAndBackend(ClioConfigDefinition const& config)
 }
 }  // namespace
 
-class MigrationCassandraSimpleTest : public WithPrometheus, public NoLoggerFixture {
+class MigrationCassandraSimpleTest : public WithPrometheus {
     // This function is used to prepare the database before running the tests
     // It is called in the SetUp function. Different tests can override this function to prepare the database
     // differently
@@ -223,7 +223,7 @@ class MigrationCassandraManagerTxTableTest : public MigrationCassandraSimpleTest
 
 TEST_F(MigrationCassandraManagerTxTableTest, MigrateExampleTransactionsMigrator)
 {
-    auto constexpr kTRANSACTIONS_MIGRATOR_NAME = "ExampleTransactionsMigrator";
+    constexpr auto kTRANSACTIONS_MIGRATOR_NAME = "ExampleTransactionsMigrator";
     EXPECT_EQ(testMigrationManager_->getMigratorStatusByName(kTRANSACTIONS_MIGRATOR_NAME), MigratorStatus::NotMigrated);
 
     ExampleTransactionsMigrator::count = 0;
@@ -274,7 +274,7 @@ class MigrationCassandraManagerObjectsTableTest : public MigrationCassandraSimpl
 
 TEST_F(MigrationCassandraManagerObjectsTableTest, MigrateExampleObjectsMigrator)
 {
-    auto constexpr kOBJECTS_MIGRATOR_NAME = "ExampleObjectsMigrator";
+    constexpr auto kOBJECTS_MIGRATOR_NAME = "ExampleObjectsMigrator";
     EXPECT_EQ(testMigrationManager_->getMigratorStatusByName(kOBJECTS_MIGRATOR_NAME), MigratorStatus::NotMigrated);
 
     testMigrationManager_->runMigration(kOBJECTS_MIGRATOR_NAME);
@@ -302,7 +302,7 @@ class MigrationCassandraManagerLedgerTableTest : public MigrationCassandraSimple
 
 TEST_F(MigrationCassandraManagerLedgerTableTest, MigrateExampleLedgerMigrator)
 {
-    auto constexpr kHEADER_MIGRATOR_NAME = "ExampleLedgerMigrator";
+    constexpr auto kHEADER_MIGRATOR_NAME = "ExampleLedgerMigrator";
     EXPECT_EQ(testMigrationManager_->getMigratorStatusByName(kHEADER_MIGRATOR_NAME), MigratorStatus::NotMigrated);
 
     testMigrationManager_->runMigration(kHEADER_MIGRATOR_NAME);
@@ -313,8 +313,9 @@ TEST_F(MigrationCassandraManagerLedgerTableTest, MigrateExampleLedgerMigrator)
     EXPECT_EQ(newTableSize, gLedgerHeaderRawData.size());
 
     auto const getAccountHash = [this](std::uint32_t seq) {
-        return data::synchronous([&](auto ctx) { return testMigrationBackend_->fetchAccountHashViaSequence(seq, ctx); }
-        );
+        return data::synchronous([&](auto ctx) {
+            return testMigrationBackend_->fetchAccountHashViaSequence(seq, ctx);
+        });
     };
 
     EXPECT_EQ(
@@ -333,7 +334,7 @@ class MigrationCassandraManagerDropTableTest : public MigrationCassandraSimpleTe
 
 TEST_F(MigrationCassandraManagerDropTableTest, MigrateDropTableMigrator)
 {
-    auto constexpr kDROP_TABLE_MIGRATOR_NAME = "ExampleDropTableMigrator";
+    constexpr auto kDROP_TABLE_MIGRATOR_NAME = "ExampleDropTableMigrator";
     EXPECT_EQ(testMigrationManager_->getMigratorStatusByName(kDROP_TABLE_MIGRATOR_NAME), MigratorStatus::NotMigrated);
 
     auto const beforeDropSize =

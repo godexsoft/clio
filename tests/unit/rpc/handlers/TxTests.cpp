@@ -28,7 +28,7 @@
 #include "util/TestObject.hpp"
 
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -150,15 +150,17 @@ TEST_F(RPCTxTest, ExcessiveLgrRange)
 {
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "min_ledger": 1,
-                "max_ledger": 1002
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "min_ledger": 1,
+                    "max_ledger": 1002
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -184,14 +186,16 @@ TEST_F(RPCTxTest, InvalidBinaryV1)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "binary": 12
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "binary": 12
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 1u});
         ASSERT_TRUE(output);
     });
@@ -201,14 +205,16 @@ TEST_F(RPCTxTest, InvalidBinaryV2)
 {
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "binary": 12
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "binary": 12
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_FALSE(output);
 
@@ -222,15 +228,17 @@ TEST_F(RPCTxTest, InvalidLgrRange)
 {
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "max_ledger": 1,
-                "min_ledger": 10
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "max_ledger": 1,
+                    "min_ledger": 10
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -251,13 +259,15 @@ TEST_F(RPCTxTest, TxnNotFound)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -279,15 +289,17 @@ TEST_F(RPCTxTest, TxnNotFoundInGivenRangeSearchAllFalse)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "min_ledger": 1,
-                "max_ledger": 1000
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "min_ledger": 1,
+                    "max_ledger": 1000
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -310,15 +322,17 @@ TEST_F(RPCTxTest, TxnNotFoundInGivenRangeSearchAllTrue)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "min_ledger": 1,
-                "max_ledger": 1000
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "min_ledger": 1,
+                    "max_ledger": 1000
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -342,14 +356,16 @@ TEST_F(RPCTxTest, CtidNotFoundSearchAllFalse)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ctid": "{}",
-                "min_ledger": 1,
-                "max_ledger": 1000
-            }})JSON",
-            kCTID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ctid": "{}",
+                    "min_ledger": 1,
+                    "max_ledger": 1000
+                }})JSON",
+                kCTID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -377,13 +393,15 @@ TEST_F(RPCTxTest, DefaultParameter_API_v1)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 1u});
         ASSERT_TRUE(output);
 
@@ -407,13 +425,15 @@ TEST_F(RPCTxTest, PaymentTx_API_v1)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 1u});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("DeliverMax"));
@@ -438,13 +458,15 @@ TEST_F(RPCTxTest, PaymentTx_API_v2)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("tx_json"));
@@ -472,13 +494,15 @@ TEST_F(RPCTxTest, DefaultParameter_API_v2)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kDEFAULT_OUT2));
@@ -513,14 +537,16 @@ TEST_F(RPCTxTest, ReturnBinary)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "binary": true
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "binary": true
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -556,14 +582,16 @@ TEST_F(RPCTxTest, ReturnBinaryWithCTID)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "binary": true
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "binary": true
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -590,15 +618,13 @@ TEST_F(RPCTxTest, MintNFT)
                     "FinalFields": {{
                         "NFTokens": [
                         {{
-                            "NFToken":
-                            {{
+                            "NFToken": {{
                                 "NFTokenID": "{}",
                                 "URI": "7465737475726C"
                             }}
                         }},
                         {{
-                            "NFToken":
-                            {{
+                            "NFToken": {{
                                 "NFTokenID": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC",
                                 "URI": "7465737475726C"
                             }}
@@ -609,8 +635,7 @@ TEST_F(RPCTxTest, MintNFT)
                     "PreviousFields": {{
                         "NFTokens": [
                         {{
-                            "NFToken":
-                            {{
+                            "NFToken": {{
                                 "NFTokenID": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC",
                                 "URI": "7465737475726C"
                             }}
@@ -644,13 +669,15 @@ TEST_F(RPCTxTest, MintNFT)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -671,13 +698,15 @@ TEST_F(RPCTxTest, NFTAcceptOffer)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("meta").at("nftoken_id").as_string(), kNFT_ID);
@@ -699,13 +728,15 @@ TEST_F(RPCTxTest, NFTCancelOffer)
 
     runSpawn([this, &ids](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
 
@@ -734,13 +765,15 @@ TEST_F(RPCTxTest, NFTCreateOffer)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->at("meta").at("offer_id").as_string() == kNFT_ID2);
@@ -751,15 +784,17 @@ TEST_F(RPCTxTest, CTIDAndTransactionBothProvided)
 {
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}",
-                "ctid": "{}"
-            }})JSON",
-            kTXN_ID,
-            kCTID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}",
+                    "ctid": "{}"
+                }})JSON",
+                kTXN_ID,
+                kCTID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -823,13 +858,15 @@ TEST_F(RPCTxTest, CTIDNotMatch)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "ctid": "{}"
-            }})JSON",
-            kCTID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "ctid": "{}"
+                }})JSON",
+                kCTID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
 
@@ -846,48 +883,42 @@ TEST_F(RPCTxTest, CTIDNotMatch)
 TEST_F(RPCTxTest, ReturnCTIDForTxInput)
 {
     static constexpr auto kOUT = R"JSON({
-            "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-            "Fee": "2",
-            "Sequence": 100,
-            "SigningPubKey": "74657374",
-            "TakerGets":
-            {
-                "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
-                "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                "value": "200"
-            },
-            "ctid": "C000006400640002",
-            "TakerPays": "300",
-            "TransactionType": "OfferCreate",
-            "hash": "2E2FBAAFF767227FE4381C4BE9855986A6B9F96C62F6E443731AB36F7BBB8A08",
-            "meta":
-            {
-                "AffectedNodes":
-                [
-                    {
-                        "CreatedNode":
-                        {
-                            "LedgerEntryType": "Offer",
-                            "NewFields":
-                            {
-                                "TakerGets": "200",
-                                "TakerPays":
-                                {
-                                    "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
-                                    "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                    "value": "300"
-                                }
+        "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "Fee": "2",
+        "Sequence": 100,
+        "SigningPubKey": "74657374",
+        "TakerGets": {
+            "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
+            "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+            "value": "200"
+        },
+        "ctid": "C000006400640002",
+        "TakerPays": "300",
+        "TransactionType": "OfferCreate",
+        "hash": "2E2FBAAFF767227FE4381C4BE9855986A6B9F96C62F6E443731AB36F7BBB8A08",
+        "meta": {
+            "AffectedNodes": [
+                {
+                    "CreatedNode": {
+                        "LedgerEntryType": "Offer",
+                        "NewFields": {
+                            "TakerGets": "200",
+                            "TakerPays": {
+                                "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
+                                "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                                "value": "300"
                             }
                         }
                     }
-                ],
-                "TransactionIndex": 100,
-                "TransactionResult": "tesSUCCESS"
-            },
-            "date": 123456,
-            "ledger_index": 100,
-            "inLedger": 100,
-            "validated": true
+                }
+            ],
+            "TransactionIndex": 100,
+            "TransactionResult": "tesSUCCESS"
+        },
+        "date": 123456,
+        "ledger_index": 100,
+        "inLedger": 100,
+        "validated": true
     })JSON";
 
     TransactionAndMetadata tx;
@@ -904,13 +935,15 @@ TEST_F(RPCTxTest, ReturnCTIDForTxInput)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -920,47 +953,41 @@ TEST_F(RPCTxTest, ReturnCTIDForTxInput)
 TEST_F(RPCTxTest, NotReturnCTIDIfETLNotAvailable)
 {
     static constexpr auto kOUT = R"JSON({
-            "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-            "Fee": "2",
-            "Sequence": 100,
-            "SigningPubKey": "74657374",
-            "TakerGets":
-            {
-                "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
-                "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                "value": "200"
-            },
-            "TakerPays": "300",
-            "TransactionType": "OfferCreate",
-            "hash": "2E2FBAAFF767227FE4381C4BE9855986A6B9F96C62F6E443731AB36F7BBB8A08",
-            "meta":
-            {
-                "AffectedNodes":
-                [
-                    {
-                        "CreatedNode":
-                        {
-                            "LedgerEntryType": "Offer",
-                            "NewFields":
-                            {
-                                "TakerGets": "200",
-                                "TakerPays":
-                                {
-                                    "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
-                                    "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                    "value": "300"
-                                }
+        "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "Fee": "2",
+        "Sequence": 100,
+        "SigningPubKey": "74657374",
+        "TakerGets": {
+            "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
+            "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+            "value": "200"
+        },
+        "TakerPays": "300",
+        "TransactionType": "OfferCreate",
+        "hash": "2E2FBAAFF767227FE4381C4BE9855986A6B9F96C62F6E443731AB36F7BBB8A08",
+        "meta": {
+            "AffectedNodes": [
+                {
+                    "CreatedNode": {
+                        "LedgerEntryType": "Offer",
+                        "NewFields": {
+                            "TakerGets": "200",
+                            "TakerPays": {
+                                "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
+                                "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                                "value": "300"
                             }
                         }
                     }
-                ],
-                "TransactionIndex": 100,
-                "TransactionResult": "tesSUCCESS"
-            },
-            "date": 123456,
-            "ledger_index": 100,
-            "inLedger": 100,
-            "validated": true
+                }
+            ],
+            "TransactionIndex": 100,
+            "TransactionResult": "tesSUCCESS"
+        },
+        "date": 123456,
+        "ledger_index": 100,
+        "inLedger": 100,
+        "validated": true
     })JSON";
 
     TransactionAndMetadata tx;
@@ -977,13 +1004,15 @@ TEST_F(RPCTxTest, NotReturnCTIDIfETLNotAvailable)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "transaction": "{}"
-            }})JSON",
-            kTXN_ID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "transaction": "{}"
+                }})JSON",
+                kTXN_ID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -998,8 +1027,7 @@ TEST_F(RPCTxTest, ViaCTID)
             "Fee": "2",
             "Sequence": 100,
             "SigningPubKey": "74657374",
-            "TakerGets":
-            {{
+            "TakerGets": {{
                 "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
                 "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
                 "value": "200"
@@ -1008,19 +1036,14 @@ TEST_F(RPCTxTest, ViaCTID)
             "TakerPays": "300",
             "TransactionType": "OfferCreate",
             "hash": "2E2FBAAFF767227FE4381C4BE9855986A6B9F96C62F6E443731AB36F7BBB8A08",
-            "meta":
-            {{
-                "AffectedNodes":
-                [
+            "meta": {{
+                "AffectedNodes": [
                     {{
-                        "CreatedNode":
-                        {{
+                        "CreatedNode": {{
                             "LedgerEntryType": "Offer",
-                            "NewFields":
-                            {{
+                            "NewFields": {{
                                 "TakerGets": "200",
-                                "TakerPays":
-                                {{
+                                "TakerPays": {{
                                     "currency": "0158415500000000C1F76FF6ECB0BAC600000000",
                                     "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
                                     "value": "300"
@@ -1062,13 +1085,15 @@ TEST_F(RPCTxTest, ViaCTID)
 
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "ctid": "{}"
-            }})JSON",
-            kCTID
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "ctid": "{}"
+                }})JSON",
+                kCTID
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(*output.result, json::parse(kOUT));
@@ -1100,13 +1125,15 @@ TEST_F(RPCTxTest, ViaLowercaseCTID)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{TestTxHandler{backend_, mockETLServicePtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "command": "tx",
-                "ctid": "{}"
-            }})JSON",
-            ctid
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "command": "tx",
+                    "ctid": "{}"
+                }})JSON",
+                ctid
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->at("ctid").as_string(), kCTID);

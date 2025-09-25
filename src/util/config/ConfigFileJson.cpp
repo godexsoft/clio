@@ -29,7 +29,7 @@
 #include <boost/json/parse.hpp>
 #include <boost/json/parse_options.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -140,6 +140,16 @@ bool
 ConfigFileJson::containsKey(std::string_view key) const
 {
     return jsonObject_.contains(key);
+}
+
+std::vector<std::string>
+ConfigFileJson::getAllKeys() const
+{
+    std::vector<std::string> keys;
+    for (auto const& [key, value] : jsonObject_) {
+        keys.push_back(key);
+    }
+    return keys;
 }
 
 boost::json::object const&

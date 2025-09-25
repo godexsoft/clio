@@ -19,6 +19,7 @@
 
 #include "feed/FeedTestUtil.hpp"
 #include "feed/impl/LedgerFeed.hpp"
+#include "util/Spawn.hpp"
 #include "util/TestObject.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 
@@ -59,12 +60,13 @@ TEST_F(FeedLedgerTest, SubPub)
             "ledger_time": 0,
             "fee_base": 1,
             "reserve_base": 3,
-            "reserve_inc": 2
+            "reserve_inc": 2,
+            "network_id": 123
         })JSON";
     boost::asio::io_context ioContext;
-    boost::asio::spawn(ioContext, [this](boost::asio::yield_context yield) {
+    util::spawn(ioContext, [this](boost::asio::yield_context yield) {
         EXPECT_CALL(*mockSessionPtr, onDisconnect);
-        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
+        auto res = testFeedPtr->sub(yield, backend_, sessionPtr, networkID);
         // check the response
         EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
     });
@@ -81,7 +83,8 @@ TEST_F(FeedLedgerTest, SubPub)
             "reserve_base": 10,
             "reserve_inc": 0,
             "validated_ledgers": "10-31",
-            "txn_count": 8
+            "txn_count": 8,
+            "network_id": 123
         })JSON";
 
     // test publish
@@ -89,13 +92,13 @@ TEST_F(FeedLedgerTest, SubPub)
     auto const ledgerHeader2 = createLedgerHeader(kLEDGER_HASH, 31);
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8, networkID);
 
     // test unsub, after unsub the send should not be called
     testFeedPtr->unsub(sessionPtr);
     EXPECT_EQ(testFeedPtr->count(), 0);
     EXPECT_CALL(*mockSessionPtr, send(_)).Times(0);
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8, networkID);
 }
 
 TEST_F(FeedLedgerTest, AutoDisconnect)
@@ -114,17 +117,21 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
             "ledger_time": 0,
             "fee_base": 1,
             "reserve_base": 3,
-            "reserve_inc": 2
+            "reserve_inc": 2,
+            "network_id": 123
         })JSON";
 
     web::SubscriptionContextInterface::OnDisconnectSlot slot;
     EXPECT_CALL(*mockSessionPtr, onDisconnect).WillOnce(testing::SaveArg<0>(&slot));
 
-    boost::asio::spawn(ctx_, [this](boost::asio::yield_context yield) {
-        auto res = testFeedPtr->sub(yield, backend_, sessionPtr);
+    boost::asio::io_context ioContext;
+    util::spawn(ioContext, [this](boost::asio::yield_context yield) {
+        auto res = testFeedPtr->sub(yield, backend_, sessionPtr, networkID);
         // check the response
         EXPECT_EQ(res, json::parse(kLEDGER_RESPONSE));
     });
+
+    ioContext.run();
     EXPECT_EQ(testFeedPtr->count(), 1);
     EXPECT_CALL(*mockSessionPtr, send(_)).Times(0);
 
@@ -138,5 +145,5 @@ TEST_F(FeedLedgerTest, AutoDisconnect)
     auto fee2 = ripple::Fees();
     fee2.reserve = 10;
     // no error
-    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8);
+    testFeedPtr->pub(ledgerHeader2, fee2, "10-31", 8, networkID);
 }

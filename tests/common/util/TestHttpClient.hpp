@@ -35,12 +35,14 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 struct WebHeader {
     WebHeader(boost::beast::http::field name, std::string value);
+    WebHeader(std::string_view name, std::string value);
 
-    boost::beast::http::field name;
+    std::variant<boost::beast::http::field, std::string> name;
     std::string value;
 };
 
@@ -76,7 +78,7 @@ class HttpAsyncClient {
 public:
     HttpAsyncClient(boost::asio::io_context& ioContext);
 
-    std::optional<boost::system::error_code>
+    std::expected<void, boost::system::error_code>
     connect(
         std::string_view host,
         std::string_view port,
@@ -84,7 +86,7 @@ public:
         std::chrono::steady_clock::duration timeout
     );
 
-    std::optional<boost::system::error_code>
+    std::expected<void, boost::system::error_code>
     send(
         boost::beast::http::request<boost::beast::http::string_body> request,
         boost::asio::yield_context yield,
@@ -96,6 +98,7 @@ public:
 
     void
     gracefulShutdown();
+
     void
     disconnect();
 };

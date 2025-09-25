@@ -33,10 +33,12 @@
 #include <boost/json/serialize.hpp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
@@ -204,8 +206,18 @@ TransactionFeed::pub(
         pubObj[txKey] = rpc::toJson(*tx);
         pubObj[JS(meta)] = rpc::toJson(*meta);
         rpc::insertDeliveredAmount(pubObj[JS(meta)].as_object(), tx, meta, txMeta.date);
-        rpc::insertDeliverMaxAlias(pubObj[txKey].as_object(), version);
-        rpc::insertMPTIssuanceID(pubObj[JS(meta)].as_object(), tx, meta);
+
+        auto& txnPubobj = pubObj[txKey].as_object();
+        rpc::insertDeliverMaxAlias(txnPubobj, version);
+
+        Json::Value nftJson;
+        ripple::RPC::insertNFTSyntheticInJson(nftJson, tx, *meta);
+        auto const nftBoostJson = rpc::toBoostJson(nftJson).as_object();
+        if (nftBoostJson.contains(JS(meta)) && nftBoostJson.at(JS(meta)).is_object()) {
+            auto& metaObjInPub = pubObj.at(JS(meta)).as_object();
+            for (auto const& [k, v] : nftBoostJson.at(JS(meta)).as_object())
+                metaObjInPub.insert_or_assign(k, v);
+        }
 
         auto const& metaObj = pubObj[JS(meta)];
         ASSERT(metaObj.is_object(), "meta must be an obj in rippled and clio");
@@ -280,7 +292,7 @@ TransactionFeed::pub(
                         data->getFieldAmount(ripple::sfTakerPays).issue(),
                         (*data)[~ripple::sfDomainID]
                     };
-                    if (affectedBooks.find(book) == affectedBooks.end()) {
+                    if (!affectedBooks.contains(book)) {
                         affectedBooks.insert(book);
                     }
                 }

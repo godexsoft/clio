@@ -1,42 +1,43 @@
-#[===================================================================[
-   write version to source
-#]===================================================================]
-
 find_package(Git REQUIRED)
 
-set(GIT_COMMAND rev-parse --short HEAD)
+set(GIT_COMMAND describe --tags --exact-match)
 execute_process(
-  COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE REV
-  OUTPUT_STRIP_TRAILING_WHITESPACE
+  COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE TAG
+  RESULT_VARIABLE RC
+  ERROR_VARIABLE ERR
+  OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE
 )
 
-set(GIT_COMMAND branch --show-current)
-execute_process(
-  COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE BRANCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if (RC EQUAL 0)
+  message(STATUS "Found tag '${TAG}' in git. Will use it as Clio version")
+  set(CLIO_VERSION "${TAG}")
+  set(DOC_CLIO_VERSION "${TAG}")
+else ()
+  message(STATUS "Error finding tag in git: ${ERR}")
+  message(STATUS "Will use 'YYYYMMDDHMS-<branch>-<git-rev>' as Clio version")
 
-if (BRANCH STREQUAL "")
-  set(BRANCH "dev")
-endif ()
-
-if (NOT (BRANCH MATCHES master OR BRANCH MATCHES release/*)) # for develop and any other branch name
-                                                             # YYYYMMDDHMS-<branch>-<git-rev>
   set(GIT_COMMAND show -s --date=format:%Y%m%d%H%M%S --format=%cd)
   execute_process(
-    COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE DATE
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE DATE
+    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY
   )
+
+  set(GIT_COMMAND branch --show-current)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY
+  )
+
+  set(GIT_COMMAND rev-parse --short HEAD)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE REV
+    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY
+  )
+
   set(CLIO_VERSION "${DATE}-${BRANCH}-${REV}")
   set(DOC_CLIO_VERSION "develop")
-else ()
-  set(GIT_COMMAND describe --tags)
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} ${GIT_COMMAND} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE CLIO_TAG_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  set(CLIO_VERSION "${CLIO_TAG_VERSION}")
-  set(DOC_CLIO_VERSION "${CLIO_TAG_VERSION}")
 endif ()
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -44,5 +45,3 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 endif ()
 
 message(STATUS "Build version: ${CLIO_VERSION}")
-
-configure_file(${CMAKE_CURRENT_LIST_DIR}/Build.cpp.in ${CMAKE_CURRENT_LIST_DIR}/../src/util/build/Build.cpp)

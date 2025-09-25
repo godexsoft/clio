@@ -58,7 +58,7 @@
 namespace rpc {
 
 GetAggregatePriceHandler::Result
-GetAggregatePriceHandler::process(GetAggregatePriceHandler::Input input, Context const& ctx) const
+GetAggregatePriceHandler::process(GetAggregatePriceHandler::Input const& input, Context const& ctx) const
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "GetAggregatePrice's ledger range must be available");
@@ -108,9 +108,11 @@ GetAggregatePriceHandler::process(GetAggregatePriceHandler::Input input, Context
                 auto const scale =
                     iter->isFieldPresent(ripple::sfScale) ? -static_cast<int>(iter->getFieldU8(ripple::sfScale)) : 0;
 
-                timestampPricesBiMap.insert(TimestampPricesBiMap::value_type(
-                    node.getFieldU32(ripple::sfLastUpdateTime), ripple::STAmount{ripple::noIssue(), price, scale}
-                ));
+                timestampPricesBiMap.insert(
+                    TimestampPricesBiMap::value_type(
+                        node.getFieldU32(ripple::sfLastUpdateTime), ripple::STAmount{ripple::noIssue(), price, scale}
+                    )
+                );
                 return true;
             }
             return false;
@@ -122,7 +124,13 @@ GetAggregatePriceHandler::process(GetAggregatePriceHandler::Input input, Context
 
     auto const latestTime = timestampPricesBiMap.left.begin()->first;
 
-    Output out(latestTime, ripple::to_string(lgrInfo.hash), lgrInfo.seq);
+    Output out{
+        .time = latestTime,
+        .trimStats = std::nullopt,
+        .ledgerHash = ripple::to_string(lgrInfo.hash),
+        .ledgerIndex = lgrInfo.seq,
+        .median = ""
+    };
 
     if (input.timeThreshold) {
         auto const oldestTime = timestampPricesBiMap.left.rbegin()->first;
@@ -263,12 +271,14 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
     }
 
     for (auto const& oracle : jsonObject.at(JS(oracles)).as_array()) {
-        input.oracles.push_back(GetAggregatePriceHandler::Oracle{
-            .documentId = boost::json::value_to<std::uint64_t>(oracle.as_object().at(JS(oracle_document_id))),
-            .account = *util::parseBase58Wrapper<ripple::AccountID>(
-                boost::json::value_to<std::string>(oracle.as_object().at(JS(account)))
-            )
-        });
+        input.oracles.push_back(
+            GetAggregatePriceHandler::Oracle{
+                .documentId = boost::json::value_to<std::uint64_t>(oracle.as_object().at(JS(oracle_document_id))),
+                .account = *util::parseBase58Wrapper<ripple::AccountID>(
+                    boost::json::value_to<std::string>(oracle.as_object().at(JS(account)))
+                )
+            }
+        );
     }
     input.baseAsset = boost::json::value_to<std::string>(jv.at(JS(base_asset)));
     input.quoteAsset = boost::json::value_to<std::string>(jv.at(JS(quote_asset)));

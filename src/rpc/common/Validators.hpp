@@ -26,7 +26,7 @@
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
@@ -457,7 +457,10 @@ public:
 checkIsU32Numeric(std::string_view sv);
 
 template <class HexType>
-    requires(std::is_same_v<HexType, ripple::uint160> || std::is_same_v<HexType, ripple::uint192> || std::is_same_v<HexType, ripple::uint256>)
+    requires(
+        std::is_same_v<HexType, ripple::uint160> || std::is_same_v<HexType, ripple::uint192> ||
+        std::is_same_v<HexType, ripple::uint256>
+    )
 MaybeError
 makeHexStringValidator(boost::json::value const& value, std::string_view key)
 {
@@ -484,6 +487,14 @@ struct CustomValidators final {
     static CustomValidator ledgerIndexValidator;
 
     /**
+     * @brief Provides a validator for ledger type.
+     *
+     * A type accepts canonical names of ledger entry types (case insensitive) or short names.
+     * Used by ledger_data.
+     */
+    static CustomValidator ledgerTypeValidator;
+
+    /**
      * @brief Provides a commonly used validator for accounts.
      *
      * Account must be a string and the converted public key is valid.
@@ -504,6 +515,14 @@ struct CustomValidators final {
      * The former will be read as hex, and the latter can be cast to uint64.
      */
     static CustomValidator accountMarkerValidator;
+
+    /**
+     * @brief Provides a validator for account type.
+     *
+     * A type accepts canonical names of owned ledger entry types (case insensitive) or short names.
+     * Used by account_objects.
+     */
+    static CustomValidator accountTypeValidator;
 
     /**
      * @brief Provides a commonly used validator for uint160(AccountID) hex string.

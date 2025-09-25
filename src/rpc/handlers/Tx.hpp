@@ -37,7 +37,7 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -138,7 +138,7 @@ public:
      * @return The result of the operation
      */
     Result
-    process(Input input, Context const& ctx) const
+    process(Input const& input, Context const& ctx) const
     {
         if (input.ctid && input.transaction)  // ambiguous identifier
             return Error{Status{RippledError::rpcINVALID_PARAMS}};

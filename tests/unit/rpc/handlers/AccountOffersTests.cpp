@@ -28,7 +28,7 @@
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -176,14 +176,16 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaHash)
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -202,14 +204,16 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaStringIndex)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_index": "{}"
-        }})JSON",
-        kACCOUNT,
-        kSEQ
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_index": "{}"
+            }})JSON",
+            kACCOUNT,
+            kSEQ
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -228,14 +232,16 @@ TEST_F(RPCAccountOffersHandlerTest, LedgerNotFoundViaIntIndex)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::optional<ripple::LedgerHeader>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_index": {}
-        }})JSON",
-        kACCOUNT,
-        kSEQ
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_index": {}
+            }})JSON",
+            kACCOUNT,
+            kSEQ
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -255,12 +261,14 @@ TEST_F(RPCAccountOffersHandlerTest, AccountNotFound)
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}"
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -279,15 +287,13 @@ TEST_F(RPCAccountOffersHandlerTest, DefaultParams)
             "ledger_index": 30,
             "validated": true,
             "account": "{}",
-            "offers":
-            [
+            "offers": [
                 {{
                     "seq": 0,
                     "flags": 0,
                     "quality": "0.000000024999999374023",
                     "taker_pays": "20",
-                    "taker_gets":
-                    {{
+                    "taker_gets": {{
                         "currency": "USD",
                         "issuer": "{}",
                         "value": "10"
@@ -332,12 +338,14 @@ TEST_F(RPCAccountOffersHandlerTest, DefaultParams)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}"
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -380,13 +388,15 @@ TEST_F(RPCAccountOffersHandlerTest, Limit)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": 10
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": 10
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -433,15 +443,17 @@ TEST_F(RPCAccountOffersHandlerTest, Marker)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        kINDEX1,
-        startPage
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            kINDEX1,
+            startPage
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -469,15 +481,17 @@ TEST_F(RPCAccountOffersHandlerTest, MarkerNotExists)
     ON_CALL(*backend_, doFetchLedgerObject(hintIndex, kLEDGER_SEQ, _)).WillByDefault(Return(std::nullopt));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        kINDEX1,
-        startPage
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            kINDEX1,
+            startPage
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -527,14 +541,16 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        AccountOffersHandler::kLIMIT_MIN - 1
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            AccountOffersHandler::kLIMIT_MIN - 1
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -582,14 +598,16 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        AccountOffersHandler::kLIMIT_MAX + 1
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            AccountOffersHandler::kLIMIT_MAX + 1
+        )
+    );
     auto const handler = AnyHandler{AccountOffersHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});

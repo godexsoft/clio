@@ -28,7 +28,7 @@
 #include "util/TestObject.hpp"
 
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -179,14 +179,16 @@ TEST_F(RPCAMMInfoHandlerTest, AccountNotFound)
     ON_CALL(*backend_, doFetchLedgerObject(accountKey, testing::_, testing::_))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}",
-            "account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT,
-        kNOTFOUND_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}",
+                "account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT,
+            kNOTFOUND_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -205,12 +207,14 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotExist)
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kWRONG_AMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kWRONG_AMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -228,12 +232,14 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotInDBIsMalformed)
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -254,12 +260,14 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountNotFoundMissingAmmField)
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(lgrInfo));
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(accountRoot.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -289,12 +297,14 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAmmBlobNotFound)
     ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -328,12 +338,14 @@ TEST_F(RPCAMMInfoHandlerTest, AMMAccountAccBlobNotFound)
     ON_CALL(*backend_, doFetchLedgerObject(account2Key, testing::_, testing::_))
         .WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
@@ -373,45 +385,49 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalFirstXRPNoTrustline)
     ON_CALL(*backend_, doFetchLedgerObject(feesKey, kSEQ, _)).WillByDefault(Return(feesObj));
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": "193",
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset2_frozen": false
                     }},
-                    "amount": "193",
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -453,47 +469,51 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAccount)
     ON_CALL(*backend_, doFetchLedgerObject(accountHoldsKeylet.key, kSEQ, _))
         .WillByDefault(Return(trustline.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}",
-            "account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT,
-        kAMM_ACCOUNT2
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}",
+                "account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT,
+            kAMM_ACCOUNT2
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto const expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "12"
+        auto const expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "12"
+                        }},
+                        "amount": "293",
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset2_frozen": false
                     }},
-                    "amount": "293",
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT2,
-            "JPY",
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT2,
+                "JPY",
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -527,45 +547,49 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathMinimalSecondXRPNoTrustline)
     ON_CALL(*backend_, doFetchLedgerObject(feesKey, kSEQ, _)).WillByDefault(Return(feesObj));
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto const expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto const expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "amount2": "193",
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset_frozen": false
                     }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "amount2": "193",
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -597,52 +621,56 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
     ON_CALL(*backend_, doFetchLedgerObject(feesKey, kSEQ, _)).WillByDefault(Return(feesObj));
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _)).WillByDefault(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto const expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto const expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset_frozen": false,
+                        "asset2_frozen": false
                     }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset_frozen": false,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "USD",
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "USD",
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -686,52 +714,56 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _))
         .WillByDefault(Return(trustline2BalanceFrozen.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto const expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto const expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "8"
+                        }},
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "-12"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset_frozen": false,
+                        "asset2_frozen": true
                     }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "8"
-                    }},
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "-12"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset_frozen": false,
-                    "asset2_frozen": true
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "USD",
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "USD",
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -776,52 +808,56 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _))
         .WillByDefault(Return(trustline2BalanceFrozen.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto const expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto const expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "8"
+                        }},
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "-12"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset_frozen": true,
+                        "asset2_frozen": true
                     }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "8"
-                    }},
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "-12"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset_frozen": true,
-                    "asset2_frozen": true
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "USD",
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "USD",
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -858,45 +894,49 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithTrustline)
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": "193",
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "8"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "asset2_frozen": false
                     }},
-                    "amount": "193",
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "8"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -935,59 +975,63 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithVoteSlots)
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
-                    }},
-                    "amount": "193",
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "8"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "vote_slots": [
-                        {{
-                            "account": "{}",
-                            "trading_fee": 2,
-                            "vote_weight": 4
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
                         }},
-                        {{
-                            "account": "{}",
-                            "trading_fee": 4,
-                            "vote_weight": 2
-                        }}
-                    ],
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kLEDGER_HASH
-        ));
+                        "amount": "193",
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "8"
+                        }},
+                        "account": "{}",
+                        "trading_fee": 5,
+                        "vote_slots": [
+                            {{
+                                "account": "{}",
+                                "trading_fee": 2,
+                                "vote_weight": 4
+                            }},
+                            {{
+                                "account": "{}",
+                                "trading_fee": 4,
+                                "vote_weight": 2
+                            }}
+                        ],
+                        "asset2_frozen": false
+                    }},
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -1028,63 +1072,67 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAuctionSlot)
     ON_CALL(*backend_, doFetchLedgerObject(issue2LineKey, kSEQ, _))
         .WillByDefault(Return(trustlineBalance.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "amm_account": "{}"
-        }})JSON",
-        kAMM_ACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "amm_account": "{}"
+            }})JSON",
+            kAMM_ACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
-                    }},
-                    "amount": "193",
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "8"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "auction_slot": {{
-                        "time_interval": 20,
-                        "price": "100",
-                        "discounted_fee": 2,
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "100"
+                        }},
+                        "amount": "193",
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "8"
+                        }},
                         "account": "{}",
-                        "expiration": "2000-01-02T01:00:00+0000",
-                        "auth_accounts": [
-                            {{
-                                "account": "{}"
-                            }},
-                            {{
-                                "account": "{}"
-                            }}
-                        ]
+                        "trading_fee": 5,
+                        "auction_slot": {{
+                            "time_interval": 20,
+                            "price": "100",
+                            "discounted_fee": 2,
+                            "account": "{}",
+                            "expiration": "2000-01-02T01:00:00+0000",
+                            "auth_accounts": [
+                                {{
+                                    "account": "{}"
+                                }},
+                                {{
+                                    "account": "{}"
+                                }}
+                            ]
+                        }},
+                        "asset2_frozen": false
                     }},
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -1116,84 +1164,88 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
     ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "asset": {{
-                "currency": "JPY",
-                "issuer": "{}"
-            }},
-            "asset2": {{
-                "currency": "USD",
-                "issuer": "{}"
-            }}
-        }})JSON",
-        kAMM_ACCOUNT,
-        kAMM_ACCOUNT2
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "asset": {{
+                    "currency": "JPY",
+                    "issuer": "{}"
+                }},
+                "asset2": {{
+                    "currency": "USD",
+                    "issuer": "{}"
+                }}
+            }})JSON",
+            kAMM_ACCOUNT,
+            kAMM_ACCOUNT2
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
-                    }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "auction_slot": {{
-                        "time_interval": 20,
-                        "price": {{
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
                             "currency": "{}",
                             "issuer": "{}",
                             "value": "100"
                         }},
-                        "discounted_fee": 2,
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
                         "account": "{}",
-                        "expiration": "2000-01-02T01:00:00+0000",
-                        "auth_accounts": [
-                            {{
-                                "account": "{}"
+                        "trading_fee": 5,
+                        "auction_slot": {{
+                            "time_interval": 20,
+                            "price": {{
+                                "currency": "{}",
+                                "issuer": "{}",
+                                "value": "100"
                             }},
-                            {{
-                                "account": "{}"
-                            }}
-                        ]
+                            "discounted_fee": 2,
+                            "account": "{}",
+                            "expiration": "2000-01-02T01:00:00+0000",
+                            "auth_accounts": [
+                                {{
+                                    "account": "{}"
+                                }},
+                                {{
+                                    "account": "{}"
+                                }}
+                            ]
+                        }},
+                        "asset_frozen": false,
+                        "asset2_frozen": false
                     }},
-                    "asset_frozen": false,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT,
-            "USD",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT,
+                "USD",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);
@@ -1226,84 +1278,88 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
     ON_CALL(*backend_, doFetchLedgerObject(ammKeylet.key, testing::_, testing::_))
         .WillByDefault(Return(ammObj.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "asset": {{
-                "currency": "USD",
-                "issuer": "{}"
-            }},
-            "asset2": {{
-                "currency": "JPY",
-                "issuer": "{}"
-            }}
-        }})JSON",
-        kAMM_ACCOUNT,
-        kAMM_ACCOUNT2
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "asset": {{
+                    "currency": "USD",
+                    "issuer": "{}"
+                }},
+                "asset2": {{
+                    "currency": "JPY",
+                    "issuer": "{}"
+                }}
+            }})JSON",
+            kAMM_ACCOUNT,
+            kAMM_ACCOUNT2
+        )
+    );
 
     auto const handler = AnyHandler{AMMInfoHandler{backend_, mockAmendmentCenterPtr_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
-        auto expectedResult = json::parse(fmt::format(
-            R"JSON({{
-                "amm": {{
-                    "lp_token": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "100"
-                    }},
-                    "amount": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "amount2": {{
-                        "currency": "{}",
-                        "issuer": "{}",
-                        "value": "0"
-                    }},
-                    "account": "{}",
-                    "trading_fee": 5,
-                    "auction_slot": {{
-                        "time_interval": 20,
-                        "price": {{
+        auto expectedResult = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "amm": {{
+                        "lp_token": {{
                             "currency": "{}",
                             "issuer": "{}",
                             "value": "100"
                         }},
-                        "discounted_fee": 2,
+                        "amount": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
+                        "amount2": {{
+                            "currency": "{}",
+                            "issuer": "{}",
+                            "value": "0"
+                        }},
                         "account": "{}",
-                        "expiration": "2000-01-02T01:00:00+0000",
-                        "auth_accounts": [
-                            {{
-                                "account": "{}"
+                        "trading_fee": 5,
+                        "auction_slot": {{
+                            "time_interval": 20,
+                            "price": {{
+                                "currency": "{}",
+                                "issuer": "{}",
+                                "value": "100"
                             }},
-                            {{
-                                "account": "{}"
-                            }}
-                        ]
+                            "discounted_fee": 2,
+                            "account": "{}",
+                            "expiration": "2000-01-02T01:00:00+0000",
+                            "auth_accounts": [
+                                {{
+                                    "account": "{}"
+                                }},
+                                {{
+                                    "account": "{}"
+                                }}
+                            ]
+                        }},
+                        "asset_frozen": false,
+                        "asset2_frozen": false
                     }},
-                    "asset_frozen": false,
-                    "asset2_frozen": false
-                }},
-                "ledger_index": 30,
-                "ledger_hash": "{}",
-                "validated": true
-            }})JSON",
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            "USD",
-            kAMM_ACCOUNT,
-            "JPY",
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kLP_ISSUE_CURRENCY,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kAMM_ACCOUNT,
-            kAMM_ACCOUNT2,
-            kLEDGER_HASH
-        ));
+                    "ledger_index": 30,
+                    "ledger_hash": "{}",
+                    "validated": true
+                }})JSON",
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                "USD",
+                kAMM_ACCOUNT,
+                "JPY",
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kLP_ISSUE_CURRENCY,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kAMM_ACCOUNT,
+                kAMM_ACCOUNT2,
+                kLEDGER_HASH
+            )
+        );
 
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result.value(), expectedResult);

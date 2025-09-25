@@ -56,7 +56,6 @@
 
 #include <boost/json/object.hpp>
 #include <boost/signals2/connection.hpp>
-#include <fmt/core.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <chrono>
@@ -306,6 +305,8 @@ ETLService::startLoading(uint32_t seq)
 {
     ASSERT(not state_->isStrictReadonly, "This should only happen on writer nodes");
     taskMan_ = taskManagerProvider_->make(ctx_, *monitor_, seq, finishSequence_);
+
+    // FIXME: this legacy name "extractor_threads" is no longer accurate (we have coroutines now)
     taskMan_->run(config_.get().get<std::size_t>("extractor_threads"));
 }
 

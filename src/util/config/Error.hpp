@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <string>
 #include <string_view>
@@ -46,7 +46,7 @@ struct Error {
      */
     Error(std::string_view key, std::string_view err)
         : error{
-              fmt::format("{} {}", key, err),
+              fmt::format("The value of {} {}", key, err),
           }
     {
     }

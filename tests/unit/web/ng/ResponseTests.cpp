@@ -35,7 +35,7 @@
 #include <boost/beast/http/verb.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/serialize.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -139,7 +139,7 @@ TEST_F(ResponseTest, asConstBufferJson)
 TEST_F(ResponseTest, createFromStringAndConnection)
 {
     util::TagDecoratorFactory const tagDecoratorFactory{
-        ClioConfigDefinition{{"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
+        ClioConfigDefinition{{"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
     };
     StrictMockConnection const connection{"some ip", boost::beast::flat_buffer{}, tagDecoratorFactory};
     std::string const responseMessage = "response message";
@@ -158,7 +158,7 @@ TEST_F(ResponseTest, createFromStringAndConnection)
 TEST_F(ResponseTest, createFromJsonAndConnection)
 {
     util::TagDecoratorFactory const tagDecoratorFactory{
-        ClioConfigDefinition{{"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
+        ClioConfigDefinition{{"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")}}
     };
     StrictMockConnection const connection{"some ip", boost::beast::flat_buffer{}, tagDecoratorFactory};
     boost::json::object const responseMessage{{"key", "value"}};

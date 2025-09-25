@@ -28,7 +28,7 @@
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -186,12 +186,14 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": {}
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": {}
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -207,12 +209,14 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": "{}"
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": "{}"
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -228,12 +232,14 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_hash": "{}"
-            }})JSON",
-            kLEDGER_HASH
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_hash": "{}"
+                }})JSON",
+                kLEDGER_HASH
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -254,12 +260,14 @@ TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "marker": "{}"
-            }})JSON",
-            kINDEX1
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "marker": "{}"
+                }})JSON",
+                kINDEX1
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -271,19 +279,19 @@ TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
 TEST_F(RPCLedgerDataHandlerTest, NoMarker)
 {
     static auto const kLEDGER_EXPECTED = R"JSON({
-      "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "close_flags": 0,
-      "close_time": 0,
-      "close_time_resolution": 0,
-      "close_time_iso": "2000-01-01T00:00:00Z",
-      "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-      "ledger_index": "30",
-      "parent_close_time": 0,
-      "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "total_coins": "0",
-      "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "closed": true
-   })JSON";
+        "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "close_flags": 0,
+        "close_time": 0,
+        "close_time_resolution": 0,
+        "close_time_iso": "2000-01-01T00:00:00Z",
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": "30",
+        "parent_close_time": 0,
+        "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "total_coins": "0",
+        "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
@@ -329,19 +337,19 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
 TEST_F(RPCLedgerDataHandlerTest, Version2)
 {
     static auto const kLEDGER_EXPECTED = R"JSON({
-      "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "close_flags": 0,
-      "close_time": 0,
-      "close_time_resolution": 0,
-      "close_time_iso": "2000-01-01T00:00:00Z",
-      "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-      "ledger_index": 30,
-      "parent_close_time": 0,
-      "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "total_coins": "0",
-      "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "closed": true
-   })JSON";
+        "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "close_flags": 0,
+        "close_time": 0,
+        "close_time_resolution": 0,
+        "close_time_iso": "2000-01-01T00:00:00Z",
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": 30,
+        "parent_close_time": 0,
+        "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "total_coins": "0",
+        "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(createLedgerHeader(kLEDGER_HASH, kRANGE_MAX)));
 
@@ -383,19 +391,19 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
 TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
 {
     static auto const kLEDGER_EXPECTED = R"JSON({
-      "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "close_flags": 0,
-      "close_time": 0,
-      "close_time_resolution": 0,
-      "close_time_iso": "2000-01-01T00:00:00Z",
-      "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-      "ledger_index": "30",
-      "parent_close_time": 0,
-      "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "total_coins": "0",
-      "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "closed": true
-   })JSON";
+        "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "close_flags": 0,
+        "close_time": 0,
+        "close_time_resolution": 0,
+        "close_time_iso": "2000-01-01T00:00:00Z",
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": "30",
+        "parent_close_time": 0,
+        "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "total_coins": "0",
+        "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
@@ -447,19 +455,19 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
 TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
 {
     static auto const kLEDGER_EXPECTED = R"JSON({
-      "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "close_flags": 0,
-      "close_time": 0,
-      "close_time_resolution": 0,
-      "close_time_iso": "2000-01-01T00:00:00Z",
-      "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-      "ledger_index": "30",
-      "parent_close_time": 0,
-      "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "total_coins": "0",
-      "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "closed": true
-   })JSON";
+        "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "close_flags": 0,
+        "close_time": 0,
+        "close_time_resolution": 0,
+        "close_time_iso": "2000-01-01T00:00:00Z",
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": "30",
+        "parent_close_time": 0,
+        "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "total_coins": "0",
+        "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
@@ -508,19 +516,19 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
 TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
 {
     static auto const kLEDGER_EXPECTED = R"JSON({
-      "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "close_flags": 0,
-      "close_time": 0,
-      "close_time_resolution": 0,
-      "close_time_iso": "2000-01-01T00:00:00Z",
-      "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-      "ledger_index": "30",
-      "parent_close_time": 0,
-      "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "total_coins": "0",
-      "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "closed": true
-   })JSON";
+        "account_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "close_flags": 0,
+        "close_time": 0,
+        "close_time_resolution": 0,
+        "close_time_iso": "2000-01-01T00:00:00Z",
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": "30",
+        "parent_close_time": 0,
+        "parent_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "total_coins": "0",
+        "transaction_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "closed": true
+    })JSON";
 
     EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(1);
     ON_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _))
@@ -588,13 +596,15 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "limit": 10,
-                "marker": "{}"
-            }})JSON",
-            kINDEX1
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "limit": 10,
+                    "marker": "{}"
+                }})JSON",
+                kINDEX1
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_FALSE(output.result->as_object().contains("ledger"));
@@ -621,7 +631,8 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
         auto const line =
             createRippleStateLedgerObject("USD", kACCOUNT2, 10, kACCOUNT, 100, kACCOUNT2, 200, kTXN_ID, 123);
         bbs.push_back(line.getSerializer().peekData());
-        los.emplace_back(LedgerObject{.key = ripple::uint256{kINDEX2}, .blob = Blob{}}
+        los.emplace_back(
+            LedgerObject{.key = ripple::uint256{kINDEX2}, .blob = Blob{}}
         );  // NOLINT(modernize-use-emplace)
     }
     ON_CALL(*backend_, fetchLedgerDiff(kRANGE_MAX, _)).WillByDefault(Return(los));
@@ -631,14 +642,16 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "limit": 10,
-                "marker": {},
-                "out_of_order": true
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "limit": 10,
+                    "marker": {},
+                    "out_of_order": true
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_FALSE(output.result->as_object().contains("ledger"));
@@ -712,13 +725,15 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "limit": {},
-                "binary": true
-            }})JSON",
-            LedgerDataHandler::kLIMIT_BINARY + 1
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "limit": {},
+                    "binary": true
+                }})JSON",
+                LedgerDataHandler::kLIMIT_BINARY + 1
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
@@ -753,13 +768,15 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "limit": {},
-                "binary": false
-            }})JSON",
-            LedgerDataHandler::kLIMIT_JSON + 1
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "limit": {},
+                    "binary": false
+                }})JSON",
+                LedgerDataHandler::kLIMIT_JSON + 1
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));

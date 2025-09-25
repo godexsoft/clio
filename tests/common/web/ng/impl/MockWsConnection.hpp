@@ -33,6 +33,7 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <string>
 
 struct MockWsConnectionImpl : web::ng::impl::WsConnectionBase {
     using WsConnectionBase::WsConnectionBase;
@@ -41,7 +42,7 @@ struct MockWsConnectionImpl : web::ng::impl::WsConnectionBase {
 
     MOCK_METHOD(void, setTimeout, (std::chrono::steady_clock::duration), (override));
 
-    using SendReturnType = std::optional<web::ng::Error>;
+    using SendReturnType = std::expected<void, web::ng::Error>;
     MOCK_METHOD(SendReturnType, send, (web::ng::Response, boost::asio::yield_context), (override));
 
     using ReceiveReturnType = std::expected<web::ng::Request, web::ng::Error>;
@@ -49,8 +50,7 @@ struct MockWsConnectionImpl : web::ng::impl::WsConnectionBase {
 
     MOCK_METHOD(void, close, (boost::asio::yield_context), (override));
 
-    using SendBufferReturnType = std::optional<web::ng::Error>;
-    MOCK_METHOD(SendBufferReturnType, sendBuffer, (boost::asio::const_buffer, boost::asio::yield_context), (override));
+    MOCK_METHOD(SendReturnType, sendShared, (std::shared_ptr<std::string>, boost::asio::yield_context), (override));
 };
 
 using MockWsConnection = testing::NiceMock<MockWsConnectionImpl>;

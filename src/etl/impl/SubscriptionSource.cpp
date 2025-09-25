@@ -23,6 +23,7 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/JS.hpp"
 #include "util/Retry.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
@@ -40,7 +41,7 @@
 #include <boost/json/parse.hpp>
 #include <boost/json/serialize.hpp>
 #include <boost/json/value_to.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
@@ -79,11 +80,13 @@ SubscriptionSource::SubscriptionSource(
     , onConnect_(std::move(onConnect))
     , onDisconnect_(std::move(onDisconnect))
     , onLedgerClosed_(std::move(onLedgerClosed))
-    , lastMessageTimeSecondsSinceEpoch_(PrometheusService::gaugeInt(
-          "subscription_source_last_message_time",
-          util::prometheus::Labels({{"source", fmt::format("{}:{}", ip, wsPort)}}),
-          "Seconds since epoch of the last message received from rippled subscription streams"
-      ))
+    , lastMessageTimeSecondsSinceEpoch_(
+          PrometheusService::gaugeInt(
+              "subscription_source_last_message_time",
+              util::prometheus::Labels({{"source", fmt::format("{}:{}", ip, wsPort)}}),
+              "Seconds since epoch of the last message received from rippled subscription streams"
+          )
+      )
 {
     wsConnectionBuilder_.addHeader({boost::beast::http::field::user_agent, "clio-client"})
         .addHeader({"X-User", "clio-client"})
@@ -155,7 +158,7 @@ SubscriptionSource::stop(boost::asio::yield_context yield)
 void
 SubscriptionSource::subscribe()
 {
-    boost::asio::spawn(strand_, [this, _ = boost::asio::make_work_guard(strand_)](boost::asio::yield_context yield) {
+    util::spawn(strand_, [this, _ = boost::asio::make_work_guard(strand_)](boost::asio::yield_context yield) {
         if (auto connection = wsConnectionBuilder_.connect(yield); connection) {
             wsConnection_ = std::move(connection).value();
         } else {
@@ -329,9 +332,13 @@ SubscriptionSource::setValidatedRange(std::string range)
             pairs.emplace_back(sequence, sequence);
         } else {
             if (minAndMax.size() != 2) {
-                throw std::runtime_error(fmt::format(
-                    "Error parsing range: {}.Min and max should be of size 2. Got size = {}", range, minAndMax.size()
-                ));
+                throw std::runtime_error(
+                    fmt::format(
+                        "Error parsing range: {}.Min and max should be of size 2. Got size = {}",
+                        range,
+                        minAndMax.size()
+                    )
+                );
             }
             uint32_t const min = std::stoll(minAndMax[0]);
             uint32_t const max = std::stoll(minAndMax[1]);

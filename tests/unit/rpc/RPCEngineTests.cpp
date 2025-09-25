@@ -64,8 +64,7 @@ using namespace util::config;
 
 namespace {
 constexpr auto kFORWARD_REPLY = R"JSON({
-    "result":
-    {
+    "result": {
         "status": "success",
         "forwarded": true
     }
@@ -78,14 +77,14 @@ generateDefaultRPCEngineConfig()
     return ClioConfigDefinition{
         {"server.max_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(2)},
         {"workers", ConfigValue{ConfigType::Integer}.defaultValue(4).withConstraint(gValidateUint16)},
-        {"rpc.cache_timeout", ConfigValue{ConfigType::Double}.defaultValue(0.0).withConstraint(gValidatePositiveDouble)
-        },
-        {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
+        {"rpc.cache_timeout",
+         ConfigValue{ConfigType::Double}.defaultValue(0.0).withConstraint(gValidatePositiveDouble)},
+        {"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
         {"dos_guard.whitelist.[]", Array{ConfigValue{ConfigType::String}.optional()}},
         {"dos_guard.max_fetches",
          ConfigValue{ConfigType::Integer}.defaultValue(1000'000u).withConstraint(gValidateUint32)},
-        {"dos_guard.max_connections", ConfigValue{ConfigType::Integer}.defaultValue(20u).withConstraint(gValidateUint32)
-        },
+        {"dos_guard.max_connections",
+         ConfigValue{ConfigType::Integer}.defaultValue(20u).withConstraint(gValidateUint32)},
         {"dos_guard.max_requests", ConfigValue{ConfigType::Integer}.defaultValue(20u).withConstraint(gValidateUint32)}
     };
 }
@@ -212,8 +211,9 @@ TEST_P(RPCEngineFlowParameterTest, Test)
 
     if (testBundle.forwarded) {
         EXPECT_CALL(*mockLoadBalancerPtr_, forwardToRippled)
-            .WillOnce(Return(std::expected<boost::json::object, rpc::ClioError>(json::parse(kFORWARD_REPLY).as_object())
-            ));
+            .WillOnce(
+                Return(std::expected<boost::json::object, rpc::ClioError>(json::parse(kFORWARD_REPLY).as_object()))
+            );
         EXPECT_CALL(*handlerProvider, contains).WillOnce(Return(true));
         EXPECT_CALL(*mockCountersPtr_, rpcForwarded(testBundle.method));
     }
@@ -344,55 +344,54 @@ generateCacheTestValuesForParametersTest()
     return std::vector<RPCEngineCacheTestCaseBundle>{
         {.testName = "CacheEnabled",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc":
-            {"cache_timeout": 10}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": {"cache_timeout": 10}
          })JSON",
          .method = "server_info",
          .isAdmin = false,
          .expectedCacheEnabled = true},
         {.testName = "CacheDisabledWhenNoConfig",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc": {"cache_timeout": 0}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": {"cache_timeout": 0}
          })JSON",
          .method = "server_info",
          .isAdmin = false,
          .expectedCacheEnabled = false},
         {.testName = "CacheDisabledWhenNoTimeout",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc": {"cache_timeout": 0}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": {"cache_timeout": 0}
          })JSON",
          .method = "server_info",
          .isAdmin = false,
          .expectedCacheEnabled = false},
         {.testName = "CacheDisabledWhenTimeoutIsZero",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc": {"cache_timeout": 0}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": {"cache_timeout": 0}
          })JSON",
          .method = "server_info",
          .isAdmin = false,
          .expectedCacheEnabled = false},
         {.testName = "CacheNotWorkForAdmin",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc": { "cache_timeout": 10}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": { "cache_timeout": 10}
          })JSON",
          .method = "server_info",
          .isAdmin = true,
          .expectedCacheEnabled = false},
         {.testName = "CacheDisabledWhenCmdNotMatch",
          .config = R"JSON({
-            "server": {"max_queue_size": 2},
-            "workers": 4,
-            "rpc": {"cache_timeout": 10}
+             "server": {"max_queue_size": 2},
+             "workers": 4,
+             "rpc": {"cache_timeout": 10}
          })JSON",
          .method = "server_info2",
          .isAdmin = false,
@@ -460,8 +459,8 @@ TEST_F(RPCEngineTest, NotCacheIfErrorHappen)
     auto const cfgCache = ClioConfigDefinition{
         {"server.max_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(2)},
         {"workers", ConfigValue{ConfigType::Integer}.defaultValue(4).withConstraint(gValidateUint16)},
-        {"rpc.cache_timeout", ConfigValue{ConfigType::Double}.defaultValue(10.0).withConstraint(gValidatePositiveDouble)
-        }
+        {"rpc.cache_timeout",
+         ConfigValue{ConfigType::Double}.defaultValue(10.0).withConstraint(gValidatePositiveDouble)}
     };
 
     auto const notAdmin = false;

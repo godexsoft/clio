@@ -31,7 +31,7 @@
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -204,12 +204,14 @@ TEST_F(RPCLedgerHandlerTest, LedgerNotExistViaIntSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": {}
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": {}
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -225,12 +227,14 @@ TEST_F(RPCLedgerHandlerTest, LedgerNotExistViaStringSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": "{}"
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": "{}"
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -246,12 +250,14 @@ TEST_F(RPCLedgerHandlerTest, LedgerNotExistViaHash)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = json::parse(fmt::format(
-            R"JSON({{
-                "ledger_hash": "{}"
-            }})JSON",
-            kLEDGER_HASH
-        ));
+        auto const req = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_hash": "{}"
+                }})JSON",
+                kLEDGER_HASH
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -595,8 +601,7 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinaryV2)
                         "hash": "70436A9332F7CD928FAEC1A41269A677739D8B11F108CE23AE23CBF0C9113F8C",
                         "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
                         "ledger_index": 30,
-                        "tx_json":
-                        {
+                        "tx_json": {
                             "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
                             "DeliverMax": "100",
                             "Destination": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
@@ -608,10 +613,8 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinaryV2)
                         "meta": {
                             "AffectedNodes": [
                                 {
-                                    "ModifiedNode":
-                                    {
-                                        "FinalFields":
-                                        {
+                                    "ModifiedNode": {
+                                        "FinalFields": {
                                             "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
                                             "Balance": "110"
                                         },
@@ -619,10 +622,8 @@ TEST_F(RPCLedgerHandlerTest, TransactionsExpandNotBinaryV2)
                                     }
                                 },
                                 {
-                                    "ModifiedNode":
-                                    {
-                                        "FinalFields":
-                                        {
+                                    "ModifiedNode": {
+                                        "FinalFields": {
                                             "Account": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
                                             "Balance": "30"
                                         },
@@ -694,15 +695,17 @@ TEST_F(RPCLedgerHandlerTest, TwoRequestInARowTransactionsExpandNotBinaryV2)
         auto output = handler.process(req, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output);
 
-        auto const req2 = json::parse(fmt::format(
-            R"JSON({{
-                "binary": false,
-                "expand": true,
-                "transactions": true,
-                "ledger_index": {}
-            }})JSON",
-            kRANGE_MAX - 1
-        ));
+        auto const req2 = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "binary": false,
+                    "expand": true,
+                    "transactions": true,
+                    "ledger_index": {}
+                }})JSON",
+                kRANGE_MAX - 1
+            )
+        );
         auto output2 = handler.process(req2, Context{.yield = yield, .apiVersion = 2u});
         ASSERT_TRUE(output2);
         EXPECT_NE(
@@ -772,11 +775,14 @@ TEST_F(RPCLedgerHandlerTest, DiffNotBinary)
     EXPECT_CALL(*backend_, fetchLedgerDiff).Times(1);
 
     los.push_back(LedgerObject{.key = ripple::uint256{kINDEX2}, .blob = Blob{}});  // NOLINT(modernize-use-emplace)
-    los.push_back(LedgerObject{
-        .key = ripple::uint256{kINDEX1},
-        .blob =
-            createAccountRootObject(kACCOUNT, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3).getSerializer().peekData()
-    });
+    los.push_back(
+        LedgerObject{
+            .key = ripple::uint256{kINDEX1},
+            .blob = createAccountRootObject(kACCOUNT, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3)
+                        .getSerializer()
+                        .peekData()
+        }
+    );
 
     ON_CALL(*backend_, fetchLedgerDiff(kRANGE_MAX, _)).WillByDefault(Return(los));
 
@@ -816,11 +822,14 @@ TEST_F(RPCLedgerHandlerTest, DiffBinary)
     EXPECT_CALL(*backend_, fetchLedgerDiff).Times(1);
 
     los.push_back(LedgerObject{.key = ripple::uint256{kINDEX2}, .blob = Blob{}});  // NOLINT(modernize-use-emplace)
-    los.push_back(LedgerObject{
-        .key = ripple::uint256{kINDEX1},
-        .blob =
-            createAccountRootObject(kACCOUNT, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3).getSerializer().peekData()
-    });
+    los.push_back(
+        LedgerObject{
+            .key = ripple::uint256{kINDEX1},
+            .blob = createAccountRootObject(kACCOUNT, ripple::lsfGlobalFreeze, 1, 10, 2, kINDEX1, 3)
+                        .getSerializer()
+                        .peekData()
+        }
+    );
 
     ON_CALL(*backend_, fetchLedgerDiff(kRANGE_MAX, _)).WillByDefault(Return(los));
 

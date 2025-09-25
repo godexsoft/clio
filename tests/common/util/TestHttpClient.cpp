@@ -50,6 +50,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace http = boost::beast::http;
@@ -81,8 +82,8 @@ syncRequest(
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-    for (auto& header : additionalHeaders) {
-        req.set(header.name, header.value);
+    for (auto const& header : additionalHeaders) {
+        std::visit([&header, &req](auto const& name) { req.set(name, header.value); }, header.name);
     }
 
     req.target(target);
@@ -103,6 +104,10 @@ syncRequest(
 }  // namespace
 
 WebHeader::WebHeader(http::field name, std::string value) : name(name), value(std::move(value))
+{
+}
+
+WebHeader::WebHeader(std::string_view name, std::string value) : name(std::string{name}), value(std::move(value))
 {
 }
 
@@ -181,7 +186,7 @@ HttpAsyncClient::HttpAsyncClient(boost::asio::io_context& ioContext) : stream_{i
 {
 }
 
-std::optional<boost::system::error_code>
+std::expected<void, boost::system::error_code>
 HttpAsyncClient::connect(
     std::string_view host,
     std::string_view port,
@@ -193,18 +198,18 @@ HttpAsyncClient::connect(
     boost::asio::ip::tcp::resolver resolver{stream_.get_executor()};
     auto const resolverResults = resolver.resolve(host, port, error);
     if (error)
-        return error;
+        return std::unexpected{error};
 
     ASSERT(!resolverResults.empty(), "No results from resolver");
 
     boost::beast::get_lowest_layer(stream_).expires_after(timeout);
     stream_.async_connect(resolverResults.begin()->endpoint(), yield[error]);
     if (error)
-        return error;
-    return std::nullopt;
+        return std::unexpected{error};
+    return {};
 }
 
-std::optional<boost::system::error_code>
+std::expected<void, boost::system::error_code>
 HttpAsyncClient::send(
     boost::beast::http::request<boost::beast::http::string_body> request,
     boost::asio::yield_context yield,
@@ -216,8 +221,8 @@ HttpAsyncClient::send(
     boost::beast::get_lowest_layer(stream_).expires_after(timeout);
     http::async_write(stream_, request, yield[error]);
     if (error)
-        return error;
-    return std::nullopt;
+        return std::unexpected{error};
+    return {};
 }
 
 std::expected<boost::beast::http::response<boost::beast::http::string_body>, boost::system::error_code>

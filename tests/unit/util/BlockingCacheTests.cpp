@@ -20,6 +20,7 @@
 #include "util/AsioContextTestFixture.hpp"
 #include "util/BlockingCache.hpp"
 #include "util/NameGenerator.hpp"
+#include "util/Spawn.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -32,7 +33,6 @@ using testing::StrictMock;
 
 #include <boost/asio/spawn.hpp>
 
-#include <chrono>
 #include <expected>
 #include <string>
 
@@ -146,7 +146,7 @@ TEST_P(BlockingCacheWaitTest, WaitForUpdate)
 
     EXPECT_CALL(mockUpdater, Call)
         .WillOnce([this, &waitingCoroutine](boost::asio::yield_context yield) -> std::expected<ValueType, ErrorType> {
-            boost::asio::spawn(yield, waitingCoroutine);
+            util::spawn(yield, waitingCoroutine);
             if (GetParam().updateSuccessful) {
                 return value;
             }
@@ -156,7 +156,7 @@ TEST_P(BlockingCacheWaitTest, WaitForUpdate)
     if (GetParam().updateSuccessful)
         EXPECT_CALL(mockVerifier, Call(value)).WillOnce(Return(GetParam().verifierAccepts));
 
-    runSpawnWithTimeout(std::chrono::seconds{1}, [&](boost::asio::yield_context yield) {
+    runSpawn([&](boost::asio::yield_context yield) {
         auto result = cache->asyncGet(yield, mockUpdater.AsStdFunction(), mockVerifier.AsStdFunction());
 
         if (GetParam().updateSuccessful) {
@@ -222,7 +222,7 @@ TEST_F(BlockingCacheTest, InvalidateWhenStateIsHasValue)
     EXPECT_EQ(cache->state(), Cache::State::NoValue);
 }
 
-TEST_F(BlockingCacheTest, UpdateFromTwoCoroutinesHappensOnlyOnes)
+TEST_F(BlockingCacheTest, UpdateFromTwoCoroutinesHappensOnlyOnce)
 {
     auto waitingCoroutine = [&](boost::asio::yield_context yield) {
         auto result = cache->update(yield, mockUpdater.AsStdFunction(), mockVerifier.AsStdFunction());
@@ -232,7 +232,7 @@ TEST_F(BlockingCacheTest, UpdateFromTwoCoroutinesHappensOnlyOnes)
 
     EXPECT_CALL(mockUpdater, Call)
         .WillOnce([this, &waitingCoroutine](boost::asio::yield_context yield) -> std::expected<ValueType, ErrorType> {
-            boost::asio::spawn(yield, waitingCoroutine);
+            util::spawn(yield, waitingCoroutine);
             return value;
         });
     EXPECT_CALL(mockVerifier, Call(value)).WillOnce(Return(true));
@@ -243,7 +243,5 @@ TEST_F(BlockingCacheTest, UpdateFromTwoCoroutinesHappensOnlyOnes)
         ASSERT_EQ(result.value(), value);
     };
 
-    runSpawnWithTimeout(std::chrono::seconds{1}, [&](boost::asio::yield_context yield) {
-        boost::asio::spawn(yield, updatingCoroutine);
-    });
+    runSpawn([&](boost::asio::yield_context yield) { util::spawn(yield, updatingCoroutine); });
 }

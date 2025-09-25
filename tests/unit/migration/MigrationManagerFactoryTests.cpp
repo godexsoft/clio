@@ -26,7 +26,7 @@
 
 #include <gtest/gtest.h>
 
-struct MigrationManagerFactoryTests : public NoLoggerFixture {};
+struct MigrationManagerFactoryTests : public virtual ::testing::Test {};
 
 TEST_F(MigrationManagerFactoryTests, InvalidDBType)
 {

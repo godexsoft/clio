@@ -29,7 +29,7 @@
 #include "util/TestObject.hpp"
 
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -181,12 +181,14 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaIntSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = boost::json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": {}
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = boost::json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": {}
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -201,12 +203,14 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaStringSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = boost::json::parse(fmt::format(
-            R"JSON({{
-                "ledger_index": "{}"
-            }})JSON",
-            kRANGE_MAX
-        ));
+        auto const req = boost::json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_index": "{}"
+                }})JSON",
+                kRANGE_MAX
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -222,12 +226,14 @@ TEST_F(RPCFeatureHandlerTest, LedgerNotExistViaHash)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{FeatureHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = boost::json::parse(fmt::format(
-            R"JSON({{
-                "ledger_hash": "{}"
-            }})JSON",
-            kLEDGER_HASH
-        ));
+        auto const req = boost::json::parse(
+            fmt::format(
+                R"JSON({{
+                    "ledger_hash": "{}"
+                }})JSON",
+                kLEDGER_HASH
+            )
+        );
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -280,8 +286,7 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaNameWithSingleSupportedAndEnabledRes
 
     auto const expectedOutput = fmt::format(
         R"JSON({{
-            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
-            {{
+            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": {{
                 "name": "fixUniversalNumber",
                 "enabled": true,
                 "supported": true
@@ -331,8 +336,7 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathViaHashWithSingleResult)
 
     auto const expectedOutput = fmt::format(
         R"JSON({{
-            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
-            {{
+            "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": {{
                 "name": "fixUniversalNumber",
                 "enabled": true,
                 "supported": true
@@ -418,14 +422,12 @@ TEST_F(RPCFeatureHandlerTest, SuccessPathWithMultipleResults)
     auto const expectedOutput = fmt::format(
         R"JSON({{
             "features": {{
-                "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0":
-                {{
+                "2E2FB9CF8A44EB80F4694D38AADAE9B8B7ADAFD2F092E10068E61C98C4F092B0": {{
                     "name": "fixUniversalNumber",
                     "enabled": true,
                     "supported": true
                 }},
-                "DF8B4536989BDACE3F934F29423848B9F1D76D09BE6A1FCFE7E7F06AA26ABEAD":
-                {{
+                "DF8B4536989BDACE3F934F29423848B9F1D76D09BE6A1FCFE7E7F06AA26ABEAD": {{
                     "name": "fixRemoveNFTokenAutoTrustLine",
                     "enabled": false,
                     "supported": false

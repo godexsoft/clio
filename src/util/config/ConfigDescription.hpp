@@ -23,7 +23,7 @@
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/Error.hpp"
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <array>
@@ -110,13 +110,7 @@ public:
     static void
     writeConfigDescriptionToFile(std::ostream& file)
     {
-        file << "# Clio Config Description\n\n";
-        file << "This document provides a list of all available Clio configuration properties in detail.\n\n";
-        file << "> [!NOTE]\n";
-        file << "> Dot notation in configuration key names represents nested fields. For example, "
-                "**database.scylladb** refers to the _scylladb_ field inside the _database_ object. If a key name "
-                "includes \"[]\", it indicates that the nested field is an array (e.g., etl_sources.[]).\n\n";
-        file << "## Configuration Details\n";
+        file << kCONFIG_DESCRIPTION_HEADER;
 
         for (auto const& [key, val] : kCONFIG_DESCRIPTION) {
             file << "\n### " << key << "\n\n";
@@ -124,20 +118,34 @@ public:
             // Every type of value is directed to operator<< in ConfigValue.hpp
             // as ConfigValue is the one that holds all the info regarding the config values
             if (key.contains("[]")) {
-                file << gClioConfig.asArray(key);
+                file << getClioConfig().asArray(key);
             } else {
-                file << gClioConfig.getValueView(key);
+                file << getClioConfig().getValueView(key);
             }
             file << "- **Description**: " << val << "\n";
         }
     }
 
 private:
+    static constexpr auto kCONFIG_DESCRIPTION_HEADER =
+        R"(# Clio Config Description
+
+This document provides a list of all available Clio configuration properties in detail.
+
+> [!NOTE]
+> Dot notation in configuration key names represents nested fields.
+> For example, **database.scylladb** refers to the _scylladb_ field inside the _database_ object.
+> If a key name includes "[]", it indicates that the nested field is an array (e.g., etl_sources.[]).
+
+## Configuration Details
+)";
+
     static constexpr auto kCONFIG_DESCRIPTION = std::array{
-        KV{.key = "database.type",
-           .value =
-               "Specifies the type of database used for storing and retrieving data required by the Clio server. Both "
-               "ScyllaDB and Cassandra can serve as backends for Clio; however, this value must be set to `cassandra`."
+        KV{
+            .key = "database.type",
+            .value =
+                "Specifies the type of database used for storing and retrieving data required by the Clio server. Both "
+                "ScyllaDB and Cassandra can serve as backends for Clio; however, this value must be set to `cassandra`."
         },
         KV{.key = "database.cassandra.contact_points",
            .value = "A list of IP addresses or hostnames for the initial cluster nodes (Cassandra or ScyllaDB) that "
@@ -190,9 +198,8 @@ private:
            .value = "Specifies the timeout duration (in seconds) for the forwarding cache used in `rippled` "
                     "communication. A value of `0` means disabling this feature."},
         KV{.key = "forwarding.request_timeout",
-           .value =
-               "Specifies the timeout duration (in seconds) for the forwarding request used in `rippled` communication."
-        },
+           .value = "Specifies the timeout duration (in seconds) for the forwarding request used in `rippled` "
+                    "communication."},
         KV{.key = "rpc.cache_timeout",
            .value = "Specifies the timeout duration (in seconds) for RPC cache response to timeout. A value of `0` "
                     "means disabling this feature."},
@@ -201,16 +208,15 @@ private:
         KV{.key = "dos_guard.max_fetches", .value = "The maximum number of fetch operations allowed by DOS guard."},
         KV{.key = "dos_guard.max_connections",
            .value = "The maximum number of concurrent connections for a specific IP address."},
-        KV{.key = "dos_guard.max_requests", .value = "The maximum number of requests allowed for a specific IP address."
-        },
+        KV{.key = "dos_guard.max_requests",
+           .value = "The maximum number of requests allowed for a specific IP address."},
         KV{.key = "dos_guard.sweep_interval", .value = "Interval in seconds for DOS guard to sweep(clear) its state."},
         KV{.key = "workers", .value = "The number of threads used to process RPC requests."},
         KV{.key = "server.ip", .value = "The IP address of the Clio HTTP server."},
         KV{.key = "server.port", .value = "The port number of the Clio HTTP server."},
         KV{.key = "server.max_queue_size",
-           .value =
-               "The maximum size of the server's request queue. If set to `0`, this means there is no queue size limit."
-        },
+           .value = "The maximum size of the server's request queue. If set to `0`, this means there is no queue size "
+                    "limit."},
         KV{.key = "server.local_admin",
            .value = "Indicates if requests from `localhost` are allowed to call Clio admin-only APIs. Note that this "
                     "setting cannot be enabled "
@@ -230,10 +236,20 @@ private:
         KV{.key = "server.ws_max_sending_queue_size",
            .value = "Maximum queue size for sending subscription data to clients. This queue buffers data when a "
                     "client is slow to receive it, ensuring delivery once the client is ready."},
+        KV{.key = "server.proxy.ips.[]",
+           .value = "List of proxy ip addresses. When Clio receives a request from proxy it will use "
+                    "`Forwarded` value (if any) as client ip. When this option is used together with "
+                    "`server.proxy.tokens` Clio will identify proxy by ip or by token."},
+        KV{.key = "server.proxy.tokens.[]",
+           .value = "List of tokens in identifying request as a request from proxy. Token should be provided in "
+                    "`X-Proxy-Token` header, e.g. "
+                    "`X-Proxy-Token: <very_secret_token>'. When Clio receives a request from proxy "
+                    "it will use 'Forwarded` value (if any) to get client ip. When this option is used together with "
+                    "'server.proxy.ips' Clio will identify proxy by ip or by token."},
         KV{.key = "prometheus.enabled", .value = "Enables or disables Prometheus metrics."},
         KV{.key = "prometheus.compress_reply", .value = "Enables or disables compression of Prometheus responses."},
-        KV{.key = "io_threads", .value = "The number of input/output (I/O) threads. The value cannot be less than `1`."
-        },
+        KV{.key = "io_threads",
+           .value = "The number of input/output (I/O) threads. The value cannot be less than `1`."},
         KV{.key = "subscription_workers",
            .value = "The number of worker threads or processes that are responsible for managing and processing "
                     "subscription-based tasks from `rippled`."},
@@ -259,24 +275,36 @@ private:
                     "If set to `0`, the system defaults to generating cursors based on `cache.num_diffs`."},
         KV{.key = "cache.page_fetch_size", .value = "The number of ledger objects to fetch concurrently per marker."},
         KV{.key = "cache.load", .value = "The strategy used for Cache loading."},
-        KV{.key = "log_channels.[].channel", .value = "The name of the log channel."},
-        KV{.key = "log_channels.[].log_level", .value = "The log level for the specific log channel."},
-        KV{.key = "log_level",
+        KV{.key = "log.channels.[].channel", .value = "The name of the log channel."},
+        KV{.key = "log.channels.[].level", .value = "The log level for the specific log channel."},
+        KV{.key = "log.level",
            .value = "The general logging level of Clio. This level is applied to all log channels that do not have an "
                     "explicitly defined logging level."},
-        KV{.key = "log_format",
-           .value = "The format string for log messages. The format is described here: "
-                    "<https://www.boost.org/doc/libs/1_83_0/libs/log/doc/html/log/tutorial/formatters.html>."},
-        KV{.key = "log_to_console", .value = "Enables or disables logging to the console."},
-        KV{.key = "log_directory", .value = "The directory path for the log files."},
-        KV{.key = "log_rotation_size",
+        KV{.key = "log.format", .value = R"(The format string for log messages using spdlog format patterns.
+
+Each of the variables expands like so:
+
+- `%Y-%m-%d %H:%M:%S.%f`: The full date and time of the log entry with microsecond precision
+- `%^`: Start color range
+- `%3!l`: The severity (aka log level) the entry was sent at stripped to 3 characters
+- `%n`: The logger name (channel) that this log entry was sent to
+- `%$`: End color range
+- `%v`: The actual log message
+
+Some additional variables that might be useful:
+
+- `%@`: A partial path to the C++ file and the line number in the said file (`src/file/path:linenumber`)
+- `%t`: The ID of the thread the log entry is written from
+
+Documentation can be found at: <https://github.com/gabime/spdlog/wiki/Custom-formatting>.)"},
+        KV{.key = "log.is_async", .value = "Whether spdlog is asynchronous or not."},
+        KV{.key = "log.enable_console", .value = "Enables or disables logging to the console."},
+        KV{.key = "log.directory", .value = "The directory path for the log files."},
+        KV{.key = "log.rotation_size",
            .value = "The log rotation size in megabytes. When the log file reaches this particular size, a new log "
                     "file starts."},
-        KV{.key = "log_directory_max_size", .value = "The maximum size of the log directory in megabytes."},
-        KV{.key = "log_rotation_hour_interval",
-           .value = "Represents the interval (in hours) for log rotation. If the current log file reaches this value "
-                    "in logging, a new log file starts."},
-        KV{.key = "log_tag_style",
+        KV{.key = "log.directory_max_files", .value = "The maximum number of log files in the directory."},
+        KV{.key = "log.tag_style",
            .value =
                "Log tags are unique identifiers for log messages. `uint`/`int` starts logging from 0 and increments, "
                "making it faster. In contrast, `uuid` generates a random unique identifier, which adds overhead."},

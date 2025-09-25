@@ -21,37 +21,37 @@
 
 #include "util/SourceLocation.hpp"
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/json.hpp>
-#include <boost/json/conversion.hpp>
-#include <boost/json/value.hpp>
-#include <boost/log/core/core.hpp>
-#include <boost/log/core/record.hpp>
-#include <boost/log/expressions/filter.hpp>
-#include <boost/log/expressions/keyword.hpp>
-#include <boost/log/expressions/predicates/channel_severity_filter.hpp>
-#include <boost/log/keywords/channel.hpp>
-#include <boost/log/keywords/severity.hpp>
-#include <boost/log/sinks/unlocked_frontend.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/sources/severity_channel_logger.hpp>
-#include <boost/log/sources/severity_feature.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/utility/manipulators/add_value.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/formatter_parser.hpp>
-
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
+#include <memory>
 #include <optional>
-#include <ostream>
+#include <sstream>
 #include <string>
+#include <vector>
+
+// We forward declare spdlog::logger and spdlog::sinks::sink
+// to avoid including the spdlog headers in this header file.
+namespace spdlog {
+
+class logger;  // NOLINT(readability-identifier-naming)
+
+namespace sinks {
+class sink;  // NOLINT(readability-identifier-naming)
+}  // namespace sinks
+
+}  // namespace spdlog
+
+struct BenchmarkLoggingInitializer;
+class LoggerFixture;
+struct LogServiceInitTests;
 
 namespace util {
+
+namespace impl {
+class OnAssert;
+}  // namespace impl
 
 namespace config {
 class ClioConfigDefinition;
@@ -83,23 +83,6 @@ enum class Severity {
     FTL,
 };
 
-/** @cond */
-// NOLINTBEGIN(readability-identifier-naming)
-BOOST_LOG_ATTRIBUTE_KEYWORD(LogSeverity, "Severity", Severity);
-BOOST_LOG_ATTRIBUTE_KEYWORD(LogChannel, "Channel", std::string);
-// NOLINTEND(readability-identifier-naming)
-/** @endcond */
-
-/**
- * @brief Custom labels for @ref Severity in log output.
- *
- * @param stream std::ostream The output stream
- * @param sev Severity The severity to output to the ostream
- * @return The same ostream we were given
- */
-std::ostream&
-operator<<(std::ostream& stream, Severity sev);
-
 /**
  * @brief A simple thread-safe logger for the channel specified
  * in the constructor.
@@ -109,31 +92,25 @@ operator<<(std::ostream& stream, Severity sev);
  * severity levels for each channel.
  */
 class Logger final {
-    using LoggerType = boost::log::sources::severity_channel_logger_mt<Severity, std::string>;
-    mutable LoggerType logger_;
+    std::shared_ptr<spdlog::logger> logger_;
 
     friend class LogService;  // to expose the Pump interface
+    friend struct ::BenchmarkLoggingInitializer;
 
     /**
      * @brief Helper that pumps data into a log record via `operator<<`.
      */
     class Pump final {
-        using PumpOptType = std::optional<boost::log::aux::record_pump<LoggerType>>;
-
-        boost::log::record rec_;
-        PumpOptType pump_ = std::nullopt;
+        std::shared_ptr<spdlog::logger> logger_;
+        Severity const severity_;
+        SourceLocationType const sourceLocation_;
+        std::ostringstream stream_;
+        bool const enabled_;
 
     public:
-        ~Pump() = default;
+        ~Pump();
 
-        Pump(LoggerType& logger, Severity sev, SourceLocationType const& loc)
-            : rec_{logger.open_record(boost::log::keywords::severity = sev)}
-        {
-            if (rec_) {
-                pump_.emplace(boost::log::aux::make_record_pump(logger, rec_));
-                pump_->stream() << boost::log::add_value("SourceLocation", prettyPath(loc));
-            }
-        }
+        Pump(std::shared_ptr<spdlog::logger> logger, Severity sev, SourceLocationType const& loc);
 
         Pump(Pump&&) = delete;
         Pump(Pump const&) = delete;
@@ -143,7 +120,7 @@ class Logger final {
         operator=(Pump&&) = delete;
 
         /**
-         * @brief Perfectly forwards any incoming data into the underlying boost::log pump if the pump is available.
+         * @brief Perfectly forwards any incoming data into the underlying stream if data should be logged.
          *
          * @tparam T Type of data to pump
          * @param data The data to pump
@@ -153,8 +130,8 @@ class Logger final {
         [[maybe_unused]] Pump&
         operator<<(T&& data)
         {
-            if (pump_)
-                pump_->stream() << std::forward<T>(data);
+            if (enabled_)
+                stream_ << std::forward<T>(data);
             return *this;
         }
 
@@ -163,12 +140,8 @@ class Logger final {
          */
         operator bool() const
         {
-            return pump_.has_value();
+            return enabled_;
         }
-
-    private:
-        [[nodiscard]] static std::string
-        prettyPath(SourceLocationType const& loc, size_t maxDepth = 3);
     };
 
 public:
@@ -192,9 +165,7 @@ public:
      *
      * @param channel The channel this logger will report into.
      */
-    Logger(std::string channel) : logger_{boost::log::keywords::channel = channel}
-    {
-    }
+    Logger(std::string channel);
 
     Logger(Logger const&) = default;
     ~Logger() = default;
@@ -259,6 +230,74 @@ public:
      */
     [[nodiscard]] Pump
     fatal(SourceLocationType const& loc = CURRENT_SRC_LOCATION) const;
+
+private:
+    Logger(std::shared_ptr<spdlog::logger> logger);
+};
+
+/**
+ * @brief Base state management class for the logging service.
+ *
+ * This class manages the global state and core functionality for the logging system,
+ * including initialization, sink management, and logger registration.
+ */
+class LogServiceState {
+protected:
+    friend struct ::LogServiceInitTests;
+    friend class ::LoggerFixture;
+    friend class Logger;
+    friend class ::util::impl::OnAssert;
+
+    /**
+     * @brief Initialize the logging core with specified parameters.
+     *
+     * @param isAsync Whether logging should be asynchronous
+     * @param defaultSeverity The default severity level for new loggers
+     * @param sinks Vector of spdlog sinks to use for output
+     */
+    static void
+    init(bool isAsync, Severity defaultSeverity, std::vector<std::shared_ptr<spdlog::sinks::sink>> const& sinks);
+
+    /**
+     * @brief Whether the LogService is initialized or not
+     *
+     * @return true if the LogService is initialized
+     */
+    [[nodiscard]] static bool
+    initialized();
+
+    /**
+     * @brief Reset the logging service to uninitialized state.
+     */
+    static void
+    reset();
+
+    /**
+     * @brief Replace the current sinks with a new set of sinks.
+     *
+     * @param sinks Vector of new spdlog sinks to replace the current ones
+     */
+    static void
+    replaceSinks(std::vector<std::shared_ptr<spdlog::sinks::sink>> const& sinks);
+
+    /**
+     * @brief Register a new logger for the specified channel.
+     *
+     * Creates and registers a new spdlog logger instance for the given channel
+     * with the specified or default severity level.
+     *
+     * @param channel The name of the logging channel
+     * @param severity Optional severity level override; uses default if not specified
+     * @return Shared pointer to the registered spdlog logger
+     */
+    static std::shared_ptr<spdlog::logger>
+    registerLogger(std::string const& channel, std::optional<Severity> severity = std::nullopt);
+
+protected:
+    static bool isAsync_;                                             // NOLINT(readability-identifier-naming)
+    static Severity defaultSeverity_;                                 // NOLINT(readability-identifier-naming)
+    static std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks_;  // NOLINT(readability-identifier-naming)
+    static bool initialized_;                                         // NOLINT(readability-identifier-naming)
 };
 
 /**
@@ -267,11 +306,7 @@ public:
  * Used to initialize and setup the logging core as well as a globally available
  * entrypoint for logging into the `General` channel as well as raising alerts.
  */
-class LogService {
-    static Logger generalLog; /*< Global logger for General channel */
-    static Logger alertLog;   /*< Global logger for Alerts channel */
-    static boost::log::filter filter;
-
+class LogService : public LogServiceState {
 public:
     LogService() = delete;
 
@@ -285,16 +320,19 @@ public:
     init(config::ClioConfigDefinition const& config);
 
     /**
+     * @brief Shutdown spdlog to guarantee output is not lost
+     */
+    static void
+    shutdown();
+
+    /**
      * @brief Globally accessible General logger at Severity::TRC severity
      *
      * @param loc The source location of the log message
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    trace(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.trace(loc);
-    }
+    trace(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
     /**
      * @brief Globally accessible General logger at Severity::DBG severity
@@ -303,10 +341,7 @@ public:
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    debug(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.debug(loc);
-    }
+    debug(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
     /**
      * @brief Globally accessible General logger at Severity::NFO severity
@@ -315,10 +350,7 @@ public:
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    info(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.info(loc);
-    }
+    info(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
     /**
      * @brief Globally accessible General logger at Severity::WRN severity
@@ -327,10 +359,7 @@ public:
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    warn(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.warn(loc);
-    }
+    warn(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
     /**
      * @brief Globally accessible General logger at Severity::ERR severity
@@ -339,10 +368,7 @@ public:
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    error(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.error(loc);
-    }
+    error(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
     /**
      * @brief Globally accessible General logger at Severity::FTL severity
@@ -351,30 +377,30 @@ public:
      * @return The pump to use for logging
      */
     [[nodiscard]] static Logger::Pump
-    fatal(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return generalLog.fatal(loc);
-    }
+    fatal(SourceLocationType const& loc = CURRENT_SRC_LOCATION);
 
+private:
     /**
-     * @brief Globally accessible Alert logger
+     * @brief Parses the sinks from a @ref config::ClioConfigDefinition
      *
-     * @param loc The source location of the log message
-     * @return The pump to use for logging
+     * @param config The configuration to parse sinks from
+     * @return A vector of sinks on success, error message on failure
      */
-    [[nodiscard]] static Logger::Pump
-    alert(SourceLocationType const& loc = CURRENT_SRC_LOCATION)
-    {
-        return alertLog.warn(loc);
-    }
+    [[nodiscard]] static std::expected<std::vector<std::shared_ptr<spdlog::sinks::sink>>, std::string>
+    getSinks(config::ClioConfigDefinition const& config);
 
-    /**
-     * @brief Whether the LogService is enabled or not
-     *
-     * @return true if the LogService is enabled, false otherwise
-     */
-    [[nodiscard]] static bool
-    enabled();
+    struct FileLoggingParams {
+        std::string logDir;
+
+        uint32_t rotationSizeMB;
+        uint32_t dirMaxFiles;
+    };
+
+    friend struct ::BenchmarkLoggingInitializer;
+
+    [[nodiscard]]
+    static std::shared_ptr<spdlog::sinks::sink>
+    createFileSink(FileLoggingParams const& params, std::string const& format);
 };
 
 };  // namespace util

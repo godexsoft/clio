@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "util/AsioContextTestFixture.hpp"
 #include "util/MockAmendmentCenter.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
@@ -29,6 +30,7 @@
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -45,6 +47,7 @@ protected:
     std::shared_ptr<TestedFeed> testFeedPtr = std::make_shared<TestedFeed>(ctx_);
     MockSession* mockSessionPtr = dynamic_cast<MockSession*>(sessionPtr.get());
     StrictMockAmendmentCenterSharedPtr mockAmendmentCenterPtr_;
+    uint32_t const networkID{123};
 };
 
 namespace feed::impl {

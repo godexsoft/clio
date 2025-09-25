@@ -34,6 +34,7 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 using namespace util::config;
 
@@ -51,7 +52,8 @@ struct ConfigFileJsonParseTestBundle {
     ValidationMap validationMap;
 };
 
-struct ConfigFileJsonParseTest : NoLoggerFixture, testing::WithParamInterface<ConfigFileJsonParseTestBundle> {};
+struct ConfigFileJsonParseTest : public virtual ::testing::Test,
+                                 testing::WithParamInterface<ConfigFileJsonParseTestBundle> {};
 
 TEST_P(ConfigFileJsonParseTest, parseValues)
 {
@@ -308,7 +310,7 @@ INSTANTIATE_TEST_CASE_P(
     tests::util::kNAME_GENERATOR
 );
 
-struct ConfigFileJsonTest : NoLoggerFixture {};
+struct ConfigFileJsonTest : public virtual ::testing::Test {};
 
 TEST_F(ConfigFileJsonTest, getValue)
 {
@@ -486,6 +488,31 @@ TEST_F(ConfigFileJsonTest, containsKey)
     EXPECT_TRUE(jsonFileObj.containsKey("array_of_objects.[].string"));
     EXPECT_FALSE(jsonFileObj.containsKey("array_of_objects.[]"));
     EXPECT_FALSE(jsonFileObj.containsKey("array_of_objects.[].object"));
+}
+
+TEST_F(ConfigFileJsonTest, getAllKeys)
+{
+    auto const jsonStr = R"JSON({
+        "int": 42,
+        "object": { "string": "some string", "array": [1, 2, 3] },
+        "array2": [1, 2, 3],
+        "array_of_objects": [ {"int": 42}, {"string": "some string"} ]
+    })JSON";
+    auto const jsonFileObj = ConfigFileJson{boost::json::parse(jsonStr).as_object()};
+
+    auto allKeys = jsonFileObj.getAllKeys();
+    std::ranges::sort(allKeys);
+    EXPECT_EQ(allKeys.size(), 6);
+
+    std::vector<std::string> const expectedKeys{
+        {"array2.[]",
+         "array_of_objects.[].int",
+         "array_of_objects.[].string",
+         "int",
+         "object.array.[]",
+         "object.string"}
+    };
+    EXPECT_EQ(allKeys, expectedKeys);
 }
 
 struct ConfigFileJsonMakeTest : ConfigFileJsonTest {};

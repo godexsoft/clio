@@ -42,7 +42,7 @@
 #include <boost/regex.hpp>
 #include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
@@ -197,21 +197,6 @@ insertDeliveredAmount(
     std::shared_ptr<ripple::STTx const> const& txn,
     std::shared_ptr<ripple::TxMeta const> const& meta,
     uint32_t date
-);
-
-/**
- * @brief Add "mpt_issuance_id" into MPTokenIssuanceCreate transaction json.
- *
- * @param metaJson The metadata json object to add "MPTokenIssuanceID"
- * @param txn The transaction object
- * @param meta The metadata object
- * @return true if the "mpt_issuance_id" is added to the metadata json object
- */
-bool
-insertMPTIssuanceID(
-    boost::json::object& metaJson,
-    std::shared_ptr<ripple::STTx const> const& txn,
-    std::shared_ptr<ripple::TxMeta const> const& meta
 );
 
 /**

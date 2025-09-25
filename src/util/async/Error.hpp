@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/std.h>
 
 #include <string>
@@ -60,7 +60,8 @@ struct ExecutionError {
      *
      * @return The error message as a C string
      */
-    [[nodiscard]] operator char const*() const noexcept
+    [[nodiscard]]
+    operator char const*() const noexcept
     {
         return message.c_str();
     }

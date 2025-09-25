@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace app {
@@ -52,6 +53,17 @@ OnConnectCheck::operator()(web::ng::Connection const& connection)
     }
 
     return {};
+}
+
+IpChangeHook::IpChangeHook(web::dosguard::DOSGuardInterface& dosguard) : dosguard_(dosguard)
+{
+}
+
+void
+IpChangeHook::operator()(std::string const& oldIp, std::string const& newIp)
+{
+    dosguard_.get().decrement(oldIp);
+    dosguard_.get().increment(newIp);
 }
 
 DisconnectHook::DisconnectHook(web::dosguard::DOSGuardInterface& dosguard) : dosguard_{dosguard}
@@ -97,7 +109,7 @@ HealthCheckHandler::operator()(
     boost::asio::yield_context
 )
 {
-    static auto constexpr kHEALTH_CHECK_HTML = R"html(
+    static constexpr auto kHEALTH_CHECK_HTML = R"html(
     <!DOCTYPE html>
     <html>
         <head><title>Test page for Clio</title></head>

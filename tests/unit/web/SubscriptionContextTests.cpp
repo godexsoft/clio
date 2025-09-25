@@ -35,10 +35,10 @@
 using namespace web;
 using namespace util::config;
 
-struct SubscriptionContextTests : NoLoggerFixture {
+struct SubscriptionContextTests : public virtual ::testing::Test {
 protected:
     util::TagDecoratorFactory tagFactory_{ClioConfigDefinition{
-        {"log_tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
+        {"log.tag_style", ConfigValue{ConfigType::String}.defaultValue("uint")},
     }};
     ConnectionBaseStrictMockPtr connection_ =
         std::make_shared<testing::StrictMock<ConnectionBaseMock>>(tagFactory_, "some ip");

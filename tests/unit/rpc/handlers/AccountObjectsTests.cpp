@@ -27,7 +27,7 @@
 #include "util/TestObject.hpp"
 
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -110,7 +110,7 @@ generateTestValuesForParametersTest()
             .testName = "TypeNotString",
             .testJson = R"JSON({"account": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun", "type": 1})JSON",
             .expectedError = "invalidParams",
-            .expectedErrorMessage = "Invalid parameters."
+            .expectedErrorMessage = "Invalid field 'type', not string."
         },
         AccountObjectsParamTestCaseBundle{
             .testName = "TypeInvalid",
@@ -223,13 +223,15 @@ TEST_F(RPCAccountObjectsHandlerTest, LedgerNonExistViaIntSequence)
     // return empty ledgerHeader
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillOnce(Return(std::optional<ripple::LedgerHeader>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_index": 30
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_index": 30
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -245,13 +247,15 @@ TEST_F(RPCAccountObjectsHandlerTest, LedgerNonExistViaStringSequence)
     // return empty ledgerHeader
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kMAX_SEQ, _)).WillOnce(Return(std::nullopt));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_index": "30"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_index": "30"
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -268,14 +272,16 @@ TEST_F(RPCAccountObjectsHandlerTest, LedgerNonExistViaHash)
     EXPECT_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _))
         .WillOnce(Return(std::optional<ripple::LedgerHeader>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -293,12 +299,14 @@ TEST_F(RPCAccountObjectsHandlerTest, AccountNotExist)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
     EXPECT_CALL(*backend_, doFetchLedgerObject).WillOnce(Return(std::optional<Blob>{}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}"
+            }})JSON",
+            kACCOUNT
+        )
+    );
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -312,36 +320,36 @@ TEST_F(RPCAccountObjectsHandlerTest, AccountNotExist)
 TEST_F(RPCAccountObjectsHandlerTest, DefaultParameterNoNFTFound)
 {
     static constexpr auto kEXPECTED_OUT = R"JSON({
-                                            "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-                                            "ledger_index": 30,
-                                            "validated": true,
-                                            "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                            "limit": 200,
-                                            "account_objects": [
-                                                {
-                                                    "Balance": {
-                                                        "currency": "USD",
-                                                        "issuer": "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW",
-                                                        "value": "100"
-                                                    },
-                                                    "Flags": 0,
-                                                    "HighLimit": {
-                                                        "currency": "USD",
-                                                        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                                                        "value": "20"
-                                                    },
-                                                    "LedgerEntryType": "RippleState",
-                                                    "LowLimit": {
-                                                        "currency": "USD",
-                                                        "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                                        "value": "10"
-                                                    },
-                                                    "PreviousTxnID": "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879",
-                                                    "PreviousTxnLgrSeq": 123,
-                                                    "index": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC"
-                                                }
-                                            ]
-                                        })JSON";
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": 30,
+        "validated": true,
+        "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "limit": 200,
+        "account_objects": [
+            {
+                "Balance": {
+                    "currency": "USD",
+                    "issuer": "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW",
+                    "value": "100"
+                },
+                "Flags": 0,
+                "HighLimit": {
+                    "currency": "USD",
+                    "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                    "value": "20"
+                },
+                "LedgerEntryType": "RippleState",
+                "LowLimit": {
+                    "currency": "USD",
+                    "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                    "value": "10"
+                },
+                "PreviousTxnID": "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879",
+                "PreviousTxnLgrSeq": 123,
+                "index": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC"
+            }
+        ]
+    })JSON";
 
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
@@ -365,12 +373,14 @@ TEST_F(RPCAccountObjectsHandlerTest, DefaultParameterNoNFTFound)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -409,14 +419,16 @@ TEST_F(RPCAccountObjectsHandlerTest, Limit)
     }
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        kLIMIT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            kLIMIT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -453,15 +465,17 @@ TEST_F(RPCAccountObjectsHandlerTest, Marker)
     }
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        kINDEX1,
-        kPAGE
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            kINDEX1,
+            kPAGE
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -507,14 +521,16 @@ TEST_F(RPCAccountObjectsHandlerTest, MultipleDirNoNFT)
     }
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        2 * kCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            2 * kCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -561,13 +577,15 @@ TEST_F(RPCAccountObjectsHandlerTest, TypeFilter)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "offer"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "offer"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -605,13 +623,15 @@ TEST_F(RPCAccountObjectsHandlerTest, TypeFilterAmmType)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "amm"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "amm"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -658,13 +678,15 @@ TEST_F(RPCAccountObjectsHandlerTest, TypeFilterReturnEmpty)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "check"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "check"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -713,13 +735,15 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilter)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "deletion_blockers_only": true
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "deletion_blockers_only": true
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -756,14 +780,16 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilterWithTypeFilter)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "deletion_blockers_only": true,
-            "type": "payment_channel"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "deletion_blockers_only": true,
+                "type": "payment_channel"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -818,13 +844,15 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilterEmptyResult)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "deletion_blockers_only": true
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "deletion_blockers_only": true
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -878,14 +906,16 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilterWithIncompatibleT
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "deletion_blockers_only": true,
-            "type": "offer"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "deletion_blockers_only": true,
+                "type": "offer"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -898,67 +928,67 @@ TEST_F(RPCAccountObjectsHandlerTest, DeletionBlockersOnlyFilterWithIncompatibleT
 TEST_F(RPCAccountObjectsHandlerTest, NFTMixOtherObjects)
 {
     static constexpr auto kEXPECTED_OUT = R"JSON({
-                                            "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-                                            "ledger_index": 30,
-                                            "validated": true,
-                                            "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                            "limit": 200,
-                                            "account_objects": [
-                                                {
-                                                    "Flags": 0,
-                                                    "LedgerEntryType": "NFTokenPage",
-                                                    "NFTokens": [
-                                                        {
-                                                            "NFToken": {
-                                                                "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
-                                                                "URI": "7777772E6F6B2E636F6D"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "PreviousPageMin": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC",
-                                                    "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
-                                                    "PreviousTxnLgrSeq": 0,
-                                                    "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9FFFFFFFFFFFFFFFFFFFFFFFF"
-                                                },
-                                                {
-                                                    "Flags": 0,
-                                                    "LedgerEntryType": "NFTokenPage",
-                                                    "NFTokens": [
-                                                        {
-                                                            "NFToken": {
-                                                                "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
-                                                                "URI": "7777772E6F6B2E636F6D"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
-                                                    "PreviousTxnLgrSeq": 0,
-                                                    "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC"
-                                                },
-                                                {
-                                                    "Balance": {
-                                                        "currency": "USD",
-                                                        "issuer": "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW",
-                                                        "value": "100"
-                                                    },
-                                                    "Flags": 0,
-                                                    "HighLimit": {
-                                                        "currency": "USD",
-                                                        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                                                        "value": "20"
-                                                    },
-                                                    "LedgerEntryType": "RippleState",
-                                                    "LowLimit": {
-                                                        "currency": "USD",
-                                                        "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                                        "value": "10"
-                                                    },
-                                                    "PreviousTxnID": "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879",
-                                                    "PreviousTxnLgrSeq": 123,
-                                                    "index": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC"
-                                                }
-                                            ]
-                                        })JSON";
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": 30,
+        "validated": true,
+        "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "limit": 200,
+        "account_objects": [
+            {
+                "Flags": 0,
+                "LedgerEntryType": "NFTokenPage",
+                "NFTokens": [
+                    {
+                        "NFToken": {
+                            "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
+                            "URI": "7777772E6F6B2E636F6D"
+                        }
+                    }
+                ],
+                "PreviousPageMin": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC",
+                "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
+                "PreviousTxnLgrSeq": 0,
+                "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9FFFFFFFFFFFFFFFFFFFFFFFF"
+            },
+            {
+                "Flags": 0,
+                "LedgerEntryType": "NFTokenPage",
+                "NFTokens": [
+                    {
+                        "NFToken": {
+                            "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
+                            "URI": "7777772E6F6B2E636F6D"
+                        }
+                    }
+                ],
+                "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
+                "PreviousTxnLgrSeq": 0,
+                "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC"
+            },
+            {
+                "Balance": {
+                    "currency": "USD",
+                    "issuer": "rsA2LpzuawewSBQXkiju3YQTMzW13pAAdW",
+                    "value": "100"
+                },
+                "Flags": 0,
+                "HighLimit": {
+                    "currency": "USD",
+                    "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                    "value": "20"
+                },
+                "LedgerEntryType": "RippleState",
+                "LowLimit": {
+                    "currency": "USD",
+                    "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                    "value": "10"
+                },
+                "PreviousTxnID": "E3FE6EA3D48F0C2B639448020EA4F03D4F4F8FFDB243A852A0F59177921B4879",
+                "PreviousTxnLgrSeq": 123,
+                "index": "1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC"
+            }
+        ]
+    })JSON";
 
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
@@ -992,12 +1022,14 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMixOtherObjects)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1031,14 +1063,16 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTReachLimitReturnMarker)
         current = previous;
     }
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        10
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            10
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1080,14 +1114,16 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTReachLimitNoMarker)
     );
     EXPECT_CALL(*backend_, doFetchLedgerObject(current, 30, _)).WillOnce(Return(nftpage11.getSerializer().peekData()));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        11
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            11
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1158,15 +1194,17 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMarker)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        ripple::strHex(marker),
-        std::numeric_limits<uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            ripple::strHex(marker),
+            std::numeric_limits<uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1214,15 +1252,17 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMarkerNoMoreNFT)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        ripple::strHex(ripple::uint256{beast::zero}),
-        std::numeric_limits<uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            ripple::strHex(ripple::uint256{beast::zero}),
+            std::numeric_limits<uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1242,15 +1282,17 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMarkerNotInRange)
     auto const accountKk = ripple::keylet::account(account).key;
     EXPECT_CALL(*backend_, doFetchLedgerObject(accountKk, kMAX_SEQ, _)).WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        kINDEX1,
-        std::numeric_limits<std::uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            kINDEX1,
+            std::numeric_limits<std::uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1275,15 +1317,17 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTMarkerNotExist)
     auto const accountNftMax = ripple::keylet::nftpage_max(account).key;
     EXPECT_CALL(*backend_, doFetchLedgerObject(accountNftMax, kMAX_SEQ, _)).WillOnce(Return(std::nullopt));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        ripple::strHex(accountNftMax),
-        std::numeric_limits<std::uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            ripple::strHex(accountNftMax),
+            std::numeric_limits<std::uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1349,16 +1393,18 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTLimitAdjust)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "marker": "{},{}",
-            "limit": 12
-        }})JSON",
-        kACCOUNT,
-        ripple::strHex(marker),
-        std::numeric_limits<uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "marker": "{},{}",
+                "limit": 12
+            }})JSON",
+            kACCOUNT,
+            ripple::strHex(marker),
+            std::numeric_limits<uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1373,45 +1419,45 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTLimitAdjust)
 TEST_F(RPCAccountObjectsHandlerTest, FilterNFT)
 {
     static constexpr auto kEXPECTED_OUT = R"JSON({
-                                            "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-                                            "ledger_index": 30,
-                                            "validated": true,
-                                            "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                                            "limit": 200,
-                                            "account_objects": [
-                                                {
-                                                    "Flags": 0,
-                                                    "LedgerEntryType": "NFTokenPage",
-                                                    "NFTokens": [
-                                                        {
-                                                            "NFToken": {
-                                                                "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
-                                                                "URI": "7777772E6F6B2E636F6D"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "PreviousPageMin": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC",
-                                                    "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
-                                                    "PreviousTxnLgrSeq": 0,
-                                                    "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9FFFFFFFFFFFFFFFFFFFFFFFF"
-                                                },
-                                                {
-                                                    "Flags": 0,
-                                                    "LedgerEntryType": "NFTokenPage",
-                                                    "NFTokens": [
-                                                        {
-                                                            "NFToken": {
-                                                                "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
-                                                                "URI": "7777772E6F6B2E636F6D"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
-                                                    "PreviousTxnLgrSeq": 0,
-                                                    "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC"
-                                                }
-                                            ]
-                                        })JSON";
+        "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+        "ledger_index": 30,
+        "validated": true,
+        "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "limit": 200,
+        "account_objects": [
+            {
+                "Flags": 0,
+                "LedgerEntryType": "NFTokenPage",
+                "NFTokens": [
+                    {
+                        "NFToken": {
+                            "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
+                            "URI": "7777772E6F6B2E636F6D"
+                        }
+                    }
+                ],
+                "PreviousPageMin": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC",
+                "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
+                "PreviousTxnLgrSeq": 0,
+                "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9FFFFFFFFFFFFFFFFFFFFFFFF"
+            },
+            {
+                "Flags": 0,
+                "LedgerEntryType": "NFTokenPage",
+                "NFTokens": [
+                    {
+                        "NFToken": {
+                            "NFTokenID": "000827103B94ECBB7BF0A0A6ED62B3607801A27B65F4679F4AD1D4850000C0EA",
+                            "URI": "7777772E6F6B2E636F6D"
+                        }
+                    }
+                ],
+                "PreviousTxnID": "0000000000000000000000000000000000000000000000000000000000000000",
+                "PreviousTxnLgrSeq": 0,
+                "index": "4B4E9C06F24296074F7BC48F92A97916C6DC5EA9659B25014D08E1BC983515BC"
+            }
+        ]
+    })JSON";
 
     auto const ledgerHeader = createLedgerHeader(kLEDGER_HASH, kMAX_SEQ);
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
@@ -1445,13 +1491,15 @@ TEST_F(RPCAccountObjectsHandlerTest, FilterNFT)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "nft_page"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "nft_page"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1486,17 +1534,19 @@ TEST_F(RPCAccountObjectsHandlerTest, NFTZeroMarkerNotAffectOtherMarker)
     }
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {},
-            "marker": "{},{}"
-        }})JSON",
-        kACCOUNT,
-        kLIMIT,
-        ripple::strHex(ripple::uint256{beast::zero}),
-        std::numeric_limits<uint32_t>::max()
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {},
+                "marker": "{},{}"
+            }})JSON",
+            kACCOUNT,
+            kLIMIT,
+            ripple::strHex(ripple::uint256{beast::zero}),
+            std::numeric_limits<uint32_t>::max()
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1566,14 +1616,16 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitLessThanMin)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        AccountObjectsHandler::kLIMIT_MIN - 1
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            AccountObjectsHandler::kLIMIT_MIN - 1
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1642,14 +1694,16 @@ TEST_F(RPCAccountObjectsHandlerTest, LimitMoreThanMax)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        AccountObjectsHandler::kLIMIT_MAX + 1
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            AccountObjectsHandler::kLIMIT_MAX + 1
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1684,13 +1738,15 @@ TEST_F(RPCAccountObjectsHandlerTest, TypeFilterMPTIssuanceType)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "mpt_issuance"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "mpt_issuance"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -1733,13 +1789,15 @@ TEST_F(RPCAccountObjectsHandlerTest, TypeFilterMPTokenType)
 
     EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "type": "mptoken"
-        }})JSON",
-        kACCOUNT
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "type": "mptoken"
+            }})JSON",
+            kACCOUNT
+        )
+    );
 
     auto const handler = AnyHandler{AccountObjectsHandler{backend_}};
     runSpawn([&](auto yield) {

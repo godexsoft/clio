@@ -1,7 +1,11 @@
-FROM ghcr.io/xrplf/clio-gcc:12.3.0 AS clio-gcc
-FROM ghcr.io/xrplf/clio-tools:latest AS clio-tools
+ARG GHCR_REPO=invalid
+ARG CLANG_MAJOR_VERSION=invalid
+ARG GCC_VERSION=invalid
 
-FROM ghcr.io/xrplf/clio-clang:16
+FROM ${GHCR_REPO}/clio-gcc:${GCC_VERSION} AS clio-gcc
+FROM ${GHCR_REPO}/clio-tools:latest AS clio-tools
+
+FROM ${GHCR_REPO}/clio-clang:${CLANG_MAJOR_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -16,76 +20,102 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 USER root
 WORKDIR /root
 
-ARG LLVM_TOOLS_VERSION=19
-
-# Add repositories
+# Install common tools and dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
         curl \
+        dpkg-dev \
+        file \
+        git \
+        git-lfs \
         gnupg \
+        graphviz \
+        jq \
+        # libgmp, libmpfr and libncurses are gdb dependencies
+        libgmp-dev \
+        libmpfr-dev \
+        libncurses-dev \
+        make \
+        ninja-build \
         wget \
+        zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python tools
+ARG PYTHON_VERSION=3.13
+
+RUN add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends --no-install-suggests \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-venv \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${LLVM_TOOLS_VERSION} main" >> /etc/apt/sources.list \
+    && curl -sS https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
+
+# Create a virtual environment for python tools
+RUN python${PYTHON_VERSION} -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install -q --no-cache-dir \
+        cmake \
+        conan==2.20.1 \
+        gcovr \
+        pre-commit
+
+# Install LLVM tools
+ARG LLVM_TOOLS_VERSION=20
+
+RUN echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${LLVM_TOOLS_VERSION} main" >> /etc/apt/sources.list \
     && wget --progress=dot:giga -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-# Install packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
         clang-tidy-${LLVM_TOOLS_VERSION} \
         clang-tools-${LLVM_TOOLS_VERSION} \
-        git \
-        git-lfs \
-        graphviz \
-        jq \
-        make \
-        ninja-build \
-        python3 \
-        python3-pip \
-        zip \
-    && pip3 install -q --upgrade --no-cache-dir pip \
-    && pip3 install -q --no-cache-dir \
-        cmake==3.31.6 \
-        conan==2.17.0 \
-        gcovr \
-        pre-commit \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install gcc-12 and make ldconfig aware of the new libstdc++ location (for gcc)
+ARG GCC_MAJOR_VERSION=invalid
+
+# Install custom-built gcc and make ldconfig aware of the new libstdc++ location (for gcc)
 # Note: Clang is using libc++ instead
-COPY --from=clio-gcc /gcc12.deb /
+COPY --from=clio-gcc /gcc${GCC_MAJOR_VERSION}.deb /
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
         binutils \
         libc6-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && dpkg -i /gcc12.deb \
-    && rm -rf /gcc12.deb \
+    && dpkg -i /gcc${GCC_MAJOR_VERSION}.deb \
+    && rm -rf /gcc${GCC_MAJOR_VERSION}.deb \
     && ldconfig
 
-# Rewire to use gcc-12 as default compiler
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 \
-    && update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-12 100 \
-    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 \
-    && update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-12 100 \
-    && update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-12 100 \
-    && update-alternatives --install /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-12 100 \
-    && update-alternatives --install /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-12 100
+# Rewire to use our custom-built gcc as default compiler
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_MAJOR_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_MAJOR_VERSION} 100
 
 COPY --from=clio-tools \
+    /usr/local/bin/mold \
+    /usr/local/bin/ld.mold \
     /usr/local/bin/ccache \
     /usr/local/bin/doxygen \
     /usr/local/bin/ClangBuildAnalyzer \
     /usr/local/bin/git-cliff \
     /usr/local/bin/gh \
+    /usr/local/bin/gdb \
     /usr/local/bin/
 
 WORKDIR /root
 
 # Setup conan
-RUN conan remote add --index 0 ripple http://18.143.149.228:8081/artifactory/api/conan/dev
+RUN conan remote add --index 0 xrplf https://conan.ripplex.io
 
 WORKDIR /root/.conan2
 COPY conan/global.conf ./global.conf

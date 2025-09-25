@@ -56,6 +56,7 @@ class TaskManager : public TaskManagerInterface {
     std::vector<util::async::AnyOperation<void>> extractors_;
     std::vector<util::async::AnyOperation<void>> loaders_;
 
+    std::atomic_bool running_ = false;
     util::Logger log_{"ETL"};
 
 public:
@@ -69,6 +70,13 @@ public:
     );
 
     ~TaskManager() override;
+
+    TaskManager(TaskManager const&) = delete;
+    TaskManager(TaskManager&&) = delete;
+    TaskManager&
+    operator=(TaskManager const&) = delete;
+    TaskManager&
+    operator=(TaskManager&&) = delete;
 
     void
     run(std::size_t numExtractors) override;

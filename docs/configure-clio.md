@@ -5,7 +5,6 @@
 Clio needs access to a `rippled` server in order to work. The following configurations are required for Clio and `rippled` to communicate:
 
 1. In the Clio config file, provide the following:
-
    - The IP of the `rippled` server
 
    - The port on which `rippled` is accepting unencrypted WebSocket connections
@@ -13,7 +12,6 @@ Clio needs access to a `rippled` server in order to work. The following configur
    - The port on which `rippled` is handling gRPC requests
 
 2. In the `rippled` config file, you need to open:
-
    - A port to accept unencrypted WebSocket connections
 
    - A port to handle gRPC requests, with the IP(s) of Clio specified in the `secure_gateway` entry
@@ -90,13 +88,15 @@ Exactly equal password gains admin rights for the request or a websocket connect
 Clio can cache requests to ETL sources to reduce the load on the ETL source.
 Only following commands are cached: `server_info`, `server_state`, `server_definitions`, `fee`, `ledger_closed`.
 By default the forwarding cache is off.
-To enable the caching for a source, `forwarding_cache_timeout` value should be added to the configuration file, e.g.:
+To enable the caching for a source, `forwarding.cache_timeout` value should be added to the configuration file, e.g.:
 
 ```json
-"forwarding_cache_timeout": 0.250,
+"forwarding": {
+    "cache_timeout": 0.250,
+}
 ```
 
-`forwarding_cache_timeout` defines for how long (in seconds) a cache entry will be valid after being placed into the cache.
+`forwarding.cache_timeout` defines for how long (in seconds) a cache entry will be valid after being placed into the cache.
 Zero value turns off the cache feature.
 
 ## Graceful shutdown (not fully implemented yet)

@@ -20,10 +20,12 @@
 #include "web/ng/Server.hpp"
 
 #include "util/Assert.hpp"
+#include "util/Spawn.hpp"
 #include "util/Taggable.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ObjectView.hpp"
 #include "util/log/Logger.hpp"
+#include "web/ProxyIpResolver.hpp"
 #include "web/ng/Connection.hpp"
 #include "web/ng/MessageHandler.hpp"
 #include "web/ng/ProcessingPolicy.hpp"
@@ -44,7 +46,7 @@
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/system/system_error.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <chrono>
 #include <cstddef>
@@ -145,9 +147,9 @@ makeConnection(
             tagDecoratorFactory
         );
         sslConnection->setTimeout(std::chrono::seconds{10});
-        auto const maybeError = sslConnection->sslHandshake(yield);
-        if (maybeError.has_value())
-            return std::unexpected{fmt::format("SSL handshake error: {}", maybeError->message())};
+        auto const expectedSuccess = sslConnection->sslHandshake(yield);
+        if (not expectedSuccess.has_value())
+            return std::unexpected{fmt::format("SSL handshake error: {}", expectedSuccess.error().message())};
 
         connection = std::move(sslConnection);
     } else {
@@ -187,7 +189,8 @@ tryUpgradeConnection(
         if (expectedUpgradedConnection.has_value())
             return std::move(expectedUpgradedConnection).value();
 
-        return std::unexpected{fmt::format("Error upgrading connection: {}", expectedUpgradedConnection.error().what())
+        return std::unexpected{
+            fmt::format("Error upgrading connection: {}", expectedUpgradedConnection.error().what())
         };
     }
 
@@ -203,16 +206,16 @@ Server::Server(
     ProcessingPolicy processingPolicy,
     std::optional<size_t> parallelRequestLimit,
     util::TagDecoratorFactory tagDecoratorFactory,
+    ProxyIpResolver proxyIpResolver,
     std::optional<size_t> maxSubscriptionSendQueueSize,
-    OnConnectCheck onConnectCheck,
-    OnDisconnectHook onDisconnectHook
+    Hooks hooks
 )
     : ctx_{ctx}
     , sslContext_{std::move(sslContext)}
     , tagDecoratorFactory_{tagDecoratorFactory}
-    , connectionHandler_{processingPolicy, parallelRequestLimit, tagDecoratorFactory_, maxSubscriptionSendQueueSize, std::move(onDisconnectHook)}
+    , connectionHandler_{processingPolicy, parallelRequestLimit, tagDecoratorFactory_, maxSubscriptionSendQueueSize, std::move(proxyIpResolver), std::move(hooks.onDisconnectHook), std::move(hooks.onIpChangeHook)}
     , endpoint_{std::move(endpoint)}
-    , onConnectCheck_{std::move(onConnectCheck)}
+    , onConnectCheck_{std::move(hooks.onConnectCheck)}
 {
 }
 
@@ -246,29 +249,28 @@ Server::run()
         return std::move(acceptor).error();
 
     running_ = true;
-    boost::asio::spawn(
-        ctx_.get(),
-        [this, acceptor = std::move(acceptor).value()](boost::asio::yield_context yield) mutable {
-            while (true) {
-                boost::beast::error_code errorCode;
-                boost::asio::ip::tcp::socket socket{ctx_.get().get_executor()};
+    util::spawn(ctx_.get(), [this, acceptor = std::move(acceptor).value()](boost::asio::yield_context yield) mutable {
+        while (true) {
+            boost::beast::error_code errorCode;
+            boost::asio::ip::tcp::socket socket{ctx_.get().get_executor()};
 
-                acceptor.async_accept(socket, yield[errorCode]);
-                LOG(log_.trace()) << "Accepted a new connection";
-                if (errorCode) {
-                    LOG(log_.debug()) << "Error accepting a connection: " << errorCode.what();
-                    continue;
-                }
-                boost::asio::spawn(
-                    ctx_.get(),
-                    [this, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
-                        handleConnection(std::move(socket), yield);
-                    },
-                    boost::asio::detached
-                );
+            acceptor.async_accept(socket, yield[errorCode]);
+            LOG(log_.trace()) << "Accepted a new connection";
+            if (errorCode) {
+                LOG(log_.debug()) << "Error accepting a connection: " << errorCode.what();
+                continue;
             }
+
+            // Note: This was desigen to use `boost::asio::detached`
+            boost::asio::spawn(
+                ctx_.get(),
+                [this, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
+                    handleConnection(std::move(socket), yield);
+                },
+                boost::asio::detached
+            );
         }
-    );
+    });
     return std::nullopt;
 }
 
@@ -313,12 +315,9 @@ Server::handleConnection(boost::asio::ip::tcp::socket socket, boost::asio::yield
     LOG(log_.trace()) << connectionExpected.value()->tag() << "Connection created";
 
     if (connectionHandler_.isStopping()) {
-        boost::asio::spawn(
-            ctx_.get(),
-            [connection = std::move(connectionExpected).value()](boost::asio::yield_context yield) {
-                web::ng::impl::ConnectionHandler::stopConnection(*connection, yield);
-            }
-        );
+        util::spawn(ctx_.get(), [connection = std::move(connectionExpected).value()](boost::asio::yield_context yield) {
+            web::ng::impl::ConnectionHandler::stopConnection(*connection, yield);
+        });
         return;
     }
 
@@ -328,9 +327,8 @@ Server::handleConnection(boost::asio::ip::tcp::socket socket, boost::asio::yield
         return;
     }
 
-    boost::asio::spawn(
-        ctx_.get(),
-        [this, connection = std::move(connection).value()](boost::asio::yield_context yield) mutable {
+    util::spawn(
+        ctx_.get(), [this, connection = std::move(connection).value()](boost::asio::yield_context yield) mutable {
             connectionHandler_.processConnection(std::move(connection), yield);
         }
     );
@@ -340,6 +338,7 @@ std::expected<Server, std::string>
 makeServer(
     util::config::ClioConfigDefinition const& config,
     Server::OnConnectCheck onConnectCheck,
+    Server::OnIpChangeHook onIpChangeHook,
     Server::OnDisconnectHook onDisconnectHook,
     boost::asio::io_context& context
 )
@@ -368,6 +367,8 @@ makeServer(
 
     auto const maxSubscriptionSendQueueSize = serverConfig.get<size_t>("ws_max_sending_queue_size");
 
+    auto proxyIpResolver = ProxyIpResolver::fromConfig(config);
+
     return std::expected<Server, std::string>{
         std::in_place,
         context,
@@ -376,9 +377,13 @@ makeServer(
         processingPolicy,
         parallelRequestLimit,
         util::TagDecoratorFactory(config),
+        std::move(proxyIpResolver),
         maxSubscriptionSendQueueSize,
-        std::move(onConnectCheck),
-        std::move(onDisconnectHook)
+        Server::Hooks{
+            .onConnectCheck = std::move(onConnectCheck),
+            .onIpChangeHook = std::move(onIpChangeHook),
+            .onDisconnectHook = std::move(onDisconnectHook)
+        }
     };
 }
 

@@ -30,7 +30,7 @@
 #include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/protocol/AccountID.h>
@@ -49,7 +49,7 @@ using namespace rpc::modifiers;
 
 namespace json = boost::json;
 
-class RPCBaseTest : public NoLoggerFixture {};
+class RPCBaseTest : public virtual ::testing::Test {};
 
 TEST_F(RPCBaseTest, CheckType)
 {
@@ -621,8 +621,7 @@ TEST_F(RPCBaseTest, SubscribeStreamValidator)
     auto const spec = RpcSpec{{"streams", CustomValidators::subscribeStreamValidator}};
     auto passingInput = json::parse(
         R"JSON({
-            "streams":
-            [
+            "streams": [
                 "ledger",
                 "transactions_proposed",
                 "validations",

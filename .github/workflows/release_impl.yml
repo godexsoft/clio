@@ -8,6 +8,11 @@ on:
         required: true
         type: boolean
 
+      prerelease:
+        description: "Create a prerelease"
+        required: true
+        type: boolean
+
       title:
         description: "Release title"
         required: true
@@ -25,19 +30,19 @@ on:
 
       generate_changelog:
         description: "Generate changelog"
-        required: false
+        required: true
         type: boolean
 
       draft:
         description: "Create a draft release"
-        required: false
+        required: true
         type: boolean
 
 jobs:
   release:
     runs-on: heavy
     container:
-      image: ghcr.io/xrplf/clio-ci:latest
+      image: ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
@@ -51,11 +56,11 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare runner
-        uses: ./.github/actions/prepare_runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@7951b682e5a2973b28b0719a72f01fc4b0d0c34f
         with:
           disable_ccache: true
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: release_artifacts
           pattern: clio_server_*
@@ -63,33 +68,23 @@ jobs:
       - name: Create release notes
         shell: bash
         run: |
-          printf '%s\n' "${{ inputs.header }}" > "${RUNNER_TEMP}/release_notes.md"
+          echo "# Release notes" > "${RUNNER_TEMP}/release_notes.md"
+          echo "" >> "${RUNNER_TEMP}/release_notes.md"
+          printf '%s\n' "${{ inputs.header }}" >> "${RUNNER_TEMP}/release_notes.md"
 
       - name: Generate changelog
         shell: bash
         if: ${{ inputs.generate_changelog }}
         run: |
-          LAST_TAG=$(gh release view --json tagName -q .tagName)
-          LAST_TAG_COMMIT=$(git rev-parse $LAST_TAG)
-          BASE_COMMIT=$(git merge-base HEAD $LAST_TAG_COMMIT)
-          git-cliff "${BASE_COMMIT}..HEAD" --ignore-tags "nightly|-b"
+          LAST_TAG="$(gh release view --json tagName -q .tagName --repo XRPLF/clio)"
+          LAST_TAG_COMMIT="$(git rev-parse $LAST_TAG)"
+          BASE_COMMIT="$(git merge-base HEAD $LAST_TAG_COMMIT)"
+          git-cliff "${BASE_COMMIT}..HEAD" --ignore-tags "nightly|-b|-rc"
           cat CHANGELOG.md >> "${RUNNER_TEMP}/release_notes.md"
 
       - name: Prepare release artifacts
         shell: bash
         run: .github/scripts/prepare-release-artifacts.sh release_artifacts
-
-      - name: Append sha256 checksums
-        shell: bash
-        working-directory: release_artifacts
-        run: |
-          {
-            echo '## SHA256 checksums'
-            echo
-            echo '```'
-            cat *.sha256sum
-            echo '```'
-          } >> "${RUNNER_TEMP}/release_notes.md"
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
@@ -108,10 +103,10 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         run: |
-          gh release create ${{ inputs.version }} \
-            ${{ inputs.overwrite_release && '--prerelease' || '' }} \
+          gh release create "${{ inputs.version }}" \
+            ${{ inputs.prerelease && '--prerelease' || '' }} \
             --title "${{ inputs.title }}" \
-            --target $GITHUB_SHA \
+            --target "${GITHUB_SHA}" \
             ${{ inputs.draft && '--draft' || '' }} \
             --notes-file "${RUNNER_TEMP}/release_notes.md" \
             ./release_artifacts/clio_server*

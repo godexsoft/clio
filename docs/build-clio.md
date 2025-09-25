@@ -6,16 +6,22 @@
 ## Minimum Requirements
 
 - [Python 3.7](https://www.python.org/downloads/)
-- [Conan 2.17.0](https://conan.io/downloads.html)
-- [CMake 3.20, <4.0](https://cmake.org/download/)
+- [Conan 2.20.1](https://conan.io/downloads.html)
+- [CMake 3.20](https://cmake.org/download/)
 - [**Optional**] [GCovr](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html): needed for code coverage generation
 - [**Optional**] [CCache](https://ccache.dev/): speeds up compilation if you are going to compile Clio often
 
+We use our Docker image `ghcr.io/XRPLF/clio-ci` to build `Clio`, see [Building Clio with Docker](#building-clio-with-docker).
+You can find information about exact compiler versions and tools in the [image's README](https://github.com/XRPLF/clio/blob/develop/docker/ci/README.md).
+
+The following compiler version are guaranteed to work.
+Any compiler with lower version may not be able to build Clio:
+
 | Compiler    | Version |
 | ----------- | ------- |
-| GCC         | 12.3    |
-| Clang       | 16      |
-| Apple Clang | 15      |
+| GCC         | 15.2    |
+| Clang       | 19      |
+| Apple Clang | 17      |
 
 ### Conan Configuration
 
@@ -35,7 +41,7 @@ The default profile is the file in `~/.conan2/profiles/default`.
 
 Here are some examples of possible profiles:
 
-**Mac apple-clang 16 example**:
+**Mac apple-clang 17 example**:
 
 ```text
 [settings]
@@ -44,7 +50,7 @@ build_type=Release
 compiler=apple-clang
 compiler.cppstd=20
 compiler.libcxx=libc++
-compiler.version=16
+compiler.version=17
 os=Macos
 
 [conf]
@@ -64,7 +70,7 @@ compiler.version=12
 os=Linux
 
 [conf]
-tools.build:compiler_executables={'c': '/usr/bin/gcc-12', 'cpp': '/usr/bin/g++-12'}
+tools.build:compiler_executables={"c": "/usr/bin/gcc-12", "cpp": "/usr/bin/g++-12"}
 ```
 
 > [!NOTE]
@@ -72,12 +78,11 @@ tools.build:compiler_executables={'c': '/usr/bin/gcc-12', 'cpp': '/usr/bin/g++-1
 
 #### global.conf file
 
-Add the following to the `~/.conan2/global.conf` file:
+To increase the speed of downloading and uploading packages, add the following to the `~/.conan2/global.conf` file:
 
 ```text
 core.download:parallel={{os.cpu_count()}}
 core.upload:parallel={{os.cpu_count()}}
-tools.info.package_id:confs = ["tools.build:cflags", "tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags"]
 ```
 
 #### Artifactory
@@ -85,7 +90,7 @@ tools.info.package_id:confs = ["tools.build:cflags", "tools.build:cxxflags", "to
 Make sure artifactory is setup with Conan.
 
 ```sh
-conan remote add --index 0 ripple http://18.143.149.228:8081/artifactory/api/conan/dev
+conan remote add --index 0 xrplf https://conan.ripplex.io
 ```
 
 Now you should be able to download the prebuilt dependencies (including `xrpl` package) on supported platforms.
@@ -99,78 +104,99 @@ It is implicitly used when running `conan` commands, you don't need to specify i
 
 You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
 
-To do that, run the following command in the repository root:
+> [!NOTE]
+> Conan uses local cache by default when creating a lockfile.
+>
+> To ensure, that lockfile creation works the same way on all developer machines, you should clear the local cache before creating a new lockfile.
+
+To create a new lockfile, run the following commands in the repository root:
 
 ```bash
-conan lock create . -o '&:tests=True' -o '&:benchmark=True'
+conan remove '*' --confirm
+rm conan.lock
+# This ensure that xrplf remote is the first to be consulted
+conan remote add --force --index 0 xrplf https://conan.ripplex.io
+conan lock create .
 ```
+
+> [!NOTE]
+> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
 
 ## Building Clio
 
-Navigate to Clio's root directory and run:
+1. Navigate to Clio's root directory and run:
 
-```sh
-mkdir build && cd build
-# You can also specify profile explicitly by adding `--profile:all <PROFILE_NAME>`
-conan install .. --output-folder . --build missing --settings build_type=Release -o '&:tests=True'
-# You can also add -GNinja to use Ninja build system instead of Make
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --parallel 8 # or without the number if you feel extra adventurous
-```
+   ```sh
+   mkdir build && cd build
+   ```
 
-> [!TIP]
-> You can omit the `-o '&:tests=True'` if you don't want to build `clio_tests`.
+2. Install dependencies through conan.
 
-If successful, `conan install` will find the required packages and `cmake` will do the rest. You should see `clio_server` and `clio_tests` in the `build` directory (the current directory).
+   ```sh
+   conan install .. --output-folder . --build missing --settings build_type=Release
+   ```
 
-> [!TIP]
-> To generate a Code Coverage report, include `-o '&:coverage=True'` in the `conan install` command above, along with `-o '&:tests=True'` to enable tests.
-> After running the `cmake` commands, execute `make clio_tests-ccov`.
-> The coverage report will be found at `clio_tests-llvm-cov/index.html`.
+   > You can add `--profile:all <PROFILE_NAME>` to choose a specific conan profile.
 
-<!-- markdownlint-disable-line MD028 -->
+3. Configure and generate build files with CMake.
+
+   ```sh
+   cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+   ```
+
+   > You can add `-GNinja` to use the Ninja build system (instead of Make).
+
+4. Now, you can build all targets or specific ones:
+
+   ```sh
+   # builds all targets
+   cmake --build . --parallel 8
+   # builds only clio_server target
+   cmake --build . --parallel 8 --target clio_server
+   ```
+
+   You should see `clio_server` and `clio_tests` in the current directory.
 
 > [!NOTE]
 > If you've built Clio before and the build is now failing, it's likely due to updated dependencies. Try deleting the build folder and then rerunning the Conan and CMake commands mentioned above.
+
+### CMake options
+
+There are several CMake options you can use to customize the build:
+
+| CMake Option          | Default | CMake Target                                             | Description                           |
+| --------------------- | ------- | -------------------------------------------------------- | ------------------------------------- |
+| `-Dcoverage`          | OFF     | `clio_tests-ccov`                                        | Enables code coverage generation      |
+| `-Dtests`             | OFF     | `clio_tests`                                             | Enables unit tests                    |
+| `-Dintegration_tests` | OFF     | `clio_integration_tests`                                 | Enables integration tests             |
+| `-Dbenchmark`         | OFF     | `clio_benchmark`                                         | Enables benchmark executable          |
+| `-Ddocs`              | OFF     | `docs`                                                   | Enables API documentation generation  |
+| `-Dlint`              | OFF     | See [#clang-tidy](#using-clang-tidy-for-static-analysis) | Enables `clang-tidy` static analysis  |
+| `-Dsan`               | N/A     | N/A                                                      | Enables Sanitizer (asan, tsan, ubsan) |
+| `-Dpackage`           | OFF     | N/A                                                      | Creates a debian package              |
 
 ### Generating API docs for Clio
 
 The API documentation for Clio is generated by [Doxygen](https://www.doxygen.nl/index.html). If you want to generate the API documentation when building Clio, make sure to install Doxygen 1.12.0 on your system.
 
-To generate the API docs:
+To generate the API docs, please use CMake option `-Ddocs=ON` as described above and build the `docs` target.
 
-1. First, include `-o '&:docs=True'` in the conan install command. For example:
+To view the generated files, go to `build/docs/html`.
+Open the `index.html` file in your browser to see the documentation pages.
 
-   ```sh
-   mkdir build && cd build
-   conan install .. --output-folder . --build missing --settings build_type=Release -o '&:tests=True' -o '&:docs=True'
-   ```
-
-2. Once that has completed successfully, run the `cmake` command and add the `--target docs` option:
-
-   ```sh
-   cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-   cmake --build . --parallel 8 --target docs
-   ```
-
-3. Go to `build/docs/html` to view the generated files.
-
-   Open the `index.html` file in your browser to see the documentation pages.
-
-   ![API index page](./img/doxygen-docs-output.png "API index page")
+![API index page](./img/doxygen-docs-output.png "API index page")
 
 ## Building Clio with Docker
 
 It is also possible to build Clio using [Docker](https://www.docker.com/) if you don't want to install all the dependencies on your machine.
 
 ```sh
-docker run -it ghcr.io/xrplf/clio-ci:latest
+docker run -it ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d
 git clone https://github.com/XRPLF/clio
-mkdir build && cd build
-conan install .. --output-folder . --build missing --settings build_type=Release -o '&:tests=True'
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --parallel 8 # or without the number if you feel extra adventurous
+cd clio
 ```
+
+Follow the same steps in the [Building Clio](#building-clio) section. You can use `--profile:all gcc` or `--profile:all clang` with the `conan install` command to choose the desired compiler.
 
 ## Developing against `rippled` in standalone mode
 
@@ -223,18 +249,16 @@ Sometimes, during development, you need to build against a custom version of `li
 
 ## Using `clang-tidy` for static analysis
 
-The minimum [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) version required is 19.0.
-
 Clang-tidy can be run by CMake when building the project.
-To achieve this, you just need to provide the option `-o '&:lint=True'` for the `conan install` command:
+To achieve this, you just need to provide the option `-Dlint=ON` when generating CMake files:
 
 ```sh
-conan install .. --output-folder . --build missing --settings build_type=Release -o '&:tests=True' -o '&:lint=True'
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dlint=ON ..
 ```
 
 By default CMake will try to find `clang-tidy` automatically in your system.
 To force CMake to use your desired binary, set the `CLIO_CLANG_TIDY_BIN` environment variable to the path of the `clang-tidy` binary. For example:
 
 ```sh
-export CLIO_CLANG_TIDY_BIN=/opt/homebrew/opt/llvm@19/bin/clang-tidy
+export CLIO_CLANG_TIDY_BIN=/opt/homebrew/opt/llvm/bin/clang-tidy
 ```

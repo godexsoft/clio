@@ -39,13 +39,14 @@
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/beast/websocket/stream_base.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <chrono>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace http = boost::beast::http;
@@ -64,13 +65,16 @@ WebSocketSyncClient::connect(std::string const& host, std::string const& port, s
     // See https://tools.ietf.org/html/rfc7230#section-5.4
     auto const hostPort = host + ':' + std::to_string(ep.port());
 
-    ws_.set_option(boost::beast::websocket::stream_base::decorator([additionalHeaders = std::move(additionalHeaders
-                                                                    )](boost::beast::websocket::request_type& req) {
-        req.set(http::field::user_agent, std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-coro");
-        for (auto const& header : additionalHeaders) {
-            req.set(header.name, header.value);
-        }
-    }));
+    ws_.set_option(
+        boost::beast::websocket::stream_base::decorator(
+            [additionalHeaders = std::move(additionalHeaders)](boost::beast::websocket::request_type& req) {
+                req.set(http::field::user_agent, std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-coro");
+                for (auto const& header : additionalHeaders) {
+                    std::visit([&header, &req](auto const& name) { req.set(name, header.value); }, header.name);
+                }
+            }
+        )
+    );
 
     ws_.handshake(hostPort, "/");
 }
@@ -133,7 +137,7 @@ WebSocketAsyncClient::WebSocketAsyncClient(boost::asio::io_context& ioContext) :
 {
 }
 
-std::optional<boost::system::error_code>
+std::expected<void, boost::system::error_code>
 WebSocketAsyncClient::connect(
     std::string const& host,
     std::string const& port,
@@ -149,7 +153,7 @@ WebSocketAsyncClient::connect(
     boost::beast::get_lowest_layer(stream_).expires_after(timeout);
     stream_.next_layer().async_connect(results, yield[error]);
     if (error)
-        return error;
+        return std::unexpected{error};
 
     boost::beast::websocket::stream_base::timeout wsTimeout =
         boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::client);
@@ -157,21 +161,24 @@ WebSocketAsyncClient::connect(
     stream_.set_option(wsTimeout);
     boost::beast::get_lowest_layer(stream_).expires_never();
 
-    stream_.set_option(boost::beast::websocket::stream_base::decorator([additionalHeaders = std::move(additionalHeaders
-                                                                        )](boost::beast::websocket::request_type& req) {
-        for (auto const& header : additionalHeaders) {
-            req.set(header.name, header.value);
-        }
-    }));
+    stream_.set_option(
+        boost::beast::websocket::stream_base::decorator(
+            [additionalHeaders = std::move(additionalHeaders)](boost::beast::websocket::request_type& req) {
+                for (auto const& header : additionalHeaders) {
+                    std::visit([&header, &req](auto const& name) { req.set(name, header.value); }, header.name);
+                }
+            }
+        )
+    );
     stream_.async_handshake(fmt::format("{}:{}", host, port), "/", yield[error]);
 
     if (error)
-        return error;
+        return std::unexpected{error};
 
-    return std::nullopt;
+    return {};
 }
 
-std::optional<boost::system::error_code>
+std::expected<void, boost::system::error_code>
 WebSocketAsyncClient::send(
     boost::asio::yield_context yield,
     std::string_view message,
@@ -183,8 +190,8 @@ WebSocketAsyncClient::send(
     );
 
     if (error)
-        return error;
-    return std::nullopt;
+        return std::unexpected{error};
+    return {};
 }
 
 std::expected<std::string, boost::system::error_code>

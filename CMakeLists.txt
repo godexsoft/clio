@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-set(CMAKE_PROJECT_INCLUDE_BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ClioVersion.cmake)
-
 project(clio VERSION ${CLIO_VERSION} HOMEPAGE_URL "https://github.com/XRPLF/clio"
         DESCRIPTION "An XRP Ledger API Server"
 )
@@ -13,7 +11,7 @@ option(integration_tests "Build integration tests" FALSE)
 option(benchmark "Build benchmarks" FALSE)
 option(docs "Generate doxygen docs" FALSE)
 option(coverage "Build test coverage report" FALSE)
-option(packaging "Create distribution packages" FALSE)
+option(package "Create distribution packages" FALSE)
 option(lint "Run clang-tidy checks during compilation" FALSE)
 option(static "Statically linked Clio" FALSE)
 option(snapshot "Build snapshot tool" FALSE)
@@ -31,6 +29,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include(Ccache)
 include(CheckCXXCompilerFlag)
 include(ClangTidy)
+include(Linker)
 
 add_library(clio_options INTERFACE)
 target_compile_features(clio_options INTERFACE cxx_std_23) # Clio needs c++23 but deps can remain c++20 for now
@@ -38,11 +37,6 @@ target_include_directories(clio_options INTERFACE ${CMAKE_SOURCE_DIR}/src)
 
 if (verbose)
   set(CMAKE_VERBOSE_MAKEFILE TRUE)
-endif ()
-
-if (packaging)
-  add_definitions(-DPKG=1)
-  target_compile_definitions(clio_options INTERFACE PKG=1)
 endif ()
 
 # Clio tweaks and checks
@@ -59,6 +53,7 @@ include(deps/Threads)
 include(deps/libfmt)
 include(deps/cassandra)
 include(deps/libbacktrace)
+include(deps/spdlog)
 
 add_subdirectory(src)
 add_subdirectory(tests)
@@ -70,15 +65,17 @@ endif ()
 # Enable selected sanitizer if enabled via `san`
 if (san)
   set(SUPPORTED_SANITIZERS "address" "thread" "memory" "undefined")
-  list(FIND SUPPORTED_SANITIZERS "${san}" INDEX)
-  if (INDEX EQUAL -1)
+  if (NOT san IN_LIST SUPPORTED_SANITIZERS)
     message(FATAL_ERROR "Error: Unsupported sanitizer '${san}'. Supported values are: ${SUPPORTED_SANITIZERS}.")
   endif ()
 
-  target_compile_options(
-    clio_options INTERFACE # Sanitizers recommend minimum of -O1 for reasonable performance
-                           $<$<CONFIG:Debug>:-O1> ${SAN_FLAG} -fno-omit-frame-pointer
-  )
+  # Sanitizers recommend minimum of -O1 for reasonable performance so we enable it for debug builds
+  set(SAN_OPTIMIZATION_FLAG "")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(SAN_OPTIMIZATION_FLAG -O1)
+  endif ()
+  target_compile_options(clio_options INTERFACE ${SAN_OPTIMIZATION_FLAG} ${SAN_FLAG} -fno-omit-frame-pointer)
+
   target_compile_definitions(
     clio_options INTERFACE $<$<STREQUAL:${san},address>:SANITIZER=ASAN> $<$<STREQUAL:${san},thread>:SANITIZER=TSAN>
                            $<$<STREQUAL:${san},memory>:SANITIZER=MSAN> $<$<STREQUAL:${san},undefined>:SANITIZER=UBSAN>
@@ -92,8 +89,8 @@ if (docs)
 endif ()
 
 include(install/install)
-if (packaging)
-  include(cmake/packaging.cmake) # This file exists only in build runner
+if (package)
+  include(ClioPackage)
 endif ()
 
 if (snapshot)

@@ -31,7 +31,7 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -55,7 +55,7 @@
 namespace rpc {
 
 NoRippleCheckHandler::Result
-NoRippleCheckHandler::process(NoRippleCheckHandler::Input input, Context const& ctx) const
+NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context const& ctx) const
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NoRippleCheck's ledger range must be available");

@@ -26,6 +26,7 @@
 #include "web/ng/Request.hpp"
 #include "web/ng/Response.hpp"
 #include "web/ng/impl/Concepts.hpp"
+#include "web/ng/impl/SendingQueue.hpp"
 #include "web/ng/impl/WsConnection.hpp"
 
 #include <boost/asio/buffer.hpp>
@@ -61,7 +62,7 @@ public:
     virtual std::expected<ConnectionPtr, Error>
     upgrade(util::TagDecoratorFactory const& tagDecoratorFactory, boost::asio::yield_context yield) = 0;
 
-    virtual std::optional<Error>
+    virtual std::expected<void, Error>
     sendRaw(
         boost::beast::http::response<boost::beast::http::string_body> response,
         boost::asio::yield_context yield
@@ -75,6 +76,10 @@ class HttpConnection : public UpgradableConnection {
     StreamType stream_;
     std::optional<boost::beast::http::request<boost::beast::http::string_body>> request_;
     std::chrono::steady_clock::duration timeout_{kDEFAULT_TIMEOUT};
+
+    using MessageType = boost::beast::http::response<boost::beast::http::string_body>;
+    SendingQueue<MessageType> sendingQueue_;
+
     bool closed_{false};
 
 public:
@@ -85,7 +90,12 @@ public:
         util::TagDecoratorFactory const& tagDecoratorFactory
     )
         requires IsTcpStream<StreamType>
-        : UpgradableConnection(std::move(ip), std::move(buffer), tagDecoratorFactory), stream_{std::move(socket)}
+        : UpgradableConnection(std::move(ip), std::move(buffer), tagDecoratorFactory)
+        , stream_{std::move(socket)}
+        , sendingQueue_([this](MessageType const& message, auto&& yield) {
+            boost::beast::get_lowest_layer(stream_).expires_after(timeout_);
+            boost::beast::http::async_write(stream_, message, yield);
+        })
     {
     }
 
@@ -99,10 +109,21 @@ public:
         requires IsSslTcpStream<StreamType>
         : UpgradableConnection(std::move(ip), std::move(buffer), tagDecoratorFactory)
         , stream_{std::move(socket), sslCtx}
+        , sendingQueue_([this](MessageType const& message, auto&& yield) {
+            boost::beast::get_lowest_layer(stream_).expires_after(timeout_);
+            boost::beast::http::async_write(stream_, message, yield);
+        })
     {
     }
 
-    std::optional<Error>
+    HttpConnection(HttpConnection&& other) = delete;
+    HttpConnection&
+    operator=(HttpConnection&& other) = delete;
+    HttpConnection(HttpConnection const& other) = delete;
+    HttpConnection&
+    operator=(HttpConnection const& other) = delete;
+
+    std::expected<void, Error>
     sslHandshake(boost::asio::yield_context yield)
         requires IsSslTcpStream<StreamType>
     {
@@ -111,11 +132,11 @@ public:
         auto const bytesUsed =
             stream_.async_handshake(boost::asio::ssl::stream_base::server, buffer_.cdata(), yield[error]);
         if (error)
-            return error;
+            return std::unexpected{error};
 
         buffer_.consume(bytesUsed);
 
-        return std::nullopt;
+        return {};
     }
 
     bool
@@ -124,16 +145,13 @@ public:
         return false;
     }
 
-    std::optional<Error>
-    sendRaw(boost::beast::http::response<boost::beast::http::string_body> response, boost::asio::yield_context yield)
-        override
+    std::expected<void, Error>
+    sendRaw(
+        boost::beast::http::response<boost::beast::http::string_body> response,
+        boost::asio::yield_context yield
+    ) override
     {
-        boost::system::error_code error;
-        boost::beast::get_lowest_layer(stream_).expires_after(timeout_);
-        boost::beast::http::async_write(stream_, response, yield[error]);
-        if (error)
-            return error;
-        return std::nullopt;
+        return sendingQueue_.send(std::move(response), yield);
     }
 
     void
@@ -142,7 +160,7 @@ public:
         timeout_ = newTimeout;
     }
 
-    std::optional<Error>
+    std::expected<void, Error>
     send(Response response, boost::asio::yield_context yield) override
     {
         auto httpResponse = std::move(response).intoHttpResponse();

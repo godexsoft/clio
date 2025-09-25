@@ -126,7 +126,7 @@ public:
      * @return The result of the operation
      */
     Result
-    process(Input input, Context const& ctx) const;
+    process(Input const& input, Context const& ctx) const;
 
 private:
     boost::json::object
@@ -140,8 +140,10 @@ private:
     subscribeToAccounts(std::vector<std::string> const& accounts, feed::SubscriberSharedPtr const& session) const;
 
     void
-    subscribeToAccountsProposed(std::vector<std::string> const& accounts, feed::SubscriberSharedPtr const& session)
-        const;
+    subscribeToAccountsProposed(
+        std::vector<std::string> const& accounts,
+        feed::SubscriberSharedPtr const& session
+    ) const;
 
     void
     subscribeToBooks(

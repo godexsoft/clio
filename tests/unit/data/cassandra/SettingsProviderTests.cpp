@@ -30,7 +30,7 @@
 
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -77,11 +77,12 @@ getParseSettingsConfig(boost::json::value val)
     return config;
 };
 
-class SettingsProviderTest : public NoLoggerFixture {};
+class SettingsProviderTest : virtual public ::testing::Test {};
 
 TEST_F(SettingsProviderTest, Defaults)
 {
-    auto const cfg = getParseSettingsConfig(json::parse(R"JSON({"contact_points": "127.0.0.1"})JSON"));
+    auto const cfg =
+        getParseSettingsConfig(json::parse(R"JSON({"database.cassandra.contact_points": "127.0.0.1"})JSON"));
     SettingsProvider const provider{cfg.getObject("database.cassandra")};
 
     auto const settings = provider.getSettings();
@@ -160,13 +161,17 @@ TEST_F(SettingsProviderTest, SecureBundleConfig)
 TEST_F(SettingsProviderTest, CertificateConfig)
 {
     TmpFile const file{"certificateData"};
-    auto const cfg = getParseSettingsConfig(json::parse(fmt::format(
-        R"JSON({{
-            "database.cassandra.contact_points": "127.0.0.1",
-            "database.cassandra.certfile": "{}"
-        }})JSON",
-        file.path
-    )));
+    auto const cfg = getParseSettingsConfig(
+        json::parse(
+            fmt::format(
+                R"JSON({{
+                    "database.cassandra.contact_points": "127.0.0.1",
+                    "database.cassandra.certfile": "{}"
+                }})JSON",
+                file.path
+            )
+        )
+    );
     SettingsProvider const provider{cfg.getObject("database.cassandra")};
 
     auto const settings = provider.getSettings();

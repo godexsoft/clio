@@ -3,7 +3,7 @@ import itertools
 import json
 
 LINUX_OS = ["heavy", "heavy-arm64"]
-LINUX_CONTAINERS = ['{ "image": "ghcr.io/xrplf/clio-ci:latest" }']
+LINUX_CONTAINERS = ['{ "image": "ghcr.io/xrplf/clio-ci:384e79cd32f5f6c0ab9be3a1122ead41c5a7e67d" }']
 LINUX_COMPILERS = ["gcc", "clang"]
 
 MACOS_OS = ["macos15"]
@@ -22,9 +22,6 @@ def generate_matrix():
         itertools.product(MACOS_OS, MACOS_CONTAINERS, MACOS_COMPILERS),
     ):
         for sanitizer_ext, build_type in itertools.product(SANITIZER_EXT, BUILD_TYPES):
-            # libbacktrace doesn't build on arm64 with gcc.tsan
-            if os == "heavy-arm64" and compiler == "gcc" and sanitizer_ext == ".tsan":
-                continue
             configurations.append(
                 {
                     "os": os,

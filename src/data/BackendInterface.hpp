@@ -23,6 +23,7 @@
 #include "data/LedgerCacheInterface.hpp"
 #include "data/Types.hpp"
 #include "etl/CorruptionDetector.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/asio/executor_work_guard.hpp>
@@ -108,14 +109,12 @@ synchronous(FnType&& func)
     using R = typename boost::result_of<FnType(boost::asio::yield_context)>::type;
     if constexpr (!std::is_same_v<R, void>) {
         R res;
-        boost::asio::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func, &res](auto yield) {
-            res = func(yield);
-        });
+        util::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func, &res](auto yield) { res = func(yield); });
 
         ctx.run();
         return res;
     } else {
-        boost::asio::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func](auto yield) { func(yield); });
+        util::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func](auto yield) { func(yield); });
         ctx.run();
     }
 }
@@ -139,6 +138,7 @@ synchronousAndRetryOnTimeout(FnType&& func)
  */
 class BackendInterface {
 protected:
+    util::Logger log_{"Backend"};
     mutable std::shared_mutex rngMtx_;
     std::optional<LedgerRange> range_;
     std::reference_wrapper<LedgerCacheInterface> cache_;
@@ -234,8 +234,12 @@ public:
      * @return A vector of ripple::uint256 representing the account roots
      */
     virtual std::vector<ripple::uint256>
-    fetchAccountRoots(std::uint32_t number, std::uint32_t pageSize, std::uint32_t seq, boost::asio::yield_context yield)
-        const = 0;
+    fetchAccountRoots(
+        std::uint32_t number,
+        std::uint32_t pageSize,
+        std::uint32_t seq,
+        boost::asio::yield_context yield
+    ) const = 0;
 
     /**
      * @brief Updates the range of sequences that are stored in the DB.
@@ -459,8 +463,11 @@ public:
      * @return The sequence in unit32_t on success; nullopt otherwise
      */
     virtual std::optional<std::uint32_t>
-    doFetchLedgerObjectSeq(ripple::uint256 const& key, std::uint32_t sequence, boost::asio::yield_context yield)
-        const = 0;
+    doFetchLedgerObjectSeq(
+        ripple::uint256 const& key,
+        std::uint32_t sequence,
+        boost::asio::yield_context yield
+    ) const = 0;
 
     /**
      * @brief The database-specific implementation for fetching ledger objects.

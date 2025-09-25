@@ -26,7 +26,7 @@
 #include "util/TestObject.hpp"
 
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/base_uint.h>
@@ -213,15 +213,17 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaHash)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLEDGER_HASH}, _)).WillByDefault(Return(std::nullopt));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "role": "gateway",
-            "ledger_hash": "{}"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "role": "gateway",
+                "ledger_hash": "{}"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -240,15 +242,17 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaIntIndex)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::nullopt));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "role": "gateway",
-            "ledger_index": {}
-        }})JSON",
-        kACCOUNT,
-        kSEQ
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "role": "gateway",
+                "ledger_index": {}
+            }})JSON",
+            kACCOUNT,
+            kSEQ
+        )
+    );
     auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -267,15 +271,17 @@ TEST_F(RPCNoRippleCheckTest, LedgerNotExistViaStringIndex)
     // return empty ledgerHeader
     ON_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillByDefault(Return(std::nullopt));
 
-    static auto const kINPUT = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "role": "gateway",
-            "ledger_index": "{}"
-        }})JSON",
-        kACCOUNT,
-        kSEQ
-    ));
+    static auto const kINPUT = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "role": "gateway",
+                "ledger_index": "{}"
+            }})JSON",
+            kACCOUNT,
+            kSEQ
+        )
+    );
     auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(kINPUT, Context{yield});
@@ -294,15 +300,17 @@ TEST_F(RPCNoRippleCheckTest, AccountNotExist)
     // fetch account object return empty
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -320,8 +328,7 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRipple
         R"JSON({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
-            "problems":
-            [
+            "problems": [
                 "You appear to have set your default ripple flag even though you are not a gateway. This is not recommended unless you are experimenting"
             ],
             "validated": true
@@ -357,15 +364,17 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleSetTrustLineNoRipple
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "user"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "user"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -412,15 +421,17 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleUserDefaultRippleUnsetTrustLineNoRipp
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "user"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "user"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -436,8 +447,7 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRip
         R"JSON({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
-            "problems":
-            [
+            "problems": [
                 "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
                 "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"
             ],
@@ -474,15 +484,17 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleSetTrustLineNoRip
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -498,8 +510,7 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
         R"JSON({
             "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
             "ledger_index": 30,
-            "problems":
-            [
+            "problems": [
                 "You should immediately set your default ripple flag"
             ],
             "validated": true
@@ -529,15 +540,17 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway"
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway"
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -576,16 +589,18 @@ TEST_F(RPCNoRippleCheckTest, NormalPathRoleGatewayDefaultRippleUnsetTrustLineNoR
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway",
-            "transactions": true
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway",
+                "transactions": true
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -629,16 +644,18 @@ TEST_F(RPCNoRippleCheckTest, NormalPathLimit)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway",
-            "limit": 1
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway",
+                "limit": 1
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -653,47 +670,47 @@ TEST_F(RPCNoRippleCheckTest, NormalPathTransactions)
     constexpr auto kTRANSACTION_SEQ = 123;
     auto const expectedOutput = fmt::format(
         R"JSON({{
-                "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
-                "ledger_index": 30,
-                "problems": [
-                    "You should immediately set your default ripple flag",
-                    "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                    "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"
-                ],
-                "transactions": [
-                    {{
-                        "Sequence": {},
-                        "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                        "Fee": 1,
-                        "TransactionType": "AccountSet",
-                        "SetFlag": 8
+            "ledger_hash": "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652",
+            "ledger_index": 30,
+            "problems": [
+                "You should immediately set your default ripple flag",
+                "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                "You should clear the no ripple flag on your USD line to rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"
+            ],
+            "transactions": [
+                {{
+                    "Sequence": {},
+                    "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                    "Fee": 1,
+                    "TransactionType": "AccountSet",
+                    "SetFlag": 8
+                }},
+                {{
+                    "Sequence": {},
+                    "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                    "Fee": 1,
+                    "TransactionType": "TrustSet",
+                    "LimitAmount": {{
+                        "currency": "USD",
+                        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                        "value": "10"
                     }},
-                    {{
-                        "Sequence": {},
-                        "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                        "Fee": 1,
-                        "TransactionType": "TrustSet",
-                        "LimitAmount": {{
-                            "currency": "USD",
-                            "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                            "value": "10"
-                        }},
-                        "Flags": {}
+                    "Flags": {}
+                }},
+                {{
+                    "Sequence": {},
+                    "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+                    "Fee": 1,
+                    "TransactionType": "TrustSet",
+                    "LimitAmount": {{
+                        "currency": "USD",
+                        "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+                        "value": "10"
                     }},
-                    {{
-                        "Sequence": {},
-                        "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
-                        "Fee": 1,
-                        "TransactionType": "TrustSet",
-                        "LimitAmount": {{
-                            "currency": "USD",
-                            "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
-                            "value": "10"
-                        }},
-                        "Flags": {}
-                    }}
-                ],
-                "validated": true
+                    "Flags": {}
+                }}
+            ],
+            "validated": true
         }})JSON",
         kTRANSACTION_SEQ,
         kTRANSACTION_SEQ + 1,
@@ -734,16 +751,18 @@ TEST_F(RPCNoRippleCheckTest, NormalPathTransactions)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway",
-            "transactions": true
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway",
+                "transactions": true
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});
@@ -786,17 +805,19 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
     EXPECT_CALL(*backend_, doFetchLedgerObjects).Times(1);
 
-    auto const input = json::parse(fmt::format(
-        R"JSON({{
-            "account": "{}",
-            "ledger_hash": "{}",
-            "role": "gateway",
-            "limit": {}
-        }})JSON",
-        kACCOUNT,
-        kLEDGER_HASH,
-        NoRippleCheckHandler::kLIMIT_MAX + 1
-    ));
+    auto const input = json::parse(
+        fmt::format(
+            R"JSON({{
+                "account": "{}",
+                "ledger_hash": "{}",
+                "role": "gateway",
+                "limit": {}
+            }})JSON",
+            kACCOUNT,
+            kLEDGER_HASH,
+            NoRippleCheckHandler::kLIMIT_MAX + 1
+        )
+    );
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{NoRippleCheckHandler{backend_}};
         auto const output = handler.process(input, Context{yield});

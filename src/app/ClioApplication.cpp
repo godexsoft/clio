@@ -37,12 +37,12 @@
 #include "rpc/WorkQueue.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/HandlerProvider.hpp"
+#include "rpc/openapi/ServerInfo.hpp"
 #include "util/Random.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/build/Build.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
-#include "util/prometheus/Prometheus.hpp"
 #include "web/AdminVerificationStrategy.hpp"
 #include "web/RPCServerHandler.hpp"
 #include "web/Server.hpp"
@@ -60,11 +60,6 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/http/status.hpp>
-#include <model/Info.hpp>
-#include <model/ServerInfoRequest.hpp>
-#include <model/ServerInfoResponse.hpp>
-#include <model/ServerInfoSuccessResponse.hpp>
-#include <model/UniversalErrorResponseCodes.hpp>
 
 #include <cstdint>
 #include <cstdlib>
@@ -78,29 +73,6 @@
 namespace app {
 
 namespace {
-
-struct ServerInfoHandlerImpl : public openapi_clio::ServerInfoHandlerBase<rpc::Context> {
-    std::expected<openapi_clio::model::ServerInfoResponse, openapi_clio::Error>
-    process(openapi_clio::model::ServerInfoRequestBase const& req, rpc::Context const& ctx) override
-    {
-        using namespace openapi_clio::model;  // generated name of namespace can be adjusted in openapi
-
-        LOG(util::LogService::info()) << "+++ client ip: " << ctx.clientIp << "; req.isCounters: " << req.isCounters();
-
-        auto info = Info{};
-        info.setUptime(123.45);
-        info.setBuildVersion("2.4.0 test");
-
-        auto resp = ServerInfoSuccessResponse{};
-        resp.setStatus(openapi_clio::model::ServerInfoSuccessResponseBase::StatusEnum::SUCCESS);
-        resp.setInfo(std::move(info));
-
-        auto tmp = ServerInfoResponse{};
-        tmp.setResult(std::move(resp));
-
-        return tmp;
-    }
-};
 
 /**
  * @brief Start context threads
@@ -127,7 +99,6 @@ ClioApplication::ClioApplication(util::config::ClioConfigDefinition const& confi
     : config_(config), signalsHandler_{config_}
 {
     LOG(util::LogService::info()) << "Clio version: " << util::build::getClioFullVersionString();
-    PrometheusService::init(config);
     signalsHandler_.subscribeToStop([this]() { appStopper_.stop(); });
 }
 
@@ -216,7 +187,9 @@ ClioApplication::run(bool const useNgWebServer)
         }
         auto const adminVerifier = std::move(expectedAdminVerifier).value();
 
-        auto httpServer = web::ng::makeServer(config_, OnConnectCheck{dosGuard}, DisconnectHook{dosGuard}, ioc);
+        auto httpServer = web::ng::makeServer(
+            config_, OnConnectCheck{dosGuard}, IpChangeHook{dosGuard}, DisconnectHook{dosGuard}, ioc
+        );
 
         if (not httpServer.has_value()) {
             LOG(util::LogService::error()) << "Error creating web server: " << httpServer.error();
@@ -230,7 +203,9 @@ ClioApplication::run(bool const useNgWebServer)
         httpServer->onWs(std::move(requestHandler));
 
         openapi_clio::HandlerRegistry<rpc::Context> reg;
-        reg.bind<openapi_clio::ServerInfoHandlerTag>(std::make_shared<ServerInfoHandlerImpl>());
+        reg.bind<openapi_clio::ServerInfoHandlerTag>(
+            std::make_shared<rpc::openapi::ServerInfoHandlerImpl>(backend, subscriptions, balancer, etl, counters)
+        );
 
         for (auto [endpoint, handler] : reg.endpoints()) {
             LOG(util::LogService::info()) << "+++ endpoint from openapi: " << endpoint;

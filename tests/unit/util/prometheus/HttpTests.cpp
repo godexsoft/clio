@@ -30,7 +30,7 @@
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
 #include <boost/beast/http/verb.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -48,15 +48,11 @@ struct PrometheusCheckRequestTestsParams {
     bool expected;
 };
 
-struct PrometheusCheckRequestTests : public ::testing::TestWithParam<PrometheusCheckRequestTestsParams> {};
+struct PrometheusCheckRequestTests : WithPrometheus,
+                                     ::testing::WithParamInterface<PrometheusCheckRequestTestsParams> {};
 
 TEST_P(PrometheusCheckRequestTests, isPrometheusRequest)
 {
-    ClioConfigDefinition const config{
-        {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(GetParam().prometheusEnabled)},
-        {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)}
-    };
-    PrometheusService::init(config);
     boost::beast::http::request<boost::beast::http::string_body> req;
     req.method(GetParam().method);
     req.target(GetParam().target);
@@ -111,9 +107,10 @@ INSTANTIATE_TEST_CASE_P(
     tests::util::kNAME_GENERATOR
 );
 
-struct PrometheusHandleRequestTests : util::prometheus::WithPrometheus {
+struct PrometheusHandleRequestTestsBase {
     http::request<http::string_body> const req{http::verb::get, "/metrics", 11};
 };
+struct PrometheusHandleRequestTests : util::prometheus::WithPrometheus, PrometheusHandleRequestTestsBase {};
 
 TEST_F(PrometheusHandleRequestTests, emptyResponse)
 {
@@ -124,13 +121,11 @@ TEST_F(PrometheusHandleRequestTests, emptyResponse)
     EXPECT_EQ(response->body(), "");
 }
 
-TEST_F(PrometheusHandleRequestTests, prometheusDisabled)
+struct PrometheusDisabledHandleRequestTests : util::prometheus::WithPrometheusDisabled,
+                                              PrometheusHandleRequestTestsBase {};
+
+TEST_F(PrometheusDisabledHandleRequestTests, prometheusDisabled)
 {
-    ClioConfigDefinition const config{
-        {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(false)},
-        {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)}
-    };
-    PrometheusService::init(config);
     auto response = handlePrometheusRequest(req, true);
     ASSERT_TRUE(response.has_value());
     EXPECT_EQ(response->result(), http::status::forbidden);
@@ -228,10 +223,12 @@ TEST_F(PrometheusHandleRequestTests, responseWithCounterAndGauge)
 
 TEST_F(PrometheusHandleRequestTests, compressReply)
 {
-    PrometheusService::init(ClioConfigDefinition{
-        {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
-        {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
-    });
+    PrometheusService::init(
+        ClioConfigDefinition{
+            {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
+            {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
+        }
+    );
 
     auto& gauge = PrometheusService::gaugeInt("test_gauge", Labels{});
     ++gauge;

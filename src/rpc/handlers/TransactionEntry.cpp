@@ -31,7 +31,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/jss.h>
 
 #include <string>
@@ -40,7 +39,7 @@
 namespace rpc {
 
 TransactionEntryHandler::Result
-TransactionEntryHandler::process(TransactionEntryHandler::Input input, Context const& ctx) const
+TransactionEntryHandler::process(TransactionEntryHandler::Input const& input, Context const& ctx) const
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "TransactionEntry's ledger range must be available");

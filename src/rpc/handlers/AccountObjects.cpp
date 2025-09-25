@@ -49,7 +49,7 @@
 namespace rpc {
 
 AccountObjectsHandler::Result
-AccountObjectsHandler::process(AccountObjectsHandler::Input input, Context const& ctx) const
+AccountObjectsHandler::process(AccountObjectsHandler::Input const& input, Context const& ctx) const
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountObject's ledger range must be available");
@@ -159,8 +159,10 @@ tag_invoke(boost::json::value_to_tag<AccountObjectsHandler::Input>, boost::json:
         }
     }
 
-    if (jsonObject.contains(JS(type)))
-        input.type = util::LedgerTypes::getLedgerEntryTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
+    if (jsonObject.contains(JS(type))) {
+        input.type =
+            util::LedgerTypes::getAccountOwnedLedgerTypeFromStr(boost::json::value_to<std::string>(jv.at(JS(type))));
+    }
 
     if (jsonObject.contains(JS(limit)))
         input.limit = jv.at(JS(limit)).as_int64();

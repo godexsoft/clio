@@ -28,7 +28,7 @@
 
 #include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/Blob.h>
@@ -131,275 +131,261 @@ generateTestValuesForParametersTest()
         GetAggregatePriceParamTestCaseBundle{
             .testName = "no_oracles",
             .testJson = R"JSON({
-                    "base_asset": "XRP",
-                    "quote_asset": "USD"
-                })JSON",
+                "base_asset": "XRP",
+                "quote_asset": "USD"
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'oracles' missing"
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "no_base_asset",
             .testJson = R"JSON({
-                    "quote_asset": "USD",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "USD",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'base_asset' missing"
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "invalid_base_asset",
             .testJson = R"JSON({
-                    "quote_asset": "USD",
-                    "base_asset": "asdf",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "USD",
+                "base_asset": "asdf",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "empty_base_asset",
             .testJson = R"JSON({
-                    "quote_asset": "USD",
-                    "base_asset": "",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "USD",
+                "base_asset": "",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "invalid_base_asset2",
             .testJson = R"JSON({
-                    "quote_asset": "USD",
-                    "base_asset": "+aa",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "USD",
+                "base_asset": "+aa",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "no_quote_asset",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "base_asset": "USD",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Required field 'quote_asset' missing"
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "invalid_quote_asset",
             .testJson = R"JSON({
-                    "quote_asset": "asdf",
-                    "base_asset": "USD",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "asdf",
+                "base_asset": "USD",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "empty_quote_asset",
             .testJson = R"JSON({
-                    "quote_asset": "",
-                    "base_asset": "USD",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "",
+                "base_asset": "USD",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "invalid_quote_asset2",
             .testJson = R"JSON({
-                    "quote_asset": "+aa",
-                    "base_asset": "USD",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "quote_asset": "+aa",
+                "base_asset": "USD",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oraclesIsEmpty",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles": []
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": []
+            })JSON",
             .expectedError = "oracleMalformed",
             .expectedErrorMessage = "Oracle request is malformed."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oraclesNotArray",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles": 1
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": 1
+            })JSON",
             .expectedError = "oracleMalformed",
             .expectedErrorMessage = "Oracle request is malformed."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "thresholdNotInt",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ],
-                    "time_threshold": "x"
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ],
+                "time_threshold": "x"
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "trimNotInt",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ],
-                    "trim": "x"
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ],
+                "trim": "x"
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "trimTooSmall",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ],
-                    "trim": 0
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ],
+                "trim": 0
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "trimTooLarge",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": 2
-                        }
-                    ],
-                    "trim": 26
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": 2
+                    }
+                ],
+                "trim": 26
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oracleAccountInvalid",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "invalid",
-                            "oracle_document_id": 2
-                        }
-                    ]
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "invalid",
+                        "oracle_document_id": 2
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oracleDocumentIdNotInt",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles":
-                    [
-                        {
-                            "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
-                            "oracle_document_id": "a"
-                        }
-                    ]
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [
+                    {
+                        "account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD",
+                        "oracle_document_id": "a"
+                    }
+                ]
+            })JSON",
             .expectedError = "invalidParams",
             .expectedErrorMessage = "Invalid parameters."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oracleMissingAccount",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles": [{"oracle_document_id": 2}]
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [{"oracle_document_id": 2}]
+            })JSON",
             .expectedError = "oracleMalformed",
             .expectedErrorMessage = "Oracle request is malformed."
         },
         GetAggregatePriceParamTestCaseBundle{
             .testName = "oracleMissingDocumentId",
             .testJson = R"JSON({
-                    "base_asset": "USD",
-                    "quote_asset": "XRP",
-                    "oracles": [{"account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD"}]
-                })JSON",
+                "base_asset": "USD",
+                "quote_asset": "XRP",
+                "oracles": [{"account": "rGh1VZCRBJY6rJiaFpD4LZtyHiuCkC8aeD"}]
+            })JSON",
             .expectedError = "oracleMalformed",
             .expectedErrorMessage = "Oracle request is malformed."
         },
@@ -431,10 +417,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OverOraclesMax)
 {
     auto req = json::parse(
         R"JSON({
-                "base_asset": "USD",
-                "quote_asset": "XRP",
-                "oracles": []
-            })JSON"
+            "base_asset": "USD",
+            "quote_asset": "XRP",
+            "oracles": []
+        })JSON"
     );
     auto const maxOracles = 200;
 
@@ -457,21 +443,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, LedgerNotFound)
 {
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kRANGE_MAX, _)).WillOnce(Return(std::nullopt));
     constexpr auto kDOCUMENT_ID = 1;
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -491,26 +478,27 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID, kTX1, 1e3, 2);  // 10
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -521,9 +509,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntrySinglePriceData)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -540,26 +529,27 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID, kTX1, 1e3, 2);  // 10
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": "{}"
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -570,9 +560,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryStrOracleDocumentId)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -589,26 +580,27 @@ TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID, kTX1, 1e3, 2);  // 10
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "JPY",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -619,9 +611,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, PreviousTxNotFound)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -646,34 +639,36 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
             123,
             1,
             4321u,
-            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
-            }),
+            createPriceDataSeries(
+                {createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)}
+            ),
             kINDEX,
             true,
             kTX2
         )));
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "JPY",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -684,9 +679,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NewLedgerObjectHasNoPricePair)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
@@ -710,12 +706,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -730,18 +726,19 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "110",
                     "size": 3,
                     "standard_deviation": "164.6207763315433"
@@ -752,9 +749,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesOdd)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -778,12 +776,12 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -802,20 +800,21 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "92.5",
                     "size": 4,
                     "standard_deviation": "138.8944443333378"
@@ -826,9 +825,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryMultipleOraclesEven)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -852,13 +852,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
                 "trim": {},
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -877,27 +877,27 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
                     }}
                 ]
             }})JSON",
-        25,
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            25,
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "92.5",
                     "size": 4,
                     "standard_deviation": "138.8944443333378"
                 }},
-                "trimmed_set":
-                {{
+                "trimmed_set": {{
                     "mean": "30",
                     "size": 2,
                     "standard_deviation": "14.14213562373095"
@@ -908,9 +908,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, OracleLedgerEntryTrim)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -928,21 +929,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoOracleEntryFound)
     EXPECT_CALL(*backend_, doFetchLedgerObject(oracleIndex, kRANGE_MAX, _)).WillOnce(Return(std::nullopt));
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -962,21 +964,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NoMatchAssetPair)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID, kTX1, 1e3, 2);  // 10
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "JPY",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
@@ -1006,13 +1009,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1, kTIMESTAMP4);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
                 "time_threshold": {},
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -1031,21 +1034,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
                     }}
                 ]
             }})JSON",
-        0,
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            0,
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -1056,10 +1060,11 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIsZero)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kTIMESTAMP1,
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kTIMESTAMP1,
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1086,13 +1091,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1, kTIMESTAMP4);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
                 "time_threshold": {},
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -1111,21 +1116,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
                     }}
                 ]
             }})JSON",
-        kTIMESTAMP1 - kTIMESTAMP2,
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            kTIMESTAMP1 - kTIMESTAMP2,
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "15",
                     "size": 2,
                     "standard_deviation": "7.071067811865475"
@@ -1136,10 +1142,11 @@ TEST_F(RPCGetAggregatePriceHandlerTest, ValidTimeThreshold)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kTIMESTAMP1,
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kTIMESTAMP1,
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1166,13 +1173,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1, kTIMESTAMP4);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
                 "time_threshold": {},
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -1191,21 +1198,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
                     }}
                 ]
             }})JSON",
-        kTIMESTAMP1 + 1,
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            kTIMESTAMP1 + 1,
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "92.5",
                     "size": 4,
                     "standard_deviation": "138.8944443333378"
@@ -1216,9 +1224,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdTooLong)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1245,13 +1254,13 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
     mockLedgerObject(*backend_, kACCOUNT, kDOCUMENT_ID3, kTX1, 3e3, 1, kTIMESTAMP4);  // 300
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "USD",
                 "quote_asset": "XRP",
                 "time_threshold": {},
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
@@ -1270,21 +1279,22 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
                     }}
                 ]
             }})JSON",
-        kTIMESTAMP4 - kTIMESTAMP1,
-        kACCOUNT,
-        kDOCUMENT_ID1,
-        kACCOUNT,
-        kDOCUMENT_ID2,
-        kACCOUNT,
-        kDOCUMENT_ID3,
-        kACCOUNT,
-        kDOCUMENT_ID4
-    ));
+            kTIMESTAMP4 - kTIMESTAMP1,
+            kACCOUNT,
+            kDOCUMENT_ID1,
+            kACCOUNT,
+            kDOCUMENT_ID2,
+            kACCOUNT,
+            kDOCUMENT_ID3,
+            kACCOUNT,
+            kDOCUMENT_ID4
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "92.5",
                     "size": 4,
                     "standard_deviation": "138.8944443333378"
@@ -1295,9 +1305,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, TimeThresholdIncludeOldest)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1322,34 +1333,36 @@ TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
             123,
             1,
             4321u,
-            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("JPY"), ripple::to_currency("XRP"), 2)
-            }),
+            createPriceDataSeries(
+                {createOraclePriceData(1e3, ripple::to_currency("JPY"), ripple::to_currency("XRP"), 2)}
+            ),
             ripple::to_string(oracleIndex),
             false,
             kTX1
         )));
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "JPY",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
-    auto const expected = json::parse(fmt::format(
-        R"JSON({{
-                "entire_set":
-                {{
+    auto const expected = json::parse(
+        fmt::format(
+            R"JSON({{
+                "entire_set": {{
                     "mean": "10",
                     "size": 1,
                     "standard_deviation": "0"
@@ -1360,9 +1373,10 @@ TEST_F(RPCGetAggregatePriceHandlerTest, FromTx)
                 "ledger_hash": "{}",
                 "validated": true
             }})JSON",
-        kRANGE_MAX,
-        kLEDGER_HASH
-    ));
+            kRANGE_MAX,
+            kLEDGER_HASH
+        )
+    );
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
@@ -1385,8 +1399,9 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
             123,
             1,
             4321u,
-            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
-            }),
+            createPriceDataSeries(
+                {createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)}
+            ),
             ripple::to_string(oracleIndex),
             false,
             kTX2
@@ -1399,29 +1414,31 @@ TEST_F(RPCGetAggregatePriceHandlerTest, NotFoundInTxHistory)
             123,
             1,
             4321u,
-            createPriceDataSeries({createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)
-            }),
+            createPriceDataSeries(
+                {createOraclePriceData(1e3, ripple::to_currency("EUR"), ripple::to_currency("XRP"), 2)}
+            ),
             ripple::to_string(oracleIndex),
             false,
             kTX2
         )));
 
     auto const handler = AnyHandler{GetAggregatePriceHandler{backend_}};
-    auto const req = json::parse(fmt::format(
-        R"JSON({{
+    auto const req = json::parse(
+        fmt::format(
+            R"JSON({{
                 "base_asset": "JPY",
                 "quote_asset": "XRP",
-                "oracles":
-                [
+                "oracles": [
                     {{
                         "account": "{}",
                         "oracle_document_id": {}
                     }}
                 ]
             }})JSON",
-        kACCOUNT,
-        kDOCUMENT_ID
-    ));
+            kACCOUNT,
+            kDOCUMENT_ID
+        )
+    );
 
     runSpawn([&](auto yield) {
         auto const output = handler.process(req, Context{yield});

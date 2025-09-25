@@ -17,5 +17,3 @@ target_sources(
 )
 
 target_link_libraries(clio_data PUBLIC cassandra-cpp-driver::cassandra-cpp-driver clio_util)
-target_link_libraries(clio_data PUBLIC openapi_clio-stubs::openapi_clio-stubs)
-target_include_directories(clio_data PUBLIC openapi_clio-stubs::openapi_clio-stubs)

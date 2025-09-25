@@ -23,6 +23,7 @@
 #include "util/CoroutineGroup.hpp"
 #include "util/Taggable.hpp"
 #include "util/log/Logger.hpp"
+#include "web/ProxyIpResolver.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 #include "web/ng/Connection.hpp"
 #include "web/ng/Error.hpp"
@@ -90,13 +91,17 @@ ConnectionHandler::ConnectionHandler(
     std::optional<size_t> maxParallelRequests,
     util::TagDecoratorFactory& tagFactory,
     std::optional<size_t> maxSubscriptionSendQueueSize,
-    OnDisconnectHook onDisconnectHook
+    ProxyIpResolver proxyIpResolver,
+    OnDisconnectHook onDisconnectHook,
+    OnIpChangeHook onIpChangeHook
 )
     : processingPolicy_{processingPolicy}
     , maxParallelRequests_{maxParallelRequests}
     , tagFactory_{tagFactory}
     , maxSubscriptionSendQueueSize_{maxSubscriptionSendQueueSize}
+    , proxyIpResolver_(std::move(proxyIpResolver))
     , onDisconnectHook_{std::move(onDisconnectHook)}
+    , onIpChangeHook_(std::move(onIpChangeHook))
 {
 }
 
@@ -146,11 +151,9 @@ ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::y
         auto* ptr = dynamic_cast<impl::WsConnectionBase*>(connectionPtr.get());
         ASSERT(ptr != nullptr, "Casted not websocket connection");
         subscriptionContext = std::make_shared<SubscriptionContext>(
-            tagFactory_,
-            *ptr,
-            maxSubscriptionSendQueueSize_,
-            yield,
-            [this](Error const& e, Connection const& c) { return handleError(e, c); }
+            tagFactory_, *ptr, maxSubscriptionSendQueueSize_, yield, [this](Error const& e, Connection const& c) {
+                return handleError(e, c);
+            }
         );
         LOG(log_.trace()) << connectionRef.tag() << "Created SubscriptionContext for the connection";
     }
@@ -279,9 +282,9 @@ ConnectionHandler::sequentRequestResponseLoop(
         if (not expectedRequest)
             return handleError(expectedRequest.error(), connection);
 
-        LOG(log_.info()) << connection.tag() << "Received request from ip = " << connection.ip();
+        resolveClientIp(connection, *expectedRequest);
 
-        auto maybeReturnValue = processRequest(connection, subscriptionContext, expectedRequest.value(), yield);
+        auto maybeReturnValue = processRequest(connection, subscriptionContext, *expectedRequest, yield);
         if (maybeReturnValue.has_value())
             return maybeReturnValue.value();
     }
@@ -309,6 +312,8 @@ ConnectionHandler::parallelRequestResponseLoop(
             closeConnectionGracefully &= closeGracefully;
             break;
         }
+
+        resolveClientIp(connection, *expectedRequest);
 
         if (not tasksGroup.isFull()) {
             bool const spawnSuccess = tasksGroup.spawn(
@@ -360,9 +365,9 @@ ConnectionHandler::processRequest(
     auto response = handleRequest(connection, subscriptionContext, request, yield);
 
     LOG(log_.trace()) << connection.tag() << "Sending response: " << response.message();
-    auto const maybeError = connection.send(std::move(response), yield);
-    if (maybeError.has_value()) {
-        return handleError(maybeError.value(), connection);
+    auto const expectedSuccess = connection.send(std::move(response), yield);
+    if (not expectedSuccess.has_value()) {
+        return handleError(expectedSuccess.error(), connection);
     }
     return std::nullopt;
 }
@@ -384,6 +389,18 @@ ConnectionHandler::handleRequest(
             return handleWsRequest(connectionMetadata, subscriptionContext, wsHandler_, request, yield);
         default:
             return Response{boost::beast::http::status::bad_request, "Unsupported http method", request};
+    }
+}
+
+void
+ConnectionHandler::resolveClientIp(Connection& connection, Request const& request) const
+{
+    if (auto resolvedClientIp = proxyIpResolver_.resolveClientIp(connection.ip(), request.httpHeaders());
+        resolvedClientIp != connection.ip()) {
+        LOG(log_.info()) << connection.tag() << "Detected a forwarded request from proxy. Proxy ip: " << connection.ip()
+                         << ". Resolved client ip: " << resolvedClientIp;
+        onIpChangeHook_(connection.ip(), resolvedClientIp);
+        connection.setIp(std::move(resolvedClientIp));
     }
 }
 
