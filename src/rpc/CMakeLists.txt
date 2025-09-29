@@ -54,6 +54,7 @@ target_sources(
           handlers/Unsubscribe.cpp
           handlers/VaultInfo.cpp
           openapi/ServerInfo.cpp
+          openapi/AccountChannels.cpp
 )
 
 target_link_libraries(clio_rpc PRIVATE clio_util)

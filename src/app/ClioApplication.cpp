@@ -37,6 +37,7 @@
 #include "rpc/WorkQueue.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/HandlerProvider.hpp"
+#include "rpc/openapi/AccountChannels.hpp"
 #include "rpc/openapi/ServerInfo.hpp"
 #include "util/Random.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
@@ -206,15 +207,25 @@ ClioApplication::run(bool const useNgWebServer)
         reg.bind<openapi_clio::ServerInfoHandlerTag>(
             std::make_shared<rpc::openapi::ServerInfoHandlerImpl>(backend, subscriptions, balancer, etl, counters)
         );
+        reg.bind<openapi_clio::AccountChannelsHandlerTag>(
+            std::make_shared<rpc::openapi::AccountChannelsHandlerImpl>(backend)
+        );
 
         for (auto [endpoint, handler] : reg.endpoints()) {
             LOG(util::LogService::info()) << "+++ endpoint from openapi: " << endpoint;
-            httpServer->onGet(
+            httpServer->onPost(
                 std::string{endpoint},
-                [handler](
+                [handler, adminVerifier](
                     web::ng::Request const& req, web::ng::ConnectionMetadata const& connection, auto&&, auto yield
                 ) -> web::ng::Response {
-                    auto res = handler->handle("{}", rpc::Context{.yield = yield, .clientIp = connection.ip()});
+                    auto res = handler->handle(
+                        req.message(),
+                        rpc::Context{
+                            .yield = yield,
+                            .isAdmin = adminVerifier->isAdmin(req.httpHeaders(), connection.ip()),
+                            .clientIp = connection.ip()
+                        }
+                    );
                     return web::ng::Response{
                         boost::beast::http::status::ok, res.has_value() ? res.value() : res.error().message, req
                     };

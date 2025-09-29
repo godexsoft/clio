@@ -133,7 +133,7 @@ createSubscriptionsInfo(std::shared_ptr<feed::SubscriptionManagerInterface> subs
     auto subsReport = subscriptions->report();
     auto subscriptionsModel = Subscriptions{};
 
-    static std::unordered_map<std::string, std::function<void(Subscriptions&, double)>> const subscriptionSetters = {
+    static std::unordered_map<std::string, std::function<void(Subscriptions&, double)>> const kSUBSCRIPTION_SETTERS = {
         {"ledger", [](Subscriptions& s, double val) { s.setLedger(val); }},
         {"transactions", [](Subscriptions& s, double val) { s.setTransactions(val); }},
         {"transactions_proposed", [](Subscriptions& s, double val) { s.setTransactionsProposed(val); }},
@@ -151,8 +151,8 @@ createSubscriptionsInfo(std::shared_ptr<feed::SubscriptionManagerInterface> subs
         }
 
         auto count = boost::json::value_to<std::uint64_t>(value);
-        auto it = subscriptionSetters.find(type);
-        if (it != subscriptionSetters.end()) {
+        auto it = kSUBSCRIPTION_SETTERS.find(type);
+        if (it != kSUBSCRIPTION_SETTERS.end()) {
             it->second(subscriptionsModel, static_cast<double>(count));
         } else {
             LOG(util::LogService::debug()) << "Subscription type in report not found in OpenAPI spec: " << type;
@@ -420,9 +420,6 @@ ServerInfoHandlerImpl::ServerInfoHandlerImpl(
 std::expected<ServerInfoSuccessResponse, ServerInfoHandlerImpl::ErrorCodes>
 ServerInfoHandlerImpl::process(ServerInfoRequestBase const&, rpc::Context const& ctx)
 {
-    using namespace openapi_clio::model;  // generated name of namespace can be adjusted in openapi
-    using namespace rpc;
-    using namespace std::chrono;
     using ripple::to_string;
 
     LOG(util::LogService::info()) << "+++ client ip: " << ctx.clientIp;
@@ -439,27 +436,17 @@ ServerInfoHandlerImpl::process(ServerInfoRequestBase const&, rpc::Context const&
         return std::unexpected(UniversalErrorResponseCodes::INTERNAL);
 
     auto info = Info{};
-    auto const sinceEpoch = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+    auto const sinceEpoch =
+        duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     auto const age = static_cast<int32_t>(sinceEpoch) -
         static_cast<int32_t>(lgrInfo->closeTime.time_since_epoch().count()) - static_cast<int32_t>(kRIPPLE_EPOCH_START);
 
     info.setCompleteLedgers(fmt::format("{}-{}", range->minSequence, range->maxSequence));
 
-    // if (ctx.isAdmin) {
-    // info.setCounters(counters_.get());
-    // TODO:
-    // input.backendCounters ? std::make_optional(backend_->stats()) : std::nullopt,
-    // subscriptions_->report(),
-    //     jv.as_object()["etl"] = info.adminSection->etl;
-    //     jv.as_object()[JS(counters)] = info.adminSection->counters;
-    //     jv.as_object()[JS(counters)].as_object()["subscriptions"] = info.adminSection->subscriptions;
-    //     if (info.adminSection->backendCounters.has_value()) {
-    //         jv.as_object()[kBACKEND_COUNTERS_KEY] = *info.adminSection->backendCounters;
-    //     }
-
-    info.setCounters(createCountersInfo(counters_, subscriptions_));
-    info.setEtl(createETLInfo(etl_->getInfo()));
-    // }
+    if (ctx.isAdmin) {
+        info.setCounters(createCountersInfo(counters_, subscriptions_));
+        info.setEtl(createETLInfo(etl_->getInfo()));
+    }
 
     auto const serverInfoRippled =
         balancer_->forwardToRippled({{"command", "server_info"}}, ctx.clientIp, ctx.isAdmin, ctx.yield);
