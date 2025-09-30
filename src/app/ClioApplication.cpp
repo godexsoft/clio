@@ -224,9 +224,7 @@ ClioApplication::run(bool const useNgWebServer)
                         .clientIp = connection.ip()
                     };
                     auto res = handler->handle(req.message(), ctx);
-                    return web::ng::Response{
-                        boost::beast::http::status::ok, res.has_value() ? res.value() : res.error().message, req
-                    };
+                    return web::ng::Response{boost::beast::http::status::ok, std::move(res), req};
                 }
             );
         }

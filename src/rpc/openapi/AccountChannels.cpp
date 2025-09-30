@@ -82,7 +82,7 @@ using namespace openapi_clio::model;
 
 namespace {
 
-std::expected<ripple::LedgerHeader, AccountChannelsErrorResponseCodes>
+std::expected<ripple::LedgerHeader, UniversalErrorResponseCodes>
 ledgerHeaderFromHashOrSeq(
     BackendInterface const& backend,
     boost::asio::yield_context yield,
@@ -92,7 +92,7 @@ ledgerHeaderFromHashOrSeq(
 )
 {
     std::optional<ripple::LedgerHeader> lgrInfo;
-    auto const err = std::unexpected{AccountChannelsErrorResponseCodes::LGRNOTFOUND};  // TODO: move to universal codes
+    auto const err = std::unexpected{UniversalErrorResponseCodes::LGRNOTFOUND};  // TODO: move to universal codes
 
     if (ledgerHash) {
         ripple::uint256 const ledgerHash256{std::string_view(*ledgerHash)};
@@ -124,7 +124,7 @@ ledgerHeaderFromHashOrSeq(
         return *lgrInfo;
     }
 
-    return std::unexpected{AccountChannelsErrorResponseCodes::INVALIDPARAMS};  // TODO: move to universal codes
+    return std::unexpected{UniversalErrorResponseCodes::INVALIDPARAMS};  // TODO: move to universal codes
 }
 
 void
@@ -213,7 +213,7 @@ AccountChannelsHandlerImpl::process(AccountChannelsRequestBase const& req, rpc::
     );
 
     if (!expectedNext.has_value())
-        return std::unexpected(AccountChannelsErrorResponseCodes::INVALIDPARAMS);
+        return std::unexpected(UniversalErrorResponseCodes::INVALIDPARAMS);
 
     resp.setChannels(std::move(channels));
     resp.setAccount(req.getAccount());
