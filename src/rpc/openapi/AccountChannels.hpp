@@ -44,7 +44,7 @@ public:
     AccountChannelsHandlerImpl(std::shared_ptr<BackendInterface> const& backend);
 
     std::expected<openapi_clio::model::AccountChannelsSuccessResponse, ErrorCodes>
-    process(openapi_clio::model::AccountChannelsRequestBase const&, rpc::Context const& ctx) override;
+    process(openapi_clio::model::AccountChannelsRequestBase const&, rpc::Context& ctx) override;
 };
 
 }  // namespace rpc::openapi

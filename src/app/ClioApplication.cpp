@@ -218,14 +218,12 @@ ClioApplication::run(bool const useNgWebServer)
                 [handler, adminVerifier](
                     web::ng::Request const& req, web::ng::ConnectionMetadata const& connection, auto&&, auto yield
                 ) -> web::ng::Response {
-                    auto res = handler->handle(
-                        req.message(),
-                        rpc::Context{
-                            .yield = yield,
-                            .isAdmin = adminVerifier->isAdmin(req.httpHeaders(), connection.ip()),
-                            .clientIp = connection.ip()
-                        }
-                    );
+                    auto ctx = rpc::Context{
+                        .yield = yield,
+                        .isAdmin = adminVerifier->isAdmin(req.httpHeaders(), connection.ip()),
+                        .clientIp = connection.ip()
+                    };
+                    auto res = handler->handle(req.message(), ctx);
                     return web::ng::Response{
                         boost::beast::http::status::ok, res.has_value() ? res.value() : res.error().message, req
                     };

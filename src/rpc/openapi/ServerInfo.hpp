@@ -56,7 +56,7 @@ public:
     );
 
     std::expected<openapi_clio::model::ServerInfoSuccessResponse, ErrorCodes>
-    process(openapi_clio::model::ServerInfoRequestBase const&, rpc::Context const& ctx) override;
+    process(openapi_clio::model::ServerInfoRequestBase const&, rpc::Context& ctx) override;
 };
 
 }  // namespace rpc::openapi

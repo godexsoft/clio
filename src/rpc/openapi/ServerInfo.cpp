@@ -418,7 +418,7 @@ ServerInfoHandlerImpl::ServerInfoHandlerImpl(
 }
 
 std::expected<ServerInfoSuccessResponse, ServerInfoHandlerImpl::ErrorCodes>
-ServerInfoHandlerImpl::process(ServerInfoRequestBase const&, rpc::Context const& ctx)
+ServerInfoHandlerImpl::process(ServerInfoRequestBase const&, rpc::Context& ctx)
 {
     using ripple::to_string;
 

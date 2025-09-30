@@ -169,7 +169,7 @@ AccountChannelsHandlerImpl::AccountChannelsHandlerImpl(std::shared_ptr<BackendIn
 }
 
 std::expected<AccountChannelsSuccessResponse, AccountChannelsHandlerImpl::ErrorCodes>
-AccountChannelsHandlerImpl::process(AccountChannelsRequestBase const& req, rpc::Context const& ctx)
+AccountChannelsHandlerImpl::process(AccountChannelsRequestBase const& req, rpc::Context& ctx)
 {
     auto const range = backend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountChannel's ledger range must be available");
