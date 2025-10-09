@@ -54,13 +54,14 @@ bool
 BackendInterface::finishWrites(std::uint32_t const ledgerSequence)
 {
     LOG(log_.debug()) << "Want finish writes for " << ledgerSequence;
-    auto commitRes = doFinishWrites();
+    auto commitRes = doFinishWrites(ledgerSequence);
     if (commitRes) {
         LOG(log_.debug()) << "Successfully committed. Updating range now to " << ledgerSequence;
         updateRange(ledgerSequence);
     }
     return commitRes;
 }
+
 void
 BackendInterface::writeLedgerObject(std::string&& key, std::uint32_t const seq, std::string&& blob)
 {

@@ -47,11 +47,11 @@ MPTExt::onLedgerData(model::LedgerData const& data)
 }
 
 void
-MPTExt::onInitialObject(uint32_t, model::Object const& obj)
+MPTExt::onInitialObject(uint32_t seq, model::Object const& obj)
 {
     LOG(log_.trace()) << "got initial object with key: " << ripple::strHex(obj.key);
     if (auto const mptHolder = etl::getMPTHolderFromObj(obj.keyRaw, obj.dataRaw); mptHolder.has_value())
-        backend_->writeMPTHolders({*mptHolder});
+        backend_->writeMPTHolders({*mptHolder}, seq);
 }
 
 void
@@ -72,7 +72,7 @@ MPTExt::writeMPTHoldersFromTransactions(model::LedgerData const& data)
     }
 
     if (not holders.empty())
-        backend_->writeMPTHolders(holders);
+        backend_->writeMPTHolders(holders, data.seq);
 }
 
 }  // namespace etlng::impl

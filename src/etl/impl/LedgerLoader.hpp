@@ -259,10 +259,10 @@ public:
             LOG(log_.debug()) << "Loaded initial ledger";
 
             if (not state_.get().isStopping) {
-                backend_->writeAccountTransactions(std::move(insertTxResult.accountTxData));
-                backend_->writeNFTs(insertTxResult.nfTokensData);
-                backend_->writeNFTTransactions(insertTxResult.nfTokenTxData);
-                backend_->writeMPTHolders(insertTxResult.mptHoldersData);
+                backend_->writeAccountTransactions(std::move(insertTxResult.accountTxData), sequence);
+                backend_->writeNFTs(insertTxResult.nfTokensData, sequence);
+                backend_->writeNFTTransactions(insertTxResult.nfTokenTxData, sequence);
+                backend_->writeMPTHolders(insertTxResult.mptHoldersData, sequence);
             }
 
             backend_->finishWrites(sequence);

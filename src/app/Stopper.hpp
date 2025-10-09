@@ -81,7 +81,7 @@ public:
         etlng::LoadBalancerInterface& balancer,
         etlng::ETLServiceInterface& etl,
         feed::SubscriptionManagerInterface& subscriptions,
-        data::BackendInterface& backend,
+        data::BackendInterface&,
         boost::asio::io_context& ioc
     )
     {
@@ -103,8 +103,9 @@ public:
             subscriptions.stop();
             LOG(util::LogService::info()) << "SubscriptionManager stopped";
 
-            backend.waitForWritesToFinish();
-            LOG(util::LogService::info()) << "Backend writes finished";
+            // Note: we don't have seq here so we can't do this
+            // backend.waitForWritesToFinish();
+            // LOG(util::LogService::info()) << "Backend writes finished";
 
             ioc.stop();
             LOG(util::LogService::info()) << "io_context stopped";

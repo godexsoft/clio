@@ -97,18 +97,21 @@ public:
     BasicCassandraBackend(BasicCassandraBackend&&) = delete;
 
     bool
-    doFinishWrites() override
+    doFinishWrites(uint32_t seq) override
     {
-        this->waitForWritesToFinish();
+        this->waitForWritesToFinish(seq);
 
-        if (!range_) {
-            executor_.writeSync(schema_->updateLedgerRange, ledgerSequence_, false, ledgerSequence_);
-        }
+        // Note: we don't care about ledger range table at all for this purpose
 
-        if (not this->executeSyncUpdate(schema_->updateLedgerRange.bind(ledgerSequence_, true, ledgerSequence_ - 1))) {
-            LOG(log_.warn()) << "Update failed for ledger " << ledgerSequence_;
-            return false;
-        }
+        // if (!range_) {
+        //     executor_.writeSync(schema_->updateLedgerRange, ledgerSequence_, false, ledgerSequence_);
+        // }
+
+        // if (not this->executeSyncUpdate(schema_->updateLedgerRange.bind(ledgerSequence_, true, ledgerSequence_ - 1)))
+        // {
+        //     LOG(log_.warn()) << "Update failed for ledger " << ledgerSequence_;
+        //     return false;
+        // }
 
         LOG(log_.info()) << "Committed ledger " << ledgerSequence_;
         return true;

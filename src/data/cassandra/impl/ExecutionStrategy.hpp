@@ -48,6 +48,7 @@
 #include <stdexcept>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace data::cassandra::impl {
@@ -65,7 +66,8 @@ class DefaultExecutionStrategy {
     util::Logger log_{"Backend"};
 
     std::uint32_t maxWriteRequestsOutstanding_;
-    std::atomic_uint32_t numWriteRequestsOutstanding_ = 0;
+    mutable std::unordered_map<uint32_t, uint32_t> numWriteRequestsOutstanding_;
+    mutable std::mutex mtx_;
 
     std::uint32_t maxReadRequestsOutstanding_;
     std::atomic_uint32_t numReadRequestsOutstanding_ = 0;
@@ -127,11 +129,11 @@ public:
      * @brief Wait for all async writes to finish before unblocking.
      */
     void
-    sync()
+    sync(uint32_t seq)
     {
         LOG(log_.debug()) << "Waiting to sync all writes...";
         std::unique_lock<std::mutex> lck(syncMutex_);
-        syncCv_.wait(lck, [this]() { return finishedAllWriteRequests(); });
+        syncCv_.wait(lck, [this, seq]() { return finishedAllWriteRequests(seq); });
         LOG(log_.debug()) << "Sync done.";
     }
 
@@ -192,10 +194,10 @@ public:
      */
     template <typename... Args>
     void
-    write(PreparedStatementType const& preparedStatement, Args&&... args)
+    write(PreparedStatementType const& preparedStatement, uint32_t seq, Args&&... args)
     {
         auto statement = preparedStatement.bind(std::forward<Args>(args)...);
-        write(std::move(statement));
+        write(std::move(statement), seq);
     }
 
     /**
@@ -207,11 +209,11 @@ public:
      * @throw DatabaseTimeout on timeout
      */
     void
-    write(StatementType&& statement)
+    write(StatementType&& statement, uint32_t seq)
     {
         auto const startTime = std::chrono::steady_clock::now();
 
-        incrementOutstandingRequestCount();
+        incrementOutstandingRequestCount(seq);
 
         counters_->registerWriteStarted();
         // Note: lifetime is controlled by std::shared_from_this internally
@@ -219,8 +221,8 @@ public:
             ioc_,
             handle_,
             std::move(statement),
-            [this, startTime](auto const&) {
-                decrementOutstandingRequestCount();
+            [this, seq, startTime](auto const&) {
+                decrementOutstandingRequestCount(seq);
 
                 counters_->registerWriteFinished(startTime);
             },
@@ -237,19 +239,19 @@ public:
      * @throw DatabaseTimeout on timeout
      */
     void
-    write(std::vector<StatementType>&& statements)
+    write(std::vector<StatementType>&& statements, uint32_t seq)
     {
         if (statements.empty())
             return;
 
-        util::forEachBatch(std::move(statements), writeBatchSize_, [this](auto begin, auto end) {
+        util::forEachBatch(std::move(statements), writeBatchSize_, [this, seq](auto begin, auto end) {
             auto const startTime = std::chrono::steady_clock::now();
             auto chunk = std::vector<StatementType>{};
 
             chunk.reserve(std::distance(begin, end));
             std::move(begin, end, std::back_inserter(chunk));
 
-            incrementOutstandingRequestCount();
+            incrementOutstandingRequestCount(seq);
             counters_->registerWriteStarted();
 
             // Note: lifetime is controlled by std::shared_from_this internally
@@ -257,8 +259,8 @@ public:
                 ioc_,
                 handle_,
                 std::move(chunk),
-                [this, startTime](auto const&) {
-                    decrementOutstandingRequestCount();
+                [this, seq, startTime](auto const&) {
+                    decrementOutstandingRequestCount(seq);
                     counters_->registerWriteFinished(startTime);
                 },
                 [this]() { counters_->registerWriteRetry(); }
@@ -276,9 +278,11 @@ public:
      * @throw DatabaseTimeout on timeout
      */
     void
-    writeEach(std::vector<StatementType>&& statements)
+    writeEach(std::vector<StatementType>&& statements, uint32_t seq)
     {
-        std::ranges::for_each(std::move(statements), [this](auto& statement) { this->write(std::move(statement)); });
+        std::ranges::for_each(std::move(statements), [this, seq](auto& statement) {
+            this->write(std::move(statement), seq);
+        });
     }
 
     /**
@@ -509,25 +513,28 @@ public:
 
 private:
     void
-    incrementOutstandingRequestCount()
+    incrementOutstandingRequestCount(uint32_t seq)
     {
         {
             std::unique_lock<std::mutex> lck(throttleMutex_);
-            if (!canAddWriteRequest()) {
+            if (!canAddWriteRequest(seq)) {
                 LOG(log_.trace()) << "Max outstanding requests reached. "
                                   << "Waiting for other requests to finish";
-                throttleCv_.wait(lck, [this]() { return canAddWriteRequest(); });
+                throttleCv_.wait(lck, [&]() { return canAddWriteRequest(seq); });
             }
         }
-        ++numWriteRequestsOutstanding_;
+
+        std::unique_lock lck(mtx_);
+        ++numWriteRequestsOutstanding_[seq];
     }
 
     void
-    decrementOutstandingRequestCount()
+    decrementOutstandingRequestCount(uint32_t seq)
     {
         // sanity check
-        ASSERT(numWriteRequestsOutstanding_ > 0, "Decrementing num outstanding below 0");
-        size_t const cur = (--numWriteRequestsOutstanding_);
+        std::unique_lock lck(mtx_);
+        ASSERT(numWriteRequestsOutstanding_.at(seq) > 0, "Decrementing num outstanding below 0");
+        size_t const cur = (--numWriteRequestsOutstanding_.at(seq));
         {
             // mutex lock required to prevent race condition around spurious
             // wakeup
@@ -543,15 +550,17 @@ private:
     }
 
     bool
-    canAddWriteRequest() const
+    canAddWriteRequest(uint32_t seq) const
     {
-        return numWriteRequestsOutstanding_ < maxWriteRequestsOutstanding_;
+        std::unique_lock lck(mtx_);
+        return numWriteRequestsOutstanding_[seq] < maxWriteRequestsOutstanding_;
     }
 
     bool
-    finishedAllWriteRequests() const
+    finishedAllWriteRequests(uint32_t seq) const
     {
-        return numWriteRequestsOutstanding_ == 0;
+        std::unique_lock lck(mtx_);
+        return numWriteRequestsOutstanding_.at(seq) == 0;
     }
 
     void

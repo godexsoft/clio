@@ -94,9 +94,9 @@ public:
     BasicKeyspaceBackend(BasicKeyspaceBackend&&) = delete;
 
     bool
-    doFinishWrites() override
+    doFinishWrites(uint32_t seq) override
     {
-        this->waitForWritesToFinish();
+        this->waitForWritesToFinish(seq);
 
         // !range_.has_value() means the table 'ledger_range' is not populated;
         // This would be the first write to the table.

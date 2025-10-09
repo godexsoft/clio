@@ -659,7 +659,7 @@ public:
      * @param data A vector of NFTsData objects representing the NFTs
      */
     virtual void
-    writeNFTs(std::vector<NFTsData> const& data) = 0;
+    writeNFTs(std::vector<NFTsData> const& data, uint32_t seq) = 0;
 
     /**
      * @brief Write a new set of account transactions.
@@ -667,7 +667,7 @@ public:
      * @param data A vector of AccountTransactionsData objects representing the account transactions
      */
     virtual void
-    writeAccountTransactions(std::vector<AccountTransactionsData> data) = 0;
+    writeAccountTransactions(std::vector<AccountTransactionsData> data, uint32_t seq) = 0;
 
     /**
      * @brief Write a new account transaction.
@@ -675,7 +675,7 @@ public:
      * @param record An object representing the account transaction
      */
     virtual void
-    writeAccountTransaction(AccountTransactionsData record) = 0;
+    writeAccountTransaction(AccountTransactionsData record, uint32_t seq) = 0;
 
     /**
      * @brief Write NFTs transactions.
@@ -683,7 +683,7 @@ public:
      * @param data A vector of NFTTransactionsData objects
      */
     virtual void
-    writeNFTTransactions(std::vector<NFTTransactionsData> const& data) = 0;
+    writeNFTTransactions(std::vector<NFTTransactionsData> const& data, uint32_t seq) = 0;
 
     /**
      * @brief Write accounts that started holding onto a MPT.
@@ -691,7 +691,7 @@ public:
      * @param data A vector of MPT ID and account pairs
      */
     virtual void
-    writeMPTHolders(std::vector<MPTHolderData> const& data) = 0;
+    writeMPTHolders(std::vector<MPTHolderData> const& data, uint32_t seq) = 0;
 
     /**
      * @brief Write a new successor.
@@ -735,7 +735,7 @@ public:
      * @brief Wait for all pending writes to finish.
      */
     virtual void
-    waitForWritesToFinish() = 0;
+    waitForWritesToFinish(uint32_t seq) = 0;
 
     /**
      * @brief Mark the migration status of a migrator as Migrated in the database
@@ -775,7 +775,7 @@ private:
      * @return true on success; false otherwise
      */
     virtual bool
-    doFinishWrites() = 0;
+    doFinishWrites(uint32_t seq) = 0;
 };
 
 }  // namespace data

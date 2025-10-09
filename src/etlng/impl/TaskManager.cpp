@@ -81,7 +81,8 @@ TaskManager::run(std::size_t numExtractors)
         extractors_.push_back(spawnExtractor(queue_));
 
     // Only one forward loader for now. Backfill to be added here later
-    loaders_.push_back(spawnLoader(queue_));
+    for ([[maybe_unused]] auto _ : std::views::iota(0uz, numExtractors))
+        loaders_.push_back(spawnLoader(queue_));
 }
 
 util::async::AnyOperation<void>

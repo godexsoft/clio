@@ -102,9 +102,9 @@ ETLService::makeETLService(
             backend,
             etlng::impl::makeRegistry(
                 *state,
-                etlng::impl::CacheExt{cacheUpdater},
+                // etlng::impl::CacheExt{cacheUpdater},
                 etlng::impl::CoreExt{backend},
-                etlng::impl::SuccessorExt{backend, backend->cache()},
+                // etlng::impl::SuccessorExt{backend, backend->cache()},
                 etlng::impl::NFTExt{backend},
                 etlng::impl::MPTExt{backend}
             ),

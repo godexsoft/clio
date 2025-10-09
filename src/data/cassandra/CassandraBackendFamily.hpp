@@ -215,17 +215,17 @@ public:
     }
 
     void
-    waitForWritesToFinish() override
+    waitForWritesToFinish(uint32_t seq) override
     {
-        executor_.sync();
+        executor_.sync(seq);
     }
 
     void
     writeLedger(ripple::LedgerHeader const& ledgerHeader, std::string&& blob) override
     {
-        executor_.write(schema_->insertLedgerHeader, ledgerHeader.seq, std::move(blob));
+        executor_.write(schema_->insertLedgerHeader, ledgerHeader.seq, ledgerHeader.seq, std::move(blob));
 
-        executor_.write(schema_->insertLedgerHash, ledgerHeader.hash, ledgerHeader.seq);
+        executor_.write(schema_->insertLedgerHash, ledgerHeader.seq, ledgerHeader.hash, ledgerHeader.seq);
 
         ledgerSequence_ = ledgerHeader.seq;
     }
@@ -774,9 +774,9 @@ public:
         LOG(log_.trace()) << " Writing ledger object " << key.size() << ":" << seq << " [" << blob.size() << " bytes]";
 
         if (range_)
-            executor_.write(schema_->insertDiff, seq, key);
+            executor_.write(schema_->insertDiff, seq, seq, key);
 
-        executor_.write(schema_->insertObject, std::move(key), seq, std::move(blob));
+        executor_.write(schema_->insertObject, seq, std::move(key), seq, std::move(blob));
     }
 
     void
@@ -787,11 +787,11 @@ public:
         ASSERT(!key.empty(), "Key must not be empty");
         ASSERT(!successor.empty(), "Successor must not be empty");
 
-        executor_.write(schema_->insertSuccessor, std::move(key), seq, std::move(successor));
+        executor_.write(schema_->insertSuccessor, seq, std::move(key), seq, std::move(successor));
     }
 
     void
-    writeAccountTransactions(std::vector<AccountTransactionsData> data) override
+    writeAccountTransactions(std::vector<AccountTransactionsData> data, uint32_t seq) override
     {
         std::vector<Statement> statements;
         statements.reserve(data.size() * 10);  // assume 10 transactions avg
@@ -806,11 +806,11 @@ public:
             });
         }
 
-        executor_.write(std::move(statements));
+        executor_.write(std::move(statements), seq);
     }
 
     void
-    writeAccountTransaction(AccountTransactionsData record) override
+    writeAccountTransaction(AccountTransactionsData record, uint32_t seq) override
     {
         std::vector<Statement> statements;
         statements.reserve(record.accounts.size());
@@ -823,11 +823,11 @@ public:
             );
         });
 
-        executor_.write(std::move(statements));
+        executor_.write(std::move(statements), seq);
     }
 
     void
-    writeNFTTransactions(std::vector<NFTTransactionsData> const& data) override
+    writeNFTTransactions(std::vector<NFTTransactionsData> const& data, uint32_t seq) override
     {
         std::vector<Statement> statements;
         statements.reserve(data.size());
@@ -838,7 +838,7 @@ public:
             );
         });
 
-        executor_.write(std::move(statements));
+        executor_.write(std::move(statements), seq);
     }
 
     void
@@ -852,14 +852,14 @@ public:
     {
         LOG(log_.trace()) << "Writing txn to database";
 
-        executor_.write(schema_->insertLedgerTransaction, seq, hash);
+        executor_.write(schema_->insertLedgerTransaction, seq, seq, hash);
         executor_.write(
-            schema_->insertTransaction, std::move(hash), seq, date, std::move(transaction), std::move(metadata)
+            schema_->insertTransaction, seq, std::move(hash), seq, date, std::move(transaction), std::move(metadata)
         );
     }
 
     void
-    writeNFTs(std::vector<NFTsData> const& data) override
+    writeNFTs(std::vector<NFTsData> const& data, uint32_t seq) override
     {
         std::vector<Statement> statements;
         statements.reserve(data.size() * 3);
@@ -893,18 +893,18 @@ public:
             }
         }
 
-        executor_.writeEach(std::move(statements));
+        executor_.writeEach(std::move(statements), seq);
     }
 
     void
-    writeMPTHolders(std::vector<MPTHolderData> const& data) override
+    writeMPTHolders(std::vector<MPTHolderData> const& data, uint32_t seq) override
     {
         std::vector<Statement> statements;
         statements.reserve(data.size());
         for (auto [mptId, holder] : data)
             statements.push_back(schema_->insertMPTHolder.bind(mptId, holder));
 
-        executor_.write(std::move(statements));
+        executor_.write(std::move(statements), seq);
     }
 
     void

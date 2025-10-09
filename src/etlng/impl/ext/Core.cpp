@@ -69,7 +69,7 @@ CoreExt::insertTransactions(model::LedgerData const& data)
     for (auto const& txn : data.transactions) {
         LOG(log_.trace()) << "Inserting transaction = " << txn.sttx.getTransactionID();
 
-        backend_->writeAccountTransaction({txn.meta, txn.sttx.getTransactionID()});
+        backend_->writeAccountTransaction({txn.meta, txn.sttx.getTransactionID()}, data.seq);
         backend_->writeTransaction(
             auto{txn.key},
             data.seq,

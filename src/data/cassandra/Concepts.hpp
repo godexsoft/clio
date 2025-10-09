@@ -58,15 +58,16 @@ concept SomeExecutionStrategy = requires(
     Statement statement,
     std::vector<Statement> statements,
     PreparedStatement prepared,
-    boost::asio::yield_context token
+    boost::asio::yield_context token,
+    uint32_t seq
 ) {
     { T(settings, handle) };
-    { a.sync() } -> std::same_as<void>;
+    { a.sync(seq) } -> std::same_as<void>;
     { a.isTooBusy() } -> std::same_as<bool>;
     { a.writeSync(statement) } -> std::same_as<ResultOrError>;
     { a.writeSync(prepared) } -> std::same_as<ResultOrError>;
-    { a.write(prepared) } -> std::same_as<void>;
-    { a.write(std::move(statements)) } -> std::same_as<void>;
+    { a.write(prepared, seq) } -> std::same_as<void>;
+    { a.write(std::move(statements), seq) } -> std::same_as<void>;
     { a.read(token, prepared) } -> std::same_as<ResultOrError>;
     { a.read(token, statement) } -> std::same_as<ResultOrError>;
     { a.read(token, statements) } -> std::same_as<ResultOrError>;

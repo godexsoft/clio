@@ -188,7 +188,7 @@ private:
         ripple::LedgerHeader lgrInfo = ::util::deserializeHeader(ripple::makeSlice(rawData.ledger_header()));
 
         LOG(log_.debug()) << "Deserialized ledger header. " << ::util::toString(lgrInfo);
-        backend_->startWrites();
+        backend_->startWrites();  // TODO: maybe we want to pass seq here to initiate writes. this is nop atm
         backend_->writeLedger(lgrInfo, std::move(*rawData.mutable_ledger_header()));
 
         writeSuccessors(lgrInfo, rawData);
@@ -210,10 +210,10 @@ private:
         LOG(log_.debug()) << "Inserted all transactions. Number of transactions  = "
                           << rawData.transactions_list().transactions_size();
 
-        backend_->writeAccountTransactions(std::move(insertTxResultOp->accountTxData));
-        backend_->writeNFTs(insertTxResultOp->nfTokensData);
-        backend_->writeNFTTransactions(insertTxResultOp->nfTokenTxData);
-        backend_->writeMPTHolders(insertTxResultOp->mptHoldersData);
+        backend_->writeAccountTransactions(std::move(insertTxResultOp->accountTxData), lgrInfo.seq);
+        backend_->writeNFTs(insertTxResultOp->nfTokensData, lgrInfo.seq);
+        backend_->writeNFTTransactions(insertTxResultOp->nfTokenTxData, lgrInfo.seq);
+        backend_->writeMPTHolders(insertTxResultOp->mptHoldersData, lgrInfo.seq);
 
         auto [success, duration] =
             ::util::timed<std::chrono::duration<double>>([&]() { return backend_->finishWrites(lgrInfo.seq); });

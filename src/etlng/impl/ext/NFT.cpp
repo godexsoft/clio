@@ -47,7 +47,7 @@ void
 NFTExt::onInitialObject(uint32_t seq, model::Object const& obj)
 {
     LOG(log_.trace()) << "got initial object with key = " << obj.key;
-    backend_->writeNFTs(etl::getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw));
+    backend_->writeNFTs(etl::getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw), seq);
 }
 
 void
@@ -71,8 +71,8 @@ NFTExt::writeNFTs(model::LedgerData const& data)
     }
 
     // This is uniqued so that we only write latest modification (as in previous implementation)
-    backend_->writeNFTs(etl::getUniqueNFTsDatas(nfts));
-    backend_->writeNFTTransactions(nftTxs);
+    backend_->writeNFTs(etl::getUniqueNFTsDatas(nfts), data.seq);
+    backend_->writeNFTTransactions(nftTxs, data.seq);
 }
 
 }  // namespace etlng::impl
