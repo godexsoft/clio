@@ -48,6 +48,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -85,6 +86,8 @@ protected:
     using DefaultCassandraFamily::range_;
     using DefaultCassandraFamily::schema_;
 
+    std::mutex ledgerUpdateMtx_;
+
 public:
     /**
      * @brief Inherit the constructors of the base class.
@@ -100,20 +103,23 @@ public:
     doFinishWrites(uint32_t seq) override
     {
         this->waitForWritesToFinish(seq);
+        std::lock_guard lck(ledgerUpdateMtx_);
 
-        // Note: we don't care about ledger range table at all for this purpose
+        if (!range_.has_value()) {
+            executor_.writeSync(schema_->updateLedgerRange, seq, false);
+        } else {
+            if (seq <= range_->maxSequence) {
+                LOG(log_.info()) << "Ledger in DB (" << range_->maxSequence << ") is already newer than " << seq
+                                 << "; skip commit";
+                return true;
+            }
+        }
 
-        // if (!range_) {
-        //     executor_.writeSync(schema_->updateLedgerRange, ledgerSequence_, false, ledgerSequence_);
-        // }
+        // Note: we now just write without caring about potential other ETL nodes trying to write
+        LOG(log_.info()) << "Writing new latest seq to DB: " << seq;
+        executor_.writeSync(schema_->updateLedgerRange, seq, true);
 
-        // if (not this->executeSyncUpdate(schema_->updateLedgerRange.bind(ledgerSequence_, true, ledgerSequence_ - 1)))
-        // {
-        //     LOG(log_.warn()) << "Update failed for ledger " << ledgerSequence_;
-        //     return false;
-        // }
-
-        LOG(log_.info()) << "Committed ledger " << ledgerSequence_;
+        LOG(log_.info()) << "Committed ledger " << seq;
         return true;
     }
 

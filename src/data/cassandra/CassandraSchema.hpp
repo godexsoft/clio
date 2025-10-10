@@ -60,7 +60,6 @@ public:
                 UPDATE {}
                    SET sequence = ?
                  WHERE is_latest = ?
-                    IF sequence IN (?, null)
                 )",
                     qualifiedTableName(settingsProvider_.get(), "ledger_range")
                 )

@@ -74,7 +74,6 @@ public:
                 UPDATE {}
                    SET sequence = ?
                  WHERE is_latest = ?
-                    IF sequence = ?
                 )",
                     qualifiedTableName(settingsProvider_.get(), "ledger_range")
                 )

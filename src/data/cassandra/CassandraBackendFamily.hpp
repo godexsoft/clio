@@ -54,6 +54,7 @@
 #include <cstdint>
 #include <iterator>
 #include <limits>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -950,6 +951,8 @@ protected:
     bool
     executeSyncUpdate(Statement statement)
     {
+        std::lock_guard lck(rngMtx_);  // we don't want to update this more than once at a time
+
         auto const res = executor_.writeSync(statement);
         auto maybeSuccess = res->template get<bool>();
         if (not maybeSuccess) {
@@ -965,7 +968,14 @@ protected:
             // against what we were trying to write in the first place and
             // use that as the source of truth for the result.
             auto rng = hardFetchLedgerRangeNoThrow();
-            return rng && rng->maxSequence == ledgerSequence_;
+            if (rng.has_value()) {
+                LOG(log_.info()) << "In DB we have latest ledger = " << rng->maxSequence;
+            } else {
+                LOG(log_.error()) << "No range in DB?";
+            }
+
+            // Note: we can't rely on this to be equal anymore since ledgers are written in arbitrary order now
+            return rng.has_value();  // && rng->maxSequence == ledgerSequence_;
         }
 
         return true;

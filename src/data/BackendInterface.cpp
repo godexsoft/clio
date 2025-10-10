@@ -32,6 +32,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -57,7 +58,10 @@ BackendInterface::finishWrites(std::uint32_t const ledgerSequence)
     auto commitRes = doFinishWrites(ledgerSequence);
     if (commitRes) {
         LOG(log_.debug()) << "Successfully committed. Updating range now to " << ledgerSequence;
-        updateRange(ledgerSequence);
+
+        // only update if new ledger is newer than latest in DB already
+        if (auto rng = fetchLedgerRange(); not rng.has_value() or ledgerSequence > rng->maxSequence)
+            updateRange(ledgerSequence);
     }
     return commitRes;
 }
@@ -271,20 +275,27 @@ BackendInterface::updateRange(uint32_t newMax)
 {
     std::scoped_lock const lck(rngMtx_);
 
-    if (range_.has_value() && newMax < range_->maxSequence) {
-        ASSERT(
-            false,
-            "Range shouldn't exist yet or newMax should be at least range->maxSequence. newMax = {}, "
-            "range->maxSequence = {}",
-            newMax,
-            range_->maxSequence
-        );
-    }
+    // Note: since we are now writing with multiple loaders we may end up writing newer ledger before an older one
+    // this should not crash Clio
+    // if (range_.has_value() && newMax < range_->maxSequence) {
+    //     ASSERT(
+    //         false,
+    //         "Range shouldn't exist yet or newMax should be at least range->maxSequence. newMax = {}, "
+    //         "range->maxSequence = {}",
+    //         newMax,
+    //         range_->maxSequence
+    //     );
+    // }
 
     if (!range_.has_value()) {
         range_ = {.minSequence = newMax, .maxSequence = newMax};
     } else {
-        range_->maxSequence = newMax;
+        auto const max = std::max(newMax, range_->maxSequence);
+        LOG(log_.info()) << "Update max seq in range to " << max;
+        range_->maxSequence = max;  // we just use whatever newest seq is the maximum
+        // FIXME: this is dangerous because if we stop Clio mid writing it may have some data for a seq within
+        // [max-$extractor_threads:max-1] not written in practice we can discard the latest X ledgers and ask Clio to
+        // load them again using a regular ETL process once the bulk of the data is loaded
     }
 }
 
@@ -294,11 +305,14 @@ BackendInterface::setRange(uint32_t min, uint32_t max, bool force)
     std::scoped_lock const lck(rngMtx_);
 
     if (!force) {
-        ASSERT(min <= max, "Range min must be less than or equal to max");
+        // ASSERT(min <= max, "Range min must be less than or equal to max");
         ASSERT(not range_.has_value(), "Range was already set");
     }
 
-    range_ = {.minSequence = min, .maxSequence = max};
+    auto newMax = max;
+    if (range_.has_value())
+        newMax = std::max(range_->maxSequence, max);
+    range_ = {.minSequence = min, .maxSequence = newMax};
 }
 
 LedgerPage

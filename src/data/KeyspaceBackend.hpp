@@ -47,6 +47,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -82,6 +83,8 @@ class BasicKeyspaceBackend : public CassandraBackendFamily<
     using DefaultCassandraFamily::range_;
     using DefaultCassandraFamily::schema_;
 
+    std::mutex ledgerUpdateMtx_;
+
 public:
     /**
      * @brief Inherit the constructors of the base class.
@@ -97,21 +100,27 @@ public:
     doFinishWrites(uint32_t seq) override
     {
         this->waitForWritesToFinish(seq);
+        std::lock_guard lck(ledgerUpdateMtx_);
 
         // !range_.has_value() means the table 'ledger_range' is not populated;
         // This would be the first write to the table.
         // In this case, insert both min_sequence/max_sequence range into the table.
-        if (not(range_.has_value())) {
-            executor_.writeSync(schema_->insertLedgerRange, false, ledgerSequence_);
-            executor_.writeSync(schema_->insertLedgerRange, true, ledgerSequence_);
+        if (not range_.has_value()) {
+            executor_.writeSync(schema_->insertLedgerRange, false, seq);
+            executor_.writeSync(schema_->insertLedgerRange, true, seq);
+        } else {
+            if (seq <= range_->maxSequence) {
+                LOG(log_.info()) << "Ledger in DB (" << range_->maxSequence << ") is already newer than " << seq
+                                 << "; skip commit";
+                return true;
+            }
         }
 
-        if (not this->executeSyncUpdate(schema_->updateLedgerRange.bind(ledgerSequence_, true, ledgerSequence_ - 1))) {
-            log_.warn() << "Update failed for ledger " << ledgerSequence_;
-            return false;
-        }
+        // Note: we now just write without caring about potential other ETL nodes trying to write
+        LOG(log_.info()) << "Writing new latest seq to DB: " << seq;
+        executor_.writeSync(schema_->updateLedgerRange, seq, true);
 
-        log_.info() << "Committed ledger " << ledgerSequence_;
+        LOG(log_.info()) << "Committed ledger " << seq;
         return true;
     }
 
