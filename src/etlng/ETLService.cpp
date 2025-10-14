@@ -207,13 +207,15 @@ std::optional<data::LedgerRange>
 ETLService::loadInitialLedgerIfNeeded()
 {
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
+    ASSERT(not rng.has_value(), "Since DB ledger_range is not used, rng is expected to be nullopt here");
+
     if (not rng.has_value()) {
         ASSERT(
             not state_->isStrictReadonly,
             "Database is empty but this node is in strict readonly mode. Can't write initial ledger."
         );
 
-        LOG(log_.info()) << "Database is empty. Will download a ledger from the network.";
+        LOG(log_.info()) << "Database is empty (sort of). Will download a ledger from the network.";
         state_->isWriting = true;  // immediately become writer as the db is empty
 
         auto const getMostRecent = [this]() {
@@ -221,37 +223,43 @@ ETLService::loadInitialLedgerIfNeeded()
             return ledgers_->getMostRecent();
         };
 
+        ASSERT(startSequence_.has_value(), "In this version it's required to specify start_sequence");
+
         if (auto const maybeSeq = startSequence_.or_else(getMostRecent); maybeSeq.has_value()) {
             auto const seq = *maybeSeq;
-            LOG(log_.info()) << "Starting from sequence " << seq
-                             << ". Initial ledger download and extraction can take a while...";
+            LOG(log_.info()) << "Starting from sequence " << seq;
+            // << ". Initial ledger download and extraction can take a while...";
 
-            auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
-                return extractor_->extractLedgerOnly(seq).and_then(
-                    [this, seq](auto&& data) -> std::optional<ripple::LedgerHeader> {
-                        // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
-                        auto res = balancer_->loadInitialLedger(seq, *initialLoadObserver_);
-                        if (not res.has_value() and res.error() == InitialLedgerLoadError::Cancelled) {
-                            LOG(log_.debug()) << "Initial ledger load got cancelled";
-                            return std::nullopt;
-                        }
+            // we assume we have data for ledger just before the start_sequence specified
+            backend_->updateRange(seq - 1);
 
-                        ASSERT(res.has_value(), "Initial ledger retry logic failed");
-                        data.edgeKeys = std::move(res).value();
+            // auto [ledger, timeDiff] = ::util::timed<std::chrono::duration<double>>([this, seq]() {
+            //     return extractor_->extractLedgerOnly(seq).and_then(
+            //         [this, seq](auto&& data) -> std::optional<ripple::LedgerHeader> {
+            //             // TODO: loadInitialLedger in balancer should be called fetchEdgeKeys or similar
+            //             auto res = balancer_->loadInitialLedger(seq, *initialLoadObserver_);
+            //             if (not res.has_value() and res.error() == InitialLedgerLoadError::Cancelled) {
+            //                 LOG(log_.debug()) << "Initial ledger load got cancelled";
+            //                 return std::nullopt;
+            //             }
 
-                        return loader_->loadInitialLedger(data);
-                    }
-                );
-            });
+            //             ASSERT(res.has_value(), "Initial ledger retry logic failed");
+            //             data.edgeKeys = std::move(res).value();
 
-            if (not ledger.has_value()) {
-                LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
-                return std::nullopt;
-            }
+            //             return loader_->loadInitialLedger(data);
+            //         }
+            //     );
+            // });
 
-            LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
-            LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
+            // if (not ledger.has_value()) {
+            //     LOG(log_.error()) << "Failed to load initial ledger. Exiting monitor loop";
+            //     return std::nullopt;
+            // }
 
+            // LOG(log_.debug()) << "Time to download and store ledger = " << timeDiff;
+            // LOG(log_.info()) << "Finished loadInitialLedger. cache size = " << backend_->cache().size();
+
+            // at this point this should be pointing at initial ledger seq
             return backend_->hardFetchLedgerRangeNoThrow();
         }
 

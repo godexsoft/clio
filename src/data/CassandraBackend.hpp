@@ -103,21 +103,21 @@ public:
     doFinishWrites(uint32_t seq) override
     {
         this->waitForWritesToFinish(seq);
-        std::lock_guard lck(ledgerUpdateMtx_);
+        // std::lock_guard lck(ledgerUpdateMtx_);
 
-        if (!range_.has_value()) {
-            executor_.writeSync(schema_->updateLedgerRange, seq, false);
-        } else {
-            if (seq <= range_->maxSequence) {
-                LOG(log_.info()) << "Ledger in DB (" << range_->maxSequence << ") is already newer than " << seq
-                                 << "; skip commit";
-                return true;
-            }
-        }
+        // if (!range_.has_value()) {
+        //     executor_.writeSync(schema_->updateLedgerRange, seq, false);
+        // } else {
+        //     if (seq <= range_->maxSequence) {
+        //         LOG(log_.info()) << "Ledger in DB (" << range_->maxSequence << ") is already newer than " << seq
+        //                          << "; skip commit";
+        //         return true;
+        //     }
+        // }
 
-        // Note: we now just write without caring about potential other ETL nodes trying to write
-        LOG(log_.info()) << "Writing new latest seq to DB: " << seq;
-        executor_.writeSync(schema_->updateLedgerRange, seq, true);
+        // // Note: we now just write without caring about potential other ETL nodes trying to write
+        // LOG(log_.info()) << "Writing new latest seq to DB: " << seq;
+        // executor_.writeSync(schema_->updateLedgerRange, seq, true);
 
         LOG(log_.info()) << "Committed ledger " << seq;
         return true;

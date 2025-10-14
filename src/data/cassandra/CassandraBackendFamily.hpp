@@ -232,20 +232,25 @@ public:
     }
 
     std::optional<std::uint32_t>
-    fetchLatestLedgerSequence(boost::asio::yield_context yield) const override
+    fetchLatestLedgerSequence(boost::asio::yield_context) const override
     {
-        if (auto const res = executor_.read(yield, schema_->selectLatestLedger); res) {
-            if (auto const& result = res.value(); result) {
-                if (auto const maybeValue = result.template get<uint32_t>(); maybeValue)
-                    return maybeValue;
+        // if (auto const res = executor_.read(yield, schema_->selectLatestLedger); res) {
+        //     if (auto const& result = res.value(); result) {
+        //         if (auto const maybeValue = result.template get<uint32_t>(); maybeValue)
+        //             return maybeValue;
 
-                LOG(log_.error()) << "Could not fetch latest ledger - no rows";
-                return std::nullopt;
-            }
+        //         LOG(log_.error()) << "Could not fetch latest ledger - no rows";
+        //         return std::nullopt;
+        //     }
 
-            LOG(log_.error()) << "Could not fetch latest ledger - no result";
-        } else {
-            LOG(log_.error()) << "Could not fetch latest ledger: " << res.error();
+        //     LOG(log_.error()) << "Could not fetch latest ledger - no result";
+        // } else {
+        //     LOG(log_.error()) << "Could not fetch latest ledger: " << res.error();
+        // }
+
+        // use local value instead of db
+        if (range_.has_value()) {
+            return range_->maxSequence;
         }
 
         return std::nullopt;
@@ -299,41 +304,41 @@ public:
     }
 
     std::optional<LedgerRange>
-    hardFetchLedgerRange(boost::asio::yield_context yield) const override
+    hardFetchLedgerRange(boost::asio::yield_context) const override
     {
-        auto const res = executor_.read(yield, schema_->selectLedgerRange);
-        if (res) {
-            auto const& results = res.value();
-            if (not results.hasRows()) {
-                LOG(log_.debug()) << "Could not fetch ledger range - no rows";
-                return std::nullopt;
-            }
+        // auto const res = executor_.read(yield, schema_->selectLedgerRange);
+        // if (res) {
+        //     auto const& results = res.value();
+        //     if (not results.hasRows()) {
+        //         LOG(log_.debug()) << "Could not fetch ledger range - no rows";
+        //         return std::nullopt;
+        //     }
 
-            // TODO: this is probably a good place to use user type in
-            // cassandra instead of having two rows with bool flag. or maybe at
-            // least use tuple<int, int>?
-            LedgerRange range;
-            std::size_t idx = 0;
-            for (auto [seq] : extract<uint32_t>(results)) {
-                if (idx == 0) {
-                    range.maxSequence = range.minSequence = seq;
-                } else if (idx == 1) {
-                    range.maxSequence = seq;
-                }
+        //     // TODO: this is probably a good place to use user type in
+        //     // cassandra instead of having two rows with bool flag. or maybe at
+        //     // least use tuple<int, int>?
+        //     LedgerRange range;
+        //     std::size_t idx = 0;
+        //     for (auto [seq] : extract<uint32_t>(results)) {
+        //         if (idx == 0) {
+        //             range.maxSequence = range.minSequence = seq;
+        //         } else if (idx == 1) {
+        //             range.maxSequence = seq;
+        //         }
 
-                ++idx;
-            }
+        //         ++idx;
+        //     }
 
-            if (range.minSequence > range.maxSequence)
-                std::swap(range.minSequence, range.maxSequence);
+        //     if (range.minSequence > range.maxSequence)
+        //         std::swap(range.minSequence, range.maxSequence);
 
-            LOG(log_.debug()) << "After hardFetchLedgerRange range is " << range.minSequence << ":"
-                              << range.maxSequence;
-            return range;
-        }
-        LOG(log_.error()) << "Could not fetch ledger range: " << res.error();
+        //     LOG(log_.debug()) << "After hardFetchLedgerRange range is " << range.minSequence << ":"
+        //                       << range.maxSequence;
+        //     return range;
+        // }
+        // LOG(log_.error()) << "Could not fetch ledger range: " << res.error();
 
-        return std::nullopt;
+        return range_;  // we don't use DB for this anymore
     }
 
     std::vector<TransactionAndMetadata>
