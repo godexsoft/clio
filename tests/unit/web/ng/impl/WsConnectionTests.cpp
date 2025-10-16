@@ -131,9 +131,7 @@ TEST_F(WebWsConnectionTests, DisconnectClientOnInactivity)
         auto const start = std::chrono::steady_clock::now();
         auto const receivedMessage = wsConnection->receive(yield);
         auto const end = std::chrono::steady_clock::now();
-        EXPECT_LT(
-            end - start, std::chrono::milliseconds{8}
-        );  // Should be 2 ms, increase to workaround slow CI and sanitizer builds.
+        EXPECT_LT(end - start, std::chrono::milliseconds{4});  // Should be 2 ms, double it in case of slow CI.
 
         EXPECT_FALSE(receivedMessage.has_value());
         EXPECT_EQ(receivedMessage.error().value(), boost::asio::error::no_permission);
