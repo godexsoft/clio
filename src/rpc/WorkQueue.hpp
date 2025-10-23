@@ -39,6 +39,9 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
+#include <queue>
+#include <utility>
 
 namespace rpc {
 
@@ -58,6 +61,11 @@ class WorkQueue {
 
     std::atomic_bool stopping_;
 
+    enum class Priority : uint8_t {
+        High,
+        Default,
+    };
+
     class OneTimeCallable {
         std::function<void()> func_;
         bool called_{false};
@@ -71,7 +79,19 @@ class WorkQueue {
 
         operator bool() const;
     };
+
+    struct Queues {
+        std::queue<std::function<void(boost::asio::yield_context)>> high;
+        std::queue<std::function<void(boost::asio::yield_context)>> normal;
+
+        void
+        push(Priority, auto&&)
+        {
+        }
+    };
+
     util::Mutex<OneTimeCallable> onQueueEmpty_;
+    util::Mutex<Queues> queues_;
 
 public:
     /**
@@ -112,7 +132,7 @@ public:
      */
     template <typename FnType>
     bool
-    postCoro(FnType&& func, bool isWhiteListed)
+    postCoro(FnType&& func, bool isWhiteListed, Priority priority = Priority::Default)
     {
         if (stopping_) {
             LOG(log_.warn()) << "Queue is stopping, rejecting incoming task.";
@@ -126,28 +146,33 @@ public:
         }
 
         ++curSize_.get();
+        queues_.lock()->push(priority, std::forward<FnType>(func));
 
-        // Each time we enqueue a job, we want to post a symmetrical job that will dequeue and run the job at the front
-        // of the job queue.
-        util::spawn(
-            ioc_,
-            [this, func = std::forward<FnType>(func), start = std::chrono::system_clock::now()](auto yield) mutable {
-                auto const run = std::chrono::system_clock::now();
-                auto const wait = std::chrono::duration_cast<std::chrono::microseconds>(run - start).count();
+        // Each time we enqueue a job, we want to post a symmetrical job that will dequeue and run job by priority.
+        util::spawn(ioc_, [this, start = std::chrono::system_clock::now()](auto yield) mutable {
+            auto const run = std::chrono::system_clock::now();
+            auto const wait = std::chrono::duration_cast<std::chrono::microseconds>(run - start).count();
 
-                ++queued_.get();
-                durationUs_.get() += wait;
-                LOG(log_.info()) << "WorkQueue wait time = " << wait << " queue size = " << curSize_.get().value();
+            ++queued_.get();
+            durationUs_.get() += wait;
+            LOG(log_.info()) << "WorkQueue wait time = " << wait << " queue size = " << curSize_.get().value();
 
-                func(yield);
-                --curSize_.get();
-                if (curSize_.get().value() == 0 && stopping_) {
-                    auto onTasksComplete = onQueueEmpty_.lock();
-                    ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
-                    onTasksComplete->operator()();
-                }
+            {
+                auto queue = queue_.lock();
+                ASSERT(not queue->empty(), "WorkQueue can't be empty here");
+
+                // TODO: this may actually block lower priority from ever executing?
+                queue->top()->execute(yield);  // execute the highest priority available
+                queue->pop();                  // remove the now executed coro
             }
-        );
+
+            --curSize_.get();
+            if (curSize_.get().value() == 0 && stopping_) {
+                auto onTasksComplete = onQueueEmpty_.lock();
+                ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
+                onTasksComplete->operator()();
+            }
+        });
 
         return true;
     }
@@ -173,6 +198,14 @@ public:
      */
     size_t
     size() const;
+
+private:
+    void
+    dispatcherLoop(boost::asio::yield_context yield)
+    {
+        while (not stopping_) {
+        }
+    }
 };
 
 }  // namespace rpc
