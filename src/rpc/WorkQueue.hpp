@@ -19,9 +19,7 @@
 
 #pragma once
 
-#include "util/Assert.hpp"
 #include "util/Mutex.hpp"
-#include "util/Spawn.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Counter.hpp"
@@ -36,14 +34,11 @@
 #include <boost/json/object.hpp>
 
 #include <atomic>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <memory>
 #include <queue>
-#include <thread>
 #include <utility>
 
 namespace rpc {
@@ -52,6 +47,8 @@ namespace rpc {
  * @brief An asynchronous, thread-safe queue for RPC requests.
  */
 class WorkQueue {
+    static constexpr auto kHIGH_PRIO_RATIO = 4uz;
+
     // these are cumulative for the lifetime of the process
     std::reference_wrapper<util::prometheus::CounterInt> queued_;
     std::reference_wrapper<util::prometheus::CounterInt> durationUs_;
@@ -65,6 +62,13 @@ class WorkQueue {
 
     std::atomic_bool stopping_;
 
+public:
+    enum class Priority : uint8_t {
+        High,
+        Default,
+    };
+
+private:
     class OneTimeCallable {
         std::function<void()> func_;
         bool called_{false};
@@ -79,17 +83,11 @@ class WorkQueue {
         operator bool() const;
     };
 
-public:
-    enum class Priority : uint8_t {
-        High,
-        Default,
-    };
-
-private:
-    struct Queues {
+    struct DispatcherState {
         std::queue<std::function<void(boost::asio::yield_context)>> high;
         std::queue<std::function<void(boost::asio::yield_context)>> normal;
-        bool isIdle = false;
+
+        bool isIdle = false;  // indicates that the dispatcher is idle
 
         void
         push(Priority priority, auto&& task)
@@ -101,15 +99,15 @@ private:
             }
         }
 
-        bool
+        [[nodiscard]] bool
         empty() const
         {
-            return high.empty() && normal.empty();
+            return high.empty() and normal.empty();
         }
     };
 
     util::Mutex<OneTimeCallable> onQueueEmpty_;
-    util::Mutex<Queues> queues_;
+    util::Mutex<DispatcherState> dispatcherState_;
     boost::asio::steady_timer waitTimer_;
 
 public:
@@ -136,7 +134,7 @@ public:
      * @param config The Clio config to use
      * @return The work queue
      */
-    static WorkQueue
+    [[nodiscard]] static WorkQueue
     makeWorkQueue(util::config::ClioConfigDefinition const& config);
 
     /**
@@ -147,6 +145,7 @@ public:
      * @tparam FnType The function object type
      * @param func The function object to queue as a job
      * @param isWhiteListed Whether the queue capacity applies to this job
+     * @param priority The priority of the task
      * @return true if the job was successfully queued; false otherwise
      */
     template <typename FnType>
@@ -168,14 +167,14 @@ public:
         auto needsWakeup = false;
 
         {
-            auto lock = queues_.lock();
+            auto state = dispatcherState_.lock();
 
-            if (lock->isIdle) {
+            if (state->isIdle) {
                 needsWakeup = true;
-                lock->isIdle = false;
+                state->isIdle = false;
             }
 
-            lock->push(priority, std::forward<FnType>(func));
+            state->push(priority, std::forward<FnType>(func));
         }
 
         if (needsWakeup)
@@ -189,7 +188,7 @@ public:
      *
      * @return The report as a JSON object.
      */
-    boost::json::object
+    [[nodiscard]] boost::json::object
     report() const;
 
     /**
@@ -203,7 +202,7 @@ public:
      *
      * @return The number of jobs in the queue.
      */
-    size_t
+    [[nodiscard]] size_t
     size() const;
 
 private:

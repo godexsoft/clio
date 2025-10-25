@@ -35,7 +35,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -55,6 +54,7 @@ WorkQueue::OneTimeCallable::operator()()
         called_ = true;
     }
 }
+
 WorkQueue::OneTimeCallable::
 operator bool() const
 {
@@ -95,31 +95,30 @@ WorkQueue::~WorkQueue()
 void
 WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 {
-    LOG(log_.info()) << "WorkQueue dispatcher starting";
+    LOG(log_.debug()) << "WorkQueue dispatcher starting";
 
-    int const highPrioRatio = 4;
-
+    // all ongoing tasks must be completed before stopping fully
     while (not stopping_ or size() > 0) {
-        std::vector<std::function<void(boost::asio::yield_context)>> tasksToRun;
-        bool shouldWait = false;
+        std::vector<std::function<void(boost::asio::yield_context)>> batch;
+        auto shouldWait = false;
 
         {
-            auto lock = queues_.lock();
+            auto state = dispatcherState_.lock();
 
-            if (lock->empty()) {
+            if (state->empty()) {
                 shouldWait = true;
-                lock->isIdle = true;
+                state->isIdle = true;
             } else {
-                int highPrioCount = 0;
-                while (highPrioCount < highPrioRatio and not lock->high.empty()) {
-                    tasksToRun.push_back(std::move(lock->high.front()));
-                    lock->high.pop();
+                auto highPrioCount = 0uz;
+                while (highPrioCount < kHIGH_PRIO_RATIO and not state->high.empty()) {
+                    batch.push_back(std::move(state->high.front()));
+                    state->high.pop();
                     ++highPrioCount;
                 }
 
-                if (not lock->normal.empty()) {
-                    tasksToRun.push_back(std::move(lock->normal.front()));
-                    lock->normal.pop();
+                if (not state->normal.empty()) {
+                    batch.push_back(std::move(state->normal.front()));
+                    state->normal.pop();
                 }
             }
         }
@@ -129,7 +128,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
             boost::system::error_code ec;
             waitTimer_.async_wait(yield[ec]);
         } else {
-            for (auto& task : tasksToRun) {
+            for (auto task : std::move(batch)) {
                 util::spawn(
                     ioc_, [this, start = std::chrono::system_clock::now(), task = std::move(task)](auto yield) mutable {
                         auto const run = std::chrono::system_clock::now();
@@ -137,7 +136,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 
                         ++queued_.get();
                         durationUs_.get() += wait;
-                        LOG(log_.info()) << "WorkQueue wait time = " << wait << " queue size = " << size();
+                        LOG(log_.info()) << "WorkQueue wait time: " << wait << ", queue size: " << size();
 
                         task(yield);
 
@@ -156,7 +155,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
     ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
     onTasksComplete->operator()();
 
-    LOG(log_.info()) << "WorkQueue dispatcher finished";
+    LOG(log_.debug()) << "WorkQueue dispatcher finished";
 }
 
 void
@@ -166,13 +165,13 @@ WorkQueue::stop(std::function<void()> onQueueEmpty)
     handler->setCallable(std::move(onQueueEmpty));
 
     stopping_ = true;
-    bool needsWakeup = false;
+    auto needsWakeup = false;
 
     {
-        auto lock = queues_.lock();
-        if (lock->isIdle) {
+        auto state = dispatcherState_.lock();
+        if (state->isIdle) {
             needsWakeup = true;
-            lock->isIdle = false;
+            state->isIdle = false;
         }
     }
 
