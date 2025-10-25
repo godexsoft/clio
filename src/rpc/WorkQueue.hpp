@@ -39,29 +39,29 @@
 #include <functional>
 #include <limits>
 #include <queue>
-#include <utility>
 
 namespace rpc {
+
+namespace impl {
+class OneTimeCallable {
+    std::function<void()> func_;
+    bool called_{false};
+
+public:
+    void
+    setCallable(std::function<void()> func);
+
+    void
+    operator()();
+
+    operator bool() const;
+};
+}  // namespace impl
 
 /**
  * @brief An asynchronous, thread-safe queue for RPC requests.
  */
 class WorkQueue {
-    static constexpr auto kHIGH_PRIO_RATIO = 4uz;
-
-    // these are cumulative for the lifetime of the process
-    std::reference_wrapper<util::prometheus::CounterInt> queued_;
-    std::reference_wrapper<util::prometheus::CounterInt> durationUs_;
-
-    std::reference_wrapper<util::prometheus::GaugeInt> curSize_;
-    uint32_t maxSize_ = std::numeric_limits<uint32_t>::max();
-
-    util::Logger log_{"RPC"};
-    boost::asio::thread_pool ioc_;
-    boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
-
-    std::atomic_bool stopping_;
-
 public:
     enum class Priority : uint8_t {
         High,
@@ -69,25 +69,11 @@ public:
     };
 
 private:
-    class OneTimeCallable {
-        std::function<void()> func_;
-        bool called_{false};
-
-    public:
-        void
-        setCallable(std::function<void()> func);
-
-        void
-        operator()();
-
-        operator bool() const;
-    };
-
     struct DispatcherState {
         std::queue<std::function<void(boost::asio::yield_context)>> high;
         std::queue<std::function<void(boost::asio::yield_context)>> normal;
 
-        bool isIdle = false;  // indicates that the dispatcher is idle
+        bool isIdle = false;
 
         void
         push(Priority priority, auto&& task)
@@ -106,7 +92,23 @@ private:
         }
     };
 
-    util::Mutex<OneTimeCallable> onQueueEmpty_;
+private:
+    static constexpr auto kHIGH_PRIO_RATIO = 4uz;
+
+    // these are cumulative for the lifetime of the process
+    std::reference_wrapper<util::prometheus::CounterInt> queued_;
+    std::reference_wrapper<util::prometheus::CounterInt> durationUs_;
+
+    std::reference_wrapper<util::prometheus::GaugeInt> curSize_;
+    uint32_t maxSize_ = std::numeric_limits<uint32_t>::max();
+
+    util::Logger log_{"RPC"};
+    boost::asio::thread_pool ioc_;
+    boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
+
+    std::atomic_bool stopping_;
+
+    util::Mutex<impl::OneTimeCallable> onQueueEmpty_;
     util::Mutex<DispatcherState> dispatcherState_;
     boost::asio::steady_timer waitTimer_;
 
@@ -142,46 +144,17 @@ public:
      *
      * The job will be rejected if isWhiteListed is set to false and the current size of the queue reached capacity.
      *
-     * @tparam FnType The function object type
      * @param func The function object to queue as a job
      * @param isWhiteListed Whether the queue capacity applies to this job
      * @param priority The priority of the task
      * @return true if the job was successfully queued; false otherwise
      */
-    template <typename FnType>
     bool
-    postCoro(FnType&& func, bool isWhiteListed, Priority priority = Priority::Default)
-    {
-        if (stopping_) {
-            LOG(log_.warn()) << "Queue is stopping, rejecting incoming task.";
-            return false;
-        }
-
-        if (size() >= maxSize_ && !isWhiteListed) {
-            LOG(log_.warn()) << "Queue is full. rejecting job. current size = " << size()
-                             << "; max size = " << maxSize_;
-            return false;
-        }
-
-        ++curSize_.get();
-        auto needsWakeup = false;
-
-        {
-            auto state = dispatcherState_.lock();
-
-            if (state->isIdle) {
-                needsWakeup = true;
-                state->isIdle = false;
-            }
-
-            state->push(priority, std::forward<FnType>(func));
-        }
-
-        if (needsWakeup)
-            boost::asio::post(strand_, [this] { waitTimer_.cancel(); });
-
-        return true;
-    }
+    postCoro(
+        std::function<void(boost::asio::yield_context)> func,
+        bool isWhiteListed,
+        Priority priority = Priority::Default
+    );
 
     /**
      * @brief Generate a report of the work queue state.

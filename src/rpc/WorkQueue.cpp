@@ -39,15 +39,16 @@
 #include <vector>
 
 namespace rpc {
+namespace impl {
 
 void
-WorkQueue::OneTimeCallable::setCallable(std::function<void()> func)
+OneTimeCallable::setCallable(std::function<void()> func)
 {
     func_ = func;
 }
 
 void
-WorkQueue::OneTimeCallable::operator()()
+OneTimeCallable::operator()()
 {
     if (not called_) {
         func_();
@@ -55,11 +56,13 @@ WorkQueue::OneTimeCallable::operator()()
     }
 }
 
-WorkQueue::OneTimeCallable::
+OneTimeCallable::
 operator bool() const
 {
     return func_.operator bool();
 }
+
+}  // namespace impl
 
 WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
     : queued_{PrometheusService::counterInt(
@@ -90,6 +93,39 @@ WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
 WorkQueue::~WorkQueue()
 {
     join();
+}
+
+bool
+WorkQueue::postCoro(std::function<void(boost::asio::yield_context)> func, bool isWhiteListed, Priority priority)
+{
+    if (stopping_) {
+        LOG(log_.warn()) << "Queue is stopping, rejecting incoming task.";
+        return false;
+    }
+
+    if (size() >= maxSize_ && !isWhiteListed) {
+        LOG(log_.warn()) << "Queue is full. rejecting job. current size = " << size() << "; max size = " << maxSize_;
+        return false;
+    }
+
+    ++curSize_.get();
+    auto needsWakeup = false;
+
+    {
+        auto state = dispatcherState_.lock();
+
+        if (state->isIdle) {
+            needsWakeup = true;
+            state->isIdle = false;
+        }
+
+        state->push(priority, std::move(func));
+    }
+
+    if (needsWakeup)
+        boost::asio::post(strand_, [this] { waitTimer_.cancel(); });
+
+    return true;
 }
 
 void
