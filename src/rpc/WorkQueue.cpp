@@ -19,16 +19,25 @@
 
 #include "rpc/WorkQueue.hpp"
 
+#include "util/Assert.hpp"
+#include "util/Spawn.hpp"
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Label.hpp"
 #include "util/prometheus/Prometheus.hpp"
 
+#include <boost/asio/dispatch.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/json/object.hpp>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <thread>
 #include <utility>
+#include <vector>
 
 namespace rpc {
 
@@ -69,9 +78,13 @@ WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
           "The current number of tasks in the queue"
       )}
     , ioc_{numWorkers}
+    , strand_{ioc_.get_executor()}
+    , waitTimer_(ioc_)
 {
     if (maxSize != 0)
         maxSize_ = maxSize;
+
+    util::spawn(strand_, [this](auto yield) { dispatcherLoop(yield); });
 }
 
 WorkQueue::~WorkQueue()
@@ -80,14 +93,91 @@ WorkQueue::~WorkQueue()
 }
 
 void
+WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
+{
+    LOG(log_.info()) << "WorkQueue dispatcher starting";
+
+    int const highPrioRatio = 4;
+
+    while (not stopping_ or size() > 0) {
+        std::vector<std::function<void(boost::asio::yield_context)>> tasksToRun;
+        bool shouldWait = false;
+
+        {
+            auto lock = queues_.lock();
+
+            if (lock->empty()) {
+                shouldWait = true;
+                lock->isIdle = true;
+            } else {
+                int highPrioCount = 0;
+                while (highPrioCount < highPrioRatio and not lock->high.empty()) {
+                    tasksToRun.push_back(std::move(lock->high.front()));
+                    lock->high.pop();
+                    ++highPrioCount;
+                }
+
+                if (not lock->normal.empty()) {
+                    tasksToRun.push_back(std::move(lock->normal.front()));
+                    lock->normal.pop();
+                }
+            }
+        }
+
+        if (not stopping_ and shouldWait) {
+            waitTimer_.expires_at(std::chrono::steady_clock::time_point::max());
+            boost::system::error_code ec;
+            waitTimer_.async_wait(yield[ec]);
+        } else {
+            for (auto& task : tasksToRun) {
+                util::spawn(
+                    ioc_, [this, start = std::chrono::system_clock::now(), task = std::move(task)](auto yield) mutable {
+                        auto const run = std::chrono::system_clock::now();
+                        auto const wait = std::chrono::duration_cast<std::chrono::microseconds>(run - start).count();
+
+                        ++queued_.get();
+                        durationUs_.get() += wait;
+                        LOG(log_.info()) << "WorkQueue wait time = " << wait << " queue size = " << size();
+
+                        task(yield);
+
+                        --curSize_.get();
+                    }
+                );
+            }
+
+            boost::asio::post(ioc_.get_executor(), yield);  // yield back to avoid hijacking the thread
+        }
+    }
+
+    LOG(log_.info()) << "WorkQueue dispatcher shutdown requested - time to execute onTasksComplete";
+
+    auto onTasksComplete = onQueueEmpty_.lock();
+    ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
+    onTasksComplete->operator()();
+
+    LOG(log_.info()) << "WorkQueue dispatcher finished";
+}
+
+void
 WorkQueue::stop(std::function<void()> onQueueEmpty)
 {
     auto handler = onQueueEmpty_.lock();
     handler->setCallable(std::move(onQueueEmpty));
+
     stopping_ = true;
-    if (size() == 0) {
-        handler->operator()();
+    bool needsWakeup = false;
+
+    {
+        auto lock = queues_.lock();
+        if (lock->isIdle) {
+            needsWakeup = true;
+            lock->isIdle = false;
+        }
     }
+
+    if (needsWakeup)
+        boost::asio::post(strand_, [this] { waitTimer_.cancel(); });
 }
 
 WorkQueue
@@ -118,6 +208,10 @@ WorkQueue::report() const
 void
 WorkQueue::join()
 {
+    // TODO: maybe this is not the best place or some renaming needs to be done
+    if (not stopping_)
+        stop();
+
     ioc_.join();
 }
 

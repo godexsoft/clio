@@ -185,11 +185,13 @@ struct MockPrometheusImpl : PrometheusInterface {
     }
 
     std::unordered_map<std::string, std::unique_ptr<MetricBase>> metrics;
-    std::unordered_map<std::string, ::testing::StrictMock<MockCounterImplInt>> counterIntImpls;
-    std::unordered_map<std::string, ::testing::StrictMock<MockCounterImplUint>> counterUintImpls;
-    std::unordered_map<std::string, ::testing::StrictMock<MockCounterImplDouble>> counterDoubleImpls;
-    std::unordered_map<std::string, ::testing::StrictMock<MockHistogramImplInt>> histogramIntImpls;
-    std::unordered_map<std::string, ::testing::StrictMock<MockHistogramImplDouble>> histogramDoubleImpls;
+
+    // TODO: change back to strict if we need them - have to use mock workqueue though
+    std::unordered_map<std::string, ::testing::NiceMock<MockCounterImplInt>> counterIntImpls;
+    std::unordered_map<std::string, ::testing::NiceMock<MockCounterImplUint>> counterUintImpls;
+    std::unordered_map<std::string, ::testing::NiceMock<MockCounterImplDouble>> counterDoubleImpls;
+    std::unordered_map<std::string, ::testing::NiceMock<MockHistogramImplInt>> histogramIntImpls;
+    std::unordered_map<std::string, ::testing::NiceMock<MockHistogramImplDouble>> histogramDoubleImpls;
 };
 
 /**

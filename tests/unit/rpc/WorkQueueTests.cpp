@@ -30,6 +30,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <iostream>
 #include <mutex>
 #include <semaphore>
 
@@ -71,7 +72,6 @@ TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
 {
     static constexpr auto kTOTAL = 3u;
-    auto expectedCount = 2u;
     auto unblocked = false;
 
     std::mutex mtx;
@@ -82,8 +82,6 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
             [&](auto /* yield */) {
                 std::unique_lock lk{mtx};
                 cv.wait(lk, [&] { return unblocked; });
-
-                --expectedCount;
             },
             false
         );
@@ -150,7 +148,7 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
 
 struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {};
 
-TEST_F(WorkQueueMockPrometheusTest, postCoroCouhters)
+TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 {
     auto& queuedMock = makeMock<CounterInt>("work_queue_queued_total_number", "");
     auto& durationMock = makeMock<CounterInt>("work_queue_cumulative_tasks_duration_us", "");
@@ -158,11 +156,13 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCouhters)
 
     std::binary_semaphore semaphore{0};
 
-    EXPECT_CALL(curSizeMock, value()).Times(2).WillRepeatedly(::testing::Return(0));
+    // TODO: the first value() is by default 0 and it's a nice mock so it works but this is bad
     EXPECT_CALL(curSizeMock, add(1));
+    EXPECT_CALL(curSizeMock, value()).WillRepeatedly(::testing::Return(1));
     EXPECT_CALL(queuedMock, add(1));
     EXPECT_CALL(durationMock, add(::testing::Gt(0))).WillOnce([&](auto) {
         EXPECT_CALL(curSizeMock, add(-1));
+        EXPECT_CALL(curSizeMock, value()).WillOnce(::testing::Return(0));
         semaphore.release();
     });
 

@@ -29,6 +29,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/json.hpp>
 #include <boost/json/object.hpp>
@@ -41,6 +43,7 @@
 #include <limits>
 #include <memory>
 #include <queue>
+#include <thread>
 #include <utility>
 
 namespace rpc {
@@ -58,6 +61,7 @@ class WorkQueue {
 
     util::Logger log_{"RPC"};
     boost::asio::thread_pool ioc_;
+    boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
 
     std::atomic_bool stopping_;
 
@@ -83,15 +87,28 @@ class WorkQueue {
     struct Queues {
         std::queue<std::function<void(boost::asio::yield_context)>> high;
         std::queue<std::function<void(boost::asio::yield_context)>> normal;
+        bool isIdle = false;
 
         void
-        push(Priority, auto&&)
+        push(Priority priority, auto&& task)
         {
+            if (priority == Priority::High) {
+                high.push(std::forward<decltype(task)>(task));
+            } else {
+                normal.push(std::forward<decltype(task)>(task));
+            }
+        }
+
+        bool
+        empty() const
+        {
+            return high.empty() && normal.empty();
         }
     };
 
     util::Mutex<OneTimeCallable> onQueueEmpty_;
     util::Mutex<Queues> queues_;
+    boost::asio::steady_timer waitTimer_;
 
 public:
     /**
@@ -109,7 +126,7 @@ public:
      * @param onQueueEmpty A callback to run when the last task in the queue is completed
      */
     void
-    stop(std::function<void()> onQueueEmpty);
+    stop(std::function<void()> onQueueEmpty = [] {});
 
     /**
      * @brief A factory function that creates the work queue based on a config.
@@ -139,40 +156,28 @@ public:
             return false;
         }
 
-        if (curSize_.get().value() >= maxSize_ && !isWhiteListed) {
-            LOG(log_.warn()) << "Queue is full. rejecting job. current size = " << curSize_.get().value()
+        if (size() >= maxSize_ && !isWhiteListed) {
+            LOG(log_.warn()) << "Queue is full. rejecting job. current size = " << size()
                              << "; max size = " << maxSize_;
             return false;
         }
 
         ++curSize_.get();
-        queues_.lock()->push(priority, std::forward<FnType>(func));
+        auto needsWakeup = false;
 
-        // Each time we enqueue a job, we want to post a symmetrical job that will dequeue and run job by priority.
-        util::spawn(ioc_, [this, start = std::chrono::system_clock::now()](auto yield) mutable {
-            auto const run = std::chrono::system_clock::now();
-            auto const wait = std::chrono::duration_cast<std::chrono::microseconds>(run - start).count();
+        {
+            auto lock = queues_.lock();
 
-            ++queued_.get();
-            durationUs_.get() += wait;
-            LOG(log_.info()) << "WorkQueue wait time = " << wait << " queue size = " << curSize_.get().value();
-
-            {
-                auto queue = queue_.lock();
-                ASSERT(not queue->empty(), "WorkQueue can't be empty here");
-
-                // TODO: this may actually block lower priority from ever executing?
-                queue->top()->execute(yield);  // execute the highest priority available
-                queue->pop();                  // remove the now executed coro
+            if (lock->isIdle) {
+                needsWakeup = true;
+                lock->isIdle = false;
             }
 
-            --curSize_.get();
-            if (curSize_.get().value() == 0 && stopping_) {
-                auto onTasksComplete = onQueueEmpty_.lock();
-                ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
-                onTasksComplete->operator()();
-            }
-        });
+            lock->push(priority, std::forward<FnType>(func));
+        }
+
+        if (needsWakeup)
+            boost::asio::post(strand_, [this] { waitTimer_.cancel(); });
 
         return true;
     }
@@ -201,11 +206,7 @@ public:
 
 private:
     void
-    dispatcherLoop(boost::asio::yield_context yield)
-    {
-        while (not stopping_) {
-        }
-    }
+    dispatcherLoop(boost::asio::yield_context yield);
 };
 
 }  // namespace rpc
