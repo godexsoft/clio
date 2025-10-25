@@ -63,6 +63,9 @@ public:
  */
 class WorkQueue {
 public:
+    /**
+     * @brief Represents a task scheduling priority
+     */
     enum class Priority : uint8_t {
         High,
         Default,
