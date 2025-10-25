@@ -65,11 +65,6 @@ class WorkQueue {
 
     std::atomic_bool stopping_;
 
-    enum class Priority : uint8_t {
-        High,
-        Default,
-    };
-
     class OneTimeCallable {
         std::function<void()> func_;
         bool called_{false};
@@ -84,6 +79,13 @@ class WorkQueue {
         operator bool() const;
     };
 
+public:
+    enum class Priority : uint8_t {
+        High,
+        Default,
+    };
+
+private:
     struct Queues {
         std::queue<std::function<void(boost::asio::yield_context)>> high;
         std::queue<std::function<void(boost::asio::yield_context)>> normal;

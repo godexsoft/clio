@@ -30,9 +30,11 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <iostream>
 #include <mutex>
 #include <semaphore>
+#include <vector>
 
 using namespace util;
 using namespace util::config;
@@ -40,15 +42,24 @@ using namespace rpc;
 using namespace util::prometheus;
 
 struct RPCWorkQueueTestBase : public virtual ::testing::Test {
-    ClioConfigDefinition cfg = {
-        {"server.max_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(2)},
-        {"workers", ConfigValue{ConfigType::Integer}.defaultValue(4)}
-    };
+    ClioConfigDefinition cfg;
+    WorkQueue queue;
 
-    WorkQueue queue = WorkQueue::makeWorkQueue(cfg);
+    RPCWorkQueueTestBase(uint32_t workers = 4, uint32_t maxQueueSize = 2)
+        : cfg{
+              {"server.max_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(maxQueueSize)},
+              {"workers", ConfigValue{ConfigType::Integer}.defaultValue(workers)},
+          }
+        , queue{WorkQueue::makeWorkQueue(cfg)}
+    {
+    }
 };
 
-struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {};
+struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {
+    WorkQueueTest() : RPCWorkQueueTestBase(4, 2)
+    {
+    }
+};
 
 TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
 {
@@ -101,6 +112,57 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
     EXPECT_TRUE(unblocked);
 }
 
+struct WorkQueuePriorityTest : WithPrometheus, RPCWorkQueueTestBase {
+    WorkQueuePriorityTest() : RPCWorkQueueTestBase(1, 100)
+    {
+    }
+};
+
+TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
+{
+    static constexpr auto kTOTAL = 10;
+    std::vector<WorkQueue::Priority> executionOrder;
+    std::mutex mtx;
+
+    for (int i = 0; i < kTOTAL; ++i) {
+        queue.postCoro(
+            [&](auto) {
+                std::lock_guard const lock(mtx);
+                executionOrder.push_back(WorkQueue::Priority::High);
+            },
+            true,
+            WorkQueue::Priority::High
+        );
+        queue.postCoro(
+            [&](auto) {
+                std::lock_guard const lock(mtx);
+                executionOrder.push_back(WorkQueue::Priority::Default);
+            },
+            true,
+            WorkQueue::Priority::Default
+        );
+    }
+
+    queue.join();
+
+    // with 1 worker, the execution order is deterministic
+    // we should see 4 high prio tasks, then 1 normal prio task, until high prio tasks are depleted
+    std::vector<WorkQueue::Priority> const expectedOrder = {
+        WorkQueue::Priority::High,    WorkQueue::Priority::High,    WorkQueue::Priority::High,
+        WorkQueue::Priority::High,    WorkQueue::Priority::Default, WorkQueue::Priority::High,
+        WorkQueue::Priority::High,    WorkQueue::Priority::High,    WorkQueue::Priority::High,
+        WorkQueue::Priority::Default, WorkQueue::Priority::High,    WorkQueue::Priority::High,
+        WorkQueue::Priority::Default, WorkQueue::Priority::Default, WorkQueue::Priority::Default,
+        WorkQueue::Priority::Default, WorkQueue::Priority::Default, WorkQueue::Priority::Default,
+        WorkQueue::Priority::Default, WorkQueue::Priority::Default,
+    };
+
+    ASSERT_EQ(executionOrder.size(), expectedOrder.size());
+    for (auto i = 0uz; i < executionOrder.size(); ++i) {
+        EXPECT_EQ(executionOrder[i], expectedOrder[i]) << "Mismatch at index " << i;
+    }
+}
+
 struct WorkQueueStopTest : WorkQueueTest {
     testing::StrictMock<testing::MockFunction<void()>> onTasksComplete;
     testing::StrictMock<testing::MockFunction<void()>> taskMock;
@@ -126,6 +188,7 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingAndQueueIsEmpty)
     queue.stop(onTasksComplete.AsStdFunction());
     queue.join();
 }
+
 TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
 {
     std::binary_semaphore semaphore{0};
