@@ -68,8 +68,8 @@ struct MockLoadObserver : etl::InitialLoadObserverInterface {
     );
 };
 
-struct GrpcSourceNgTests : virtual public ::testing::Test, tests::util::WithMockXrpLedgerAPIService {
-    GrpcSourceNgTests()
+struct GrpcSourceTests : virtual public ::testing::Test, tests::util::WithMockXrpLedgerAPIService {
+    GrpcSourceTests()
         : WithMockXrpLedgerAPIService("localhost:0"), grpcSource_("localhost", std::to_string(getXRPLMockPort()))
     {
     }
@@ -137,7 +137,7 @@ protected:
     etl::impl::GrpcSource grpcSource_;
 };
 
-struct GrpcSourceNgLoadInitialLedgerTests : GrpcSourceNgTests {
+struct GrpcSourceLoadInitialLedgerTests : GrpcSourceTests {
 protected:
     uint32_t const sequence_ = 123u;
     uint32_t const numMarkers_ = 4u;
@@ -146,7 +146,7 @@ protected:
 
 }  // namespace
 
-TEST_F(GrpcSourceNgTests, BasicFetchLedger)
+TEST_F(GrpcSourceTests, BasicFetchLedger)
 {
     uint32_t const sequence = 123u;
     bool const getObjects = true;
@@ -177,7 +177,7 @@ TEST_F(GrpcSourceNgTests, BasicFetchLedger)
     EXPECT_FALSE(response.object_neighbors_included());
 }
 
-TEST_F(GrpcSourceNgLoadInitialLedgerTests, GetLedgerDataNotFound)
+TEST_F(GrpcSourceLoadInitialLedgerTests, GetLedgerDataNotFound)
 {
     EXPECT_CALL(mockXrpLedgerAPIService, GetLedgerData)
         .Times(numMarkers_)
@@ -194,7 +194,7 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, GetLedgerDataNotFound)
     EXPECT_FALSE(res.has_value());
 }
 
-TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
+TEST_F(GrpcSourceLoadInitialLedgerTests, ObserverCalledCorrectly)
 {
     auto const key = ripple::uint256{4};
     auto const keyStr = uint256ToString(key);
@@ -232,7 +232,7 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, ObserverCalledCorrectly)
     EXPECT_EQ(res.value(), std::vector<std::string>(4, keyStr));
 }
 
-TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
+TEST_F(GrpcSourceLoadInitialLedgerTests, DataTransferredAndObserverCalledCorrectly)
 {
     auto const totalKeys = 256uz;
     auto const totalPerMarker = totalKeys / numMarkers_;
@@ -299,7 +299,7 @@ TEST_F(GrpcSourceNgLoadInitialLedgerTests, DataTransferredAndObserverCalledCorre
     EXPECT_EQ(totalWithLastKey, (numMarkers_ - 1) * batchesPerMarker);
 }
 
-struct GrpcSourceStopTests : GrpcSourceNgTests, SyncAsioContextTest {};
+struct GrpcSourceStopTests : GrpcSourceTests, SyncAsioContextTest {};
 
 TEST_F(GrpcSourceStopTests, LoadInitialLedgerStopsWhenRequested)
 {
@@ -360,7 +360,7 @@ TEST_F(GrpcSourceStopTests, LoadInitialLedgerStopsWhenRequested)
     EXPECT_EQ(res.error(), etl::InitialLedgerLoadError::Cancelled);
 }
 
-TEST_F(GrpcSourceNgTests, DeadlineIsHandledCorrectly)
+TEST_F(GrpcSourceTests, DeadlineIsHandledCorrectly)
 {
     static constexpr auto kDEADLINE = std::chrono::milliseconds{5};
 

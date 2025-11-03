@@ -47,7 +47,7 @@
 #include <utility>
 #include <vector>
 
-struct MockSourceNg : etl::SourceBase {
+struct MockSource : etl::SourceBase {
     MOCK_METHOD(void, run, (), (override));
     MOCK_METHOD(void, stop, (boost::asio::yield_context), (override));
     MOCK_METHOD(bool, isConnected, (), (const, override));
@@ -78,14 +78,14 @@ struct MockSourceNg : etl::SourceBase {
 };
 
 template <template <typename> typename MockType>
-using MockSourceNgPtr = std::shared_ptr<MockType<MockSourceNg>>;
+using MockSourcePtr = std::shared_ptr<MockType<MockSource>>;
 
 template <template <typename> typename MockType>
-class MockSourceNgWrapper : public etl::SourceBase {
-    MockSourceNgPtr<MockType> mock_;
+class MockSourceWrapper : public etl::SourceBase {
+    MockSourcePtr<MockType> mock_;
 
 public:
-    MockSourceNgWrapper(MockSourceNgPtr<MockType> mockData) : mock_(std::move(mockData))
+    MockSourceWrapper(MockSourcePtr<MockType> mockData) : mock_(std::move(mockData))
     {
     }
 
@@ -155,24 +155,24 @@ public:
     }
 };
 
-struct MockSourceNgCallbacks {
+struct MockSourceCallbacks {
     etl::SourceBase::OnDisconnectHook onDisconnect;
     etl::SourceBase::OnConnectHook onConnect;
     etl::SourceBase::OnLedgerClosedHook onLedgerClosed;
 };
 
 template <template <typename> typename MockType>
-struct MockSourceNgData {
-    MockSourceNgPtr<MockType> source = std::make_shared<MockType<MockSourceNg>>();
-    std::optional<MockSourceNgCallbacks> callbacks;
+struct MockSourceData {
+    MockSourcePtr<MockType> source = std::make_shared<MockType<MockSource>>();
+    std::optional<MockSourceCallbacks> callbacks;
 };
 
 template <template <typename> typename MockType = testing::NiceMock>
-class MockSourceNgFactoryImpl {
-    std::vector<MockSourceNgData<MockType>> mockData_;
+class MockSourceFactoryImpl {
+    std::vector<MockSourceData<MockType>> mockData_;
 
 public:
-    MockSourceNgFactoryImpl(size_t numSources)
+    MockSourceFactoryImpl(size_t numSources)
     {
         setSourcesNumber(numSources);
 
@@ -189,13 +189,13 @@ public:
                            ) {
                 auto it = std::ranges::find_if(mockData_, [](auto const& d) { return not d.callbacks.has_value(); });
                 [&]() { ASSERT_NE(it, mockData_.end()) << "Make source called more than expected"; }();
-                it->callbacks = MockSourceNgCallbacks{
+                it->callbacks = MockSourceCallbacks{
                     .onDisconnect = std::move(onDisconnect),
                     .onConnect = std::move(onConnect),
                     .onLedgerClosed = std::move(onLedgerClosed)
                 };
 
-                return std::make_unique<MockSourceNgWrapper<MockType>>(it->source);
+                return std::make_unique<MockSourceWrapper<MockType>>(it->source);
             });
     }
 
@@ -204,7 +204,7 @@ public:
     {
         mockData_.clear();
         mockData_.reserve(numSources);
-        std::ranges::generate_n(std::back_inserter(mockData_), numSources, [] { return MockSourceNgData<MockType>{}; });
+        std::ranges::generate_n(std::back_inserter(mockData_), numSources, [] { return MockSourceData<MockType>{}; });
     }
 
     template <typename... Args>
@@ -227,13 +227,13 @@ public:
          etl::SourceBase::OnLedgerClosedHook)
     );
 
-    MockType<MockSourceNg>&
+    MockType<MockSource>&
     sourceAt(size_t index)
     {
         return *mockData_.at(index).source;
     }
 
-    MockSourceNgCallbacks&
+    MockSourceCallbacks&
     callbacksAt(size_t index)
     {
         auto& callbacks = mockData_.at(index).callbacks;
@@ -242,5 +242,5 @@ public:
     }
 };
 
-using MockSourceNgFactory = testing::NiceMock<MockSourceNgFactoryImpl<>>;
-using StrictMockSourceNgFactory = testing::StrictMock<MockSourceNgFactoryImpl<testing::StrictMock>>;
+using MockSourceFactory = testing::NiceMock<MockSourceFactoryImpl<>>;
+using StrictMockSourceFactory = testing::StrictMock<MockSourceFactoryImpl<testing::StrictMock>>;

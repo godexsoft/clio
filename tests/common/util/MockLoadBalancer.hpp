@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-struct MockNgLoadBalancer : etl::LoadBalancerInterface {
+struct MockLoadBalancer : etl::LoadBalancerInterface {
     using RawLedgerObjectType = FakeLedgerObject;
 
     MOCK_METHOD(
@@ -71,5 +71,3 @@ struct MockNgLoadBalancer : etl::LoadBalancerInterface {
     );
     MOCK_METHOD(void, stop, (boost::asio::yield_context), ());
 };
-
-using MockLoadBalancer = MockNgLoadBalancer;

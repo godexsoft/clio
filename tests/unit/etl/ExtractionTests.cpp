@@ -49,9 +49,9 @@ constinit auto const kLEDGER_HASH2 = "1B8590C01B0006EDFA9ED60296DD052DC5E90F9965
 constinit auto const kSEQ = 30;
 }  // namespace
 
-struct ExtractionModelNgTests : virtual public ::testing::Test {};
+struct ExtractionModelTests : virtual public ::testing::Test {};
 
-TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
+TEST_F(ExtractionModelTests, LedgerDataCopyableAndEquatable)
 {
     auto const first = etl::model::LedgerData{
         .transactions =
@@ -106,7 +106,7 @@ TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
     }
 }
 
-TEST_F(ExtractionModelNgTests, TransactionIsEquatable)
+TEST_F(ExtractionModelTests, TransactionIsEquatable)
 {
     auto const tx = std::vector{util::createTransaction(ripple::TxType::ttNFTOKEN_BURN)};
     auto other = tx;
@@ -116,7 +116,7 @@ TEST_F(ExtractionModelNgTests, TransactionIsEquatable)
     EXPECT_NE(tx, other);
 }
 
-TEST_F(ExtractionModelNgTests, ObjectCopyableAndEquatable)
+TEST_F(ExtractionModelTests, ObjectCopyableAndEquatable)
 {
     auto const obj = util::createObject();
     auto const other = obj;
@@ -159,7 +159,7 @@ TEST_F(ExtractionModelNgTests, ObjectCopyableAndEquatable)
     }
 }
 
-TEST_F(ExtractionModelNgTests, BookSuccessorCopyableAndEquatable)
+TEST_F(ExtractionModelTests, BookSuccessorCopyableAndEquatable)
 {
     auto const succ = etl::model::BookSuccessor{.firstBook = "first", .bookBase = "base"};
     auto const other = succ;
@@ -177,9 +177,9 @@ TEST_F(ExtractionModelNgTests, BookSuccessorCopyableAndEquatable)
     }
 }
 
-struct ExtractionNgTests : public virtual ::testing::Test {};
+struct ExtractionTests : public virtual ::testing::Test {};
 
-TEST_F(ExtractionNgTests, ModType)
+TEST_F(ExtractionTests, ModType)
 {
     using namespace etl::impl;
     using ModType = etl::model::Object::ModType;
@@ -190,7 +190,7 @@ TEST_F(ExtractionNgTests, ModType)
     EXPECT_EQ(extractModType(PBObjType::UNSPECIFIED), ModType::Unspecified);
 }
 
-TEST_F(ExtractionNgTests, OneTransaction)
+TEST_F(ExtractionTests, OneTransaction)
 {
     using namespace etl::impl;
 
@@ -208,7 +208,7 @@ TEST_F(ExtractionNgTests, OneTransaction)
     EXPECT_EQ(res.sttx.getTxnType(), expected.sttx.getTxnType());
 }
 
-TEST_F(ExtractionNgTests, MultipleTransactions)
+TEST_F(ExtractionTests, MultipleTransactions)
 {
     using namespace etl::impl;
 
@@ -236,7 +236,7 @@ TEST_F(ExtractionNgTests, MultipleTransactions)
     }
 }
 
-TEST_F(ExtractionNgTests, OneObject)
+TEST_F(ExtractionTests, OneObject)
 {
     using namespace etl::impl;
 
@@ -256,7 +256,7 @@ TEST_F(ExtractionNgTests, OneObject)
     EXPECT_EQ(res.type, expected.type);
 }
 
-TEST_F(ExtractionNgTests, OneObjectWithSuccessorAndPredecessor)
+TEST_F(ExtractionTests, OneObjectWithSuccessorAndPredecessor)
 {
     using namespace etl::impl;
 
@@ -278,7 +278,7 @@ TEST_F(ExtractionNgTests, OneObjectWithSuccessorAndPredecessor)
     EXPECT_EQ(res.type, expected.type);
 }
 
-TEST_F(ExtractionNgTests, MultipleObjects)
+TEST_F(ExtractionTests, MultipleObjects)
 {
     using namespace etl::impl;
 
@@ -308,7 +308,7 @@ TEST_F(ExtractionNgTests, MultipleObjects)
     }
 }
 
-TEST_F(ExtractionNgTests, OneSuccessor)
+TEST_F(ExtractionTests, OneSuccessor)
 {
     using namespace etl::impl;
 
@@ -322,7 +322,7 @@ TEST_F(ExtractionNgTests, OneSuccessor)
     EXPECT_EQ(ripple::strHex(res.bookBase), ripple::strHex(expected.bookBase));
 }
 
-TEST_F(ExtractionNgTests, MultipleSuccessors)
+TEST_F(ExtractionTests, MultipleSuccessors)
 {
     using namespace etl::impl;
 
@@ -348,7 +348,7 @@ TEST_F(ExtractionNgTests, MultipleSuccessors)
     }
 }
 
-TEST_F(ExtractionNgTests, SuccessorsWithNoNeighborsIncluded)
+TEST_F(ExtractionTests, SuccessorsWithNoNeighborsIncluded)
 {
     using namespace etl::impl;
 
@@ -377,7 +377,7 @@ struct MockFetcher : etl::LedgerFetcherInterface {
     MOCK_METHOD(std::optional<GetLedgerResponseType>, fetchDataAndDiff, (uint32_t), (override));
 };
 
-struct ExtractorTests : ExtractionNgTests {
+struct ExtractorTests : ExtractionTests {
     std::shared_ptr<MockFetcher> fetcher = std::make_shared<MockFetcher>();
     etl::impl::Extractor extractor{fetcher};
 };

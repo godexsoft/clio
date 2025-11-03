@@ -32,7 +32,7 @@
 
 using namespace etl::impl;
 
-struct AmendmentBlockHandlerNgTests : util::prometheus::WithPrometheus {
+struct AmendmentBlockHandlerTests : util::prometheus::WithPrometheus {
 protected:
     testing::StrictMock<testing::MockFunction<void()>> actionMock_;
     etl::SystemState state_;
@@ -40,7 +40,7 @@ protected:
     util::async::CoroExecutionContext ctx_;
 };
 
-TEST_F(AmendmentBlockHandlerNgTests, CallToNotifyAmendmentBlockedSetsStateAndRepeatedlyCallsAction)
+TEST_F(AmendmentBlockHandlerTests, CallToNotifyAmendmentBlockedSetsStateAndRepeatedlyCallsAction)
 {
     static constexpr auto kMAX_ITERATIONS = 10uz;
     etl::impl::AmendmentBlockHandler handler{ctx_, state_, std::chrono::nanoseconds{1}, actionMock_.AsStdFunction()};
@@ -60,9 +60,9 @@ TEST_F(AmendmentBlockHandlerNgTests, CallToNotifyAmendmentBlockedSetsStateAndRep
     EXPECT_TRUE(state_.isAmendmentBlocked);
 }
 
-struct DefaultAmendmentBlockActionNgTest : LoggerFixture {};
+struct DefaultAmendmentBlockActionTest : LoggerFixture {};
 
-TEST_F(DefaultAmendmentBlockActionNgTest, Call)
+TEST_F(DefaultAmendmentBlockActionTest, Call)
 {
     AmendmentBlockHandler::kDEFAULT_AMENDMENT_BLOCK_ACTION();
     auto const loggerString = getLoggerString();

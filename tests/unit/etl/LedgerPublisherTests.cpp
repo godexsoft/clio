@@ -64,12 +64,12 @@ MATCHER_P(ledgerHeaderMatcher, expectedHeader, "Headers match")
 
 }  // namespace
 
-struct ETLLedgerPublisherNgTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
+struct ETLLedgerPublisherTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
     util::config::ClioConfigDefinition cfg{{}};
     StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr;
 };
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderSkipDueToAge)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderSkipDueToAge)
 {
     // Use kAGE (800) which is > MAX_LEDGER_AGE_SECONDS (600) to test skipping
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, kAGE);
@@ -93,7 +93,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderSkipDueToAge)
     ctx_.run();
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderWithinAgeLimit)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderWithinAgeLimit)
 {
     // Use age 0 which is < MAX_LEDGER_AGE_SECONDS to ensure publishing happens
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 0);
@@ -119,7 +119,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderWithinAgeLimit)
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderIsWritingTrue)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingTrue)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
@@ -134,7 +134,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderIsWritingTrue)
     EXPECT_FALSE(backend_->fetchLedgerRange());
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
@@ -170,7 +170,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderInRange)
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
@@ -210,7 +210,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqStopIsTrue)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsTrue)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = true;
@@ -218,7 +218,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqStopIsTrue)
     EXPECT_FALSE(publisher.publish(kSEQ, {}));
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqMaxAttempt)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqMaxAttempt)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = false;
@@ -232,7 +232,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqMaxAttempt)
     EXPECT_FALSE(publisher.publish(kSEQ, kMAX_ATTEMPT, std::chrono::milliseconds{1}));
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqStopIsFalse)
+TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsFalse)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = false;
@@ -248,7 +248,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishLedgerSeqStopIsFalse)
     ctx_.run();
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishMultipleTxInOrder)
+TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
@@ -297,7 +297,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishMultipleTxInOrder)
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishVeryOldLedgerShouldSkip)
+TEST_F(ETLLedgerPublisherTest, PublishVeryOldLedgerShouldSkip)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
@@ -319,7 +319,7 @@ TEST_F(ETLLedgerPublisherNgTest, PublishVeryOldLedgerShouldSkip)
     ctx_.run();
 }
 
-TEST_F(ETLLedgerPublisherNgTest, PublishMultipleLedgersInQuickSuccession)
+TEST_F(ETLLedgerPublisherTest, PublishMultipleLedgersInQuickSuccession)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
