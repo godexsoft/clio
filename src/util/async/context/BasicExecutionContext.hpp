@@ -362,6 +362,18 @@ public:
     }
 
     /**
+     * @brief Schedule an operation on the execution context without expectations of a result
+     * @note Errors are caught internally and logged as errors
+     *
+     * @param fn The block of code to execute
+     */
+    [[nodiscard]] auto
+    submit(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
+    {
+        return DispatcherType::post(context_, ErrorHandlerType::silence(fn));
+    }
+
+    /**
      * @brief Create a strand for this execution context
      *
      * @return A strand for this execution context

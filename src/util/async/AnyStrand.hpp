@@ -153,6 +153,18 @@ public:
         );
     }
 
+    /**
+     * @brief Schedule an operation on the execution context without expectations of a result
+     * @note Errors are caught internally and logged as errors
+     *
+     * @param fn The block of code to execute
+     */
+    void
+    submit(SomeHandlerWithoutStopToken auto&& fn)
+    {
+        pimpl_->submit(std::forward<decltype(fn)>(fn));
+    }
+
 private:
     struct Concept {
         virtual ~Concept() = default;
@@ -165,6 +177,7 @@ private:
         [[nodiscard]] virtual impl::ErasedOperation execute(std::function<std::any()>) = 0;
         [[nodiscard]] virtual impl::ErasedOperation
             executeRepeatedly(std::chrono::milliseconds, std::function<std::any()>) = 0;
+        virtual void submit(std::function<void()>) = 0;
     };
 
     template <typename StrandType>
@@ -193,6 +206,12 @@ private:
         executeRepeatedly(std::chrono::milliseconds interval, std::function<std::any()> fn) override
         {
             return strand.executeRepeatedly(interval, std::move(fn));
+        }
+
+        void
+        submit(std::function<void()> fn) override
+        {
+            return strand.submit(std::move(fn));
         }
     };
 

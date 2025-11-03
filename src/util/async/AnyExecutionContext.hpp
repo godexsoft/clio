@@ -230,6 +230,18 @@ public:
     }
 
     /**
+     * @brief Schedule an operation on the execution context without expectations of a result
+     * @note Errors are caught internally and logged as errors
+     *
+     * @param fn The block of code to execute
+     */
+    void
+    submit(SomeHandlerWithoutStopToken auto&& fn)
+    {
+        pimpl_->submit(std::forward<decltype(fn)>(fn));
+    }
+
+    /**
      * @brief Make a strand for this execution context
      *
      * @return A strand for this execution context
@@ -276,6 +288,7 @@ private:
         virtual impl::ErasedOperation
             scheduleAfter(std::chrono::milliseconds, std::function<std::any(AnyStopToken, bool)>) = 0;
         virtual impl::ErasedOperation executeRepeatedly(std::chrono::milliseconds, std::function<std::any()>) = 0;
+        virtual void submit(std::function<void()>) = 0;
         virtual AnyStrand
         makeStrand() = 0;
         virtual void
@@ -321,6 +334,12 @@ private:
         executeRepeatedly(std::chrono::milliseconds interval, std::function<std::any()> fn) override
         {
             return ctx.executeRepeatedly(interval, std::move(fn));
+        }
+
+        void
+        submit(std::function<void()> fn) override
+        {
+            return ctx.submit(std::move(fn));
         }
 
         AnyStrand

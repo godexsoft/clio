@@ -51,6 +51,13 @@ struct SpawnDispatchStrategy {
 
         return op;
     }
+
+    template <typename ContextType>
+    static void
+    post(ContextType& ctx, auto&& fn)
+    {
+        util::spawn(ctx.getExecutor(), [fn = std::forward<decltype(fn)>(fn)](auto) mutable { fn(); });
+    }
 };
 
 struct PostDispatchStrategy {
@@ -74,6 +81,13 @@ struct PostDispatchStrategy {
 
         return op;
     }
+
+    template <typename ContextType>
+    static void
+    post(ContextType& ctx, auto&& fn)
+    {
+        boost::asio::post(ctx.getExecutor(), std::forward<decltype(fn)>(fn));
+    }
 };
 
 struct SyncDispatchStrategy {
@@ -91,6 +105,13 @@ struct SyncDispatchStrategy {
         }
 
         return op;
+    }
+
+    template <typename ContextType>
+    static void
+    post([[maybe_unused]] ContextType& ctx, auto&& fn)
+    {
+        fn();
     }
 };
 

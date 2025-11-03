@@ -128,6 +128,12 @@ public:
             return RepeatedOperation(impl::extractAssociatedExecutor(*this), interval, std::forward<decltype(fn)>(fn));
         }
     }
+
+    [[nodiscard]] auto
+    submit(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
+    {
+        return DispatcherType::post(context_, ErrorHandlerType::silence(fn));
+    }
 };
 
 }  // namespace util::async::impl

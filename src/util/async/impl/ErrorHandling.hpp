@@ -21,6 +21,7 @@
 
 #include "util/async/Concepts.hpp"
 #include "util/async/Error.hpp"
+#include "util/log/Logger.hpp"
 
 #include <fmt/format.h>
 #include <fmt/std.h>
@@ -50,11 +51,33 @@ struct DefaultErrorHandler {
                 }
             };
     }
+
+    [[nodiscard]] static auto
+    silence(auto&& fn) noexcept
+    {
+        return [fn = std::forward<decltype(fn)>(fn)] {
+            try {
+                fn();
+            } catch (std::exception const& e) {
+                util::Logger log("AsyncFramework");
+                LOG(log.error()) << "Exception silenced: " << e.what() << " on thread " << std::this_thread::get_id();
+            } catch (...) {
+                util::Logger log("AsyncFramework");
+                LOG(log.error()) << "Unknown exception silenced on thread " << std::this_thread::get_id();
+            }
+        };
+    }
 };
 
 struct NoErrorHandler {
     [[nodiscard]] static constexpr auto
     wrap(auto&& fn)
+    {
+        return std::forward<decltype(fn)>(fn);
+    }
+
+    [[nodiscard]] static constexpr auto
+    silence(auto&& fn)
     {
         return std::forward<decltype(fn)>(fn);
     }
