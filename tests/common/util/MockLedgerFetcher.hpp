@@ -20,10 +20,12 @@
 #pragma once
 
 #include "etl/LedgerFetcherInterface.hpp"
+#include "util/FakeFetchResponse.hpp"
 
 #include <gmock/gmock.h>
 
 #include <cstdint>
+#include <optional>
 
 struct MockLedgerFetcher {
     MOCK_METHOD(std::optional<FakeFetchResponse>, fetchData, (uint32_t), ());

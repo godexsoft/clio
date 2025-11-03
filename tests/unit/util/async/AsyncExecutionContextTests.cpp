@@ -32,6 +32,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <vector>
 
 using namespace util::async;
 using ::testing::Types;
@@ -238,6 +239,32 @@ TYPED_TEST(ExecutionContextTests, repeatingOperationForceInvoke)
     EXPECT_EQ(callCount, 0uz);
 }
 
+TYPED_TEST(ExecutionContextTests, submit)
+{
+    ASSERT_NO_THROW(this->ctx.submit([] -> void { throw 0; }));
+
+    std::atomic_uint32_t count = 0;
+    std::binary_semaphore sem{0};
+
+    static constexpr auto kNUM_SUBMISSIONS = 1024;
+
+    for (auto i = 1; i <= kNUM_SUBMISSIONS; ++i) {
+        if (i == kNUM_SUBMISSIONS) {
+            this->ctx.submit([&count, &sem] {
+                ++count;
+                sem.release();
+            });
+        } else {
+            this->ctx.submit([&count] { ++count; });
+        }
+    }
+
+    sem.acquire();
+
+    // order is not guaranteed (see `strandSubmit` below)
+    ASSERT_EQ(count, static_cast<size_t>(kNUM_SUBMISSIONS));
+}
+
 TYPED_TEST(ExecutionContextTests, strandMove)
 {
     auto strand = this->ctx.makeStrand();
@@ -326,6 +353,35 @@ TYPED_TEST(ExecutionContextTests, strandedRepeatingOperationForceInvoke)
     res.abort();
 
     EXPECT_EQ(callCount, 0uz);
+}
+
+TYPED_TEST(ExecutionContextTests, strandSubmit)
+{
+    auto strand = this->ctx.makeStrand();
+    ASSERT_NO_THROW(strand.submit([] -> void { throw 0; }));
+
+    std::vector<int> results;
+    std::binary_semaphore sem{0};
+
+    static constexpr auto kNUM_SUBMISSIONS = 1024;
+
+    for (auto i = 1; i <= kNUM_SUBMISSIONS; ++i) {
+        if (i == kNUM_SUBMISSIONS) {
+            strand.submit([&results, &sem, i] {
+                results.push_back(i);
+                sem.release();
+            });
+        } else {
+            strand.submit([&results, i] { results.push_back(i); });
+        }
+    }
+
+    sem.acquire();
+
+    ASSERT_EQ(results.size(), static_cast<size_t>(kNUM_SUBMISSIONS));
+    for (int i = 0; i < kNUM_SUBMISSIONS; ++i) {
+        EXPECT_EQ(results[i], i + 1);
+    }
 }
 
 TYPED_TEST(AsyncExecutionContextTests, executeAutoAborts)
