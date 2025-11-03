@@ -368,10 +368,10 @@ public:
      *
      * @param fn The block of code to execute
      */
-    [[nodiscard]] auto
+    void
     submit(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
     {
-        return DispatcherType::post(context_, ErrorHandlerType::silence(fn));
+        DispatcherType::post(context_, ErrorHandlerType::silence(fn));
     }
 
     /**
