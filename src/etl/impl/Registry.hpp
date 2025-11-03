@@ -38,39 +38,37 @@ namespace etl::impl {
 
 template <typename T>
 concept HasLedgerDataHook = requires(T p) {
-    { p.onLedgerData(std::declval<etl::model::LedgerData>()) } -> std::same_as<void>;
+    { p.onLedgerData(std::declval<model::LedgerData>()) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasInitialDataHook = requires(T p) {
-    { p.onInitialData(std::declval<etl::model::LedgerData>()) } -> std::same_as<void>;
+    { p.onInitialData(std::declval<model::LedgerData>()) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasTransactionHook = requires(T p) {
-    { p.onTransaction(uint32_t{}, std::declval<etl::model::Transaction>()) } -> std::same_as<void>;
+    { p.onTransaction(uint32_t{}, std::declval<model::Transaction>()) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasObjectHook = requires(T p) {
-    { p.onObject(uint32_t{}, std::declval<etl::model::Object>()) } -> std::same_as<void>;
+    { p.onObject(uint32_t{}, std::declval<model::Object>()) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasInitialTransactionHook = requires(T p) {
-    { p.onInitialTransaction(uint32_t{}, std::declval<etl::model::Transaction>()) } -> std::same_as<void>;
+    { p.onInitialTransaction(uint32_t{}, std::declval<model::Transaction>()) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasInitialObjectsHook = requires(T p) {
-    {
-        p.onInitialObjects(uint32_t{}, std::declval<std::vector<etl::model::Object>>(), std::string{})
-    } -> std::same_as<void>;
+    { p.onInitialObjects(uint32_t{}, std::declval<std::vector<model::Object>>(), std::string{}) } -> std::same_as<void>;
 };
 
 template <typename T>
 concept HasInitialObjectHook = requires(T p) {
-    { p.onInitialObject(uint32_t{}, std::declval<etl::model::Object>()) } -> std::same_as<void>;
+    { p.onInitialObject(uint32_t{}, std::declval<model::Object>()) } -> std::same_as<void>;
 };
 
 template <typename T>
@@ -91,7 +89,7 @@ concept SomeExtension = NoTwoOfKind<T> and ContainsValidHook<T>;
 
 template <SomeExtension... Ps>
 class Registry : public RegistryInterface {
-    std::reference_wrapper<etl::SystemState const> state_;
+    std::reference_wrapper<SystemState const> state_;
     std::tuple<Ps...> store_;
 
     static_assert(
@@ -105,7 +103,7 @@ class Registry : public RegistryInterface {
     );
 
 public:
-    explicit constexpr Registry(etl::SystemState const& state, SomeExtension auto&&... exts)
+    explicit constexpr Registry(SystemState const& state, SomeExtension auto&&... exts)
         requires(std::is_same_v<std::decay_t<decltype(exts)>, std::decay_t<Ps>> and ...)
         : state_{state}, store_(std::forward<Ps>(exts)...)
     {
@@ -228,7 +226,7 @@ private:
 };
 
 static auto
-makeRegistry(etl::SystemState const& state, auto&&... exts)
+makeRegistry(SystemState const& state, auto&&... exts)
 {
     return std::make_unique<Registry<std::decay_t<decltype(exts)>...>>(state, std::forward<decltype(exts)>(exts)...);
 }

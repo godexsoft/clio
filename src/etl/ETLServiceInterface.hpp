@@ -77,7 +77,7 @@ struct ETLServiceInterface {
      * @brief Get the etl nodes' state
      * @return The etl nodes' state, nullopt if etl nodes are not connected
      */
-    [[nodiscard]] virtual std::optional<etl::ETLState>
+    [[nodiscard]] virtual std::optional<ETLState>
     getETLState() const = 0;
 
     /**

@@ -41,7 +41,7 @@ namespace etl::impl {
  * @brief Implementation of the TaskManagerProvider interface
  */
 class TaskManagerProvider : public TaskManagerProviderInterface {
-    std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers_;
+    std::reference_wrapper<NetworkValidatedLedgersInterface> ledgers_;
     std::shared_ptr<ExtractorInterface> extractor_;
     std::shared_ptr<LoaderInterface> loader_;
 
@@ -54,7 +54,7 @@ public:
      * @param loader The loader
      */
     TaskManagerProvider(
-        std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers,
+        std::reference_wrapper<NetworkValidatedLedgersInterface> ledgers,
         std::shared_ptr<ExtractorInterface> extractor,
         std::shared_ptr<LoaderInterface> loader
     )

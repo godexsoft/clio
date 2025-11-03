@@ -43,7 +43,7 @@ namespace etl::impl {
 class Monitor : public MonitorInterface {
     util::async::AnyStrand strand_;
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers_;
+    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers_;
 
     std::atomic_uint32_t nextSequence_;
     std::optional<util::async::AnyOperation<void>> repeatedTask_;
@@ -66,7 +66,7 @@ public:
     Monitor(
         util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
         std::chrono::steady_clock::duration dbStalledReportDelay
     );

@@ -121,7 +121,7 @@ InitialLedgerLoadResult
 GrpcSource::loadInitialLedger(
     uint32_t const sequence,
     uint32_t const numMarkers,
-    etl::InitialLoadObserverInterface& observer
+    InitialLoadObserverInterface& observer
 )
 {
     if (*initialLoadShouldStop_)

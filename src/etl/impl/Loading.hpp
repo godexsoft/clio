@@ -52,7 +52,7 @@ class Loader : public LoaderInterface, public InitialLoadObserverInterface {
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<RegistryInterface> registry_;
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler_;
-    std::shared_ptr<etl::SystemState> state_;
+    std::shared_ptr<SystemState> state_;
 
     std::size_t initialLoadWrittenObjects_{0u};
     std::size_t initialLoadWrites_{0u};
@@ -67,7 +67,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<RegistryInterface> registry,
         std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler,
-        std::shared_ptr<etl::SystemState> state
+        std::shared_ptr<SystemState> state
     );
 
     Loader(Loader const&) = delete;

@@ -141,11 +141,9 @@ ClioApplication::run(bool const useNgWebServer)
     // ETL uses the balancer to extract data.
     // The server uses the balancer to forward RPCs to a rippled node.
     // The balancer itself publishes to streams (transactions_proposed and accounts_proposed)
-    auto balancer = [&] -> std::shared_ptr<etl::LoadBalancerInterface> {
-        return etl::LoadBalancer::makeLoadBalancer(
-            config_, ioc, backend, subscriptions, std::make_unique<util::MTRandomGenerator>(), ledgers
-        );
-    }();
+    auto balancer = etl::LoadBalancer::makeLoadBalancer(
+        config_, ioc, backend, subscriptions, std::make_unique<util::MTRandomGenerator>(), ledgers
+    );
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
     // TODO: don't use ioc (Publisher uses it)

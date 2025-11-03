@@ -69,15 +69,15 @@ namespace etl::impl {
 template <typename LedgerFetcherType>
 class LedgerLoader {
 public:
-    using GetLedgerResponseType = etl::LoadBalancerInterface::GetLedgerResponseType;
-    using OptionalGetLedgerResponseType = etl::LoadBalancerInterface::OptionalGetLedgerResponseType;
-    using RawLedgerObjectType = etl::LoadBalancerInterface::RawLedgerObjectType;
+    using GetLedgerResponseType = LoadBalancerInterface::GetLedgerResponseType;
+    using OptionalGetLedgerResponseType = LoadBalancerInterface::OptionalGetLedgerResponseType;
+    using RawLedgerObjectType = LoadBalancerInterface::RawLedgerObjectType;
 
 private:
     util::Logger log_{"ETL"};
 
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::LoadBalancerInterface> loadBalancer_;
+    std::shared_ptr<LoadBalancerInterface> loadBalancer_;
     std::reference_wrapper<LedgerFetcherType> fetcher_;
     std::reference_wrapper<SystemState const> state_;  // shared state for ETL
 
@@ -87,7 +87,7 @@ public:
      */
     LedgerLoader(
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::LoadBalancerInterface> balancer,
+        std::shared_ptr<LoadBalancerInterface> balancer,
         LedgerFetcherType& fetcher,
         SystemState const& state
     )

@@ -48,7 +48,7 @@ namespace etl {
  * @tparam ExecutionContextType The type of the execution context to use
  */
 template <typename ExecutionContextType = util::async::CoroExecutionContext>
-class CacheLoader : public etl::CacheLoaderInterface {
+class CacheLoader : public CacheLoaderInterface {
     using CacheLoaderType = impl::CacheLoaderImpl<data::LedgerCacheInterface>;
 
     util::Logger log_{"ETL"};

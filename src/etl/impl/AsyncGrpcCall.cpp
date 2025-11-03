@@ -78,7 +78,7 @@ AsyncGrpcCall::CallStatus
 AsyncGrpcCall::process(
     std::unique_ptr<AsyncGrpcCall::StubType>& stub,
     grpc::CompletionQueue& cq,
-    etl::InitialLoadObserverInterface& loader,
+    InitialLoadObserverInterface& loader,
     bool abort
 )
 {
@@ -121,7 +121,7 @@ AsyncGrpcCall::process(
     }
 
     auto const numObjects = cur_->ledger_objects().objects_size();
-    std::vector<etl::model::Object> data;
+    std::vector<model::Object> data;
     data.reserve(numObjects);
 
     for (int i = 0; i < numObjects; ++i) {
@@ -132,7 +132,7 @@ AsyncGrpcCall::process(
         }
 
         lastKey_ = obj.key();  // this will end up the last key we actually touched eventually
-        data.push_back(etl::impl::extractObj(std::move(obj)));
+        data.push_back(impl::extractObj(std::move(obj)));
     }
 
     if (not data.empty())
@@ -171,7 +171,7 @@ AsyncGrpcCall::getLastKey()
 std::vector<AsyncGrpcCall>
 AsyncGrpcCall::makeAsyncCalls(uint32_t const sequence, uint32_t const numMarkers)
 {
-    auto const markers = etl::getMarkers(numMarkers);
+    auto const markers = getMarkers(numMarkers);
 
     std::vector<AsyncGrpcCall> result;
     result.reserve(markers.size());

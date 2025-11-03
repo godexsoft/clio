@@ -76,7 +76,7 @@ public:
     [[nodiscard]] virtual InitialLedgerLoadResult
     loadInitialLedger(
         uint32_t sequence,
-        etl::InitialLoadObserverInterface& loader,
+        InitialLoadObserverInterface& loader,
         std::chrono::steady_clock::duration retryAfter = std::chrono::seconds{2}
     ) = 0;
 
@@ -141,7 +141,7 @@ public:
      * @brief Return state of ETL nodes.
      * @return ETL state, nullopt if etl nodes not available
      */
-    [[nodiscard]] virtual std::optional<etl::ETLState>
+    [[nodiscard]] virtual std::optional<ETLState>
     getETLState() noexcept = 0;
 
     /**

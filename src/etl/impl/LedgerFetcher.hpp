@@ -41,13 +41,13 @@ private:
     util::Logger log_{"ETL"};
 
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etl::LoadBalancerInterface> loadBalancer_;
+    std::shared_ptr<LoadBalancerInterface> loadBalancer_;
 
 public:
     /**
      * @brief Create an instance of the fetcher
      */
-    LedgerFetcher(std::shared_ptr<BackendInterface> backend, std::shared_ptr<etl::LoadBalancerInterface> balancer)
+    LedgerFetcher(std::shared_ptr<BackendInterface> backend, std::shared_ptr<LoadBalancerInterface> balancer)
         : backend_(std::move(backend)), loadBalancer_(std::move(balancer))
     {
     }

@@ -39,7 +39,7 @@ public:
     make(
         util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
         uint32_t startSequence,
         std::chrono::steady_clock::duration dbStalledReportDelay
     ) override

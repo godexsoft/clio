@@ -39,7 +39,7 @@ public:
     using ActionType = std::function<void()>;
 
 private:
-    std::reference_wrapper<etl::SystemState> state_;
+    std::reference_wrapper<SystemState> state_;
     std::chrono::steady_clock::duration interval_;
     util::async::AnyExecutionContext ctx_;
     std::optional<util::async::AnyOperation<void>> operation_;
@@ -51,7 +51,7 @@ public:
 
     AmendmentBlockHandler(
         util::async::AnyExecutionContext ctx,
-        etl::SystemState& state,
+        SystemState& state,
         std::chrono::steady_clock::duration interval = std::chrono::seconds{1},
         ActionType action = kDEFAULT_AMENDMENT_BLOCK_ACTION
     );

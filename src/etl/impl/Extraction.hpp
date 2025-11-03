@@ -77,7 +77,7 @@ maybeExtractSuccessors(PBLedgerResponseType const& data);
 
 // fetches the data in gRPC and transforms to local representation
 class Extractor : public ExtractorInterface {
-    std::shared_ptr<etl::LedgerFetcherInterface> fetcher_;
+    std::shared_ptr<LedgerFetcherInterface> fetcher_;
 
     util::Logger log_{"ETL"};
 
@@ -86,7 +86,7 @@ private:
     unpack();
 
 public:
-    Extractor(std::shared_ptr<etl::LedgerFetcherInterface> fetcher) : fetcher_(std::move(fetcher))
+    Extractor(std::shared_ptr<LedgerFetcherInterface> fetcher) : fetcher_(std::move(fetcher))
     {
     }
 

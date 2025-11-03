@@ -68,7 +68,7 @@ public:
     process(
         std::unique_ptr<StubType>& stub,
         grpc::CompletionQueue& cq,
-        etl::InitialLoadObserverInterface& loader,
+        InitialLoadObserverInterface& loader,
         bool abort
     );
 

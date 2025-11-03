@@ -53,8 +53,8 @@ namespace etl::impl {
  */
 template <
     typename GrpcSourceType = GrpcSource,
-    typename SubscriptionSourceTypePtr = std::unique_ptr<etl::impl::SubscriptionSource>,
-    typename ForwardingSourceType = etl::impl::ForwardingSource>
+    typename SubscriptionSourceTypePtr = std::unique_ptr<impl::SubscriptionSource>,
+    typename ForwardingSourceType = impl::ForwardingSource>
 class SourceImpl : public SourceBase {
     std::string ip_;
     std::string wsPort_;
@@ -205,7 +205,7 @@ public:
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
     InitialLedgerLoadResult
-    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etl::InitialLoadObserverInterface& loader) final
+    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, InitialLoadObserverInterface& loader) final
     {
         return grpcSource_.loadInitialLedger(sequence, numMarkers, loader);
     }

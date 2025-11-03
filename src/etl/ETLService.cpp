@@ -72,49 +72,49 @@
 
 namespace etl {
 
-std::shared_ptr<etl::ETLServiceInterface>
+std::shared_ptr<ETLServiceInterface>
 ETLService::makeETLService(
     util::config::ClioConfigDefinition const& config,
     boost::asio::io_context& ioc,
     util::async::AnyExecutionContext ctx,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<etl::LoadBalancerInterface> balancer,
+    std::shared_ptr<LoadBalancerInterface> balancer,
     std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
 )
 {
-    std::shared_ptr<etl::ETLServiceInterface> ret;
+    std::shared_ptr<ETLServiceInterface> ret;
 
-    auto state = std::make_shared<etl::SystemState>();
+    auto state = std::make_shared<SystemState>();
     state->isStrictReadonly = config.get<bool>("read_only");
 
-    auto fetcher = std::make_shared<etl::impl::LedgerFetcher>(backend, balancer);
-    auto extractor = std::make_shared<etl::impl::Extractor>(fetcher);
-    auto publisher = std::make_shared<etl::impl::LedgerPublisher>(ioc, backend, subscriptions, *state);
-    auto cacheLoader = std::make_shared<etl::CacheLoader<>>(config, backend, backend->cache());
-    auto cacheUpdater = std::make_shared<etl::impl::CacheUpdater>(backend->cache());
-    auto amendmentBlockHandler = std::make_shared<etl::impl::AmendmentBlockHandler>(ctx, *state);
-    auto monitorProvider = std::make_shared<etl::impl::MonitorProvider>();
+    auto fetcher = std::make_shared<impl::LedgerFetcher>(backend, balancer);
+    auto extractor = std::make_shared<impl::Extractor>(fetcher);
+    auto publisher = std::make_shared<impl::LedgerPublisher>(ioc, backend, subscriptions, *state);
+    auto cacheLoader = std::make_shared<CacheLoader<>>(config, backend, backend->cache());
+    auto cacheUpdater = std::make_shared<impl::CacheUpdater>(backend->cache());
+    auto amendmentBlockHandler = std::make_shared<impl::AmendmentBlockHandler>(ctx, *state);
+    auto monitorProvider = std::make_shared<impl::MonitorProvider>();
 
     backend->setCorruptionDetector(CorruptionDetector{*state, backend->cache()});
 
-    auto loader = std::make_shared<etl::impl::Loader>(
+    auto loader = std::make_shared<impl::Loader>(
         backend,
-        etl::impl::makeRegistry(
+        impl::makeRegistry(
             *state,
-            etl::impl::CacheExt{cacheUpdater},
-            etl::impl::CoreExt{backend},
-            etl::impl::SuccessorExt{backend, backend->cache()},
-            etl::impl::NFTExt{backend},
-            etl::impl::MPTExt{backend}
+            impl::CacheExt{cacheUpdater},
+            impl::CoreExt{backend},
+            impl::SuccessorExt{backend, backend->cache()},
+            impl::NFTExt{backend},
+            impl::MPTExt{backend}
         ),
         amendmentBlockHandler,
         state
     );
 
-    auto taskManagerProvider = std::make_shared<etl::impl::TaskManagerProvider>(*ledgers, extractor, loader);
+    auto taskManagerProvider = std::make_shared<impl::TaskManagerProvider>(*ledgers, extractor, loader);
 
-    ret = std::make_shared<etl::ETLService>(
+    ret = std::make_shared<ETLService>(
         ctx,
         config,
         backend,
@@ -144,16 +144,16 @@ ETLService::ETLService(
     std::reference_wrapper<util::config::ClioConfigDefinition const> config,
     std::shared_ptr<data::BackendInterface> backend,
     std::shared_ptr<LoadBalancerInterface> balancer,
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+    std::shared_ptr<NetworkValidatedLedgersInterface> ledgers,
     std::shared_ptr<LedgerPublisherInterface> publisher,
     std::shared_ptr<CacheLoaderInterface> cacheLoader,
     std::shared_ptr<CacheUpdaterInterface> cacheUpdater,
     std::shared_ptr<ExtractorInterface> extractor,
     std::shared_ptr<LoaderInterface> loader,
     std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
-    std::shared_ptr<etl::TaskManagerProviderInterface> taskManagerProvider,
-    std::shared_ptr<etl::MonitorProviderInterface> monitorProvider,
-    std::shared_ptr<etl::SystemState> state
+    std::shared_ptr<TaskManagerProviderInterface> taskManagerProvider,
+    std::shared_ptr<MonitorProviderInterface> monitorProvider,
+    std::shared_ptr<SystemState> state
 )
     : ctx_(std::move(ctx))
     , config_(config)
@@ -261,7 +261,7 @@ ETLService::isCorruptionDetected() const
     return state_->isCorruptionDetected;
 }
 
-std::optional<etl::ETLState>
+std::optional<ETLState>
 ETLService::getETLState() const
 {
     return balancer_->getETLState();

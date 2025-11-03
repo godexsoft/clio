@@ -98,16 +98,16 @@ class ETLService : public ETLServiceInterface {
     std::reference_wrapper<util::config::ClioConfigDefinition const> config_;
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<LoadBalancerInterface> balancer_;
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers_;
+    std::shared_ptr<NetworkValidatedLedgersInterface> ledgers_;
     std::shared_ptr<LedgerPublisherInterface> publisher_;
     std::shared_ptr<CacheLoaderInterface> cacheLoader_;
     std::shared_ptr<CacheUpdaterInterface> cacheUpdater_;
     std::shared_ptr<ExtractorInterface> extractor_;
     std::shared_ptr<LoaderInterface> loader_;
     std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver_;
-    std::shared_ptr<etl::TaskManagerProviderInterface> taskManagerProvider_;
-    std::shared_ptr<etl::MonitorProviderInterface> monitorProvider_;
-    std::shared_ptr<etl::SystemState> state_;
+    std::shared_ptr<TaskManagerProviderInterface> taskManagerProvider_;
+    std::shared_ptr<MonitorProviderInterface> monitorProvider_;
+    std::shared_ptr<SystemState> state_;
 
     std::optional<uint32_t> startSequence_;
     std::optional<uint32_t> finishSequence_;
@@ -135,14 +135,14 @@ public:
      * @param ledgers The network validated ledgers datastructure
      * @return A shared pointer to a new instance of ETLService
      */
-    static std::shared_ptr<etl::ETLServiceInterface>
+    static std::shared_ptr<ETLServiceInterface>
     makeETLService(
         util::config::ClioConfigDefinition const& config,
         boost::asio::io_context& ioc,  // TODO: remove (LedgerPublisher needs to be changed)
         util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        std::shared_ptr<etl::LoadBalancerInterface> balancer,
+        std::shared_ptr<LoadBalancerInterface> balancer,
         std::shared_ptr<NetworkValidatedLedgersInterface> ledgers
     );
 
@@ -169,16 +169,16 @@ public:
         std::reference_wrapper<util::config::ClioConfigDefinition const> config,
         std::shared_ptr<data::BackendInterface> backend,
         std::shared_ptr<LoadBalancerInterface> balancer,
-        std::shared_ptr<etl::NetworkValidatedLedgersInterface> ledgers,
+        std::shared_ptr<NetworkValidatedLedgersInterface> ledgers,
         std::shared_ptr<LedgerPublisherInterface> publisher,
         std::shared_ptr<CacheLoaderInterface> cacheLoader,
         std::shared_ptr<CacheUpdaterInterface> cacheUpdater,
         std::shared_ptr<ExtractorInterface> extractor,
         std::shared_ptr<LoaderInterface> loader,
         std::shared_ptr<InitialLoadObserverInterface> initialLoadObserver,
-        std::shared_ptr<etl::TaskManagerProviderInterface> taskManagerProvider,
-        std::shared_ptr<etl::MonitorProviderInterface> monitorProvider,
-        std::shared_ptr<etl::SystemState> state
+        std::shared_ptr<TaskManagerProviderInterface> taskManagerProvider,
+        std::shared_ptr<MonitorProviderInterface> monitorProvider,
+        std::shared_ptr<SystemState> state
     );
 
     ~ETLService() override;
@@ -198,7 +198,7 @@ public:
     bool
     isCorruptionDetected() const override;
 
-    std::optional<etl::ETLState>
+    std::optional<ETLState>
     getETLState() const override;
 
     std::uint32_t

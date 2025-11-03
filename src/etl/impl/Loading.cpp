@@ -50,7 +50,7 @@ Loader::Loader(
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<RegistryInterface> registry,
     std::shared_ptr<AmendmentBlockHandlerInterface> amendmentBlockHandler,
-    std::shared_ptr<etl::SystemState> state
+    std::shared_ptr<SystemState> state
 )
     : backend_(std::move(backend))
     , registry_(std::move(registry))

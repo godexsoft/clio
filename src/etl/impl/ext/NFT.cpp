@@ -47,7 +47,7 @@ void
 NFTExt::onInitialObject(uint32_t seq, model::Object const& obj)
 {
     LOG(log_.trace()) << "got initial object with key = " << obj.key;
-    backend_->writeNFTs(etl::getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw));
+    backend_->writeNFTs(getNFTDataFromObj(seq, obj.keyRaw, obj.dataRaw));
 }
 
 void
@@ -64,14 +64,14 @@ NFTExt::writeNFTs(model::LedgerData const& data)
     std::vector<NFTTransactionsData> nftTxs;
 
     for (auto const& tx : data.transactions) {
-        auto const [txs, maybeNFT] = etl::getNFTDataFromTx(tx.meta, tx.sttx);
+        auto const [txs, maybeNFT] = getNFTDataFromTx(tx.meta, tx.sttx);
         nftTxs.insert(nftTxs.end(), txs.begin(), txs.end());
         if (maybeNFT)
             nfts.push_back(*maybeNFT);
     }
 
     // This is uniqued so that we only write latest modification (as in previous implementation)
-    backend_->writeNFTs(etl::getUniqueNFTsDatas(nfts));
+    backend_->writeNFTs(getUniqueNFTsDatas(nfts));
     backend_->writeNFTTransactions(nftTxs);
 }
 

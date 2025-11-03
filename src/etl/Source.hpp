@@ -132,7 +132,7 @@ public:
      * @return A std::pair of the data and a bool indicating whether the download was successful
      */
     virtual InitialLedgerLoadResult
-    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, etl::InitialLoadObserverInterface& loader) = 0;
+    loadInitialLedger(uint32_t sequence, std::uint32_t numMarkers, InitialLoadObserverInterface& loader) = 0;
 
     /**
      * @brief Forward a request to rippled.
@@ -158,7 +158,7 @@ using SourceFactory = std::function<SourcePtr(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
     std::chrono::steady_clock::duration forwardingTimeout,
     SourceBase::OnConnectHook onConnect,
     SourceBase::OnDisconnectHook onDisconnect,
@@ -184,7 +184,7 @@ makeSource(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
+    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
     std::chrono::steady_clock::duration forwardingTimeout,
     SourceBase::OnConnectHook onConnect,
     SourceBase::OnDisconnectHook onDisconnect,

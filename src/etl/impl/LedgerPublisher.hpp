@@ -69,14 +69,14 @@ namespace etl::impl {
  * includes reading all of the transactions from the database) is done from the application wide asio io_service, and a
  * strand is used to ensure ledgers are published in order.
  */
-class LedgerPublisher : public etl::LedgerPublisherInterface {
+class LedgerPublisher : public LedgerPublisherInterface {
     util::Logger log_{"ETL"};
 
     boost::asio::strand<boost::asio::io_context::executor_type> publishStrand_;
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
-    std::reference_wrapper<etl::SystemState const> state_;  // shared state for ETL
+    std::reference_wrapper<SystemState const> state_;  // shared state for ETL
 
     util::Mutex<std::chrono::time_point<ripple::NetClock>, std::shared_mutex> lastCloseTime_;
 
@@ -96,7 +96,7 @@ public:
         boost::asio::io_context& ioc,  // TODO: replace with AsyncContext shared with ETLService
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-        etl::SystemState const& state
+        SystemState const& state
     )
         : publishStrand_{boost::asio::make_strand(ioc)}
         , backend_{std::move(backend)}

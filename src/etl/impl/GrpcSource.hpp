@@ -79,7 +79,7 @@ public:
      * @return Downloaded data or an indication of error or cancellation
      */
     InitialLedgerLoadResult
-    loadInitialLedger(uint32_t sequence, uint32_t numMarkers, etl::InitialLoadObserverInterface& observer);
+    loadInitialLedger(uint32_t sequence, uint32_t numMarkers, InitialLoadObserverInterface& observer);
 
     /**
      * @brief Stop any ongoing operations

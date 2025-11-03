@@ -41,7 +41,7 @@ template <typename T>
 concept SomeScheduler = std::is_base_of_v<SchedulerInterface, std::decay_t<T>>;
 
 class ForwardScheduler : public SchedulerInterface {
-    std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers_;
+    std::reference_wrapper<NetworkValidatedLedgersInterface> ledgers_;
 
     uint32_t startSeq_;
     std::optional<uint32_t> maxSeq_;
@@ -54,7 +54,7 @@ public:
     }
 
     ForwardScheduler(
-        std::reference_wrapper<etl::NetworkValidatedLedgersInterface> ledgers,
+        std::reference_wrapper<NetworkValidatedLedgersInterface> ledgers,
         uint32_t startSeq,
         std::optional<uint32_t> maxSeq = std::nullopt
     )
