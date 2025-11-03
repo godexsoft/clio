@@ -132,8 +132,8 @@ ETLService::makeETLService(
     );
 
     // inject networkID into subscriptions, as transaction feed require it to inject CTID in response
-    if (auto const state = ret->getETLState(); state)
-        subscriptions->setNetworkID(state->networkID);
+    if (auto const etlState = ret->getETLState(); etlState)
+        subscriptions->setNetworkID(etlState->networkID);
 
     ret->run();
     return ret;
