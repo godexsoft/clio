@@ -21,10 +21,10 @@
 
 #include "data/BackendInterface.hpp"
 #include "etl/ETLState.hpp"
+#include "etl/InitialLoadObserverInterface.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/Source.hpp"
-#include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
@@ -76,7 +76,7 @@ concept SomeLoadBalancer = std::derived_from<T, LoadBalancerTag>;
  * which ledgers have been validated by the network, and the range of ledgers each etl source has). This class also
  * allows requests for ledger data to be load balanced across all possible ETL sources.
  */
-class LoadBalancer : public etlng::LoadBalancerInterface, LoadBalancerTag {
+class LoadBalancer : public etl::LoadBalancerInterface, LoadBalancerTag {
 public:
     using RawLedgerObjectType = org::xrpl::rpc::v1::RawLedgerObject;
     using GetLedgerResponseType = org::xrpl::rpc::v1::GetLedgerResponse;
@@ -93,7 +93,7 @@ private:
     std::unique_ptr<util::RandomGeneratorInterface> randomGenerator_;
 
     std::vector<SourcePtr> sources_;
-    std::optional<ETLState> etlState_;
+    std::optional<etl::ETLState> etlState_;
     std::uint32_t downloadRanges_ =
         kDEFAULT_DOWNLOAD_RANGES; /*< The number of markers to use when downloading initial ledger */
 
@@ -105,7 +105,7 @@ private:
         std::reference_wrapper<util::prometheus::CounterInt> cacheMiss;
     } forwardingCounters_;
 
-    // Using mutex instead of atomic_bool because choosing a new source to
+    // Using mutext instead of atomic_bool because choosing a new source to
     // forward messages should be done with a mutual exclusion otherwise there will be a race condition
     util::Mutex<bool> hasForwardingSource_{false};
 
@@ -137,7 +137,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::unique_ptr<util::RandomGeneratorInterface> randomGenerator,
-        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = makeSource
     );
 
@@ -149,7 +149,7 @@ public:
      * @param backend BackendInterface implementation
      * @param subscriptions Subscription manager
      * @param randomGenerator A random generator to use for selecting sources
-     * @param validatedLedgers The network validated ledgers data structure
+     * @param validatedLedgers The network validated ledgers datastructure
      * @param sourceFactory A factory function to create a source
      * @return A shared pointer to a new instance of LoadBalancer
      */
@@ -160,7 +160,7 @@ public:
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         std::unique_ptr<util::RandomGeneratorInterface> randomGenerator,
-        std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+        std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = makeSource
     );
 
@@ -174,9 +174,13 @@ public:
      */
     std::vector<std::string>
     loadInitialLedger(
-        uint32_t sequence,
-        std::chrono::steady_clock::duration retryAfter = std::chrono::seconds{2}
-    ) override;
+        [[maybe_unused]] uint32_t sequence,
+        [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
+    ) override
+    {
+        ASSERT(false, "Not available for new ETL");
+        std::unreachable();
+    };
 
     /**
      * @brief Load the initial ledger, writing data to the queue.
@@ -187,16 +191,12 @@ public:
      * @param retryAfter Time to wait between retries (2 seconds by default)
      * @return A std::expected with ledger edge keys on success, or InitialLedgerLoadError on failure
      */
-    etlng::InitialLedgerLoadResult
+    InitialLedgerLoadResult
     loadInitialLedger(
-        [[maybe_unused]] uint32_t sequence,
-        [[maybe_unused]] etlng::InitialLoadObserverInterface& observer,
-        [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
-    ) override
-    {
-        ASSERT(false, "Not available for old ETL");
-        std::unreachable();
-    }
+        uint32_t sequence,
+        etl::InitialLoadObserverInterface& observer,
+        std::chrono::steady_clock::duration retryAfter
+    ) override;
 
     /**
      * @brief Fetch data for a specific ledger.
@@ -248,7 +248,7 @@ public:
      * @brief Return state of ETL nodes.
      * @return ETL state, nullopt if etl nodes not available
      */
-    std::optional<ETLState>
+    std::optional<etl::ETLState>
     getETLState() noexcept override;
 
     /**

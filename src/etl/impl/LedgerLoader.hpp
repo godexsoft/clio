@@ -22,11 +22,11 @@
 #include "data/BackendInterface.hpp"
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/MPTHelpers.hpp"
 #include "etl/NFTHelpers.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/LedgerUtils.hpp"
 #include "util/Profiler.hpp"
@@ -69,15 +69,15 @@ namespace etl::impl {
 template <typename LedgerFetcherType>
 class LedgerLoader {
 public:
-    using GetLedgerResponseType = etlng::LoadBalancerInterface::GetLedgerResponseType;
-    using OptionalGetLedgerResponseType = etlng::LoadBalancerInterface::OptionalGetLedgerResponseType;
-    using RawLedgerObjectType = etlng::LoadBalancerInterface::RawLedgerObjectType;
+    using GetLedgerResponseType = etl::LoadBalancerInterface::GetLedgerResponseType;
+    using OptionalGetLedgerResponseType = etl::LoadBalancerInterface::OptionalGetLedgerResponseType;
+    using RawLedgerObjectType = etl::LoadBalancerInterface::RawLedgerObjectType;
 
 private:
     util::Logger log_{"ETL"};
 
     std::shared_ptr<BackendInterface> backend_;
-    std::shared_ptr<etlng::LoadBalancerInterface> loadBalancer_;
+    std::shared_ptr<etl::LoadBalancerInterface> loadBalancer_;
     std::reference_wrapper<LedgerFetcherType> fetcher_;
     std::reference_wrapper<SystemState const> state_;  // shared state for ETL
 
@@ -87,7 +87,7 @@ public:
      */
     LedgerLoader(
         std::shared_ptr<BackendInterface> backend,
-        std::shared_ptr<etlng::LoadBalancerInterface> balancer,
+        std::shared_ptr<etl::LoadBalancerInterface> balancer,
         LedgerFetcherType& fetcher,
         SystemState const& state
     )

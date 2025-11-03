@@ -19,7 +19,6 @@
 
 #include "etl/Source.hpp"
 
-#include "data/BackendInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/impl/ForwardingSource.hpp"
 #include "etl/impl/GrpcSource.hpp"
@@ -41,9 +40,8 @@ SourcePtr
 makeSource(
     util::config::ObjectView const& config,
     boost::asio::io_context& ioc,
-    std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
-    std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
+    std::shared_ptr<etl::NetworkValidatedLedgersInterface> validatedLedgers,
     std::chrono::steady_clock::duration forwardingTimeout,
     SourceBase::OnConnectHook onConnect,
     SourceBase::OnDisconnectHook onDisconnect,
@@ -54,9 +52,9 @@ makeSource(
     auto const wsPort = config.get<std::string>("ws_port");
     auto const grpcPort = config.get<std::string>("grpc_port");
 
-    impl::ForwardingSource forwardingSource{ip, wsPort, forwardingTimeout};
-    impl::GrpcSource grpcSource{ip, grpcPort, std::move(backend)};
-    auto subscriptionSource = std::make_unique<impl::SubscriptionSource>(
+    etl::impl::ForwardingSource forwardingSource{ip, wsPort, forwardingTimeout};
+    impl::GrpcSource grpcSource{ip, grpcPort};
+    auto subscriptionSource = std::make_unique<etl::impl::SubscriptionSource>(
         ioc,
         ip,
         wsPort,
