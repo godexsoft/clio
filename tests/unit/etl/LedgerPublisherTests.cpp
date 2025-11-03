@@ -21,11 +21,11 @@
 #include "data/Types.hpp"
 #include "etl/SystemState.hpp"
 #include "etl/impl/LedgerPublisher.hpp"
+#include "util/AsioContextTestFixture.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockSubscriptionManager.hpp"
 #include "util/TestObject.hpp"
-#include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/ConfigDefinition.hpp"
 
 #include <fmt/format.h>
@@ -64,10 +64,9 @@ MATCHER_P(ledgerHeaderMatcher, expectedHeader, "Headers match")
 
 }  // namespace
 
-struct ETLLedgerPublisherTest : util::prometheus::WithPrometheus, MockBackendTestStrict {
+struct ETLLedgerPublisherTest : util::prometheus::WithPrometheus, MockBackendTestStrict, SyncAsioContextTest {
     util::config::ClioConfigDefinition cfg{{}};
     StrictMockSubscriptionManagerSharedPtr mockSubscriptionManagerPtr;
-    util::async::CoroExecutionContext ctx;
 };
 
 TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderSkipDueToAge)
@@ -75,7 +74,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderSkipDueToAge)
     // Use kAGE (800) which is > MAX_LEDGER_AGE_SECONDS (600) to test skipping
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, kAGE);
     auto dummyState = etl::SystemState{};
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
 
     backend_->setRange(kSEQ - 1, kSEQ);
     publisher.publish(dummyLedgerHeader);
@@ -91,7 +90,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderSkipDueToAge)
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges).Times(0);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction).Times(0);
 
-    ctx.join();
+    ctx_.run();
 }
 
 TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderWithinAgeLimit)
@@ -99,7 +98,14 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderWithinAgeLimit)
     // Use age 0 which is < MAX_LEDGER_AGE_SECONDS to ensure publishing happens
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 0);
     auto dummyState = etl::SystemState{};
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
+
+    backend_->setRange(kSEQ - 1, kSEQ);
+    publisher.publish(dummyLedgerHeader);
+
+    // Verify last published sequence is set immediately
+    EXPECT_TRUE(publisher.getLastPublishedSequence());
+    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
@@ -109,14 +115,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderWithinAgeLimit)
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 0));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
 
-    backend_->setRange(kSEQ - 1, kSEQ);
-    publisher.publish(dummyLedgerHeader);
-
-    // Verify last published sequence is set immediately
-    EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
-
-    ctx.join();
+    ctx_.run();
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -125,14 +124,13 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingTrue)
     auto dummyState = etl::SystemState{};
     dummyState.isWriting = true;
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, kAGE);
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
-
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     publisher.publish(dummyLedgerHeader);
+
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
-    ctx.join();
-
+    ctx_.run();
     EXPECT_FALSE(backend_->fetchLedgerRange());
 }
 
@@ -142,8 +140,10 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
     dummyState.isWriting = true;
 
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 0);  // age is 0
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     backend_->setRange(kSEQ - 1, kSEQ);
+
+    publisher.publish(dummyLedgerHeader);
 
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
@@ -158,17 +158,15 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
 
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger).WillOnce(Return(std::vector<TransactionAndMetadata>{t1}));
 
+    EXPECT_TRUE(publisher.getLastPublishedSequence());
+    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 1));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
     // mock 1 transaction
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction);
 
-    publisher.publish(dummyLedgerHeader);
-    EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
-
-    ctx.join();
-
+    ctx_.run();
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -184,7 +182,8 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
 
     backend_->setRange(kSEQ - 1, kSEQ);
 
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
+    publisher.publish(dummyLedgerHeader);
 
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
@@ -200,16 +199,14 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kSEQ, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{t1}));
 
+    EXPECT_TRUE(publisher.getLastPublishedSequence());
+    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 1));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction);
 
-    publisher.publish(dummyLedgerHeader);
-    EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
-
-    ctx.join();
-
+    ctx_.run();
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -217,7 +214,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsTrue)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = true;
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     EXPECT_FALSE(publisher.publish(kSEQ, {}));
 }
 
@@ -225,7 +222,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqMaxAttempt)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = false;
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
 
     static constexpr auto kMAX_ATTEMPT = 2;
 
@@ -239,7 +236,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsFalse)
 {
     auto dummyState = etl::SystemState{};
     dummyState.isStopping = false;
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
 
     LedgerRange const range{.minSequence = kSEQ, .maxSequence = kSEQ};
     EXPECT_CALL(*backend_, hardFetchLedgerRange).WillOnce(Return(range));
@@ -248,7 +245,7 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerSeqStopIsFalse)
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kSEQ, _)).WillOnce(Return(dummyLedgerHeader));
 
     EXPECT_TRUE(publisher.publish(kSEQ, {}));
-    ctx.join();
+    ctx_.run();
 }
 
 TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
@@ -257,8 +254,10 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
     dummyState.isWriting = true;
 
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 0);  // age is 0
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     backend_->setRange(kSEQ - 1, kSEQ);
+
+    publisher.publish(dummyLedgerHeader);
 
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
@@ -284,6 +283,9 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
     EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kSEQ, _))
         .WillOnce(Return(std::vector<TransactionAndMetadata>{t1, t2}));
 
+    EXPECT_TRUE(publisher.getLastPublishedSequence());
+    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(_, _, fmt::format("{}-{}", kSEQ - 1, kSEQ), 2));
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges);
 
@@ -291,12 +293,7 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction(t2, _)).InSequence(s);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction(t1, _)).InSequence(s);
 
-    publisher.publish(dummyLedgerHeader);
-    EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
-
-    ctx.join();
-
+    ctx_.run();
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
 }
 
@@ -307,18 +304,19 @@ TEST_F(ETLLedgerPublisherTest, PublishVeryOldLedgerShouldSkip)
 
     // Create a ledger header with age (800) greater than MAX_LEDGER_AGE_SECONDS (600)
     auto const dummyLedgerHeader = createLedgerHeader(kLEDGER_HASH, kSEQ, 800);
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     backend_->setRange(kSEQ - 1, kSEQ);
+
+    publisher.publish(dummyLedgerHeader);
 
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger).Times(0);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges).Times(0);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubTransaction).Times(0);
 
-    publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
 
-    ctx.join();
+    ctx_.run();
 }
 
 TEST_F(ETLLedgerPublisherTest, PublishMultipleLedgersInQuickSuccession)
@@ -328,8 +326,12 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleLedgersInQuickSuccession)
 
     auto const dummyLedgerHeader1 = createLedgerHeader(kLEDGER_HASH, kSEQ, 0);
     auto const dummyLedgerHeader2 = createLedgerHeader(kLEDGER_HASH, kSEQ + 1, 0);
-    auto publisher = impl::LedgerPublisher(ctx, backend_, mockSubscriptionManagerPtr, dummyState);
+    auto publisher = impl::LedgerPublisher(ctx_, backend_, mockSubscriptionManagerPtr, dummyState);
     backend_->setRange(kSEQ - 1, kSEQ + 1);
+
+    // Publish two ledgers in quick succession
+    publisher.publish(dummyLedgerHeader1);
+    publisher.publish(dummyLedgerHeader2);
 
     EXPECT_CALL(*backend_, doFetchLedgerObject(ripple::keylet::fees().key, kSEQ, _))
         .WillOnce(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
@@ -347,12 +349,8 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleLedgersInQuickSuccession)
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubLedger(ledgerHeaderMatcher(dummyLedgerHeader2), _, _, _)).InSequence(s);
     EXPECT_CALL(*mockSubscriptionManagerPtr, pubBookChanges(ledgerHeaderMatcher(dummyLedgerHeader2), _)).InSequence(s);
 
-    // Publish two ledgers in quick succession
-    publisher.publish(dummyLedgerHeader1);
-    publisher.publish(dummyLedgerHeader2);
-
     EXPECT_TRUE(publisher.getLastPublishedSequence());
     EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ + 1);
 
-    ctx.join();
+    ctx_.run();
 }

@@ -25,8 +25,6 @@
 #include "etl/CacheLoader.hpp"
 #include "etl/CacheLoaderInterface.hpp"
 #include "etl/CacheUpdaterInterface.hpp"
-#include "etl/CorruptionDetector.hpp"
-#include "etl/ETLServiceInterface.hpp"
 #include "etl/ETLState.hpp"
 #include "etl/ExtractorInterface.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
@@ -54,7 +52,6 @@
 #include "etl/impl/ext/MPT.hpp"
 #include "etl/impl/ext/NFT.hpp"
 #include "etl/impl/ext/Successor.hpp"
-#include "feed/SubscriptionManagerInterface.hpp"
 #include "util/Assert.hpp"
 #include "util/Profiler.hpp"
 #include "util/async/AnyExecutionContext.hpp"
@@ -78,6 +75,7 @@ namespace etl {
 std::shared_ptr<etl::ETLServiceInterface>
 ETLService::makeETLService(
     util::config::ClioConfigDefinition const& config,
+    boost::asio::io_context& ioc,
     util::async::AnyExecutionContext ctx,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
@@ -92,7 +90,7 @@ ETLService::makeETLService(
 
     auto fetcher = std::make_shared<etl::impl::LedgerFetcher>(backend, balancer);
     auto extractor = std::make_shared<etl::impl::Extractor>(fetcher);
-    auto publisher = std::make_shared<etl::impl::LedgerPublisher>(ctx, backend, subscriptions, *state);
+    auto publisher = std::make_shared<etl::impl::LedgerPublisher>(ioc, backend, subscriptions, *state);
     auto cacheLoader = std::make_shared<etl::CacheLoader<>>(config, backend, backend->cache());
     auto cacheUpdater = std::make_shared<etl::impl::CacheUpdater>(backend->cache());
     auto amendmentBlockHandler = std::make_shared<etl::impl::AmendmentBlockHandler>(ctx, *state);
