@@ -19,7 +19,7 @@
 
 #include "etl/NetworkValidatedLedgers.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
-#include "etlng/impl/AmendmentBlockHandler.hpp"
+#include "etl/impl/AmendmentBlockHandler.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 
 #include <gmock/gmock.h>
@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <memory>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 
 struct NetworkValidatedLedgersTests : virtual public ::testing::Test {
 protected:

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "etlng/Models.hpp"
-#include "etlng/impl/ext/NFT.hpp"
+#include "etl/Models.hpp"
+#include "etl/impl/ext/NFT.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 using namespace data;
 
 namespace {
@@ -235,7 +235,7 @@ createTestData()
     };
 
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = std::move(transactions),
         .objects = {},
         .successors = {},
@@ -250,7 +250,7 @@ createTestData()
 
 struct NFTExtTests : util::prometheus::WithPrometheus, MockBackendTest {
 protected:
-    etlng::impl::NFTExt ext_{backend_};
+    etl::impl::NFTExt ext_{backend_};
 };
 
 TEST_F(NFTExtTests, OnLedgerDataFiltersAndWritesNFTs)

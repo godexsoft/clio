@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2024, the clio developers.
+    Copyright (c) 2025, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -38,7 +38,7 @@
 
 using namespace etl::impl;
 
-struct ForwardingSourceTests : SyncAsioContextTest {
+struct ForwardingSourceNgTests : SyncAsioContextTest {
 protected:
     TestWsServer server_{ctx_, "0.0.0.0"};
     ForwardingSource forwardingSource_{
@@ -49,7 +49,7 @@ protected:
     };
 };
 
-TEST_F(ForwardingSourceTests, ConnectionFailed)
+TEST_F(ForwardingSourceNgTests, ConnectionFailed)
 {
     runSpawn([&](boost::asio::yield_context yield) {
         auto result = forwardingSource_.forwardToRippled({}, {}, {}, yield);
@@ -58,7 +58,7 @@ TEST_F(ForwardingSourceTests, ConnectionFailed)
     });
 }
 
-struct ForwardingSourceOperationsTests : ForwardingSourceTests {
+struct ForwardingSourceOperationsNgTests : ForwardingSourceNgTests {
     TestWsConnection
     serverConnection(boost::asio::yield_context yield)
     {
@@ -76,7 +76,7 @@ protected:
     boost::json::object const reply_ = {{"reply", "some_reply"}};
 };
 
-TEST_F(ForwardingSourceOperationsTests, XUserHeader)
+TEST_F(ForwardingSourceOperationsNgTests, XUserHeader)
 {
     std::string const xUserValue = "some_user";
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
@@ -100,7 +100,7 @@ TEST_F(ForwardingSourceOperationsTests, XUserHeader)
     });
 }
 
-TEST_F(ForwardingSourceOperationsTests, ReadFailed)
+TEST_F(ForwardingSourceOperationsNgTests, ReadFailed)
 {
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
@@ -114,7 +114,7 @@ TEST_F(ForwardingSourceOperationsTests, ReadFailed)
     });
 }
 
-TEST_F(ForwardingSourceOperationsTests, ReadTimeout)
+TEST_F(ForwardingSourceOperationsNgTests, ReadTimeout)
 {
     TestWsConnectionPtr connection;
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
@@ -128,7 +128,7 @@ TEST_F(ForwardingSourceOperationsTests, ReadTimeout)
     });
 }
 
-TEST_F(ForwardingSourceOperationsTests, ParseFailed)
+TEST_F(ForwardingSourceOperationsNgTests, ParseFailed)
 {
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
@@ -150,7 +150,7 @@ TEST_F(ForwardingSourceOperationsTests, ParseFailed)
     });
 }
 
-TEST_F(ForwardingSourceOperationsTests, GotNotAnObject)
+TEST_F(ForwardingSourceOperationsNgTests, GotNotAnObject)
 {
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);
@@ -173,7 +173,7 @@ TEST_F(ForwardingSourceOperationsTests, GotNotAnObject)
     });
 }
 
-TEST_F(ForwardingSourceOperationsTests, Success)
+TEST_F(ForwardingSourceOperationsNgTests, Success)
 {
     util::spawn(ctx_, [&](boost::asio::yield_context yield) {
         auto connection = serverConnection(yield);

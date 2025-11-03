@@ -19,8 +19,8 @@
 
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/impl/ext/Successor.hpp"
+#include "etl/Models.hpp"
+#include "etl/impl/ext/Successor.hpp"
 #include "util/Assert.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockAssert.hpp"
@@ -44,7 +44,7 @@
 #include <utility>
 #include <vector>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 using namespace data;
 
 namespace {
@@ -52,7 +52,7 @@ constinit auto const kSEQ = 123u;
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
 auto
-createTestData(std::vector<etlng::model::Object> objects)
+createTestData(std::vector<etl::model::Object> objects)
 {
     auto transactions = std::vector{
         util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
@@ -61,7 +61,7 @@ createTestData(std::vector<etlng::model::Object> objects)
     };
 
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = std::move(transactions),
         .objects = std::move(objects),
         .successors = {},
@@ -90,7 +90,7 @@ createInitialTestData(std::vector<ripple::uint256> edgeKeys)
 struct SuccessorExtTests : util::prometheus::WithPrometheus, MockBackendTest {
 protected:
     MockLedgerCache cache_;
-    etlng::impl::SuccessorExt ext_{backend_, cache_};
+    etl::impl::SuccessorExt ext_{backend_, cache_};
 };
 
 TEST_F(SuccessorExtTests, OnLedgerDataLogicErrorIfCacheIsNotFullButSuccessorsNotPresent)
@@ -115,7 +115,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataLogicErrorIfCacheIsFullButLatestSeqDiffers
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorAndNoBookBase)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const deletedObj = util::createObject(Object::ModType::Deleted, objKey);
@@ -138,7 +138,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectButWithoutCachedPredecess
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorAndNoBookBase)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObject(Object::ModType::Created, objKey);
@@ -161,7 +161,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectButWithoutCachedPredecess
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBase)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
@@ -191,7 +191,7 @@ TEST_F(
     OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndMatchingSuccessorInCache
 )
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
@@ -225,7 +225,7 @@ TEST_F(
     OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseButNoCurrentObjAndNoSuccessorInCache
 )
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
@@ -259,7 +259,7 @@ TEST_F(
     OnLedgerDataWithDeletedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndCurrentObjAndSuccessorInCache
 )
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
@@ -291,7 +291,7 @@ TEST_F(
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAndWithCachedPredecessorAndSuccessor)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const predKey = binaryStringToUint256(
@@ -322,7 +322,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAndWithCachedPredecessorA
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectAndIncludedSuccessors)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObject(Object::ModType::Created, objKey);
@@ -344,7 +344,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithCreatedObjectAndIncludedSuccessors)
 
 TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAndIncludedSuccessorsWithoutFirstBook)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const deletedObj = util::createObject(Object::ModType::Deleted, objKey);
@@ -366,7 +366,7 @@ TEST_F(SuccessorExtTests, OnLedgerDataWithDeletedObjectAndIncludedSuccessorsWith
 
 TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndNoSuccessorsForEdgeKeys)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
     auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");
@@ -405,7 +405,7 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndNoSuccessor
 
 TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndSuccessorsForEdgeKeys)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
     auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");
@@ -445,7 +445,7 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndSuccessorsF
 
 TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsAndBookDirAndSuccessorsForEdgeKeys)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
     auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");
@@ -495,7 +495,7 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsAndBookDirAndSuccessorsForE
 
 TEST_F(SuccessorExtTests, OnInitialObjectsWithEmptyLastKey)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const lastKey = std::string{};
     auto const data = std::vector{
@@ -522,7 +522,7 @@ TEST_F(SuccessorExtTests, OnInitialObjectsWithEmptyLastKey)
 
 TEST_F(SuccessorExtTests, OnInitialObjectsWithNonEmptyLastKey)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const lastKey =
         uint256ToString(ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D"));
@@ -551,7 +551,7 @@ struct SuccessorExtAssertTests : common::util::WithMockAssert, SuccessorExtTests
 
 TEST_F(SuccessorExtAssertTests, OnLedgerDataWithDeletedObjectAssertsIfGetDeletedIsNotInCache)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const deletedObj = util::createObject(Object::ModType::Deleted, objKey);
@@ -577,7 +577,7 @@ TEST_F(
     OnLedgerDataWithCreatedObjectButWithoutCachedPredecessorAndSuccessorWithBookBaseAndBookSuccessorNotInCache
 )
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const objKey = "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
     auto const createdObj = util::createObjectWithBookBase(Object::ModType::Created, objKey);
@@ -604,7 +604,7 @@ TEST_F(
 
 TEST_F(SuccessorExtAssertTests, OnInitialDataNotIsFull)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const data = createTestData({
         util::createObject(Object::ModType::Modified),
@@ -617,7 +617,7 @@ TEST_F(SuccessorExtAssertTests, OnInitialDataNotIsFull)
 
 TEST_F(SuccessorExtAssertTests, OnInitialDataIsFullButNoEdgeKeys)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto data = createTestData({});
 
@@ -627,7 +627,7 @@ TEST_F(SuccessorExtAssertTests, OnInitialDataIsFullButNoEdgeKeys)
 
 TEST_F(SuccessorExtAssertTests, OnInitialDataIsFullWithEdgeKeysButHasObjects)
 {
-    using namespace etlng::model;
+    using namespace etl::model;
 
     auto const firstKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960C");
     auto const secondKey = ripple::uint256("B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960E");

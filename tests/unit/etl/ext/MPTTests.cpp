@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "etlng/Models.hpp"
-#include "etlng/impl/ext/MPT.hpp"
+#include "etl/Models.hpp"
+#include "etl/impl/ext/MPT.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
@@ -33,8 +33,8 @@
 #include <utility>
 #include <vector>
 
-using namespace etlng;
-using namespace etlng::impl;
+using namespace etl;
+using namespace etl::impl;
 using namespace data;
 using namespace testing;
 
@@ -74,7 +74,7 @@ createTestData()
     };
 
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = std::move(transactions),
         .objects = {},
         .successors = {},
@@ -95,7 +95,7 @@ createMultipleHoldersTestData()
     };
 
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = std::move(transactions),
         .objects = {},
         .successors = {},

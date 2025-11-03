@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include "data/Types.hpp"
+#include "etl/InitialLoadObserverInterface.hpp"
+#include "etl/Models.hpp"
+#include "etl/RegistryInterface.hpp"
 #include "etl/SystemState.hpp"
-#include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/RegistryInterface.hpp"
-#include "etlng/impl/Loading.hpp"
+#include "etl/impl/Loading.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockAssert.hpp"
@@ -41,8 +41,8 @@
 #include <string>
 #include <vector>
 
-using namespace etlng::model;
-using namespace etlng::impl;
+using namespace etl::model;
+using namespace etl::impl;
 using namespace data;
 
 namespace {
@@ -50,13 +50,13 @@ namespace {
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 constinit auto const kSEQ = 30;
 
-struct MockRegistry : etlng::RegistryInterface {
+struct MockRegistry : etl::RegistryInterface {
     MOCK_METHOD(void, dispatchInitialObjects, (uint32_t, std::vector<Object> const&, std::string), (override));
     MOCK_METHOD(void, dispatchInitialData, (LedgerData const&), (override));
     MOCK_METHOD(void, dispatch, (LedgerData const&), (override));
 };
 
-struct MockLoadObserver : etlng::InitialLoadObserverInterface {
+struct MockLoadObserver : etl::InitialLoadObserverInterface {
     MOCK_METHOD(
         void,
         onInitialLoadGotMoreObjects,

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "etlng/Models.hpp"
-#include "etlng/impl/CacheUpdater.hpp"
-#include "etlng/impl/ext/Cache.hpp"
+#include "etl/Models.hpp"
+#include "etl/impl/CacheUpdater.hpp"
+#include "etl/impl/ext/Cache.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockLedgerCache.hpp"
 #include "util/MockPrometheus.hpp"
@@ -32,7 +32,7 @@
 #include <utility>
 #include <vector>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 using namespace data;
 
 namespace {
@@ -45,7 +45,7 @@ createTestData()
 {
     auto objects = std::vector{util::createObject(), util::createObject(), util::createObject()};
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = {},
         .objects = std::move(objects),
         .successors = {},
@@ -61,8 +61,8 @@ createTestData()
 struct CacheExtTests : util::prometheus::WithPrometheus {
 protected:
     MockLedgerCache cache_;
-    std::shared_ptr<etlng::impl::CacheUpdater> updater_ = std::make_shared<etlng::impl::CacheUpdater>(cache_);
-    etlng::impl::CacheExt ext_{updater_};
+    std::shared_ptr<etl::impl::CacheUpdater> updater_ = std::make_shared<etl::impl::CacheUpdater>(cache_);
+    etl::impl::CacheExt ext_{updater_};
 };
 
 TEST_F(CacheExtTests, OnLedgerDataUpdatesCache)

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
+#include "etl/Models.hpp"
+#include "etl/MonitorInterface.hpp"
 #include "etl/SystemState.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/MonitorInterface.hpp"
-#include "etlng/impl/Registry.hpp"
+#include "etl/impl/Registry.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/TestObject.hpp"
@@ -36,56 +36,56 @@
 #include <utility>
 #include <vector>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 
 namespace compiletime::checks {
 
 struct Ext1 {
     static void
-    onLedgerData(etlng::model::LedgerData const&);
+    onLedgerData(etl::model::LedgerData const&);
 };
 
 struct Ext2 {
     static void
-    onInitialObjects(uint32_t, std::vector<etlng::model::Object> const&, std::string);
+    onInitialObjects(uint32_t, std::vector<etl::model::Object> const&, std::string);
 };
 
 struct Ext3 {
     static void
-    onInitialData(etlng::model::LedgerData const&);
+    onInitialData(etl::model::LedgerData const&);
 };
 
 struct Ext4SpecMissing {
     static void
-    onTransaction(uint32_t, etlng::model::Transaction const&);
+    onTransaction(uint32_t, etl::model::Transaction const&);
 };
 
 struct Ext4Fixed {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
 
     static void
-    onTransaction(uint32_t, etlng::model::Transaction const&);
+    onTransaction(uint32_t, etl::model::Transaction const&);
 };
 
 struct Ext5 {
     static void
-    onInitialObject(uint32_t, etlng::model::Object const&);
+    onInitialObject(uint32_t, etl::model::Object const&);
 };
 
 struct Ext6SpecMissing {
     static void
-    onInitialTransaction(uint32_t, etlng::model::Transaction const&);
+    onInitialTransaction(uint32_t, etl::model::Transaction const&);
 };
 
 struct Ext6Fixed {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
 
     static void
-    onInitialTransaction(uint32_t, etlng::model::Transaction const&);
+    onInitialTransaction(uint32_t, etl::model::Transaction const&);
 };
 
 struct ExtRealistic {
-    using spec = etlng::model::Spec<
+    using spec = etl::model::Spec<
         ripple::TxType::ttNFTOKEN_BURN,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER,
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
@@ -93,11 +93,11 @@ struct ExtRealistic {
         ripple::TxType::ttNFTOKEN_MINT>;
 
     static void
-    onLedgerData(etlng::model::LedgerData const&);
+    onLedgerData(etl::model::LedgerData const&);
     static void
-    onInitialObject(uint32_t, etlng::model::Object const&);
+    onInitialObject(uint32_t, etl::model::Object const&);
     static void
-    onInitialTransaction(uint32_t, etlng::model::Transaction const&);
+    onInitialTransaction(uint32_t, etl::model::Transaction const&);
 };
 
 struct ExtCombinesTwoOfKind : Ext2, Ext5 {};
@@ -117,12 +117,12 @@ static_assert(SomeExtension<ExtRealistic>);
 static_assert(not SomeExtension<ExtCombinesTwoOfKind>);
 
 struct ValidSpec {
-    using spec = etlng::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
+    using spec = etl::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
 };
 
 // invalid spec does not compile:
 // struct DuplicatesSpec {
-//     using spec = etlng::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
+//     using spec = etl::model::Spec<ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_BURN, ripple::ttNFTOKEN_MINT>;
 // };
 
 static_assert(ContainsSpec<ValidSpec>);
@@ -135,54 +135,54 @@ constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1
 constinit auto const kSEQ = 30;
 
 struct MockExtLedgerData {
-    MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
+    MOCK_METHOD(void, onLedgerData, (etl::model::LedgerData const&), (const));
 };
 
 struct MockExtInitialData {
-    MOCK_METHOD(void, onInitialData, (etlng::model::LedgerData const&), (const));
+    MOCK_METHOD(void, onInitialData, (etl::model::LedgerData const&), (const));
 };
 
 struct MockExtOnObject {
-    MOCK_METHOD(void, onObject, (uint32_t, etlng::model::Object const&), (const));
+    MOCK_METHOD(void, onObject, (uint32_t, etl::model::Object const&), (const));
 };
 
 struct MockExtTransactionNftBurn {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
-    MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    MOCK_METHOD(void, onTransaction, (uint32_t, etl::model::Transaction const&), (const));
 };
 
 struct MockExtTransactionNftOffer {
-    using spec = etlng::model::Spec<
+    using spec = etl::model::Spec<
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
         ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER>;
-    MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    MOCK_METHOD(void, onTransaction, (uint32_t, etl::model::Transaction const&), (const));
 };
 
 struct MockExtInitialObject {
-    MOCK_METHOD(void, onInitialObject, (uint32_t, etlng::model::Object const&), (const));
+    MOCK_METHOD(void, onInitialObject, (uint32_t, etl::model::Object const&), (const));
 };
 
 struct MockExtInitialObjects {
-    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&, std::string), (const));
+    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etl::model::Object> const&, std::string), (const));
 };
 
 struct MockExtNftBurn {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
-    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etl::model::Transaction const&), (const));
 };
 
 struct MockExtNftOffer {
-    using spec = etlng::model::Spec<
+    using spec = etl::model::Spec<
         ripple::TxType::ttNFTOKEN_CREATE_OFFER,
         ripple::TxType::ttNFTOKEN_CANCEL_OFFER,
         ripple::TxType::ttNFTOKEN_ACCEPT_OFFER>;
-    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etl::model::Transaction const&), (const));
 };
 
 // Mock extensions with allowInReadonly
 struct MockExtLedgerDataReadonly {
-    MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
+    MOCK_METHOD(void, onLedgerData, (etl::model::LedgerData const&), (const));
 
     static bool
     allowInReadonly()
@@ -192,7 +192,7 @@ struct MockExtLedgerDataReadonly {
 };
 
 struct MockExtInitialDataReadonly {
-    MOCK_METHOD(void, onInitialData, (etlng::model::LedgerData const&), (const));
+    MOCK_METHOD(void, onInitialData, (etl::model::LedgerData const&), (const));
 
     static bool
     allowInReadonly()
@@ -202,7 +202,7 @@ struct MockExtInitialDataReadonly {
 };
 
 struct MockExtOnObjectReadonly {
-    MOCK_METHOD(void, onObject, (uint32_t, etlng::model::Object const&), (const));
+    MOCK_METHOD(void, onObject, (uint32_t, etl::model::Object const&), (const));
 
     static bool
     allowInReadonly()
@@ -212,8 +212,8 @@ struct MockExtOnObjectReadonly {
 };
 
 struct MockExtTransactionNftBurnReadonly {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
-    MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    MOCK_METHOD(void, onTransaction, (uint32_t, etl::model::Transaction const&), (const));
 
     static bool
     allowInReadonly()
@@ -223,7 +223,7 @@ struct MockExtTransactionNftBurnReadonly {
 };
 
 struct MockExtInitialObjectReadonly {
-    MOCK_METHOD(void, onInitialObject, (uint32_t, etlng::model::Object const&), (const));
+    MOCK_METHOD(void, onInitialObject, (uint32_t, etl::model::Object const&), (const));
 
     static bool
     allowInReadonly()
@@ -233,7 +233,7 @@ struct MockExtInitialObjectReadonly {
 };
 
 struct MockExtInitialObjectsReadonly {
-    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&, std::string), (const));
+    MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etl::model::Object> const&, std::string), (const));
 
     static bool
     allowInReadonly()
@@ -243,8 +243,8 @@ struct MockExtInitialObjectsReadonly {
 };
 
 struct MockExtNftBurnReadonly {
-    using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
-    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+    using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+    MOCK_METHOD(void, onInitialTransaction, (uint32_t, etl::model::Transaction const&), (const));
 
     static bool
     allowInReadonly()
@@ -282,7 +282,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForInitialTransaction)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtNftBurn&, MockExtNftOffer&>(state_, extBurn, extOffer);
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = transactions,
             .objects = {},
             .successors = {},
@@ -311,7 +311,7 @@ TEST_F(RegistryTest, FilteringOfTxWorksCorrectlyForTransaction)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtTransactionNftBurn&, MockExtTransactionNftOffer&>(state_, extBurn, extOffer);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -356,7 +356,7 @@ TEST_F(RegistryTest, ObjectsDispatched)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtOnObject&>(state_, extObj);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = {},
             .objects = {util::createObject(), util::createObject(), util::createObject()},
             .successors = {},
@@ -383,7 +383,7 @@ TEST_F(RegistryTest, OnLedgerDataForBatch)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtLedgerData&>(state_, ext);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -426,7 +426,7 @@ TEST_F(RegistryTest, InitialDataCorrectOrderOfHookCalls)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtNftBurn&, MockExtInitialData&>(state_, extInitialTransaction, extInitialData);
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -466,7 +466,7 @@ TEST_F(RegistryTest, LedgerDataCorrectOrderOfHookCalls)
         state_, extOnObject, extOnTransaction, extLedgerData
     );
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = std::move(objects),
             .successors = {},
@@ -493,7 +493,7 @@ TEST_F(RegistryTest, ReadonlyModeLedgerDataAllowed)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtLedgerDataReadonly&>(state_, ext);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -520,7 +520,7 @@ TEST_F(RegistryTest, ReadonlyModeTransactionAllowed)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtTransactionNftBurnReadonly&>(state_, extTx);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -548,7 +548,7 @@ TEST_F(RegistryTest, ReadonlyModeObjectAllowed)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtOnObjectReadonly&>(state_, extObj);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = {},
             .objects = std::move(objects),
             .successors = {},
@@ -575,7 +575,7 @@ TEST_F(RegistryTest, ReadonlyModeInitialDataAllowed)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtInitialDataReadonly&>(state_, extInitialData);
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -602,7 +602,7 @@ TEST_F(RegistryTest, ReadonlyModeInitialTransactionAllowed)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtNftBurnReadonly&>(state_, extTx);
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -652,7 +652,7 @@ TEST_F(RegistryTest, ReadonlyModeRegularExtensionsNotCalled)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtLedgerData&>(state_, extLedgerData);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = {},
             .objects = std::move(objects),
             .successors = {},
@@ -682,7 +682,7 @@ TEST_F(RegistryTest, MixedReadonlyAndRegularExtensions)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<MockExtLedgerDataReadonly&, MockExtLedgerData&>(state_, extReadonly, extRegular);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = {},
             .objects = std::move(objects),
             .successors = {},
@@ -696,7 +696,7 @@ TEST_F(RegistryTest, MixedReadonlyAndRegularExtensions)
 
 TEST_F(RegistryTest, MonitorInterfaceExecution)
 {
-    struct MockMonitor : etlng::MonitorInterface {
+    struct MockMonitor : etl::MonitorInterface {
         MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
         MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
         MOCK_METHOD(
@@ -724,7 +724,7 @@ TEST_F(RegistryTest, MonitorInterfaceExecution)
 TEST_F(RegistryTest, ReadonlyModeWithAllowInReadonlyTest)
 {
     struct ExtWithAllowInReadonly {
-        MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
+        MOCK_METHOD(void, onLedgerData, (etl::model::LedgerData const&), (const));
 
         static bool
         allowInReadonly()
@@ -741,7 +741,7 @@ TEST_F(RegistryTest, ReadonlyModeWithAllowInReadonlyTest)
     auto const header = createLedgerHeader(kLEDGER_HASH, kSEQ);
     auto reg = Registry<ExtWithAllowInReadonly&>(state_, ext);
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = {},
             .objects = {},
             .successors = {},
@@ -756,9 +756,9 @@ TEST_F(RegistryTest, ReadonlyModeWithAllowInReadonlyTest)
 TEST_F(RegistryTest, ReadonlyModeExecutePluralHooksIfAllowedPaths)
 {
     struct ExtWithBothHooksAndAllowReadonly {
-        MOCK_METHOD(void, onLedgerData, (etlng::model::LedgerData const&), (const));
-        MOCK_METHOD(void, onInitialData, (etlng::model::LedgerData const&), (const));
-        MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etlng::model::Object> const&, std::string), (const));
+        MOCK_METHOD(void, onLedgerData, (etl::model::LedgerData const&), (const));
+        MOCK_METHOD(void, onInitialData, (etl::model::LedgerData const&), (const));
+        MOCK_METHOD(void, onInitialObjects, (uint32_t, std::vector<etl::model::Object> const&, std::string), (const));
 
         static bool
         allowInReadonly()
@@ -785,7 +785,7 @@ TEST_F(RegistryTest, ReadonlyModeExecutePluralHooksIfAllowedPaths)
     auto reg = Registry<ExtWithBothHooksAndAllowReadonly&>(state_, ext);
 
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = transactions,
             .objects = objects,
             .successors = {},
@@ -797,7 +797,7 @@ TEST_F(RegistryTest, ReadonlyModeExecutePluralHooksIfAllowedPaths)
     );
 
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},
@@ -814,12 +814,12 @@ TEST_F(RegistryTest, ReadonlyModeExecutePluralHooksIfAllowedPaths)
 TEST_F(RegistryTest, ReadonlyModeExecuteByOneHooksIfAllowedPaths)
 {
     struct ExtWithBothHooksAndAllowReadonly {
-        using spec = etlng::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
+        using spec = etl::model::Spec<ripple::TxType::ttNFTOKEN_BURN>;
 
-        MOCK_METHOD(void, onObject, (uint32_t, etlng::model::Object const&), (const));
-        MOCK_METHOD(void, onInitialObject, (uint32_t, etlng::model::Object const&), (const));
-        MOCK_METHOD(void, onTransaction, (uint32_t, etlng::model::Transaction const&), (const));
-        MOCK_METHOD(void, onInitialTransaction, (uint32_t, etlng::model::Transaction const&), (const));
+        MOCK_METHOD(void, onObject, (uint32_t, etl::model::Object const&), (const));
+        MOCK_METHOD(void, onInitialObject, (uint32_t, etl::model::Object const&), (const));
+        MOCK_METHOD(void, onTransaction, (uint32_t, etl::model::Transaction const&), (const));
+        MOCK_METHOD(void, onInitialTransaction, (uint32_t, etl::model::Transaction const&), (const));
 
         static bool
         allowInReadonly()
@@ -847,7 +847,7 @@ TEST_F(RegistryTest, ReadonlyModeExecuteByOneHooksIfAllowedPaths)
     auto reg = Registry<ExtWithBothHooksAndAllowReadonly&>(state_, ext);
 
     reg.dispatch(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = transactions,
             .objects = objects,
             .successors = {},
@@ -859,7 +859,7 @@ TEST_F(RegistryTest, ReadonlyModeExecuteByOneHooksIfAllowedPaths)
     );
 
     reg.dispatchInitialData(
-        etlng::model::LedgerData{
+        etl::model::LedgerData{
             .transactions = std::move(transactions),
             .objects = {},
             .successors = {},

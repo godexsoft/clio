@@ -18,10 +18,10 @@
 //==============================================================================
 #pragma once
 
+#include "etl/InitialLoadObserverInterface.hpp"
+#include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
-#include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
-#include "etlng/Source.hpp"
+#include "etl/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "util/config/ObjectView.hpp"
@@ -47,7 +47,7 @@
 #include <utility>
 #include <vector>
 
-struct MockSourceNg : etlng::SourceBase {
+struct MockSourceNg : etl::SourceBase {
     MOCK_METHOD(void, run, (), (override));
     MOCK_METHOD(void, stop, (boost::asio::yield_context), (override));
     MOCK_METHOD(bool, isConnected, (), (const, override));
@@ -62,9 +62,9 @@ struct MockSourceNg : etlng::SourceBase {
         (override)
     );
     MOCK_METHOD(
-        etlng::InitialLedgerLoadResult,
+        etl::InitialLedgerLoadResult,
         loadInitialLedger,
-        (uint32_t, uint32_t, etlng::InitialLoadObserverInterface&),
+        (uint32_t, uint32_t, etl::InitialLoadObserverInterface&),
         (override)
     );
 
@@ -81,7 +81,7 @@ template <template <typename> typename MockType>
 using MockSourceNgPtr = std::shared_ptr<MockType<MockSourceNg>>;
 
 template <template <typename> typename MockType>
-class MockSourceNgWrapper : public etlng::SourceBase {
+class MockSourceNgWrapper : public etl::SourceBase {
     MockSourceNgPtr<MockType> mock_;
 
 public:
@@ -137,8 +137,8 @@ public:
         return mock_->fetchLedger(sequence, getObjects, getObjectNeighbors);
     }
 
-    etlng::InitialLedgerLoadResult
-    loadInitialLedger(uint32_t sequence, uint32_t maxLedger, etlng::InitialLoadObserverInterface& observer) override
+    etl::InitialLedgerLoadResult
+    loadInitialLedger(uint32_t sequence, uint32_t maxLedger, etl::InitialLoadObserverInterface& observer) override
     {
         return mock_->loadInitialLedger(sequence, maxLedger, observer);
     }
@@ -156,9 +156,9 @@ public:
 };
 
 struct MockSourceNgCallbacks {
-    etlng::SourceBase::OnDisconnectHook onDisconnect;
-    etlng::SourceBase::OnConnectHook onConnect;
-    etlng::SourceBase::OnLedgerClosedHook onLedgerClosed;
+    etl::SourceBase::OnDisconnectHook onDisconnect;
+    etl::SourceBase::OnConnectHook onConnect;
+    etl::SourceBase::OnLedgerClosedHook onLedgerClosed;
 };
 
 template <template <typename> typename MockType>
@@ -183,9 +183,9 @@ public:
                                std::shared_ptr<feed::SubscriptionManagerInterface>,
                                std::shared_ptr<etl::NetworkValidatedLedgersInterface>,
                                std::chrono::steady_clock::duration,
-                               etlng::SourceBase::OnConnectHook onConnect,
-                               etlng::SourceBase::OnDisconnectHook onDisconnect,
-                               etlng::SourceBase::OnLedgerClosedHook onLedgerClosed
+                               etl::SourceBase::OnConnectHook onConnect,
+                               etl::SourceBase::OnDisconnectHook onDisconnect,
+                               etl::SourceBase::OnLedgerClosedHook onLedgerClosed
                            ) {
                 auto it = std::ranges::find_if(mockData_, [](auto const& d) { return not d.callbacks.has_value(); });
                 [&]() { ASSERT_NE(it, mockData_.end()) << "Make source called more than expected"; }();
@@ -208,23 +208,23 @@ public:
     }
 
     template <typename... Args>
-    etlng::SourcePtr
+    etl::SourcePtr
     operator()(Args&&... args)
     {
         return makeSource(std::forward<Args>(args)...);
     }
 
     MOCK_METHOD(
-        etlng::SourcePtr,
+        etl::SourcePtr,
         makeSource,
         (util::config::ObjectView const&,
          boost::asio::io_context&,
          std::shared_ptr<feed::SubscriptionManagerInterface>,
          std::shared_ptr<etl::NetworkValidatedLedgersInterface>,
          std::chrono::steady_clock::duration,
-         etlng::SourceBase::OnConnectHook,
-         etlng::SourceBase::OnDisconnectHook,
-         etlng::SourceBase::OnLedgerClosedHook)
+         etl::SourceBase::OnConnectHook,
+         etl::SourceBase::OnDisconnectHook,
+         etl::SourceBase::OnLedgerClosedHook)
     );
 
     MockType<MockSourceNg>&

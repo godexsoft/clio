@@ -20,8 +20,8 @@
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
 #include "etl/LedgerFetcherInterface.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/impl/Extraction.hpp"
+#include "etl/Models.hpp"
+#include "etl/impl/Extraction.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockAssert.hpp"
 #include "util/TestObject.hpp"
@@ -53,13 +53,13 @@ struct ExtractionModelNgTests : virtual public ::testing::Test {};
 
 TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
 {
-    auto const first = etlng::model::LedgerData{
+    auto const first = etl::model::LedgerData{
         .transactions =
             {util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
              util::createTransaction(ripple::TxType::ttNFTOKEN_BURN),
              util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER)},
         .objects = {util::createObject(), util::createObject(), util::createObject()},
-        .successors = std::vector<etlng::model::BookSuccessor>{{.firstBook = "first", .bookBase = "base"}},
+        .successors = std::vector<etl::model::BookSuccessor>{{.firstBook = "first", .bookBase = "base"}},
         .edgeKeys = std::vector<std::string>{"key1", "key2"},
         .header = createLedgerHeader(kLEDGER_HASH, kSEQ, 1),
         .rawHeader = {1, 2, 3},
@@ -81,7 +81,7 @@ TEST_F(ExtractionModelNgTests, LedgerDataCopyableAndEquatable)
     }
     {
         auto third = second;
-        third.successors = std::vector<etlng::model::BookSuccessor>{{.firstBook = "second", .bookBase = "base"}};
+        third.successors = std::vector<etl::model::BookSuccessor>{{.firstBook = "second", .bookBase = "base"}};
         EXPECT_NE(first, third);
     }
     {
@@ -154,14 +154,14 @@ TEST_F(ExtractionModelNgTests, ObjectCopyableAndEquatable)
     }
     {
         auto third = other;
-        third.type = etlng::model::Object::ModType::Deleted;
+        third.type = etl::model::Object::ModType::Deleted;
         EXPECT_NE(obj, third);
     }
 }
 
 TEST_F(ExtractionModelNgTests, BookSuccessorCopyableAndEquatable)
 {
-    auto const succ = etlng::model::BookSuccessor{.firstBook = "first", .bookBase = "base"};
+    auto const succ = etl::model::BookSuccessor{.firstBook = "first", .bookBase = "base"};
     auto const other = succ;
     EXPECT_EQ(succ, other);
 
@@ -181,8 +181,8 @@ struct ExtractionNgTests : public virtual ::testing::Test {};
 
 TEST_F(ExtractionNgTests, ModType)
 {
-    using namespace etlng::impl;
-    using ModType = etlng::model::Object::ModType;
+    using namespace etl::impl;
+    using ModType = etl::model::Object::ModType;
 
     EXPECT_EQ(extractModType(PBObjType::MODIFIED), ModType::Modified);
     EXPECT_EQ(extractModType(PBObjType::CREATED), ModType::Created);
@@ -192,7 +192,7 @@ TEST_F(ExtractionNgTests, ModType)
 
 TEST_F(ExtractionNgTests, OneTransaction)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
@@ -210,7 +210,7 @@ TEST_F(ExtractionNgTests, OneTransaction)
 
 TEST_F(ExtractionNgTests, MultipleTransactions)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createTransaction(ripple::TxType::ttNFTOKEN_CREATE_OFFER);
 
@@ -238,7 +238,7 @@ TEST_F(ExtractionNgTests, MultipleTransactions)
 
 TEST_F(ExtractionNgTests, OneObject)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
@@ -258,7 +258,7 @@ TEST_F(ExtractionNgTests, OneObject)
 
 TEST_F(ExtractionNgTests, OneObjectWithSuccessorAndPredecessor)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
@@ -280,7 +280,7 @@ TEST_F(ExtractionNgTests, OneObjectWithSuccessorAndPredecessor)
 
 TEST_F(ExtractionNgTests, MultipleObjects)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createObject();
     auto original = org::xrpl::rpc::v1::RawLedgerObject();
@@ -310,7 +310,7 @@ TEST_F(ExtractionNgTests, MultipleObjects)
 
 TEST_F(ExtractionNgTests, OneSuccessor)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createSuccessor();
     auto original = org::xrpl::rpc::v1::BookSuccessor();
@@ -324,7 +324,7 @@ TEST_F(ExtractionNgTests, OneSuccessor)
 
 TEST_F(ExtractionNgTests, MultipleSuccessors)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto expected = util::createSuccessor();
     auto original = org::xrpl::rpc::v1::BookSuccessor();
@@ -350,7 +350,7 @@ TEST_F(ExtractionNgTests, MultipleSuccessors)
 
 TEST_F(ExtractionNgTests, SuccessorsWithNoNeighborsIncluded)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     auto data = PBLedgerResponseType();
     data.set_object_neighbors_included(false);
@@ -363,7 +363,7 @@ struct ExtractionAssertTest : common::util::WithMockAssert {};
 
 TEST_F(ExtractionAssertTest, InvalidModTypeAsserts)
 {
-    using namespace etlng::impl;
+    using namespace etl::impl;
 
     EXPECT_CLIO_ASSERT_FAIL({
         [[maybe_unused]] auto _ = extractModType(
@@ -379,7 +379,7 @@ struct MockFetcher : etl::LedgerFetcherInterface {
 
 struct ExtractorTests : ExtractionNgTests {
     std::shared_ptr<MockFetcher> fetcher = std::make_shared<MockFetcher>();
-    etlng::impl::Extractor extractor{fetcher};
+    etl::impl::Extractor extractor{fetcher};
 };
 
 TEST_F(ExtractorTests, ExtractLedgerWithDiffNoResult)

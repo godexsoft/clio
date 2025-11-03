@@ -19,7 +19,7 @@
 
 #include "etl/ETLState.hpp"
 #include "rpc/Errors.hpp"
-#include "util/MockSource.hpp"
+#include "util/MockSourceNg.hpp"
 
 #include <boost/json/parse.hpp>
 #include <gmock/gmock.h>
@@ -32,7 +32,7 @@ using namespace util;
 using namespace testing;
 
 struct ETLStateTest : public virtual ::testing::Test {
-    MockSource source = MockSource{};
+    MockSourceNg source = MockSourceNg{};
 };
 
 TEST_F(ETLStateTest, Error)

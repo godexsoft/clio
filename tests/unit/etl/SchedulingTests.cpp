@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "etlng/Models.hpp"
-#include "etlng/SchedulerInterface.hpp"
-#include "etlng/impl/Loading.hpp"
-#include "etlng/impl/Scheduling.hpp"
+#include "etl/Models.hpp"
+#include "etl/SchedulerInterface.hpp"
+#include "etl/impl/Loading.hpp"
+#include "etl/impl/Scheduling.hpp"
 #include "util/MockNetworkValidatedLedgers.hpp"
 
 #include <gmock/gmock.h>
@@ -31,8 +31,8 @@
 #include <optional>
 #include <utility>
 
-using namespace etlng;
-using namespace etlng::model;
+using namespace etl;
+using namespace etl::model;
 
 namespace {
 class FakeScheduler : SchedulerInterface {

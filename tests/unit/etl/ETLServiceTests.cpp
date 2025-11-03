@@ -19,21 +19,21 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/Types.hpp"
+#include "etl/CacheLoaderInterface.hpp"
+#include "etl/CacheUpdaterInterface.hpp"
+#include "etl/ETLService.hpp"
 #include "etl/ETLState.hpp"
+#include "etl/ExtractorInterface.hpp"
+#include "etl/InitialLoadObserverInterface.hpp"
+#include "etl/LoadBalancerInterface.hpp"
+#include "etl/LoaderInterface.hpp"
+#include "etl/Models.hpp"
+#include "etl/MonitorInterface.hpp"
+#include "etl/MonitorProviderInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/SystemState.hpp"
-#include "etlng/CacheLoaderInterface.hpp"
-#include "etlng/CacheUpdaterInterface.hpp"
-#include "etlng/ETLService.hpp"
-#include "etlng/ExtractorInterface.hpp"
-#include "etlng/InitialLoadObserverInterface.hpp"
-#include "etlng/LoadBalancerInterface.hpp"
-#include "etlng/LoaderInterface.hpp"
-#include "etlng/Models.hpp"
-#include "etlng/MonitorInterface.hpp"
-#include "etlng/MonitorProviderInterface.hpp"
-#include "etlng/TaskManagerInterface.hpp"
-#include "etlng/TaskManagerProviderInterface.hpp"
+#include "etl/TaskManagerInterface.hpp"
+#include "etl/TaskManagerProviderInterface.hpp"
 #include "util/BinaryTestObject.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerPublisher.hpp"
@@ -75,7 +75,7 @@ namespace {
 constinit auto const kSEQ = 100;
 constinit auto const kLEDGER_HASH = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 
-struct MockMonitor : public etlng::MonitorInterface {
+struct MockMonitor : public etl::MonitorInterface {
     MOCK_METHOD(void, notifySequenceLoaded, (uint32_t), (override));
     MOCK_METHOD(void, notifyWriteConflict, (uint32_t), (override));
     MOCK_METHOD(
@@ -94,59 +94,59 @@ struct MockMonitor : public etlng::MonitorInterface {
     MOCK_METHOD(void, stop, (), (override));
 };
 
-struct MockExtractor : etlng::ExtractorInterface {
-    MOCK_METHOD(std::optional<etlng::model::LedgerData>, extractLedgerWithDiff, (uint32_t), (override));
-    MOCK_METHOD(std::optional<etlng::model::LedgerData>, extractLedgerOnly, (uint32_t), (override));
+struct MockExtractor : etl::ExtractorInterface {
+    MOCK_METHOD(std::optional<etl::model::LedgerData>, extractLedgerWithDiff, (uint32_t), (override));
+    MOCK_METHOD(std::optional<etl::model::LedgerData>, extractLedgerOnly, (uint32_t), (override));
 };
 
-struct MockLoader : etlng::LoaderInterface {
-    using ExpectedType = std::expected<void, etlng::LoaderError>;
-    MOCK_METHOD(ExpectedType, load, (etlng::model::LedgerData const&), (override));
-    MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (etlng::model::LedgerData const&), (override));
+struct MockLoader : etl::LoaderInterface {
+    using ExpectedType = std::expected<void, etl::LoaderError>;
+    MOCK_METHOD(ExpectedType, load, (etl::model::LedgerData const&), (override));
+    MOCK_METHOD(std::optional<ripple::LedgerHeader>, loadInitialLedger, (etl::model::LedgerData const&), (override));
 };
 
-struct MockCacheLoader : etlng::CacheLoaderInterface {
+struct MockCacheLoader : etl::CacheLoaderInterface {
     MOCK_METHOD(void, load, (uint32_t), (override));
     MOCK_METHOD(void, stop, (), (noexcept, override));
     MOCK_METHOD(void, wait, (), (noexcept, override));
 };
 
-struct MockCacheUpdater : etlng::CacheUpdaterInterface {
-    MOCK_METHOD(void, update, (etlng::model::LedgerData const&), (override));
+struct MockCacheUpdater : etl::CacheUpdaterInterface {
+    MOCK_METHOD(void, update, (etl::model::LedgerData const&), (override));
     MOCK_METHOD(void, update, (uint32_t, std::vector<data::LedgerObject> const&), (override));
-    MOCK_METHOD(void, update, (uint32_t, std::vector<etlng::model::Object> const&), (override));
+    MOCK_METHOD(void, update, (uint32_t, std::vector<etl::model::Object> const&), (override));
     MOCK_METHOD(void, setFull, (), (override));
 };
 
-struct MockInitialLoadObserver : etlng::InitialLoadObserverInterface {
+struct MockInitialLoadObserver : etl::InitialLoadObserverInterface {
     MOCK_METHOD(
         void,
         onInitialLoadGotMoreObjects,
-        (uint32_t, std::vector<etlng::model::Object> const&, std::optional<std::string>),
+        (uint32_t, std::vector<etl::model::Object> const&, std::optional<std::string>),
         (override)
     );
 };
 
-struct MockTaskManager : etlng::TaskManagerInterface {
+struct MockTaskManager : etl::TaskManagerInterface {
     MOCK_METHOD(void, run, (std::size_t), (override));
     MOCK_METHOD(void, stop, (), (override));
 };
 
-struct MockTaskManagerProvider : etlng::TaskManagerProviderInterface {
+struct MockTaskManagerProvider : etl::TaskManagerProviderInterface {
     MOCK_METHOD(
-        std::unique_ptr<etlng::TaskManagerInterface>,
+        std::unique_ptr<etl::TaskManagerInterface>,
         make,
         (util::async::AnyExecutionContext,
-         std::reference_wrapper<etlng::MonitorInterface>,
+         std::reference_wrapper<etl::MonitorInterface>,
          uint32_t,
          std::optional<uint32_t>),
         (override)
     );
 };
 
-struct MockMonitorProvider : etlng::MonitorProviderInterface {
+struct MockMonitorProvider : etl::MonitorProviderInterface {
     MOCK_METHOD(
-        std::unique_ptr<etlng::MonitorInterface>,
+        std::unique_ptr<etl::MonitorInterface>,
         make,
         (util::async::AnyExecutionContext,
          std::shared_ptr<BackendInterface>,
@@ -161,7 +161,7 @@ auto
 createTestData(uint32_t seq)
 {
     auto const header = createLedgerHeader(kLEDGER_HASH, seq);
-    return etlng::model::LedgerData{
+    return etl::model::LedgerData{
         .transactions = {},
         .objects = {util::createObject(), util::createObject(), util::createObject()},
         .successors = {},
@@ -217,7 +217,7 @@ protected:
         std::make_shared<testing::NiceMock<MockMonitorProvider>>();
     std::shared_ptr<etl::SystemState> systemState_ = std::make_shared<etl::SystemState>();
 
-    etlng::ETLService service_{
+    etl::ETLService service_{
         ctx_,
         config_,
         backend_,
@@ -313,7 +313,7 @@ TEST_F(ETLServiceTests, RunWithEmptyDatabase)
         .WillOnce(testing::Return(data::LedgerRange{.minSequence = 1, .maxSequence = kSEQ}));
     EXPECT_CALL(mockTaskManagerRef, run);
     EXPECT_CALL(*taskManagerProvider_, make(testing::_, testing::_, kSEQ + 1, testing::_))
-        .WillOnce(testing::Return(std::unique_ptr<etlng::TaskManagerInterface>(mockTaskManager.release())));
+        .WillOnce(testing::Return(std::unique_ptr<etl::TaskManagerInterface>(mockTaskManager.release())));
     EXPECT_CALL(*monitorProvider_, make(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillOnce([](auto, auto, auto, auto, auto) { return std::make_unique<testing::NiceMock<MockMonitor>>(); });
 
@@ -531,7 +531,7 @@ TEST_F(ETLServiceTests, RunStopsIfInitialLoadIsCancelledByBalancer)
     auto const dummyLedgerData = createTestData(kMOCK_START_SEQUENCE);
     EXPECT_CALL(*extractor_, extractLedgerOnly(kMOCK_START_SEQUENCE)).WillOnce(testing::Return(dummyLedgerData));
     EXPECT_CALL(*balancer_, loadInitialLedger(testing::_, testing::_, testing::_))
-        .WillOnce(testing::Return(std::unexpected{etlng::InitialLedgerLoadError::Cancelled}));
+        .WillOnce(testing::Return(std::unexpected{etl::InitialLedgerLoadError::Cancelled}));
 
     service_.run();
 

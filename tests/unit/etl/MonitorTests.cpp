@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include "data/Types.hpp"
-#include "etlng/impl/AmendmentBlockHandler.hpp"
-#include "etlng/impl/Monitor.hpp"
+#include "etl/impl/AmendmentBlockHandler.hpp"
+#include "etl/impl/Monitor.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockNetworkValidatedLedgers.hpp"
 #include "util/MockPrometheus.hpp"
@@ -36,7 +36,7 @@
 #include <optional>
 #include <semaphore>
 
-using namespace etlng::impl;
+using namespace etl::impl;
 using namespace data;
 
 namespace {
@@ -51,8 +51,7 @@ protected:
     testing::StrictMock<testing::MockFunction<void(uint32_t)>> actionMock_;
     testing::StrictMock<testing::MockFunction<void()>> dbStalledMock_;
 
-    etlng::impl::Monitor monitor_ =
-        etlng::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ, kNO_NEW_LEDGER_REPORT_DELAY);
+    etl::impl::Monitor monitor_ = etl::impl::Monitor(ctx_, backend_, ledgers_, kSTART_SEQ, kNO_NEW_LEDGER_REPORT_DELAY);
 };
 
 TEST_F(MonitorTests, ConsumesAndNotifiesForAllOutstandingSequencesAtOnce)
