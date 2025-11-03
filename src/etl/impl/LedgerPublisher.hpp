@@ -93,7 +93,7 @@ public:
      * @brief Create an instance of the publisher
      */
     LedgerPublisher(
-        boost::asio::io_context& ioc,  // TODO: replace with AsyncContext shared with ETLServiceNg
+        boost::asio::io_context& ioc,  // TODO: replace with AsyncContext shared with ETLService
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         etl::SystemState const& state

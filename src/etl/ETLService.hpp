@@ -49,6 +49,7 @@
 #include "etl/impl/ext/Core.hpp"
 #include "etl/impl/ext/NFT.hpp"
 #include "etl/impl/ext/Successor.hpp"
+#include "feed/SubscriptionManagerInterface.hpp"
 #include "util/async/AnyExecutionContext.hpp"
 #include "util/async/AnyOperation.hpp"
 #include "util/config/ConfigDefinition.hpp"

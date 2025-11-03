@@ -148,6 +148,7 @@ ClioApplication::run(bool const useNgWebServer)
     }();
 
     // ETL is responsible for writing and publishing to streams. In read-only mode, ETL only publishes
+    // TODO: don't use ioc (Publisher uses it)
     auto etl = etl::ETLService::makeETLService(config_, ioc, ctx, backend, subscriptions, balancer, ledgers);
 
     auto workQueue = rpc::WorkQueue::makeWorkQueue(config_);
