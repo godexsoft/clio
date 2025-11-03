@@ -108,12 +108,12 @@ public:
             context_,
             impl::outcomeForHandler<StopSourceType>(fn),
             ErrorHandlerType::wrap([fn = std::forward<decltype(fn)>(fn)](auto& outcome) mutable {
-                using FnRetType = std::decay_t<decltype(fn())>;
+                using FnRetType = std::decay_t<decltype(std::invoke(fn))>;
                 if constexpr (std::is_void_v<FnRetType>) {
-                    fn();
+                    std::invoke(fn);
                     outcome.setValue();
                 } else {
-                    outcome.setValue(fn());
+                    outcome.setValue(std::invoke(fn));
                 }
             })
         );

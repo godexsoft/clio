@@ -56,7 +56,7 @@ struct SpawnDispatchStrategy {
     static void
     post(ContextType& ctx, auto&& fn)
     {
-        util::spawn(ctx.getExecutor(), [fn = std::forward<decltype(fn)>(fn)](auto) mutable { fn(); });
+        util::spawn(ctx.getExecutor(), [fn = std::forward<decltype(fn)>(fn)](auto) mutable { std::invoke(fn); });
     }
 };
 
@@ -111,7 +111,7 @@ struct SyncDispatchStrategy {
     static void
     post([[maybe_unused]] ContextType& ctx, auto&& fn)
     {
-        fn();
+        std::invoke(fn);
     }
 };
 

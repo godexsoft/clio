@@ -124,6 +124,6 @@ struct FakeRetryPolicy {
     void
     retry(Fn&& fn)
     {
-        fn();
+        std::invoke(fn);
     }
 };

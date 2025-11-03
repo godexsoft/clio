@@ -85,15 +85,15 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn())>;
+        using RetType = std::decay_t<decltype(std::invoke(fn))>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)]() -> std::any {
             if constexpr (std::is_void_v<RetType>) {
-                fn();
+                std::invoke(fn);
                 return {};
             } else {
-                return std::make_any<RetType>(fn());
+                return std::make_any<RetType>(std::invoke(fn));
             }
         }));
     }
@@ -217,13 +217,13 @@ public:
     [[nodiscard]] auto
     executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn())>;
+        using RetType = std::decay_t<decltype(std::invoke(fn))>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
         return AnyOperation<RetType>(  //
             pimpl_->executeRepeatedly(millis, [fn = std::forward<decltype(fn)>(fn)] -> std::any {
-                fn();
+                std::invoke(fn);
                 return {};
             })
         );

@@ -57,7 +57,7 @@ struct DefaultErrorHandler {
     {
         return [fn = std::forward<decltype(fn)>(fn)] {
             try {
-                fn();
+                std::invoke(fn);
             } catch (std::exception const& e) {
                 util::Logger log("AsyncFramework");
                 LOG(log.error()) << "Exception silenced: " << e.what() << " on thread " << std::this_thread::get_id();

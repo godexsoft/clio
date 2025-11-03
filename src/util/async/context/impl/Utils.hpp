@@ -66,7 +66,7 @@ outcomeForHandler(auto&& fn)
 
         return StoppableOutcome<RetType, StopSourceType>();
     } else {
-        using FnRetType = decltype(fn());
+        using FnRetType = decltype(std::invoke(fn));
         using RetType = std::expected<FnRetType, ExecutionError>;
 
         return Outcome<RetType>();
