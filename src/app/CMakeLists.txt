@@ -4,10 +4,10 @@ target_sources(clio_app PRIVATE CliArgs.cpp ClioApplication.cpp Stopper.cpp WebH
 target_link_libraries(
   clio_app
   PUBLIC clio_cluster
-         clio_web
          clio_etl
          clio_feed
-         clio_rpc
          clio_migration
+         clio_rpc
+         clio_web
   PRIVATE Boost::program_options
 )
