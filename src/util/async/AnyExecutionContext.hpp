@@ -90,10 +90,10 @@ public:
 
         return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)]() -> std::any {
             if constexpr (std::is_void_v<RetType>) {
-                std::invoke(fn);
+                std::invoke(std::move(fn));
                 return {};
             } else {
-                return std::make_any<RetType>(std::invoke(fn));
+                return std::make_any<RetType>(std::invoke(std::move(fn)));
             }
         }));
     }
@@ -223,7 +223,7 @@ public:
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
         return AnyOperation<RetType>(  //
             pimpl_->executeRepeatedly(millis, [fn = std::forward<decltype(fn)>(fn)] -> std::any {
-                std::invoke(fn);
+                std::invoke(std::move(fn));
                 return {};
             })
         );

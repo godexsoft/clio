@@ -57,7 +57,7 @@ struct DefaultErrorHandler {
     {
         return [fn = std::forward<decltype(fn)>(fn)] {
             try {
-                std::invoke(fn);
+                std::invoke(std::move(std::move(fn)));
             } catch (std::exception const& e) {
                 ASSERT(false, "Exception caught: {}", e.what());
             } catch (...) {

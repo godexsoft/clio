@@ -30,21 +30,20 @@
 namespace util::async::impl {
 
 struct SpawnDispatchStrategy {
-    template <typename ContextType, SomeOutcome OutcomeType>
+    template <typename ContextType, SomeOutcome OutcomeType, typename FnType>
     [[nodiscard]] static auto
-    dispatch(ContextType& ctx, OutcomeType&& outcome, auto&& fn)
+    dispatch(ContextType& ctx, OutcomeType&& outcome, FnType&& fn)
     {
         auto op = outcome.getOperation();
 
         util::spawn(
             ctx.getExecutor(),
-            [outcome = std::forward<decltype(outcome)>(outcome),
-             fn = std::forward<decltype(fn)>(fn)](auto yield) mutable {
+            [outcome = std::forward<OutcomeType>(outcome), fn = std::forward<FnType>(fn)](auto yield) mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    std::invoke(fn, outcome, stopSource, stopSource[yield]);
+                    std::invoke(std::move(fn), outcome, stopSource, stopSource[yield]);
                 } else {
-                    std::invoke(fn, outcome);
+                    std::invoke(std::move(fn), outcome);
                 }
             }
         );
@@ -52,29 +51,28 @@ struct SpawnDispatchStrategy {
         return op;
     }
 
-    template <typename ContextType>
+    template <typename ContextType, typename FnType>
     static void
-    post(ContextType& ctx, auto&& fn)
+    post(ContextType& ctx, FnType&& fn)
     {
-        util::spawn(ctx.getExecutor(), [fn = std::forward<decltype(fn)>(fn)](auto) mutable { std::invoke(fn); });
+        util::spawn(ctx.getExecutor(), [fn = std::forward<FnType>(fn)](auto) mutable { std::invoke(std::move(fn)); });
     }
 };
 
 struct PostDispatchStrategy {
-    template <typename ContextType, SomeOutcome OutcomeType>
+    template <typename ContextType, SomeOutcome OutcomeType, typename FnType>
     [[nodiscard]] static auto
-    dispatch(ContextType& ctx, OutcomeType&& outcome, auto&& fn)
+    dispatch(ContextType& ctx, OutcomeType&& outcome, FnType&& fn)
     {
         auto op = outcome.getOperation();
 
         boost::asio::post(
-            ctx.getExecutor(),
-            [outcome = std::forward<decltype(outcome)>(outcome), fn = std::forward<decltype(fn)>(fn)]() mutable {
+            ctx.getExecutor(), [outcome = std::forward<OutcomeType>(outcome), fn = std::forward<FnType>(fn)]() mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    std::invoke(fn, outcome, stopSource, stopSource.getToken());
+                    std::invoke(std::move(fn), outcome, stopSource, stopSource.getToken());
                 } else {
-                    std::invoke(fn, outcome);
+                    std::invoke(std::move(fn), outcome);
                 }
             }
         );
@@ -82,36 +80,36 @@ struct PostDispatchStrategy {
         return op;
     }
 
-    template <typename ContextType>
+    template <typename ContextType, typename FnType>
     static void
-    post(ContextType& ctx, auto&& fn)
+    post(ContextType& ctx, FnType&& fn)
     {
-        boost::asio::post(ctx.getExecutor(), std::forward<decltype(fn)>(fn));
+        boost::asio::post(ctx.getExecutor(), std::forward<FnType>(fn));
     }
 };
 
 struct SyncDispatchStrategy {
-    template <typename ContextType, SomeOutcome OutcomeType>
+    template <typename ContextType, SomeOutcome OutcomeType, typename FnType>
     [[nodiscard]] static auto
-    dispatch([[maybe_unused]] ContextType& ctx, OutcomeType outcome, auto&& fn)
+    dispatch([[maybe_unused]] ContextType& ctx, OutcomeType outcome, FnType&& fn)
     {
         auto op = outcome.getOperation();
 
         if constexpr (SomeStoppableOutcome<OutcomeType>) {
             auto& stopSource = outcome.getStopSource();
-            std::invoke(fn, outcome, stopSource, stopSource.getToken());
+            std::invoke(std::forward<FnType>(fn), outcome, stopSource, stopSource.getToken());
         } else {
-            std::invoke(fn, outcome);
+            std::invoke(std::forward<FnType>(fn), outcome);
         }
 
         return op;
     }
 
-    template <typename ContextType>
+    template <typename ContextType, typename FnType>
     static void
-    post([[maybe_unused]] ContextType& ctx, auto&& fn)
+    post([[maybe_unused]] ContextType& ctx, FnType&& fn)
     {
-        std::invoke(fn);
+        std::invoke(std::forward<FnType>(fn));
     }
 };
 

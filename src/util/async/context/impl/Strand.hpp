@@ -81,7 +81,7 @@ public:
                     TimerContextProvider::getContext(parentContext_.get()), timeout, stopSource
                 );
 
-                using FnRetType = std::decay_t<decltype(fn(std::declval<StopToken>()))>;
+                using FnRetType = std::decay_t<std::invoke_result_t<decltype(fn), StopToken>>;
                 if constexpr (std::is_void_v<FnRetType>) {
                     fn(std::move(stopToken));
                     outcome.setValue();
@@ -108,12 +108,12 @@ public:
             context_,
             impl::outcomeForHandler<StopSourceType>(fn),
             ErrorHandlerType::wrap([fn = std::forward<decltype(fn)>(fn)](auto& outcome) mutable {
-                using FnRetType = std::decay_t<decltype(std::invoke(fn))>;
+                using FnRetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
                 if constexpr (std::is_void_v<FnRetType>) {
-                    std::invoke(fn);
+                    std::invoke(std::move(fn));
                     outcome.setValue();
                 } else {
-                    outcome.setValue(std::invoke(fn));
+                    outcome.setValue(std::invoke(std::move(fn)));
                 }
             })
         );

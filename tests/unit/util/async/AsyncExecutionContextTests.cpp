@@ -39,7 +39,7 @@ using namespace util::async;
 using ::testing::Types;
 
 template <typename T>
-struct ExecutionContextTests : public common::util::WithMockAssertNoThrow {
+struct ExecutionContextTests : common::util::WithMockAssertNoThrow {
     using ExecutionContextType = T;
     ExecutionContextType ctx{2};
 
