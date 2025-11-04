@@ -88,12 +88,12 @@ public:
         using RetType = std::decay_t<decltype(std::invoke(fn))>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
-        return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)]() -> std::any {
+        return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)] mutable -> std::any {
             if constexpr (std::is_void_v<RetType>) {
-                std::invoke(std::move(fn));
+                std::invoke(std::forward<decltype(fn)>(fn));
                 return {};
             } else {
-                return std::make_any<RetType>(std::invoke(std::move(fn)));
+                return std::make_any<RetType>(std::invoke(std::forward<decltype(fn)>(fn)));
             }
         }));
     }
@@ -222,8 +222,8 @@ public:
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
         return AnyOperation<RetType>(  //
-            pimpl_->executeRepeatedly(millis, [fn = std::forward<decltype(fn)>(fn)] -> std::any {
-                std::invoke(std::move(fn));
+            pimpl_->executeRepeatedly(millis, [fn = std::forward<decltype(fn)>(fn)] mutable -> std::any {
+                std::invoke(std::forward<decltype(fn)>(fn));
                 return {};
             })
         );

@@ -41,9 +41,9 @@ struct SpawnDispatchStrategy {
             [outcome = std::forward<OutcomeType>(outcome), fn = std::forward<FnType>(fn)](auto yield) mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    std::invoke(std::move(fn), outcome, stopSource, stopSource[yield]);
+                    std::invoke(std::forward<decltype(fn)>(fn), outcome, stopSource, stopSource[yield]);
                 } else {
-                    std::invoke(std::move(fn), outcome);
+                    std::invoke(std::forward<decltype(fn)>(fn), outcome);
                 }
             }
         );
@@ -70,9 +70,9 @@ struct PostDispatchStrategy {
             ctx.getExecutor(), [outcome = std::forward<OutcomeType>(outcome), fn = std::forward<FnType>(fn)]() mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    std::invoke(std::move(fn), outcome, stopSource, stopSource.getToken());
+                    std::invoke(std::forward<decltype(fn)>(fn), outcome, stopSource, stopSource.getToken());
                 } else {
-                    std::invoke(std::move(fn), outcome);
+                    std::invoke(std::forward<decltype(fn)>(fn), outcome);
                 }
             }
         );

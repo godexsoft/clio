@@ -55,9 +55,9 @@ struct DefaultErrorHandler {
     [[nodiscard]] static auto
     catchAndAssert(auto&& fn) noexcept  // note this is a lie when used with MockAssert (use MockAssertNoThrow)
     {
-        return [fn = std::forward<decltype(fn)>(fn)] {
+        return [fn = std::forward<decltype(fn)>(fn)] mutable {
             try {
-                std::invoke(std::move(std::move(fn)));
+                std::invoke(std::forward<decltype(fn)>(fn));
             } catch (std::exception const& e) {
                 ASSERT(false, "Exception caught: {}", e.what());
             } catch (...) {

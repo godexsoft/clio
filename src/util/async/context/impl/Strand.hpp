@@ -110,10 +110,10 @@ public:
             ErrorHandlerType::wrap([fn = std::forward<decltype(fn)>(fn)](auto& outcome) mutable {
                 using FnRetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
                 if constexpr (std::is_void_v<FnRetType>) {
-                    std::invoke(std::move(fn));
+                    std::invoke(std::forward<decltype(fn)>(fn));
                     outcome.setValue();
                 } else {
-                    outcome.setValue(std::invoke(std::move(fn)));
+                    outcome.setValue(std::invoke(std::forward<decltype(fn)>(fn)));
                 }
             })
         );

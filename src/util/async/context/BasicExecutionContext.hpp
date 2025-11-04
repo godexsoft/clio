@@ -257,11 +257,11 @@ public:
                 [this, timeout, fn = std::forward<decltype(fn)>(fn)](auto ec) mutable {
                     return this->execute(
                         [fn = std::forward<decltype(fn)>(fn),
-                         isAborted = (ec == boost::asio::error::operation_aborted)](auto stopToken) {
+                         isAborted = (ec == boost::asio::error::operation_aborted)](auto stopToken) mutable {
                             if constexpr (std::is_void_v<FnRetType>) {
-                                fn(std::move(stopToken), isAborted);
+                                std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken), isAborted);
                             } else {
-                                return fn(std::move(stopToken), isAborted);
+                                return std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken), isAborted);
                             }
                         },
                         timeout
@@ -313,10 +313,10 @@ public:
 
                 using FnRetType = std::decay_t<std::invoke_result_t<decltype(fn), StopToken>>;
                 if constexpr (std::is_void_v<FnRetType>) {
-                    fn(std::move(stopToken));
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                     outcome.setValue();
                 } else {
-                    outcome.setValue(fn(std::move(stopToken)));
+                    outcome.setValue(std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken)));
                 }
             })
         );
@@ -353,10 +353,10 @@ public:
             ErrorHandlerType::wrap([fn = std::forward<decltype(fn)>(fn)](auto& outcome) mutable {
                 using FnRetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
                 if constexpr (std::is_void_v<FnRetType>) {
-                    std::invoke(std::move(fn));
+                    std::invoke(std::forward<decltype(fn)>(fn));
                     outcome.setValue();
                 } else {
-                    outcome.setValue(std::invoke(std::move(fn)));
+                    outcome.setValue(std::invoke(std::forward<decltype(fn)>(fn)));
                 }
             })
         );
