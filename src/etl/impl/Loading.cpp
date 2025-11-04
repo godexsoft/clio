@@ -25,7 +25,6 @@
 #include "etl/Models.hpp"
 #include "etl/RegistryInterface.hpp"
 #include "etl/SystemState.hpp"
-#include "etl/impl/LedgerLoader.hpp"
 #include "util/Assert.hpp"
 #include "util/Constants.hpp"
 #include "util/LedgerUtils.hpp"

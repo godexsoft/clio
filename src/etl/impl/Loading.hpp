@@ -26,7 +26,6 @@
 #include "etl/Models.hpp"
 #include "etl/RegistryInterface.hpp"
 #include "etl/SystemState.hpp"
-#include "etl/impl/LedgerLoader.hpp"
 #include "util/log/Logger.hpp"
 
 #include <org/xrpl/rpc/v1/ledger.pb.h>

@@ -36,7 +36,6 @@
 #include <expected>
 #include <optional>
 #include <string>
-#include <vector>
 
 struct MockLoadBalancer : etl::LoadBalancerInterface {
     using RawLedgerObjectType = FakeLedgerObject;
@@ -45,12 +44,6 @@ struct MockLoadBalancer : etl::LoadBalancerInterface {
         etl::InitialLedgerLoadResult,
         loadInitialLedger,
         (uint32_t, etl::InitialLoadObserverInterface&, std::chrono::steady_clock::duration),
-        (override)
-    );
-    MOCK_METHOD(
-        std::vector<std::string>,
-        loadInitialLedger,
-        (uint32_t, std::chrono::steady_clock::duration),
         (override)
     );
     MOCK_METHOD(

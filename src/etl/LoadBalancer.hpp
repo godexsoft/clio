@@ -27,7 +27,6 @@
 #include "etl/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
-#include "util/Assert.hpp"
 #include "util/Mutex.hpp"
 #include "util/Random.hpp"
 #include "util/ResponseExpirationCache.hpp"
@@ -54,7 +53,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace etl {
@@ -163,24 +161,6 @@ public:
         std::shared_ptr<NetworkValidatedLedgersInterface> validatedLedgers,
         SourceFactory sourceFactory = makeSource
     );
-
-    /**
-     * @brief Load the initial ledger, writing data to the queue.
-     * @note This function will retry indefinitely until the ledger is downloaded.
-     *
-     * @param sequence Sequence of ledger to download
-     * @param retryAfter Time to wait between retries (2 seconds by default)
-     * @return A std::vector<std::string> The ledger data
-     */
-    std::vector<std::string>
-    loadInitialLedger(
-        [[maybe_unused]] uint32_t sequence,
-        [[maybe_unused]] std::chrono::steady_clock::duration retryAfter
-    ) override
-    {
-        ASSERT(false, "Not available for new ETL");
-        std::unreachable();
-    };
 
     /**
      * @brief Load the initial ledger, writing data to the queue.

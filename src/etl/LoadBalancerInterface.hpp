@@ -81,17 +81,6 @@ public:
     ) = 0;
 
     /**
-     * @brief Load the initial ledger, writing data to the queue.
-     * @note This function will retry indefinitely until the ledger is downloaded.
-     *
-     * @param sequence Sequence of ledger to download
-     * @param retryAfter Time to wait between retries (2 seconds by default)
-     * @return A std::vector<std::string> The ledger data
-     */
-    [[nodiscard]] virtual std::vector<std::string>
-    loadInitialLedger(uint32_t sequence, std::chrono::steady_clock::duration retryAfter = std::chrono::seconds{2}) = 0;
-
-    /**
      * @brief Fetch data for a specific ledger.
      *
      * This function will continuously try to fetch data for the specified ledger until the fetch succeeds, the ledger
