@@ -39,7 +39,7 @@ struct DefaultErrorHandler {
         return
             [fn = std::forward<decltype(fn)>(fn)]<typename... Args>(SomeOutcome auto& outcome, Args&&... args) mutable {
                 try {
-                    fn(outcome, std::forward<Args>(args)...);
+                    std::invoke(std::forward<decltype(fn)>(fn), outcome, std::forward<Args>(args)...);
                 } catch (std::exception const& e) {
                     outcome.setValue(
                         std::unexpected(ExecutionError{fmt::format("{}", std::this_thread::get_id()), e.what()})

@@ -85,7 +85,7 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(std::invoke(fn))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)] mutable -> std::any {
@@ -109,17 +109,19 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWith<AnyStopToken> auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>()))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
-        return AnyOperation<RetType>(pimpl_->execute([fn = std::forward<decltype(fn)>(fn)](auto stopToken) -> std::any {
-            if constexpr (std::is_void_v<RetType>) {
-                fn(std::move(stopToken));
-                return {};
-            } else {
-                return std::make_any<RetType>(fn(std::move(stopToken)));
-            }
-        }));
+        return AnyOperation<RetType>(
+            pimpl_->execute([fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable -> std::any {
+                if constexpr (std::is_void_v<RetType>) {
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
+                    return {};
+                } else {
+                    return std::make_any<RetType>(std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken)));
+                }
+            })
+        );
     }
 
     /**
@@ -134,16 +136,16 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWith<AnyStopToken> auto&& fn, SomeStdDuration auto timeout)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>()))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(pimpl_->execute(
-            [fn = std::forward<decltype(fn)>(fn)](auto stopToken) -> std::any {
+            [fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable -> std::any {
                 if constexpr (std::is_void_v<RetType>) {
-                    fn(std::move(stopToken));
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                     return {};
                 } else {
-                    return std::make_any<RetType>(fn(std::move(stopToken)));
+                    return std::make_any<RetType>(std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken)));
                 }
             },
             std::chrono::duration_cast<std::chrono::milliseconds>(timeout)
@@ -162,17 +164,17 @@ public:
     [[nodiscard]] auto
     scheduleAfter(SomeStdDuration auto delay, SomeHandlerWith<AnyStopToken> auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>()))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(delay);
         return AnyOperation<RetType>(
-            pimpl_->scheduleAfter(millis, [fn = std::forward<decltype(fn)>(fn)](auto stopToken) -> std::any {
+            pimpl_->scheduleAfter(millis, [fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable -> std::any {
                 if constexpr (std::is_void_v<RetType>) {
-                    fn(std::move(stopToken));
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                     return {};
                 } else {
-                    return std::make_any<RetType>(fn(std::move(stopToken)));
+                    return std::make_any<RetType>(std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken)));
                 }
             })
         );
@@ -191,17 +193,19 @@ public:
     [[nodiscard]] auto
     scheduleAfter(SomeStdDuration auto delay, SomeHandlerWith<AnyStopToken, bool> auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>(), true))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken, bool>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(delay);
         return AnyOperation<RetType>(pimpl_->scheduleAfter(
-            millis, [fn = std::forward<decltype(fn)>(fn)](auto stopToken, auto cancelled) -> std::any {
+            millis, [fn = std::forward<decltype(fn)>(fn)](auto stopToken, auto cancelled) mutable -> std::any {
                 if constexpr (std::is_void_v<RetType>) {
-                    fn(std::move(stopToken), cancelled);
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken), cancelled);
                     return {};
                 } else {
-                    return std::make_any<RetType>(fn(std::move(stopToken), cancelled));
+                    return std::make_any<RetType>(
+                        std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken), cancelled)
+                    );
                 }
             }
         ));
@@ -217,7 +221,7 @@ public:
     [[nodiscard]] auto
     executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(std::invoke(fn))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);

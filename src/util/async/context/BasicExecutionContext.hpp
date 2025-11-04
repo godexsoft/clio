@@ -216,11 +216,11 @@ public:
                 delay,
                 [this, timeout, fn = std::forward<decltype(fn)>(fn)](auto) mutable {
                     return this->execute(
-                        [fn = std::forward<decltype(fn)>(fn)](auto stopToken) {
+                        [fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable {
                             if constexpr (std::is_void_v<FnRetType>) {
-                                fn(std::move(stopToken));
+                                std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                             } else {
-                                return fn(std::move(stopToken));
+                                return std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                             }
                         },
                         timeout

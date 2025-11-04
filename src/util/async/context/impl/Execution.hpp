@@ -55,7 +55,9 @@ struct SpawnDispatchStrategy {
     static void
     post(ContextType& ctx, FnType&& fn)
     {
-        util::spawn(ctx.getExecutor(), [fn = std::forward<FnType>(fn)](auto) mutable { std::invoke(std::move(fn)); });
+        util::spawn(ctx.getExecutor(), [fn = std::forward<FnType>(fn)](auto) mutable {
+            std::invoke(std::forward<decltype(fn)>(fn));
+        });
     }
 };
 
