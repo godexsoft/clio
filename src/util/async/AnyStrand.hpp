@@ -92,12 +92,12 @@ public:
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(  //
-            pimpl_->execute([fn = std::forward<decltype(fn)>(fn)](auto stopToken) -> std::any {
+            pimpl_->execute([fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable -> std::any {
                 if constexpr (std::is_void_v<RetType>) {
-                    fn(std::move(stopToken));
+                    std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                     return {};
                 } else {
-                    return std::make_any<RetType>(fn(std::move(stopToken)));
+                    return std::make_any<RetType>(std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken)));
                 }
             })
         );
@@ -118,12 +118,14 @@ public:
 
         return AnyOperation<RetType>(  //
             pimpl_->execute(
-                [fn = std::forward<decltype(fn)>(fn)](auto stopToken) -> std::any {
+                [fn = std::forward<decltype(fn)>(fn)](auto stopToken) mutable -> std::any {
                     if constexpr (std::is_void_v<RetType>) {
-                        fn(std::move(stopToken));
+                        std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken));
                         return {};
                     } else {
-                        return std::make_any<RetType>(fn(std::move(stopToken)));
+                        return std::make_any<RetType>(
+                            std::invoke(std::forward<decltype(fn)>(fn), std::move(stopToken))
+                        );
                     }
                 },
                 std::chrono::duration_cast<std::chrono::milliseconds>(timeout)
