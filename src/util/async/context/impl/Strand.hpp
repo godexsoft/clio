@@ -132,7 +132,7 @@ public:
     void
     submit(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
     {
-        DispatcherType::post(context_, ErrorHandlerType::silence(fn));
+        DispatcherType::post(context_, ErrorHandlerType::catchAndAssert(fn));
     }
 };
 

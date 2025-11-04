@@ -28,7 +28,6 @@
 #include <string_view>
 
 namespace common::util {
-
 class WithMockAssert : virtual public testing::Test {
 public:
     struct MockAssertException {
@@ -64,11 +63,17 @@ public:
             common::util::WithMockAssert::MockAssertException                                                 \
         );                                                                                                    \
     } else if (dynamic_cast<common::util::WithMockAssertNoThrow*>(this) != nullptr) {                         \
-        testing::StrictMock<testing::MockFunction<void(std::string_view)>> callMock;                          \
-        ::util::impl::OnAssert::setAction([&callMock](std::string_view m) { callMock.Call(m); });             \
-        EXPECT_CALL(callMock, Call(testing::ContainsRegex(message_regex)));                                   \
+        struct MockGuard {                                                                                    \
+            testing::StrictMock<testing::MockFunction<void(std::string_view)>> mock;                          \
+            ~MockGuard()                                                                                      \
+            {                                                                                                 \
+                ::util::impl::OnAssert::resetAction();                                                        \
+            }                                                                                                 \
+        };                                                                                                    \
+        auto mockGuard = std::make_shared<MockGuard>();                                                       \
+        ::util::impl::OnAssert::setAction([mockGuard](std::string_view m) { mockGuard->mock.Call(m); });      \
+        EXPECT_CALL(mockGuard->mock, Call(testing::ContainsRegex(message_regex)));                            \
         statement;                                                                                            \
-        ::util::impl::OnAssert::resetAction();                                                                \
     } else {                                                                                                  \
         std::cerr << "EXPECT_CLIO_ASSERT_FAIL_WITH_MESSAGE() can be used only inside test body" << std::endl; \
         std::terminate();                                                                                     \

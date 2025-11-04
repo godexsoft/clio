@@ -19,9 +19,9 @@
 
 #pragma once
 
+#include "util/Assert.hpp"
 #include "util/async/Concepts.hpp"
 #include "util/async/Error.hpp"
-#include "util/log/Logger.hpp"
 
 #include <fmt/format.h>
 #include <fmt/std.h>
@@ -53,17 +53,15 @@ struct DefaultErrorHandler {
     }
 
     [[nodiscard]] static auto
-    silence(auto&& fn) noexcept
+    catchAndAssert(auto&& fn) noexcept  // note this is a lie when used with MockAssert (use MockAssertNoThrow)
     {
         return [fn = std::forward<decltype(fn)>(fn)] {
             try {
                 std::invoke(fn);
             } catch (std::exception const& e) {
-                util::Logger log("AsyncFramework");
-                LOG(log.error()) << "Exception silenced: " << e.what() << " on thread " << std::this_thread::get_id();
+                ASSERT(false, "Exception caught: {}", e.what());
             } catch (...) {
-                util::Logger log("AsyncFramework");
-                LOG(log.error()) << "Unknown exception silenced on thread " << std::this_thread::get_id();
+                ASSERT(false, "Unknown exception caught");
             }
         };
     }
@@ -77,7 +75,7 @@ struct NoErrorHandler {
     }
 
     [[nodiscard]] static constexpr auto
-    silence(auto&& fn)
+    catchAndAssert(auto&& fn)
     {
         return std::forward<decltype(fn)>(fn);
     }

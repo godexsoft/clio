@@ -155,7 +155,7 @@ public:
 
     /**
      * @brief Schedule an operation on the execution context without expectations of a result
-     * @note Errors are caught internally and logged as errors
+     * @note Exceptions are caught internally and `ASSERT`ed on
      *
      * @param fn The block of code to execute
      */

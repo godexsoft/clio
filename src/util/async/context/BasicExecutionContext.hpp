@@ -139,7 +139,7 @@ class BasicExecutionContext {
 public:
     /** @brief Whether operations on this execution context are noexcept */
     static constexpr bool kIS_NOEXCEPT = noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; })) and
-        noexcept(ErrorHandlerType::silence([] { throw 0; }));
+        noexcept(ErrorHandlerType::catchAndAssert([] { throw 0; }));
 
     using ContextHolderType = ContextType;
 
@@ -364,14 +364,14 @@ public:
 
     /**
      * @brief Schedule an operation on the execution context without expectations of a result
-     * @note Errors are caught internally and logged as errors
+     * @note Exceptions are caught internally and `ASSERT`ed on
      *
      * @param fn The block of code to execute
      */
     void
     submit(SomeHandlerWithoutStopToken auto&& fn) noexcept(kIS_NOEXCEPT)
     {
-        DispatcherType::post(context_, ErrorHandlerType::silence(fn));
+        DispatcherType::post(context_, ErrorHandlerType::catchAndAssert(fn));
     }
 
     /**

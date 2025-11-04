@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "util/MockAssert.hpp"
 #include "util/Profiler.hpp"
 #include "util/async/Operation.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
@@ -38,7 +39,7 @@ using namespace util::async;
 using ::testing::Types;
 
 template <typename T>
-struct ExecutionContextTests : public ::testing::Test {
+struct ExecutionContextTests : public common::util::WithMockAssertNoThrow {
     using ExecutionContextType = T;
     ExecutionContextType ctx{2};
 
@@ -241,7 +242,7 @@ TYPED_TEST(ExecutionContextTests, repeatingOperationForceInvoke)
 
 TYPED_TEST(ExecutionContextTests, submit)
 {
-    ASSERT_NO_THROW(this->ctx.submit([] -> void { throw 0; }));
+    EXPECT_CLIO_ASSERT_FAIL(this->ctx.submit([] -> void { throw 0; }));
 
     std::atomic_uint32_t count = 0;
     std::binary_semaphore sem{0};
@@ -358,7 +359,7 @@ TYPED_TEST(ExecutionContextTests, strandedRepeatingOperationForceInvoke)
 TYPED_TEST(ExecutionContextTests, strandSubmit)
 {
     auto strand = this->ctx.makeStrand();
-    ASSERT_NO_THROW(strand.submit([] -> void { throw 0; }));
+    EXPECT_CLIO_ASSERT_FAIL(strand.submit([] -> void { throw 0; }));
 
     std::vector<int> results;
     std::binary_semaphore sem{0};

@@ -42,9 +42,9 @@ struct SpawnDispatchStrategy {
              fn = std::forward<decltype(fn)>(fn)](auto yield) mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    fn(outcome, stopSource, stopSource[yield]);
+                    std::invoke(fn, outcome, stopSource, stopSource[yield]);
                 } else {
-                    fn(outcome);
+                    std::invoke(fn, outcome);
                 }
             }
         );
@@ -72,9 +72,9 @@ struct PostDispatchStrategy {
             [outcome = std::forward<decltype(outcome)>(outcome), fn = std::forward<decltype(fn)>(fn)]() mutable {
                 if constexpr (SomeStoppableOutcome<OutcomeType>) {
                     auto& stopSource = outcome.getStopSource();
-                    fn(outcome, stopSource, stopSource.getToken());
+                    std::invoke(fn, outcome, stopSource, stopSource.getToken());
                 } else {
-                    fn(outcome);
+                    std::invoke(fn, outcome);
                 }
             }
         );
@@ -99,9 +99,9 @@ struct SyncDispatchStrategy {
 
         if constexpr (SomeStoppableOutcome<OutcomeType>) {
             auto& stopSource = outcome.getStopSource();
-            fn(outcome, stopSource, stopSource.getToken());
+            std::invoke(fn, outcome, stopSource, stopSource.getToken());
         } else {
-            fn(outcome);
+            std::invoke(fn, outcome);
         }
 
         return op;
