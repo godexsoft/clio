@@ -64,7 +64,7 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(std::invoke(fn))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(  //
@@ -88,7 +88,7 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWith<AnyStopToken> auto&& fn)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>()))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(  //
@@ -113,7 +113,7 @@ public:
     [[nodiscard]] auto
     execute(SomeHandlerWith<AnyStopToken> auto&& fn, SomeStdDuration auto timeout)
     {
-        using RetType = std::decay_t<decltype(fn(std::declval<AnyStopToken>()))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn), AnyStopToken>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         return AnyOperation<RetType>(  //
@@ -143,7 +143,7 @@ public:
     [[nodiscard]] auto
     executeRepeatedly(SomeStdDuration auto interval, SomeHandlerWithoutStopToken auto&& fn)
     {
-        using RetType = std::decay_t<decltype(std::invoke(fn))>;
+        using RetType = std::decay_t<std::invoke_result_t<decltype(fn)>>;
         static_assert(not std::is_same_v<RetType, std::any>);
 
         auto const millis = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
