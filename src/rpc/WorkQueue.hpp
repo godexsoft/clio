@@ -72,19 +72,21 @@ public:
 
 private:
     struct DispatcherState {
-        std::queue<std::function<void(boost::asio::yield_context)>> high;
-        std::queue<std::function<void(boost::asio::yield_context)>> normal;
+        using QueueType = std::queue<std::function<void(boost::asio::yield_context)>>;
+        QueueType high;
+        QueueType normal;
 
         bool isIdle = false;
 
         void
         push(Priority priority, auto&& task)
         {
-            if (priority == Priority::High) {
-                high.push(std::forward<decltype(task)>(task));
-            } else {
-                normal.push(std::forward<decltype(task)>(task));
-            }
+            auto& queue = [this, priority] -> QueueType& {
+                if (priority == Priority::High)
+                    return high;
+                return normal;
+            }();
+            queue.push(std::forward<decltype(task)>(task));
         }
 
         [[nodiscard]] bool
@@ -95,7 +97,7 @@ private:
     };
 
 private:
-    static constexpr auto kHIGH_PRIO_RATIO = 4uz;
+    static constexpr auto kTAKE_HIGH_PRIO = 4uz;
 
     // these are cumulative for the lifetime of the process
     std::reference_wrapper<util::prometheus::CounterInt> queued_;

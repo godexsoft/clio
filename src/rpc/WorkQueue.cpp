@@ -107,7 +107,7 @@ WorkQueue::postCoro(std::function<void(boost::asio::yield_context)> func, bool i
 void
 WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 {
-    LOG(log_.debug()) << "WorkQueue dispatcher starting";
+    LOG(log_.info()) << "WorkQueue dispatcher starting";
 
     // all ongoing tasks must be completed before stopping fully
     while (not stopping_ or size() > 0) {
@@ -123,11 +123,9 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
             if (state->empty()) {
                 state->isIdle = true;
             } else {
-                auto highPrioCount = 0uz;
-                while (highPrioCount < kHIGH_PRIO_RATIO and not state->high.empty()) {
+                for (auto count = 0uz; count < kTAKE_HIGH_PRIO and not state->high.empty(); ++count) {
                     batch.push_back(std::move(state->high.front()));
                     state->high.pop();
-                    ++highPrioCount;
                 }
 
                 if (not state->normal.empty()) {
@@ -144,13 +142,15 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
         } else {
             for (auto task : std::move(batch)) {
                 util::spawn(
-                    ioc_, [this, start = std::chrono::system_clock::now(), task = std::move(task)](auto yield) mutable {
-                        auto const run = std::chrono::system_clock::now();
-                        auto const wait = std::chrono::duration_cast<std::chrono::microseconds>(run - start).count();
+                    ioc_,
+                    [this, spawnedAt = std::chrono::system_clock::now(), task = std::move(task)](auto yield) mutable {
+                        auto const takenAt = std::chrono::system_clock::now();
+                        auto const waited =
+                            std::chrono::duration_cast<std::chrono::microseconds>(takenAt - spawnedAt).count();
 
                         ++queued_.get();
-                        durationUs_.get() += wait;
-                        LOG(log_.info()) << "WorkQueue wait time: " << wait << ", queue size: " << size();
+                        durationUs_.get() += waited;
+                        LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
 
                         task(yield);
 
@@ -169,7 +169,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
     ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
     onTasksComplete->operator()();
 
-    LOG(log_.debug()) << "WorkQueue dispatcher finished";
+    LOG(log_.info()) << "WorkQueue dispatcher finished";
 }
 
 void

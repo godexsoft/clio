@@ -44,7 +44,7 @@ struct RPCWorkQueueTestBase : public virtual ::testing::Test {
     ClioConfigDefinition cfg;
     WorkQueue queue;
 
-    RPCWorkQueueTestBase(uint32_t workers = 4, uint32_t maxQueueSize = 2)
+    RPCWorkQueueTestBase(uint32_t workers, uint32_t maxQueueSize)
         : cfg{
               {"server.max_queue_size", ConfigValue{ConfigType::Integer}.defaultValue(maxQueueSize)},
               {"workers", ConfigValue{ConfigType::Integer}.defaultValue(workers)},
@@ -66,7 +66,7 @@ TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
     std::atomic_uint32_t executeCount = 0u;
 
     for (auto i = 0u; i < kTOTAL; ++i) {
-        queue.postCoro([&executeCount](auto /* yield */) { ++executeCount; }, true);
+        queue.postCoro([&executeCount](auto /* yield */) { ++executeCount; }, /* isWhiteListed = */ true);
     }
 
     queue.stop();
@@ -93,7 +93,7 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
                 std::unique_lock lk{mtx};
                 cv.wait(lk, [&] { return unblocked; });
             },
-            false
+            /* isWhiteListed = */ false
         );
 
         if (i == kTOTAL - 1) {
@@ -131,7 +131,7 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
                 std::lock_guard const lock(mtx);
                 executionOrder.push_back(WorkQueue::Priority::High);
             },
-            true,
+            /* isWhiteListed = */ true,
             WorkQueue::Priority::High
         );
         queue.postCoro(
@@ -139,7 +139,7 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
                 std::lock_guard const lock(mtx);
                 executionOrder.push_back(WorkQueue::Priority::Default);
             },
-            true,
+            /* isWhiteListed = */ true,
             WorkQueue::Priority::Default
         );
     }
@@ -173,10 +173,10 @@ struct WorkQueueStopTest : WorkQueueTest {
 TEST_F(WorkQueueStopTest, RejectsNewTasksWhenStopping)
 {
     EXPECT_CALL(taskMock, Call());
-    EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
+    EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, /* isWhiteListed = */ false));
 
     queue.requestStop();
-    EXPECT_FALSE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
+    EXPECT_FALSE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, /* isWhiteListed = */ false));
 
     queue.stop();
 }
@@ -184,7 +184,7 @@ TEST_F(WorkQueueStopTest, RejectsNewTasksWhenStopping)
 TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingAndQueueIsEmpty)
 {
     EXPECT_CALL(taskMock, Call());
-    EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
+    EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, /* isWhiteListed = */ false));
 
     EXPECT_CALL(onTasksComplete, Call()).WillOnce([&]() { EXPECT_EQ(queue.size(), 0u); });
     queue.requestStop(onTasksComplete.AsStdFunction());
@@ -201,7 +201,7 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
             taskMock.Call();
             semaphore.acquire();
         },
-        false
+        /* isWhiteListed = */ false
     ));
 
     EXPECT_CALL(onTasksComplete, Call()).WillOnce([&]() { EXPECT_EQ(queue.size(), 0u); });
@@ -211,7 +211,11 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
     queue.stop();
 }
 
-struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {};
+struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {
+    WorkQueueMockPrometheusTest() : RPCWorkQueueTestBase(1, 2)
+    {
+    }
+};
 
 TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 {
@@ -230,7 +234,7 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
         semaphore.release();
     });
 
-    auto const res = queue.postCoro([&](auto /* yield */) { semaphore.acquire(); }, false);
+    auto const res = queue.postCoro([&](auto /* yield */) { semaphore.acquire(); }, /* isWhiteListed = */ false);
 
     ASSERT_TRUE(res);
     queue.stop();
