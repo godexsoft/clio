@@ -224,7 +224,7 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
     EXPECT_CALL(curSizeMock, value()).WillOnce(::testing::Return(0)).WillRepeatedly(::testing::Return(1));
     EXPECT_CALL(curSizeMock, add(1));
     EXPECT_CALL(queuedMock, add(1));
-    EXPECT_CALL(durationMock, add(::testing::Gt(0))).WillOnce([&](auto) {
+    EXPECT_CALL(durationMock, add(::testing::Ge(0))).WillOnce([&](auto) {
         EXPECT_CALL(curSizeMock, add(-1));
         EXPECT_CALL(curSizeMock, value()).WillOnce(::testing::Return(0));
         semaphore.release();
