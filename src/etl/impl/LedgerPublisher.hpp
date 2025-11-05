@@ -163,56 +163,52 @@ public:
     void
     publish(ripple::LedgerHeader const& lgrInfo)
     {
-        publishStrand_
-            .execute([this, lgrInfo = lgrInfo]() {
-                LOG(log_.info()) << "Publishing ledger " << std::to_string(lgrInfo.seq);
+        publishStrand_.submit([this, lgrInfo = lgrInfo] {
+            LOG(log_.info()) << "Publishing ledger " << std::to_string(lgrInfo.seq);
 
-                setLastClose(lgrInfo.closeTime);
-                auto age = lastCloseAgeSeconds();
+            setLastClose(lgrInfo.closeTime);
+            auto age = lastCloseAgeSeconds();
 
-                // if the ledger closed over MAX_LEDGER_AGE_SECONDS ago, assume we are still catching up and don't
-                // publish
-                static constexpr std::uint32_t kMAX_LEDGER_AGE_SECONDS = 600;
-                if (age < kMAX_LEDGER_AGE_SECONDS) {
-                    std::optional<ripple::Fees> fees = data::synchronousAndRetryOnTimeout([&](auto yield) {
-                        return backend_->fetchFees(lgrInfo.seq, yield);
-                    });
-                    ASSERT(fees.has_value(), "Fees must exist for ledger {}", lgrInfo.seq);
+            // if the ledger closed over MAX_LEDGER_AGE_SECONDS ago, assume we are still catching up and don't
+            // publish
+            static constexpr std::uint32_t kMAX_LEDGER_AGE_SECONDS = 600;
+            if (age < kMAX_LEDGER_AGE_SECONDS) {
+                std::optional<ripple::Fees> fees = data::synchronousAndRetryOnTimeout([&](auto yield) {
+                    return backend_->fetchFees(lgrInfo.seq, yield);
+                });
+                ASSERT(fees.has_value(), "Fees must exist for ledger {}", lgrInfo.seq);
 
-                    auto transactions = data::synchronousAndRetryOnTimeout([&](auto yield) {
-                        return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
-                    });
+                auto transactions = data::synchronousAndRetryOnTimeout([&](auto yield) {
+                    return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
+                });
 
-                    auto const ledgerRange = backend_->fetchLedgerRange();
-                    ASSERT(ledgerRange.has_value(), "Ledger range must exist");
+                auto const ledgerRange = backend_->fetchLedgerRange();
+                ASSERT(ledgerRange.has_value(), "Ledger range must exist");
 
-                    auto const range = fmt::format("{}-{}", ledgerRange->minSequence, ledgerRange->maxSequence);
-                    subscriptions_->pubLedger(lgrInfo, *fees, range, transactions.size());
+                auto const range = fmt::format("{}-{}", ledgerRange->minSequence, ledgerRange->maxSequence);
+                subscriptions_->pubLedger(lgrInfo, *fees, range, transactions.size());
 
-                    // order with transaction index
-                    std::ranges::sort(transactions, [](auto const& t1, auto const& t2) {
-                        ripple::SerialIter iter1{t1.metadata.data(), t1.metadata.size()};
-                        ripple::STObject const object1(iter1, ripple::sfMetadata);
-                        ripple::SerialIter iter2{t2.metadata.data(), t2.metadata.size()};
-                        ripple::STObject const object2(iter2, ripple::sfMetadata);
-                        return object1.getFieldU32(ripple::sfTransactionIndex) <
-                            object2.getFieldU32(ripple::sfTransactionIndex);
-                    });
+                // order with transaction index
+                std::ranges::sort(transactions, [](auto const& t1, auto const& t2) {
+                    ripple::SerialIter iter1{t1.metadata.data(), t1.metadata.size()};
+                    ripple::STObject const object1(iter1, ripple::sfMetadata);
+                    ripple::SerialIter iter2{t2.metadata.data(), t2.metadata.size()};
+                    ripple::STObject const object2(iter2, ripple::sfMetadata);
+                    return object1.getFieldU32(ripple::sfTransactionIndex) <
+                        object2.getFieldU32(ripple::sfTransactionIndex);
+                });
 
-                    for (auto const& txAndMeta : transactions)
-                        subscriptions_->pubTransaction(txAndMeta, lgrInfo);
+                for (auto const& txAndMeta : transactions)
+                    subscriptions_->pubTransaction(txAndMeta, lgrInfo);
 
-                    subscriptions_->pubBookChanges(lgrInfo, transactions);
+                subscriptions_->pubBookChanges(lgrInfo, transactions);
 
-                    setLastPublishTime();
-                    LOG(log_.info()) << "Published ledger " << lgrInfo.seq;
-                } else {
-                    LOG(log_.info()) << "Skipping publishing ledger " << lgrInfo.seq;
-                }
-            })
-            .wait();  // FIXME: for now we explicitly wait here
-
-        // we track latest publish-requested seq, not necessarily already published
+                setLastPublishTime();
+                LOG(log_.info()) << "Published ledger " << lgrInfo.seq;
+            } else {
+                LOG(log_.info()) << "Skipping publishing ledger " << lgrInfo.seq;
+            }
+        });  // we track latest publish-requested seq, not necessarily already published
         setLastPublishedSequence(lgrInfo.seq);
     }
 
