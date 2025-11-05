@@ -95,7 +95,7 @@ public:
      * @brief Create an instance of the publisher
      */
     LedgerPublisher(
-        util::async::AnyExecutionContext ctx,  // TODO: replace with AsyncContext shared with ETLService
+        util::async::AnyExecutionContext ctx,
         std::shared_ptr<BackendInterface> backend,
         std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
         SystemState const& state
@@ -169,8 +169,7 @@ public:
             setLastClose(lgrInfo.closeTime);
             auto age = lastCloseAgeSeconds();
 
-            // if the ledger closed over MAX_LEDGER_AGE_SECONDS ago, assume we are still catching up and don't
-            // publish
+            // if the ledger closed over MAX_LEDGER_AGE_SECONDS ago, assume we are still catching up and don't publish
             static constexpr std::uint32_t kMAX_LEDGER_AGE_SECONDS = 600;
             if (age < kMAX_LEDGER_AGE_SECONDS) {
                 std::optional<ripple::Fees> fees = data::synchronousAndRetryOnTimeout([&](auto yield) {
@@ -208,7 +207,9 @@ public:
             } else {
                 LOG(log_.info()) << "Skipping publishing ledger " << lgrInfo.seq;
             }
-        });  // we track latest publish-requested seq, not necessarily already published
+        });
+
+        // we track latest publish-requested seq, not necessarily already published
         setLastPublishedSequence(lgrInfo.seq);
     }
 
