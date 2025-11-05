@@ -125,6 +125,7 @@ private:
     boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
 
     std::atomic_bool stopping_;
+    std::atomic_bool enabled_ = true;
 
     util::Mutex<impl::OneTimeCallable> onQueueEmpty_;
     util::Mutex<DispatcherState> dispatcherState_;
@@ -134,11 +135,33 @@ public:
     /**
      * @brief Create an we instance of the work queue.
      *
+     * The work queue by default starts in enabled state and processes tasks as they come.
+     * Use `enable()` and `disable()` when pausing processing of tasks is desired. This does not affect posting new
+     * tasks to the work queue.
+     *
      * @param numWorkers The amount of threads to spawn in the pool
      * @param maxSize The maximum capacity of the queue; 0 means unlimited
      */
     WorkQueue(std::uint32_t numWorkers, uint32_t maxSize = 0);
     ~WorkQueue() override;
+
+    /**
+     * @brief Enable processing of the enqueued tasks.
+     */
+    void
+    enable()
+    {
+        enabled_ = true;
+    }
+
+    /**
+     * @brief Disable processing of the enqueued tasks.
+     */
+    void
+    disable()
+    {
+        enabled_ = false;
+    }
 
     /**
      * @brief Put the work queue into a stopping state. This will prevent new jobs from being queued.

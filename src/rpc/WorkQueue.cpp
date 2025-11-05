@@ -135,6 +135,10 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 
     // all ongoing tasks must be completed before stopping fully
     while (not stopping_ or size() > 0) {
+        if (not enabled_) {
+            boost::asio::post(ioc_.get_executor(), yield);  // yield back to avoid hijacking the thread
+            continue;
+        }
         std::vector<std::function<void(boost::asio::yield_context)>> batch;
 
         {

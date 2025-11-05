@@ -123,6 +123,8 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
     std::vector<WorkQueue::Priority> executionOrder;
     std::mutex mtx;
 
+    queue.disable();  // allow to enqueue all tasks before starting to process them
+
     for (int i = 0; i < kTOTAL; ++i) {
         queue.postCoro(
             [&](auto) {
@@ -142,9 +144,10 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
         );
     }
 
+    queue.enable();  // all tasks ready, allow processing
     queue.stop();
 
-    // with 1 worker, the execution order is deterministic
+    // with 1 worker and the above, the execution order is deterministic
     // we should see 4 high prio tasks, then 1 normal prio task, until high prio tasks are depleted
     std::vector<WorkQueue::Priority> const expectedOrder = {
         WorkQueue::Priority::High,    WorkQueue::Priority::High,    WorkQueue::Priority::High,
