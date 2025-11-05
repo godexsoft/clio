@@ -59,9 +59,24 @@ public:
 }  // namespace impl
 
 /**
+ * @brief An interface for any class providing a report as json object
+ */
+struct Reportable {
+    virtual ~Reportable() = default;
+
+    /**
+     * @brief Generate a report of the work queue state.
+     *
+     * @return The report as a JSON object.
+     */
+    [[nodiscard]] virtual boost::json::object
+    report() const = 0;
+};
+
+/**
  * @brief An asynchronous, thread-safe queue for RPC requests.
  */
-class WorkQueue {
+class WorkQueue : public Reportable {
 public:
     /**
      * @brief Represents a task scheduling priority
@@ -123,7 +138,7 @@ public:
      * @param maxSize The maximum capacity of the queue; 0 means unlimited
      */
     WorkQueue(std::uint32_t numWorkers, uint32_t maxSize = 0);
-    ~WorkQueue();
+    ~WorkQueue() override;
 
     /**
      * @brief Put the work queue into a stopping state. This will prevent new jobs from being queued.
@@ -165,7 +180,7 @@ public:
      * @return The report as a JSON object.
      */
     [[nodiscard]] boost::json::object
-    report() const;
+    report() const override;
 
     /**
      * @brief Wait until all the jobs in the queue are finished.
