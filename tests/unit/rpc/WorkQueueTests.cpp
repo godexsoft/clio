@@ -31,7 +31,6 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
-#include <iostream>
 #include <mutex>
 #include <semaphore>
 #include <vector>
@@ -70,7 +69,7 @@ TEST_F(WorkQueueTest, WhitelistedExecutionCountAddsUp)
         queue.postCoro([&executeCount](auto /* yield */) { ++executeCount; }, true);
     }
 
-    queue.join();
+    queue.stop();
 
     auto const report = queue.report();
 
@@ -108,7 +107,7 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
         }
     }
 
-    queue.join();
+    queue.stop();
     EXPECT_TRUE(unblocked);
 }
 
@@ -143,7 +142,7 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
         );
     }
 
-    queue.join();
+    queue.stop();
 
     // with 1 worker, the execution order is deterministic
     // we should see 4 high prio tasks, then 1 normal prio task, until high prio tasks are depleted
@@ -173,10 +172,10 @@ TEST_F(WorkQueueStopTest, RejectsNewTasksWhenStopping)
     EXPECT_CALL(taskMock, Call());
     EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
 
-    queue.stop([]() {});
+    queue.requestStop();
     EXPECT_FALSE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
 
-    queue.join();
+    queue.stop();
 }
 
 TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingAndQueueIsEmpty)
@@ -185,8 +184,8 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingAndQueueIsEmpty)
     EXPECT_TRUE(queue.postCoro([this](auto /* yield */) { taskMock.Call(); }, false));
 
     EXPECT_CALL(onTasksComplete, Call()).WillOnce([&]() { EXPECT_EQ(queue.size(), 0u); });
-    queue.stop(onTasksComplete.AsStdFunction());
-    queue.join();
+    queue.requestStop(onTasksComplete.AsStdFunction());
+    queue.stop();
 }
 
 TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
@@ -203,10 +202,10 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
     ));
 
     EXPECT_CALL(onTasksComplete, Call()).WillOnce([&]() { EXPECT_EQ(queue.size(), 0u); });
-    queue.stop(onTasksComplete.AsStdFunction());
+    queue.requestStop(onTasksComplete.AsStdFunction());
     semaphore.release();
 
-    queue.join();
+    queue.stop();
 }
 
 struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {};
@@ -219,9 +218,8 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 
     std::binary_semaphore semaphore{0};
 
-    // TODO: the first value() is by default 0 and it's a nice mock so it works but this is bad
+    EXPECT_CALL(curSizeMock, value()).WillOnce(::testing::Return(0)).WillRepeatedly(::testing::Return(1));
     EXPECT_CALL(curSizeMock, add(1));
-    EXPECT_CALL(curSizeMock, value()).WillRepeatedly(::testing::Return(1));
     EXPECT_CALL(queuedMock, add(1));
     EXPECT_CALL(durationMock, add(::testing::Gt(0))).WillOnce([&](auto) {
         EXPECT_CALL(curSizeMock, add(-1));
@@ -232,5 +230,5 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
     auto const res = queue.postCoro([&](auto /* yield */) { semaphore.acquire(); }, false);
 
     ASSERT_TRUE(res);
-    queue.join();
+    queue.stop();
 }

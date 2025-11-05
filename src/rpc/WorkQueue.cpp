@@ -92,7 +92,7 @@ WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
 
 WorkQueue::~WorkQueue()
 {
-    join();
+    stop();
 }
 
 bool
@@ -136,13 +136,11 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
     // all ongoing tasks must be completed before stopping fully
     while (not stopping_ or size() > 0) {
         std::vector<std::function<void(boost::asio::yield_context)>> batch;
-        auto shouldWait = false;
 
         {
             auto state = dispatcherState_.lock();
 
             if (state->empty()) {
-                shouldWait = true;
                 state->isIdle = true;
             } else {
                 auto highPrioCount = 0uz;
@@ -159,7 +157,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
             }
         }
 
-        if (not stopping_ and shouldWait) {
+        if (not stopping_ and batch.empty()) {
             waitTimer_.expires_at(std::chrono::steady_clock::time_point::max());
             boost::system::error_code ec;
             waitTimer_.async_wait(yield[ec]);
@@ -195,7 +193,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 }
 
 void
-WorkQueue::stop(std::function<void()> onQueueEmpty)
+WorkQueue::requestStop(std::function<void()> onQueueEmpty)
 {
     auto handler = onQueueEmpty_.lock();
     handler->setCallable(std::move(onQueueEmpty));
@@ -213,6 +211,15 @@ WorkQueue::stop(std::function<void()> onQueueEmpty)
 
     if (needsWakeup)
         boost::asio::post(strand_, [this] { waitTimer_.cancel(); });
+}
+
+void
+WorkQueue::stop()
+{
+    if (not stopping_)
+        requestStop();
+
+    ioc_.join();
 }
 
 WorkQueue
@@ -238,16 +245,6 @@ WorkQueue::report() const
     obj["max_queue_size"] = maxSize_;
 
     return obj;
-}
-
-void
-WorkQueue::join()
-{
-    // TODO: maybe this is not the best place or some renaming needs to be done
-    if (not stopping_)
-        stop();
-
-    ioc_.join();
 }
 
 size_t

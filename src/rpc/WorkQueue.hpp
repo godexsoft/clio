@@ -146,7 +146,13 @@ public:
      * @param onQueueEmpty A callback to run when the last task in the queue is completed
      */
     void
-    stop(std::function<void()> onQueueEmpty = [] {});
+    requestStop(std::function<void()> onQueueEmpty = [] {});
+
+    /**
+     * @brief Put the work queue into a stopping state and await workers to finish.
+     */
+    void
+    stop();
 
     /**
      * @brief A factory function that creates the work queue based on a config.
