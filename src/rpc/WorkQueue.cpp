@@ -39,30 +39,6 @@
 #include <vector>
 
 namespace rpc {
-namespace impl {
-
-void
-OneTimeCallable::setCallable(std::function<void()> func)
-{
-    func_ = func;
-}
-
-void
-OneTimeCallable::operator()()
-{
-    if (not called_) {
-        func_();
-        called_ = true;
-    }
-}
-
-OneTimeCallable::
-operator bool() const
-{
-    return func_.operator bool();
-}
-
-}  // namespace impl
 
 WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
     : queued_{PrometheusService::counterInt(
@@ -200,7 +176,7 @@ void
 WorkQueue::requestStop(std::function<void()> onQueueEmpty)
 {
     auto handler = onQueueEmpty_.lock();
-    handler->setCallable(std::move(onQueueEmpty));
+    handler->operator=(std::move(onQueueEmpty));
 
     stopping_ = true;
     auto needsWakeup = false;
@@ -220,7 +196,7 @@ WorkQueue::requestStop(std::function<void()> onQueueEmpty)
 void
 WorkQueue::stop()
 {
-    if (not stopping_)
+    if (not stopping_.exchange(true))
         requestStop();
 
     ioc_.join();

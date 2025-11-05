@@ -42,22 +42,6 @@
 
 namespace rpc {
 
-namespace impl {
-class OneTimeCallable {
-    std::function<void()> func_;
-    bool called_{false};
-
-public:
-    void
-    setCallable(std::function<void()> func);
-
-    void
-    operator()();
-
-    operator bool() const;
-};
-}  // namespace impl
-
 /**
  * @brief An interface for any class providing a report as json object
  */
@@ -127,7 +111,7 @@ private:
     std::atomic_bool stopping_;
     std::atomic_bool enabled_ = true;
 
-    util::Mutex<impl::OneTimeCallable> onQueueEmpty_;
+    util::Mutex<std::function<void()>> onQueueEmpty_;
     util::Mutex<DispatcherState> dispatcherState_;
     boost::asio::steady_timer waitTimer_;
 
