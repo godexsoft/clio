@@ -55,7 +55,7 @@ struct RPCWorkQueueTestBase : public virtual ::testing::Test {
 };
 
 struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {
-    WorkQueueTest() : RPCWorkQueueTestBase(4, 2)
+    WorkQueueTest() : RPCWorkQueueTestBase(/* workers = */ 4, /*maxQueueSize = */ 2)
     {
     }
 };
@@ -112,7 +112,7 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
 }
 
 struct WorkQueuePriorityTest : WithPrometheus, RPCWorkQueueTestBase {
-    WorkQueuePriorityTest() : RPCWorkQueueTestBase(1, 100)
+    WorkQueuePriorityTest() : RPCWorkQueueTestBase(/* workers = */ 1, /*maxQueueSize = */ 100)
     {
     }
 };
@@ -212,7 +212,7 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
 }
 
 struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {
-    WorkQueueMockPrometheusTest() : RPCWorkQueueTestBase(1, 2)
+    WorkQueueMockPrometheusTest() : RPCWorkQueueTestBase(/* workers = */ 1, /*maxQueueSize = */ 2)
     {
     }
 };

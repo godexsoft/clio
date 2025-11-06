@@ -165,9 +165,11 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 
     LOG(log_.info()) << "WorkQueue dispatcher shutdown requested - time to execute onTasksComplete";
 
-    auto onTasksComplete = onQueueEmpty_.lock();
-    ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
-    onTasksComplete->operator()();
+    {
+        auto onTasksComplete = onQueueEmpty_.lock();
+        ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
+        onTasksComplete->operator()();
+    }
 
     LOG(log_.info()) << "WorkQueue dispatcher finished";
 }
