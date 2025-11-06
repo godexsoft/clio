@@ -61,6 +61,9 @@ struct Reportable {
  * @brief An asynchronous, thread-safe queue for RPC requests.
  */
 class WorkQueue : public Reportable {
+    using TaskType = std::function<void(boost::asio::yield_context)>;
+    using QueueType = std::queue<TaskType>;
+
 public:
     /**
      * @brief Represents a task scheduling priority
@@ -72,7 +75,6 @@ public:
 
 private:
     struct DispatcherState {
-        using QueueType = std::queue<std::function<void(boost::asio::yield_context)>>;
         QueueType high;
         QueueType normal;
 
@@ -183,11 +185,7 @@ public:
      * @return true if the job was successfully queued; false otherwise
      */
     bool
-    postCoro(
-        std::function<void(boost::asio::yield_context)> func,
-        bool isWhiteListed,
-        Priority priority = Priority::Default
-    );
+    postCoro(TaskType func, bool isWhiteListed, Priority priority = Priority::Default);
 
     /**
      * @brief Generate a report of the work queue state.

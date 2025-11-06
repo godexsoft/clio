@@ -72,7 +72,7 @@ WorkQueue::~WorkQueue()
 }
 
 bool
-WorkQueue::postCoro(std::function<void(boost::asio::yield_context)> func, bool isWhiteListed, Priority priority)
+WorkQueue::postCoro(TaskType func, bool isWhiteListed, Priority priority)
 {
     if (stopping_) {
         LOG(log_.warn()) << "Queue is stopping, rejecting incoming task.";
@@ -115,7 +115,7 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
             boost::asio::post(ioc_.get_executor(), yield);  // yield back to avoid hijacking the thread
             continue;
         }
-        std::vector<std::function<void(boost::asio::yield_context)>> batch;
+        std::vector<TaskType> batch;
 
         {
             auto state = dispatcherState_.lock();
