@@ -90,10 +90,7 @@ WorkQueue::postCoro(TaskType func, bool isWhiteListed, Priority priority)
     {
         auto state = dispatcherState_.lock();
 
-        if (state->isIdle) {
-            needsWakeup = true;
-            state->isIdle = false;
-        }
+        needsWakeup = std::exchange(state->isIdle, false);
 
         state->push(priority, std::move(func));
     }
@@ -185,10 +182,7 @@ WorkQueue::requestStop(std::function<void()> onQueueEmpty)
 
     {
         auto state = dispatcherState_.lock();
-        if (state->isIdle) {
-            needsWakeup = true;
-            state->isIdle = false;
-        }
+        needsWakeup = std::exchange(state->isIdle, false);
     }
 
     if (needsWakeup)
