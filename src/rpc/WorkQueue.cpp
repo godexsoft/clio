@@ -175,7 +175,7 @@ void
 WorkQueue::requestStop(std::function<void()> onQueueEmpty)
 {
     auto handler = onQueueEmpty_.lock();
-    handler->operator=(std::move(onQueueEmpty));
+    *handler = std::move(onQueueEmpty);
 
     stopping_ = true;
     auto needsWakeup = false;
