@@ -40,7 +40,7 @@
 
 namespace rpc {
 
-WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
+WorkQueue::WorkQueue(DontStartProcessingTag, std::uint32_t numWorkers, uint32_t maxSize)
     : queued_{PrometheusService::counterInt(
           "work_queue_queued_total_number",
           util::prometheus::Labels(),
@@ -62,13 +62,28 @@ WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
 {
     if (maxSize != 0)
         maxSize_ = maxSize;
+}
 
-    util::spawn(strand_, [this](auto yield) { dispatcherLoop(yield); });
+WorkQueue::WorkQueue(std::uint32_t numWorkers, uint32_t maxSize)
+    : WorkQueue(kDONT_START_PROCESSING_TAG, numWorkers, maxSize)
+{
+    startProcessing();
 }
 
 WorkQueue::~WorkQueue()
 {
     stop();
+}
+
+void
+WorkQueue::startProcessing()
+{
+    util::spawn(strand_, [this](auto yield) {
+        ASSERT(not hasDispatcher_, "Dispatcher already running");
+
+        hasDispatcher_ = true;
+        dispatcherLoop(yield);
+    });
 }
 
 bool
@@ -108,10 +123,6 @@ WorkQueue::dispatcherLoop(boost::asio::yield_context yield)
 
     // all ongoing tasks must be completed before stopping fully
     while (not stopping_ or size() > 0) {
-        if (not enabled_) {
-            boost::asio::post(ioc_.get_executor(), yield);  // yield back to avoid hijacking the thread
-            continue;
-        }
         std::vector<TaskType> batch;
 
         {

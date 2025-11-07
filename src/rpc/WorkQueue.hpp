@@ -111,45 +111,45 @@ private:
     util::Logger log_{"RPC"};
     boost::asio::thread_pool ioc_;
     boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
+    bool hasDispatcher_ = false;
 
     std::atomic_bool stopping_;
-    std::atomic_bool enabled_ = true;
 
     util::Mutex<std::function<void()>> onQueueEmpty_;
     util::Mutex<DispatcherState> dispatcherState_;
     boost::asio::steady_timer waitTimer_;
 
 public:
+    struct DontStartProcessingTag {};
+    static constexpr DontStartProcessingTag kDONT_START_PROCESSING_TAG;
+
     /**
      * @brief Create an we instance of the work queue.
      *
-     * The work queue by default starts in enabled state and processes tasks as they come.
-     * Use `enable()` and `disable()` when pausing processing of tasks is desired. This does not affect posting new
-     * tasks to the work queue.
+     * The work queue immediately starts to process tasks as they come.
      *
      * @param numWorkers The amount of threads to spawn in the pool
      * @param maxSize The maximum capacity of the queue; 0 means unlimited
      */
     WorkQueue(std::uint32_t numWorkers, uint32_t maxSize = 0);
+
+    /**
+     * @brief Create an we instance of the work queue without starting the processing of events.
+     *
+     * Clients are expected to call `startProcessing` manually once ready to start processing tasks.
+     *
+     * @param numWorkers The amount of threads to spawn in the pool
+     * @param maxSize The maximum capacity of the queue; 0 means unlimited
+     */
+    WorkQueue(DontStartProcessingTag, std::uint32_t numWorkers, uint32_t maxSize = 0);
+
     ~WorkQueue() override;
 
     /**
-     * @brief Enable processing of the enqueued tasks.
+     * @brief Start processing of the enqueued tasks.
      */
     void
-    enable()
-    {
-        enabled_ = true;
-    }
-
-    /**
-     * @brief Disable processing of the enqueued tasks.
-     */
-    void
-    disable()
-    {
-        enabled_ = false;
-    }
+    startProcessing();
 
     /**
      * @brief Put the work queue into a stopping state. This will prevent new jobs from being queued.

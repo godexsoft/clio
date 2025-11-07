@@ -55,7 +55,7 @@ struct RPCWorkQueueTestBase : public virtual ::testing::Test {
 };
 
 struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {
-    WorkQueueTest() : RPCWorkQueueTestBase(/* workers = */ 4, /*maxQueueSize = */ 2)
+    WorkQueueTest() : RPCWorkQueueTestBase(/* workers = */ 4, /* maxQueueSize = */ 2)
     {
     }
 };
@@ -111,10 +111,8 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
     EXPECT_TRUE(unblocked);
 }
 
-struct WorkQueuePriorityTest : WithPrometheus, RPCWorkQueueTestBase {
-    WorkQueuePriorityTest() : RPCWorkQueueTestBase(/* workers = */ 1, /*maxQueueSize = */ 100)
-    {
-    }
+struct WorkQueuePriorityTest : WithPrometheus, virtual ::testing::Test {
+    WorkQueue queue{WorkQueue::kDONT_START_PROCESSING_TAG, /* numWorkers = */ 1, /* maxSize = */ 100};
 };
 
 TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
@@ -122,8 +120,6 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
     static constexpr auto kTOTAL = 10;
     std::vector<WorkQueue::Priority> executionOrder;
     std::mutex mtx;
-
-    queue.disable();  // allow to enqueue all tasks before starting to process them
 
     for (int i = 0; i < kTOTAL; ++i) {
         queue.postCoro(
@@ -144,7 +140,7 @@ TEST_F(WorkQueuePriorityTest, HighPriorityTasks)
         );
     }
 
-    queue.enable();  // all tasks ready, allow processing
+    queue.startProcessing();
     queue.stop();
 
     // with 1 worker and the above, the execution order is deterministic
