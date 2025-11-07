@@ -124,7 +124,7 @@ public:
     static constexpr DontStartProcessingTag kDONT_START_PROCESSING_TAG = {};
 
     /**
-     * @brief Create an we instance of the work queue.
+     * @brief Create an instance of the work queue.
      *
      * The work queue immediately starts to process tasks as they come.
      *
@@ -134,7 +134,7 @@ public:
     WorkQueue(std::uint32_t numWorkers, uint32_t maxSize = 0);
 
     /**
-     * @brief Create an we instance of the work queue without starting the processing of events.
+     * @brief Create an instance of the work queue without starting the processing of events.
      *
      * Clients are expected to call `startProcessing` manually once ready to start processing tasks.
      *
