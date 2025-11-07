@@ -121,7 +121,7 @@ private:
 
 public:
     struct DontStartProcessingTag {};
-    static constexpr DontStartProcessingTag kDONT_START_PROCESSING_TAG;
+    static constexpr DontStartProcessingTag kDONT_START_PROCESSING_TAG = {};
 
     /**
      * @brief Create an we instance of the work queue.
