@@ -86,7 +86,7 @@ jobs:
 
   gcc-arm64:
     name: Build and push GCC docker image (arm64)
-    runs-on: heavy-arm64
+    runs-on: macos-latest # heavy-arm64
     needs: repo
 
     steps:
@@ -242,7 +242,7 @@ jobs:
 
   tools-arm64:
     name: Build and push tools docker image (arm64)
-    runs-on: heavy-arm64
+    runs-on: macos-latest # heavy-arm64
     needs: [repo, gcc-merge]
 
     steps:
