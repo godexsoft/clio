@@ -1,10 +1,10 @@
 {% set compiler, sani = profile_name.split('.') %}
 
 {% set sanitizer_opt_map = {"asan": "address", "tsan": "thread", "ubsan": "undefined"} %}
-{% set sanitizer_b2_flags_map = {"asan": "context-impl=ucontext address-sanitizer=on", "tsan": "thread-sanitizer=on", "ubsan": "undefined-sanitizer=on"} %}
-
 {% set sanitizer = sanitizer_opt_map[sani] %}
-{% set sanitizer_b2_flags_str = sanitizer_b2_flags_map[sani] %}
+
+{% set sanitizer_b2_flags_map = {"address": "context-impl=ucontext address-sanitizer=on", "thread": "thread-sanitizer=on", "undefined": "undefined-sanitizer=on"} %}
+{% set sanitizer_b2_flags_str = sanitizer_b2_flags_map[sanitizer] %}
 
 {% set sanitizer_build_flags_str = "-fsanitize=" ~ sanitizer ~ " -g -O1 -fno-omit-frame-pointer" %}
 {% set sanitizer_build_flags = sanitizer_build_flags_str.split(' ') %}
