@@ -31,7 +31,7 @@ jobs:
     if: github.event_name != 'push' || contains(github.event.head_commit.message, 'clang-tidy auto fixes')
     runs-on: heavy
     container:
-      image: ghcr.io/xrplf/clio-ci:c117f470f2ef954520ab5d1c8a5ed2b9e68d6f8a
+      image: ghcr.io/godexsoft/clio-ci:bf4d1c85e70e01897962a255e052095ed0591811
 
     permissions:
       contents: write
