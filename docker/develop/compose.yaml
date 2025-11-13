@@ -1,6 +1,6 @@
 services:
   clio_develop:
-    image: ghcr.io/godexsoft/clio-ci:bf4d1c85e70e01897962a255e052095ed0591811
+    image: ghcr.io/godexsoft/clio-ci:996643a196ef875501dcf0fa528d0bf584387404
     volumes:
       - clio_develop_conan_data:/root/.conan2/p
       - clio_develop_ccache:/root/.ccache
