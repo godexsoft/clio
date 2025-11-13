@@ -69,16 +69,11 @@ if (san)
   endif ()
 
   # Sanitizers recommend minimum of -O1 for reasonable performance so we enable it for debug builds
-  set(SAN_EXTRA_FLAGS "")
+  set(SAN_OPTIMIZATION_FLAG "")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(SAN_EXTRA_FLAGS -O1)
+    set(SAN_OPTIMIZATION_FLAG -O1)
   endif ()
-
-  # ASAN builds under Clang should use `-fsanitize-ignorelist` to work around false positives from boost::asio
-  if (san STREQUAL "address" AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(SAN_EXTRA_FLAGS ${SAN_EXTRA_FLAGS} -fsanitize-ignorelist=${CMAKE_CURRENT_LIST_DIR}/asan_ignorelist.txt)
-  endif ()
-  target_compile_options(clio_options INTERFACE ${SAN_EXTRA_FLAGS} ${SAN_FLAG} -fno-omit-frame-pointer)
+  target_compile_options(clio_options INTERFACE ${SAN_OPTIMIZATION_FLAG} ${SAN_FLAG} -fno-omit-frame-pointer)
 
   target_compile_definitions(
     clio_options

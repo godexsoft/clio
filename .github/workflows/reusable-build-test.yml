@@ -75,12 +75,6 @@ on:
         type: boolean
         default: false
 
-      env_json:
-        description: Environment variables to set before running built executables
-        required: false
-        type: string
-        default: "{}"
-
 jobs:
   build:
     uses: ./.github/workflows/reusable-build.yml
@@ -109,4 +103,3 @@ jobs:
       build_type: ${{ inputs.build_type }}
       run_unit_tests: ${{ inputs.run_unit_tests }}
       run_integration_tests: ${{ inputs.run_integration_tests }}
-      env_json: ${{ inputs.env_json }}

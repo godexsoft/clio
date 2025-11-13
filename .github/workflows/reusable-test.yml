@@ -33,12 +33,6 @@ on:
         required: true
         type: boolean
 
-      env_json:
-        description: Environment variables to set before running executables
-        required: false
-        type: string
-        default: "{}"
-
 defaults:
   run:
     shell: bash
@@ -73,12 +67,10 @@ jobs:
 
       - name: Run clio_tests (regular)
         if: ${{ env.SANITIZER_IGNORE_ERRORS == 'false' }}
-        env: ${{ fromJSON(inputs.env_json) }}
         run: ./clio_tests
 
       - name: Run clio_tests (sanitizer errors ignored)
         if: ${{ env.SANITIZER_IGNORE_ERRORS == 'true' }}
-        env: ${{ fromJSON(inputs.env_json) }}
         run: ./.github/scripts/execute-tests-under-sanitizer.sh ./clio_tests
 
       - name: Check for sanitizer report
