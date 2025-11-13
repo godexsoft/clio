@@ -3,7 +3,7 @@
 {% set sanitizer_opt_map = {"asan": "address", "tsan": "thread", "ubsan": "undefined"} %}
 {% set sanitizer = sanitizer_opt_map[sani] %}
 
-{% set sanitizer_b2_flags_map = {"address": "context-impl=ucontext address-sanitizer=on", "thread": "thread-sanitizer=on", "undefined": "undefined-sanitizer=on"} %}
+{% set sanitizer_b2_flags_map = {"address": "define=BOOST_USE_ASAN=1 context-impl=ucontext address-sanitizer=on", "thread": "thread-sanitizer=on", "undefined": "undefined-sanitizer=on"} %}
 {% set sanitizer_b2_flags_str = sanitizer_b2_flags_map[sanitizer] %}
 
 {% set sanitizer_build_flags_str = "-fsanitize=" ~ sanitizer ~ " -g -O1 -fno-omit-frame-pointer" %}
