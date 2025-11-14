@@ -44,7 +44,7 @@ jobs:
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       runs_on: heavy
-      container: '{ "image": "ghcr.io/xrplf/clio-ci:62369411404eb32b0140603a785ff05e1dc36ce8" }'
+      container: '{ "image": "ghcr.io/godexsoft/clio-ci:33096b2d9fb7a5e15fc5e64b199ee9d2c2be4c8f" }'
       download_ccache: false
       upload_ccache: false
       conan_profile: ${{ matrix.compiler }}${{ matrix.sanitizer_ext }}
