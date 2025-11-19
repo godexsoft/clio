@@ -29,9 +29,9 @@ tools.build:exelinkflags+={{ sanitizer_link_flags }}
 tools.build:sharedlinkflags+={{ sanitizer_link_flags }}
 
 {% if sanitizer == "address" %}
-    *:tools.build:defines+=["BOOST_USE_ASAN", "BOOST_USE_UCONTEXT"]
+    tools.build:defines+=["BOOST_USE_ASAN", "BOOST_USE_UCONTEXT"]
 {% elif sanitizer == "thread" %}
-    *:tools.build:defines+=["BOOST_USE_TSAN", "BOOST_USE_UCONTEXT"]
+    tools.build:defines+=["BOOST_USE_TSAN", "BOOST_USE_UCONTEXT"]
 {% endif %}
 
 tools.info.package_id:confs+=["tools.build:cflags", "tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
