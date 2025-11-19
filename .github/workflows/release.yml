@@ -29,7 +29,7 @@ jobs:
             conan_profile: gcc
             build_type: Release
             static: true
-            container: '{ "image": "ghcr.io/godexsoft/clio-ci:33096b2d9fb7a5e15fc5e64b199ee9d2c2be4c8f" }'
+            container: '{ "image": "ghcr.io/godexsoft/clio-ci:53e36e0145f64302fdd264882a6abe26be36c427" }'
 
     uses: ./.github/workflows/reusable-build-test.yml
     with:
