@@ -88,7 +88,7 @@ util::async::AnyOperation<void>
 TaskManager::spawnExtractor(TaskQueue& queue)
 {
     // TODO: these values may be extracted to config later and/or need to be fine-tuned on a realistic system
-    static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{100u};
+    static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{10u};
     static constexpr auto kDELAY_BETWEEN_ENQUEUE_ATTEMPTS = std::chrono::milliseconds{1u};
 
     return ctx_.execute([this, &queue](auto stopRequested) {
