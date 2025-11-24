@@ -221,12 +221,6 @@ public:
 
 namespace {
 
-struct SyncData {
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool ready = false;
-};
-
 template <class Executor>
 std::shared_ptr<web::HttpServer<Executor>>
 makeServerSync(
@@ -237,24 +231,7 @@ makeServerSync(
     std::reference_wrapper<data::LedgerCacheInterface const> cache
 )
 {
-    auto server = std::shared_ptr<web::HttpServer<Executor>>();
-    auto syncData = std::make_shared<SyncData>();
-
-    boost::asio::dispatch(
-        ioc.get_executor(), [&server, &config, &ioc, &dosGuard, &handler, &cache, syncData]() mutable {
-            server = web::makeHttpServer(config, ioc, dosGuard, handler, cache);
-            {
-                std::lock_guard const lk(syncData->mtx);
-                syncData->ready = true;
-            }
-            syncData->cv.notify_one();
-        }
-    );
-    {
-        std::unique_lock lk(syncData->mtx);
-        syncData->cv.wait(lk, [&] { return syncData->ready; });
-    }
-    return server;
+    return web::makeHttpServer(config, ioc, dosGuard, handler, cache);
 }
 
 }  // namespace
