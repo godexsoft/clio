@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "util/async/AnyStopToken.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -29,11 +30,14 @@
 #include <boost/signals2/signal.hpp>
 #include <boost/signals2/variadic_signal.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <concepts>
+#include <condition_variable>
 #include <csignal>
 #include <cstdlib>
 #include <functional>
+#include <mutex>
 #include <optional>
 
 namespace util {
@@ -49,12 +53,26 @@ class SignalsHandlerStatic;
  */
 class SignalsHandler {
     std::chrono::steady_clock::duration gracefulPeriod_;
-    async::PoolExecutionContext context_;
-    std::optional<async::PoolExecutionContext::ScheduledOperation<void>> timer_;
+    async::CoroExecutionContext context_;
+    std::optional<async::CoroExecutionContext::ScheduledOperation<void>> timer_;
 
     boost::signals2::signal<void()> stopSignal_;
     std::function<void(int)> stopHandler_;
     std::function<void(int)> secondSignalHandler_;
+
+    // Atomic counter for signals (async-signal-safe)
+    std::atomic<int> signalCount_{0};
+    std::atomic<bool> secondSignalReceived_{false};
+
+    // Synchronization for signal monitoring
+    std::condition_variable signalCondition_;
+    std::mutex signalMutex_;
+
+    // Signal monitoring operation
+    std::optional<async::CoroExecutionContext::StoppableOperation<void>> signalMonitorOperation_;
+
+    // Mutex to protect timer access from multiple threads
+    mutable std::mutex timerMutex_;
 
     friend class impl::SignalsHandlerStatic;
 
@@ -117,6 +135,18 @@ private:
      */
     static void
     setHandler(void (*handler)(int) = nullptr);
+
+    /**
+     * @brief Start monitoring for signals using atomic counter and condition variable.
+     */
+    void
+    startSignalMonitoring();
+
+    /**
+     * @brief Process signals in the execution context.
+     */
+    void
+    processSignals(async::AnyStopToken stopRequested);
 
     static constexpr auto kDEFAULT_FORCE_EXIT_HANDLER = []() { std::exit(EXIT_FAILURE); };
 };
