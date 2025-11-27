@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "util/async/AnyStopToken.hpp"
 #include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
@@ -57,21 +56,14 @@ class SignalsHandler {
     std::optional<async::CoroExecutionContext::ScheduledOperation<void>> timer_;
 
     boost::signals2::signal<void()> stopSignal_;
-    std::function<void(int)> stopHandler_;
-    std::function<void(int)> secondSignalHandler_;
+    std::function<void()> stopHandler_;
+    std::function<void()> secondSignalHandler_;
 
-    // Atomic counter for signals (async-signal-safe)
     std::atomic<int> signalCount_{0};
     std::atomic<bool> secondSignalReceived_{false};
 
-    // Synchronization for signal monitoring
-    std::condition_variable signalCondition_;
-    std::mutex signalMutex_;
-
-    // Signal monitoring operation
     std::optional<async::CoroExecutionContext::StoppableOperation<void>> signalMonitorOperation_;
 
-    // Mutex to protect timer access from multiple threads
     mutable std::mutex timerMutex_;
 
     friend class impl::SignalsHandlerStatic;
@@ -141,12 +133,6 @@ private:
      */
     void
     startSignalMonitoring();
-
-    /**
-     * @brief Process signals in the execution context.
-     */
-    void
-    processSignals(async::AnyStopToken stopRequested);
 
     static constexpr auto kDEFAULT_FORCE_EXIT_HANDLER = []() { std::exit(EXIT_FAILURE); };
 };

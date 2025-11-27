@@ -20,76 +20,71 @@
 #include "util/SignalsHandler.hpp"
 
 #include "util/Assert.hpp"
-#include "util/async/AnyStopToken.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <csignal>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <utility>
 
 namespace util {
 namespace impl {
 
 class SignalsHandlerStatic {
-    static SignalsHandler* installedHandler;
+    static std::atomic<SignalsHandler*> installedHandler;
 
 public:
     static void
     registerHandler(SignalsHandler& handler)
     {
-        ASSERT(installedHandler == nullptr, "There could be only one instance of SignalsHandler");
-        installedHandler = &handler;
+        SignalsHandler* expected = nullptr;
+        ASSERT(
+            installedHandler.compare_exchange_strong(expected, &handler),
+            "There could be only one instance of SignalsHandler"
+        );
     }
 
     static void
     resetHandler()
     {
-        installedHandler = nullptr;
+        installedHandler.store(nullptr, std::memory_order_seq_cst);
     }
 
     static void
     handleSignal(int /*signal*/)
     {
-        // This runs in signal context - only async-signal-safe operations allowed
-        if (installedHandler != nullptr) {
-            // Increment signal counter (async-signal-safe)
-            installedHandler->signalCount_.fetch_add(1, std::memory_order_release);
-
-            // Notify the monitor (async-signal-safe)
-            installedHandler->signalCondition_.notify_one();
+        // Load the handler pointer atomically
+        SignalsHandler* handler = installedHandler.load(std::memory_order_seq_cst);
+        if (handler != nullptr) {
+            handler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
         }
     }
 
     static void
     handleSecondSignal(int /*signal*/)
     {
-        // This runs in signal context - only async-signal-safe operations allowed
-        if (installedHandler != nullptr) {
-            // Mark as second signal and increment counter (async-signal-safe)
-            installedHandler->secondSignalReceived_.store(true, std::memory_order_release);
-            installedHandler->signalCount_.fetch_add(1, std::memory_order_release);
-
-            // Notify the monitor (async-signal-safe)
-            installedHandler->signalCondition_.notify_one();
+        // Load the handler pointer atomically
+        SignalsHandler* handler = installedHandler.load(std::memory_order_seq_cst);
+        if (handler != nullptr) {
+            handler->secondSignalReceived_.store(true, std::memory_order_seq_cst);
+            handler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
         }
     }
 };
 
-SignalsHandler* SignalsHandlerStatic::installedHandler = nullptr;
+std::atomic<SignalsHandler*> SignalsHandlerStatic::installedHandler{nullptr};
 
 }  // namespace impl
 
 SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::function<void()> forceExitHandler)
     : gracefulPeriod_(0)
     , context_(1)
-    , stopHandler_([this, forceExitHandler](int) mutable {
+    , stopHandler_([this, forceExitHandler] mutable {
         LOG(LogService::info()) << "Got stop signal. Stopping Clio. Graceful period is "
                                 << std::chrono::duration_cast<std::chrono::milliseconds>(gracefulPeriod_).count()
                                 << " milliseconds.";
@@ -108,7 +103,7 @@ SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::
         }
         stopSignal_();
     })
-    , secondSignalHandler_([this, forceExitHandler = std::move(forceExitHandler)](int) {
+    , secondSignalHandler_([this, forceExitHandler = std::move(forceExitHandler)] {
         LOG(LogService::warn()) << "Force exit on second signal.";
         forceExitHandler();
         cancelTimer();
@@ -125,17 +120,23 @@ SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::
 
 SignalsHandler::~SignalsHandler()
 {
+    // Reset signal handlers FIRST to prevent new signals from arriving
+    setHandler();
+
+    // Reset the static handler pointer to prevent signal handlers from accessing this object
+    impl::SignalsHandlerStatic::resetHandler();
+
+    // Add a memory barrier to ensure the above operations are visible to signal handlers
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+
     cancelTimer();
 
-    // Clean up signal monitoring
+    // Manually stop and wait for the monitoring operation to complete
+    // This is essential to prevent use-after-free when the object is destroyed
     if (signalMonitorOperation_.has_value()) {
         signalMonitorOperation_->requestStop();
-        // Wake up the monitor so it can exit cleanly
-        signalCondition_.notify_one();
+        signalMonitorOperation_->wait();
     }
-
-    setHandler();
-    impl::SignalsHandlerStatic::resetHandler();  // This is needed mostly for tests to reset static state
 }
 
 void
@@ -143,7 +144,7 @@ SignalsHandler::cancelTimer()
 {
     std::lock_guard<std::mutex> lock(timerMutex_);
     if (timer_.has_value())
-        timer_->abort();
+        timer_->cancel();
 }
 
 void
@@ -158,32 +159,24 @@ void
 SignalsHandler::startSignalMonitoring()
 {
     signalMonitorOperation_.emplace(context_.execute([this](auto stopRequested) {
-        processSignals(std::move(stopRequested));
-    }));
-}
+        while (not stopRequested) {
+            // Check if we have any signals to process
+            auto signalCount = signalCount_.exchange(0, std::memory_order_seq_cst);
+            auto isSecondSignal = secondSignalReceived_.exchange(false, std::memory_order_seq_cst);
 
-void
-SignalsHandler::processSignals(async::AnyStopToken stopRequested)
-{
-    while (not stopRequested) {
-        std::unique_lock<std::mutex> lock(signalMutex_);
-        signalCondition_.wait(lock, [this, &stopRequested]() {
-            return stopRequested or signalCount_.load(std::memory_order_acquire) > 0;
-        });
-
-        auto signalCount = signalCount_.exchange(0, std::memory_order_acquire);
-        auto isSecondSignal = secondSignalReceived_.exchange(false, std::memory_order_acquire);
-
-        if (signalCount > 0) {
-            lock.unlock();
-
-            if (isSecondSignal) {
-                secondSignalHandler_(SIGINT);  // Assuming SIGINT for now
+            if (signalCount > 0) {
+                if (isSecondSignal) {
+                    secondSignalHandler_();
+                } else {
+                    stopHandler_();
+                }
             } else {
-                stopHandler_(SIGINT);  // Assuming SIGINT for now
+                // Only yield when there are no signals to process
+                // This makes signal processing more responsive
+                std::this_thread::yield();
             }
         }
-    }
+    }));
 }
 
 }  // namespace util

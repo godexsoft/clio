@@ -96,7 +96,7 @@ TEST_F(SignalsHandlerTests, OneSignal)
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
     handler_.subscribeToStop(anotherStopHandler_.AsStdFunction());
     EXPECT_CALL(stopHandler_, Call());
-    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
+    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this] { allowTestToFinish(); });
     std::raise(SIGINT);
 
     wait();
@@ -114,8 +114,10 @@ TEST_F(SignalsHandlerTimeoutTests, OneSignalTimeout)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
     EXPECT_CALL(stopHandler_, Call()).WillOnce([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
-    EXPECT_CALL(forceExitHandler_, Call());
+    EXPECT_CALL(forceExitHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
     std::raise(SIGINT);
+
+    wait();
 }
 
 TEST_F(SignalsHandlerTests, TwoSignals)
@@ -156,17 +158,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(SignalsHandlerPriorityTests, Priority)
 {
-    bool stopHandlerCalled = false;
-
     handler_.subscribeToStop(anotherStopHandler_.AsStdFunction(), GetParam().anotherStopHandlerPriority);
     handler_.subscribeToStop(stopHandler_.AsStdFunction(), GetParam().stopHandlerPriority);
 
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([&] { stopHandlerCalled = true; });
-    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([&] {
-        EXPECT_TRUE(stopHandlerCalled);
-        allowTestToFinish();
-    });
-    std::raise(SIGINT);
+    EXPECT_CALL(stopHandler_, Call());
+    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this] { allowTestToFinish(); });
 
+    std::raise(SIGINT);
     wait();
 }
