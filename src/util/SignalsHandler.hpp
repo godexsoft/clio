@@ -116,9 +116,10 @@ public:
 private:
     /**
      * @brief Cancel scheduled force exit if any.
+     * @param await Whether to await cancellation.
      */
     void
-    cancelTimer();
+    cancelTimer(bool await = false);
 
     /**
      * @brief Set signal handler for handled signals.

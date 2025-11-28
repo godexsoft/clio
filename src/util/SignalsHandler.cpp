@@ -23,6 +23,8 @@
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 
+#include <sys/wait.h>
+
 #include <atomic>
 #include <chrono>
 #include <csignal>
@@ -36,48 +38,39 @@ namespace util {
 namespace impl {
 
 class SignalsHandlerStatic {
-    static std::atomic<SignalsHandler*> installedHandler;
+    static SignalsHandler* installedHandler;
 
 public:
     static void
     registerHandler(SignalsHandler& handler)
     {
-        SignalsHandler* expected = nullptr;
-        ASSERT(
-            installedHandler.compare_exchange_strong(expected, &handler),
-            "There could be only one instance of SignalsHandler"
-        );
+        ASSERT(installedHandler == nullptr, "There could be only one instance of SignalsHandler");
+        installedHandler = &handler;
     }
 
     static void
     resetHandler()
     {
-        installedHandler.store(nullptr, std::memory_order_seq_cst);
+        installedHandler = nullptr;
     }
 
     static void
-    handleSignal(int /*signal*/)
+    handleSignal(int /* signal */)
     {
-        // Load the handler pointer atomically
-        SignalsHandler* handler = installedHandler.load(std::memory_order_seq_cst);
-        if (handler != nullptr) {
-            handler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
-        }
+        ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
+        installedHandler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
     }
 
     static void
-    handleSecondSignal(int /*signal*/)
+    handleSecondSignal(int /* signal */)
     {
-        // Load the handler pointer atomically
-        SignalsHandler* handler = installedHandler.load(std::memory_order_seq_cst);
-        if (handler != nullptr) {
-            handler->secondSignalReceived_.store(true, std::memory_order_seq_cst);
-            handler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
-        }
+        ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
+        installedHandler->secondSignalReceived_.store(true, std::memory_order_seq_cst);
+        installedHandler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
     }
 };
 
-std::atomic<SignalsHandler*> SignalsHandlerStatic::installedHandler{nullptr};
+SignalsHandler* SignalsHandlerStatic::installedHandler = nullptr;
 
 }  // namespace impl
 
@@ -120,19 +113,13 @@ SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::
 
 SignalsHandler::~SignalsHandler()
 {
-    // Reset signal handlers FIRST to prevent new signals from arriving
     setHandler();
+    impl::SignalsHandlerStatic::resetHandler();  // This is needed mostly for tests to reset static state
 
-    // Reset the static handler pointer to prevent signal handlers from accessing this object
-    impl::SignalsHandlerStatic::resetHandler();
+    // We can only await in destructor as the signal handlers are called on the same thread as the scheduled timer
+    // and a deadlock is unavoidable if we await there.
+    cancelTimer(/* await= */ true);
 
-    // Add a memory barrier to ensure the above operations are visible to signal handlers
-    std::atomic_thread_fence(std::memory_order_seq_cst);
-
-    cancelTimer();
-
-    // Manually stop and wait for the monitoring operation to complete
-    // This is essential to prevent use-after-free when the object is destroyed
     if (signalMonitorOperation_.has_value()) {
         signalMonitorOperation_->requestStop();
         signalMonitorOperation_->wait();
@@ -140,11 +127,16 @@ SignalsHandler::~SignalsHandler()
 }
 
 void
-SignalsHandler::cancelTimer()
+SignalsHandler::cancelTimer(bool await)
 {
     std::lock_guard<std::mutex> lock(timerMutex_);
-    if (timer_.has_value())
+    if (timer_.has_value()) {
         timer_->cancel();
+        if (await) {
+            timer_->wait();
+            timer_ = std::nullopt;
+        }
+    }
 }
 
 void
