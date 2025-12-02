@@ -73,7 +73,6 @@ TEST_F(StopperTest, stopCallsCompletionCallback)
 TEST_F(StopperTest, stopWithoutCompletionCallback)
 {
     stopper_.setOnStop(mockCallback_.AsStdFunction());
-    // Don't set completion callback - should work fine
     EXPECT_CALL(mockCallback_, Call);
     stopper_.stop();
 }
