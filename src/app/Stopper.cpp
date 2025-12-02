@@ -40,10 +40,9 @@ Stopper::setOnStop(std::function<void(boost::asio::yield_context)> cb)
 {
     util::spawn(ctx_, [this, cb = std::move(cb)](auto yield) {
         cb(yield);
-        // After shutdown tasks complete, call the completion callback
-        if (onCompleteCallback_) {
+
+        if (onCompleteCallback_)
             onCompleteCallback_();
-        }
     });
 }
 

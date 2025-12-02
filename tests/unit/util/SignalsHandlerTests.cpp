@@ -145,13 +145,10 @@ TEST_F(SignalsHandlerTests, GracefulShutdownCompletes)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
     EXPECT_CALL(stopHandler_, Call()).WillOnce([this] {
-        // Simulate work being done
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        // Notify that graceful shutdown is complete
         handler_.notifyGracefulShutdownComplete();
         allowTestToFinish();
     });
-    // Force exit should NOT be called
     EXPECT_CALL(forceExitHandler_, Call()).Times(0);
     std::raise(SIGINT);
 

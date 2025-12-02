@@ -90,8 +90,7 @@ SignalsHandler::~SignalsHandler()
 void
 SignalsHandler::notifyGracefulShutdownComplete()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (auto currentState = state_.load(std::memory_order_seq_cst); currentState == State::GracefulShutdown) {
+    if (state_.load(std::memory_order_seq_cst) == State::GracefulShutdown) {
         LOG(LogService::info()) << "Graceful shutdown completed successfully.";
         state_.store(State::NormalExit, std::memory_order_seq_cst);
         cv_.notify_one();
