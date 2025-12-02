@@ -29,6 +29,7 @@
 #include <csignal>
 #include <functional>
 #include <mutex>
+#include <thread>
 #include <utility>
 
 namespace util {
@@ -69,11 +70,7 @@ SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::
     , forceExitHandler_(std::move(forceExitHandler))
 {
     impl::SignalsHandlerStatic::registerHandler(*this);
-
-    // Start the worker thread
     workerThread_ = std::thread([this]() { runStateMachine(); });
-
-    // Set up signal handlers
     setHandler(impl::SignalsHandlerStatic::handleSignal);
 }
 
@@ -81,13 +78,11 @@ SignalsHandler::~SignalsHandler()
 {
     setHandler();
 
-    // Notify the worker thread to wake up and exit
     state_.store(State::NormalExit, std::memory_order_seq_cst);
     cv_.notify_one();
 
-    if (workerThread_.joinable()) {
+    if (workerThread_.joinable())
         workerThread_.join();
-    }
 
     impl::SignalsHandlerStatic::resetHandler();  // This is needed mostly for tests to reset static state
 }
@@ -96,8 +91,7 @@ void
 SignalsHandler::notifyGracefulShutdownComplete()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto currentState = state_.load(std::memory_order_seq_cst);
-    if (currentState == State::GracefulShutdown) {
+    if (auto currentState = state_.load(std::memory_order_seq_cst); currentState == State::GracefulShutdown) {
         LOG(LogService::info()) << "Graceful shutdown completed successfully.";
         state_.store(State::NormalExit, std::memory_order_seq_cst);
         cv_.notify_one();
@@ -107,15 +101,14 @@ SignalsHandler::notifyGracefulShutdownComplete()
 void
 SignalsHandler::setHandler(void (*handler)(int))
 {
-    for (int const signal : kHANDLED_SIGNALS) {
+    for (int const signal : kHANDLED_SIGNALS)
         std::signal(signal, handler == nullptr ? SIG_DFL : handler);
-    }
 }
 
 void
 SignalsHandler::runStateMachine()
 {
-    while (true) {
+    while (state_.load(std::memory_order_seq_cst) != State::NormalExit) {
         auto currentState = state_.load(std::memory_order_seq_cst);
 
         switch (currentState) {
@@ -128,12 +121,9 @@ SignalsHandler::runStateMachine()
                     });
                 }
 
-                // Check if we should exit (destructor was called)
-                if (state_.load(std::memory_order_seq_cst) == State::NormalExit) {
+                if (state_.load(std::memory_order_seq_cst) == State::NormalExit)
                     return;
-                }
 
-                // Signal received, transition to GracefulShutdown
                 LOG(
                     LogService::info()
                 ) << "Got stop signal. Stopping Clio. Graceful period is "
@@ -142,7 +132,6 @@ SignalsHandler::runStateMachine()
                 state_.store(State::GracefulShutdown, std::memory_order_seq_cst);
                 signalReceived_.store(false, std::memory_order_seq_cst);
 
-                // Trigger the stop callbacks
                 stopSignal_();
                 break;
             }
@@ -162,18 +151,14 @@ SignalsHandler::runStateMachine()
                     });
                 }
 
-                if (state_.load(std::memory_order_seq_cst) == State::NormalExit) {
-                    // Graceful shutdown completed successfully
+                if (state_.load(std::memory_order_seq_cst) == State::NormalExit)
                     break;
-                }
 
                 if (signalReceived_.load(std::memory_order_seq_cst)) {
-                    // Second signal received
                     LOG(LogService::warn()) << "Force exit on second signal.";
                     state_.store(State::ForceExit, std::memory_order_seq_cst);
                     signalReceived_.store(false, std::memory_order_seq_cst);
                 } else if (not waitResult) {
-                    // Timeout elapsed
                     LOG(LogService::warn()) << "Force exit at the end of graceful period.";
                     state_.store(State::ForceExit, std::memory_order_seq_cst);
                 }
@@ -182,15 +167,12 @@ SignalsHandler::runStateMachine()
 
             case State::ForceExit: {
                 forceExitHandler_();
-                // If forceExitHandler doesn't exit, transition to NormalExit
                 state_.store(State::NormalExit, std::memory_order_seq_cst);
                 break;
             }
 
-            case State::NormalExit: {
-                // Exit the state machine loop
+            case State::NormalExit:
                 return;
-            }
         }
     }
 }

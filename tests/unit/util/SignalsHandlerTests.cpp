@@ -75,7 +75,6 @@ TEST_F(SignalsHandlerAssertTest, CantCreateTwoSignalsHandlers)
     };
     auto const handler = makeHandler();
     EXPECT_CLIO_ASSERT_FAIL({ makeHandler(); });
-    std::cout << "Done" << std::endl;
 }
 
 struct SignalsHandlerTests : SignalsHandlerTestsBase {
@@ -96,10 +95,8 @@ TEST_F(SignalsHandlerTests, OneSignal)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
     handler_.subscribeToStop(anotherStopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([]() { std::cout << "stopHandler_()" << std::endl; });
+    EXPECT_CALL(stopHandler_, Call());
     EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this] {
-        // Simulate graceful shutdown completing
-        std::cout << "anotherStopHandler_()" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         handler_.notifyGracefulShutdownComplete();
         allowTestToFinish();
