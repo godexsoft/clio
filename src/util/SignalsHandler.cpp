@@ -56,7 +56,7 @@ public:
     handleSignal(int /* signal */)
     {
         ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
-        installedHandler->signalReceived_.store(true, std::memory_order_seq_cst);
+        installedHandler->signalReceived_ = true;
         installedHandler->cv_.notify_one();
     }
 };
@@ -78,7 +78,7 @@ SignalsHandler::~SignalsHandler()
 {
     setHandler();
 
-    state_.store(State::NormalExit, std::memory_order_seq_cst);
+    state_ = State::NormalExit;
     cv_.notify_one();
 
     if (workerThread_.joinable())
@@ -90,9 +90,9 @@ SignalsHandler::~SignalsHandler()
 void
 SignalsHandler::notifyGracefulShutdownComplete()
 {
-    if (state_.load(std::memory_order_seq_cst) == State::GracefulShutdown) {
+    if (state_ == State::GracefulShutdown) {
         LOG(LogService::info()) << "Graceful shutdown completed successfully.";
-        state_.store(State::NormalExit, std::memory_order_seq_cst);
+        state_ = State::NormalExit;
         cv_.notify_one();
     }
 }
@@ -107,20 +107,17 @@ SignalsHandler::setHandler(void (*handler)(int))
 void
 SignalsHandler::runStateMachine()
 {
-    while (state_.load(std::memory_order_seq_cst) != State::NormalExit) {
-        auto currentState = state_.load(std::memory_order_seq_cst);
+    while (state_ != State::NormalExit) {
+        auto currentState = state_.load();
 
         switch (currentState) {
             case State::WaitingForSignal: {
                 {
                     std::unique_lock<std::mutex> lock(mutex_);
-                    cv_.wait(lock, [this]() {
-                        return signalReceived_.load(std::memory_order_seq_cst) or
-                            state_.load(std::memory_order_seq_cst) == State::NormalExit;
-                    });
+                    cv_.wait(lock, [this]() { return signalReceived_ or state_ == State::NormalExit; });
                 }
 
-                if (state_.load(std::memory_order_seq_cst) == State::NormalExit)
+                if (state_ == State::NormalExit)
                     return;
 
                 LOG(
@@ -128,8 +125,8 @@ SignalsHandler::runStateMachine()
                 ) << "Got stop signal. Stopping Clio. Graceful period is "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(gracefulPeriod_).count() << " milliseconds.";
 
-                state_.store(State::GracefulShutdown, std::memory_order_seq_cst);
-                signalReceived_.store(false, std::memory_order_seq_cst);
+                state_ = State::GracefulShutdown;
+                signalReceived_ = false;
 
                 stopSignal_();
                 break;
@@ -145,28 +142,27 @@ SignalsHandler::runStateMachine()
                     // 2. Another signal (signalReceived_)
                     // 3. Graceful shutdown completion (state changes to NormalExit)
                     waitResult = cv_.wait_for(lock, gracefulPeriod_, [this]() {
-                        return signalReceived_.load(std::memory_order_seq_cst) or
-                            state_.load(std::memory_order_seq_cst) == State::NormalExit;
+                        return signalReceived_ or state_ == State::NormalExit;
                     });
                 }
 
-                if (state_.load(std::memory_order_seq_cst) == State::NormalExit)
+                if (state_ == State::NormalExit)
                     break;
 
-                if (signalReceived_.load(std::memory_order_seq_cst)) {
+                if (signalReceived_) {
                     LOG(LogService::warn()) << "Force exit on second signal.";
-                    state_.store(State::ForceExit, std::memory_order_seq_cst);
-                    signalReceived_.store(false, std::memory_order_seq_cst);
+                    state_ = State::ForceExit;
+                    signalReceived_ = false;
                 } else if (not waitResult) {
                     LOG(LogService::warn()) << "Force exit at the end of graceful period.";
-                    state_.store(State::ForceExit, std::memory_order_seq_cst);
+                    state_ = State::ForceExit;
                 }
                 break;
             }
 
             case State::ForceExit: {
                 forceExitHandler_();
-                state_.store(State::NormalExit, std::memory_order_seq_cst);
+                state_ = State::NormalExit;
                 break;
             }
 
