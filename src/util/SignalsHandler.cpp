@@ -23,15 +23,12 @@
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 
-#include <sys/wait.h>
-
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <csignal>
 #include <functional>
 #include <mutex>
-#include <optional>
-#include <thread>
 #include <utility>
 
 namespace util {
@@ -58,15 +55,8 @@ public:
     handleSignal(int /* signal */)
     {
         ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
-        installedHandler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
-    }
-
-    static void
-    handleSecondSignal(int /* signal */)
-    {
-        ASSERT(installedHandler != nullptr, "SignalsHandler is not initialized");
-        installedHandler->secondSignalReceived_.store(true, std::memory_order_seq_cst);
-        installedHandler->signalCount_.fetch_add(1, std::memory_order_seq_cst);
+        installedHandler->signalReceived_.store(true, std::memory_order_seq_cst);
+        installedHandler->cv_.notify_one();
     }
 };
 
@@ -75,67 +65,42 @@ SignalsHandler* SignalsHandlerStatic::installedHandler = nullptr;
 }  // namespace impl
 
 SignalsHandler::SignalsHandler(config::ClioConfigDefinition const& config, std::function<void()> forceExitHandler)
-    : gracefulPeriod_(0)
-    , context_(1)
-    , stopHandler_([this, forceExitHandler] mutable {
-        LOG(LogService::info()) << "Got stop signal. Stopping Clio. Graceful period is "
-                                << std::chrono::duration_cast<std::chrono::milliseconds>(gracefulPeriod_).count()
-                                << " milliseconds.";
-        setHandler(impl::SignalsHandlerStatic::handleSecondSignal);
-        {
-            std::lock_guard<std::mutex> lock(timerMutex_);
-            timer_.emplace(context_.scheduleAfter(
-                gracefulPeriod_, [forceExitHandler = std::move(forceExitHandler)](auto&& stopRequested, bool canceled) {
-                    // TODO: Update this after https://github.com/XRPLF/clio/issues/1380
-                    if (not stopRequested and not canceled) {
-                        LOG(LogService::warn()) << "Force exit at the end of graceful period.";
-                        forceExitHandler();
-                    }
-                }
-            ));
-        }
-        stopSignal_();
-    })
-    , secondSignalHandler_([this, forceExitHandler = std::move(forceExitHandler)] {
-        LOG(LogService::warn()) << "Force exit on second signal.";
-        forceExitHandler();
-        cancelTimer();
-        setHandler();
-    })
+    : gracefulPeriod_(util::config::ClioConfigDefinition::toMilliseconds(config.get<float>("graceful_period")))
+    , forceExitHandler_(std::move(forceExitHandler))
 {
     impl::SignalsHandlerStatic::registerHandler(*this);
 
-    gracefulPeriod_ = util::config::ClioConfigDefinition::toMilliseconds(config.get<float>("graceful_period"));
+    // Start the worker thread
+    workerThread_ = std::thread([this]() { runStateMachine(); });
 
-    startSignalMonitoring();
+    // Set up signal handlers
     setHandler(impl::SignalsHandlerStatic::handleSignal);
 }
 
 SignalsHandler::~SignalsHandler()
 {
     setHandler();
-    impl::SignalsHandlerStatic::resetHandler();  // This is needed mostly for tests to reset static state
 
-    // We can only await in destructor as the signal handlers are called on the same thread as the scheduled timer
-    // and a deadlock is unavoidable if we await there.
-    cancelTimer(/* await= */ true);
+    // Notify the worker thread to wake up and exit
+    state_.store(State::NormalExit, std::memory_order_seq_cst);
+    cv_.notify_one();
 
-    if (signalMonitorOperation_.has_value()) {
-        signalMonitorOperation_->requestStop();
-        signalMonitorOperation_->wait();
+    if (workerThread_.joinable()) {
+        workerThread_.join();
     }
+
+    impl::SignalsHandlerStatic::resetHandler();  // This is needed mostly for tests to reset static state
 }
 
 void
-SignalsHandler::cancelTimer(bool await)
+SignalsHandler::notifyGracefulShutdownComplete()
 {
-    std::lock_guard<std::mutex> lock(timerMutex_);
-    if (timer_.has_value()) {
-        timer_->cancel();
-        if (await) {
-            timer_->wait();
-            timer_ = std::nullopt;
-        }
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto currentState = state_.load(std::memory_order_seq_cst);
+    if (currentState == State::GracefulShutdown) {
+        LOG(LogService::info()) << "Graceful shutdown completed successfully.";
+        state_.store(State::NormalExit, std::memory_order_seq_cst);
+        cv_.notify_one();
     }
 }
 
@@ -148,27 +113,86 @@ SignalsHandler::setHandler(void (*handler)(int))
 }
 
 void
-SignalsHandler::startSignalMonitoring()
+SignalsHandler::runStateMachine()
 {
-    signalMonitorOperation_.emplace(context_.execute([this](auto stopRequested) {
-        while (not stopRequested) {
-            // Check if we have any signals to process
-            auto signalCount = signalCount_.exchange(0, std::memory_order_seq_cst);
-            auto isSecondSignal = secondSignalReceived_.exchange(false, std::memory_order_seq_cst);
+    while (true) {
+        auto currentState = state_.load(std::memory_order_seq_cst);
 
-            if (signalCount > 0) {
-                if (isSecondSignal) {
-                    secondSignalHandler_();
-                } else {
-                    stopHandler_();
+        switch (currentState) {
+            case State::WaitingForSignal: {
+                {
+                    std::unique_lock<std::mutex> lock(mutex_);
+                    cv_.wait(lock, [this]() {
+                        return signalReceived_.load(std::memory_order_seq_cst) or
+                            state_.load(std::memory_order_seq_cst) == State::NormalExit;
+                    });
                 }
-            } else {
-                // Only yield when there are no signals to process
-                // This makes signal processing more responsive
-                std::this_thread::yield();
+
+                // Check if we should exit (destructor was called)
+                if (state_.load(std::memory_order_seq_cst) == State::NormalExit) {
+                    return;
+                }
+
+                // Signal received, transition to GracefulShutdown
+                LOG(
+                    LogService::info()
+                ) << "Got stop signal. Stopping Clio. Graceful period is "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(gracefulPeriod_).count() << " milliseconds.";
+
+                state_.store(State::GracefulShutdown, std::memory_order_seq_cst);
+                signalReceived_.store(false, std::memory_order_seq_cst);
+
+                // Trigger the stop callbacks
+                stopSignal_();
+                break;
+            }
+
+            case State::GracefulShutdown: {
+                bool waitResult = false;
+                {
+                    std::unique_lock<std::mutex> lock(mutex_);
+
+                    // Wait for either:
+                    // 1. Graceful period to elapse (timeout)
+                    // 2. Another signal (signalReceived_)
+                    // 3. Graceful shutdown completion (state changes to NormalExit)
+                    waitResult = cv_.wait_for(lock, gracefulPeriod_, [this]() {
+                        return signalReceived_.load(std::memory_order_seq_cst) or
+                            state_.load(std::memory_order_seq_cst) == State::NormalExit;
+                    });
+                }
+
+                if (state_.load(std::memory_order_seq_cst) == State::NormalExit) {
+                    // Graceful shutdown completed successfully
+                    break;
+                }
+
+                if (signalReceived_.load(std::memory_order_seq_cst)) {
+                    // Second signal received
+                    LOG(LogService::warn()) << "Force exit on second signal.";
+                    state_.store(State::ForceExit, std::memory_order_seq_cst);
+                    signalReceived_.store(false, std::memory_order_seq_cst);
+                } else if (not waitResult) {
+                    // Timeout elapsed
+                    LOG(LogService::warn()) << "Force exit at the end of graceful period.";
+                    state_.store(State::ForceExit, std::memory_order_seq_cst);
+                }
+                break;
+            }
+
+            case State::ForceExit: {
+                forceExitHandler_();
+                // If forceExitHandler doesn't exit, transition to NormalExit
+                state_.store(State::NormalExit, std::memory_order_seq_cst);
+                break;
+            }
+
+            case State::NormalExit: {
+                // Exit the state machine loop
+                return;
             }
         }
-    }));
+    }
 }
 
 }  // namespace util

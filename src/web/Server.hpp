@@ -336,6 +336,8 @@ private:
             return;
         }
 
+        doAccept();
+
         if (!ec) {
             auto ctxRef =
                 ctx_ ? std::optional<std::reference_wrapper<boost::asio::ssl::context>>{ctx_.value()} : std::nullopt;
@@ -353,8 +355,6 @@ private:
             )
                 ->run();
         }
-
-        doAccept();
     }
 };
 

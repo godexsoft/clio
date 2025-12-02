@@ -70,11 +70,12 @@ TEST_F(SignalsHandlerAssertTest, CantCreateTwoSignalsHandlers)
 {
     auto makeHandler = []() {
         return SignalsHandler{
-            ClioConfigDefinition{{"graceful_period", ConfigValue{ConfigType::Double}.defaultValue(10.f)}}, []() {}
+            ClioConfigDefinition{{"graceful_period", ConfigValue{ConfigType::Double}.defaultValue(1.f)}}, []() {}
         };
     };
     auto const handler = makeHandler();
     EXPECT_CLIO_ASSERT_FAIL({ makeHandler(); });
+    std::cout << "Done" << std::endl;
 }
 
 struct SignalsHandlerTests : SignalsHandlerTestsBase {
@@ -95,8 +96,14 @@ TEST_F(SignalsHandlerTests, OneSignal)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
     handler_.subscribeToStop(anotherStopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call());
-    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this] { allowTestToFinish(); });
+    EXPECT_CALL(stopHandler_, Call()).WillOnce([]() { std::cout << "stopHandler_()" << std::endl; });
+    EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([this] {
+        // Simulate graceful shutdown completing
+        std::cout << "anotherStopHandler_()" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        handler_.notifyGracefulShutdownComplete();
+        allowTestToFinish();
+    });
     std::raise(SIGINT);
 
     wait();
@@ -113,7 +120,10 @@ protected:
 TEST_F(SignalsHandlerTimeoutTests, OneSignalTimeout)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+    EXPECT_CALL(stopHandler_, Call()).WillOnce([] {
+        // Don't notify completion, let it timeout
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    });
     EXPECT_CALL(forceExitHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
     std::raise(SIGINT);
 
@@ -123,8 +133,29 @@ TEST_F(SignalsHandlerTimeoutTests, OneSignalTimeout)
 TEST_F(SignalsHandlerTests, TwoSignals)
 {
     handler_.subscribeToStop(stopHandler_.AsStdFunction());
-    EXPECT_CALL(stopHandler_, Call()).WillOnce([] { std::raise(SIGINT); });
+    EXPECT_CALL(stopHandler_, Call()).WillOnce([] {
+        // Raise second signal during graceful shutdown
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::raise(SIGINT);
+    });
     EXPECT_CALL(forceExitHandler_, Call()).WillOnce([this]() { allowTestToFinish(); });
+    std::raise(SIGINT);
+
+    wait();
+}
+
+TEST_F(SignalsHandlerTests, GracefulShutdownCompletes)
+{
+    handler_.subscribeToStop(stopHandler_.AsStdFunction());
+    EXPECT_CALL(stopHandler_, Call()).WillOnce([this] {
+        // Simulate work being done
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // Notify that graceful shutdown is complete
+        handler_.notifyGracefulShutdownComplete();
+        allowTestToFinish();
+    });
+    // Force exit should NOT be called
+    EXPECT_CALL(forceExitHandler_, Call()).Times(0);
     std::raise(SIGINT);
 
     wait();
@@ -166,6 +197,7 @@ TEST_P(SignalsHandlerPriorityTests, Priority)
     EXPECT_CALL(stopHandler_, Call()).WillOnce([&] { stopHandlerCalled = true; });
     EXPECT_CALL(anotherStopHandler_, Call()).WillOnce([&] {
         EXPECT_TRUE(stopHandlerCalled);
+        handler_.notifyGracefulShutdownComplete();
         allowTestToFinish();
     });
 

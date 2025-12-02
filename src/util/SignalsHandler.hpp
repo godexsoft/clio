@@ -19,15 +19,10 @@
 
 #pragma once
 
-#include "util/async/context/BasicExecutionContext.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/log/Logger.hpp"
 
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/signals2/signal.hpp>
-#include <boost/signals2/variadic_signal.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -37,7 +32,7 @@
 #include <cstdlib>
 #include <functional>
 #include <mutex>
-#include <optional>
+#include <thread>
 
 namespace util {
 namespace impl {
@@ -51,20 +46,22 @@ class SignalsHandlerStatic;
  * @note There could be only one instance of this class.
  */
 class SignalsHandler {
+    /**
+     * @brief States of the signal handler state machine.
+     */
+    enum class State { WaitingForSignal, GracefulShutdown, ForceExit, NormalExit };
+
     std::chrono::steady_clock::duration gracefulPeriod_;
-    async::CoroExecutionContext context_;
-    std::optional<async::CoroExecutionContext::ScheduledOperation<void>> timer_;
+    std::function<void()> forceExitHandler_;
 
     boost::signals2::signal<void()> stopSignal_;
-    std::function<void()> stopHandler_;
-    std::function<void()> secondSignalHandler_;
 
-    std::atomic<int> signalCount_{0};
-    std::atomic<bool> secondSignalReceived_{false};
+    std::atomic<bool> signalReceived_{false};
+    std::atomic<State> state_{State::WaitingForSignal};
 
-    std::optional<async::CoroExecutionContext::StoppableOperation<void>> signalMonitorOperation_;
-
-    mutable std::mutex timerMutex_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::thread workerThread_;
 
     friend class impl::SignalsHandlerStatic;
 
@@ -111,16 +108,16 @@ public:
         stopSignal_.connect(static_cast<int>(priority), std::forward<SomeCallback>(callback));
     }
 
+    /**
+     * @brief Notify the signal handler that graceful shutdown has completed.
+     * This allows the handler to transition to NormalExit state.
+     */
+    void
+    notifyGracefulShutdownComplete();
+
     static constexpr auto kHANDLED_SIGNALS = {SIGINT, SIGTERM};
 
 private:
-    /**
-     * @brief Cancel scheduled force exit if any.
-     * @param await Whether to await cancellation.
-     */
-    void
-    cancelTimer(bool await = false);
-
     /**
      * @brief Set signal handler for handled signals.
      *
@@ -130,10 +127,10 @@ private:
     setHandler(void (*handler)(int) = nullptr);
 
     /**
-     * @brief Start monitoring for signals using atomic counter and condition variable.
+     * @brief Run the state machine loop in a worker thread.
      */
     void
-    startSignalMonitoring();
+    runStateMachine();
 
     static constexpr auto kDEFAULT_FORCE_EXIT_HANDLER = []() { std::exit(EXIT_FAILURE); };
 };
