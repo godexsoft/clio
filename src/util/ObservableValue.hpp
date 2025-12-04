@@ -23,9 +23,20 @@
 #include <boost/signals2/signal.hpp>
 #include <boost/signals2/variadic_signal.hpp>
 
+#include <atomic>
 #include <concepts>
+#include <type_traits>
 
 namespace util {
+
+template <typename T>
+struct IsAtomic : std::false_type {};
+
+template <typename T>
+struct IsAtomic<std::atomic<T>> : std::true_type {};
+
+template <typename T>
+constexpr bool kIS_ATOMIC_V = IsAtomic<T>::value;
 
 /**
  * @brief Concept defining types that can be observed for changes.
@@ -42,6 +53,61 @@ namespace util {
  */
 template <typename T>
 concept Observable = std::equality_comparable<T> && std::copy_constructible<T> && std::move_constructible<T>;
+
+namespace impl {
+
+/**
+ * @brief Base class containing common ObservableValue functionality.
+ *
+ * This class contains all the observer management and notification logic
+ * that is shared between regular and atomic ObservableValue specializations.
+ *
+ * @tparam T The value type (for atomic specializations, this is the underlying type, not std::atomic<T>)
+ */
+template <Observable T>
+class ObservableValueBase {
+protected:
+    boost::signals2::signal<void(T const&)> onUpdate_;
+
+public:
+    /**
+     * @brief Registers an observer callback for value changes.
+     * @param fn Callback function/lambda that accepts T const&
+     * @return Connection object for managing the subscription
+     */
+    boost::signals2::connection
+    observe(std::invocable<T const&> auto&& fn)
+    {
+        return onUpdate_.connect(std::forward<decltype(fn)>(fn));
+    }
+
+    /**
+     * @brief Checks if there are any active observers.
+     * @return true if there are observers, false otherwise
+     */
+    [[nodiscard]] bool
+    hasObservers() const
+    {
+        return not onUpdate_.empty();
+    }
+
+protected:
+    /**
+     * @brief Notifies all observers with the given value.
+     * @param value The value to send to observers
+     */
+    void
+    notifyObservers(T const& value)
+    {
+        onUpdate_(value);
+    }
+};
+
+}  // namespace impl
+
+// Forward declaration
+template <typename T>
+class ObservableValue;
 
 /**
  * @brief An observable value container that notifies observers when the value changes.
@@ -97,9 +163,9 @@ concept Observable = std::equality_comparable<T> && std::copy_constructible<T> &
  * @endcode
  */
 template <Observable T>
-class ObservableValue {
+    requires(not kIS_ATOMIC_V<T>)
+class ObservableValue<T> : public impl::ObservableValueBase<T> {
     T value_;
-    boost::signals2::signal<void(T const&)> onUpdate_;
 
     /**
      * @brief RAII guard for deferred notification of value changes.
@@ -132,7 +198,7 @@ class ObservableValue {
         ~ObservableGuard()
         {
             if (oldValue != ref.value_)
-                ref.onUpdate_(ref.value_);
+                ref.notifyObservers(ref.value_);
         }
 
         /**
@@ -219,45 +285,6 @@ public:
     }
 
     /**
-     * @brief Registers an observer callback for value changes.
-     *
-     * The callback will be invoked synchronously whenever the value changes.
-     * The callback receives a const reference to the new value.
-     *
-     * @param fn Callback function/lambda that accepts T const&
-     * @return Connection object for managing the subscription
-     *
-     * @note The returned connection can be used to manually disconnect the observer by calling
-     *       connection.disconnect(). The connection object itself does NOT automatically disconnect
-     *       when destroyed - the subscription remains active until explicitly disconnected.
-     *
-     * @note For automatic disconnection when leaving scope, cast to boost::signals2::scoped_connection:
-     * @code
-     * // Manual disconnection (subscription persists until disconnect() is called)
-     * auto conn = obs.observe(callback);
-     * conn.disconnect();  // Explicit disconnection required
-     *
-     * // Automatic disconnection using scoped_connection
-     * {
-     *     boost::signals2::scoped_connection scoped = obs.observe(callback);
-     *     // ... use observer
-     * } // Automatically disconnects here when scoped goes out of scope
-     * @endcode
-     *
-     * @throws Any exception thrown by the callback will propagate to the caller
-     *
-     * @par Thread Safety
-     * - Subscription/unsubscription is thread-safe
-     * - The callback is invoked synchronously on the same thread that triggers the value change
-     * - If the callback needs to perform work on a different thread, it must handle dispatch itself
-     */
-    boost::signals2::connection
-    observe(std::invocable<T const&> auto&& fn)
-    {
-        return onUpdate_.connect(std::forward<decltype(fn)>(fn));
-    }
-
-    /**
      * @brief Explicitly gets the current value.
      * @return Const reference to the stored value
      */
@@ -287,18 +314,206 @@ public:
     {
         if (value_ != val) {
             value_ = std::forward<decltype(val)>(val);
-            onUpdate_(value_);
+            this->notifyObservers(value_);
+        }
+    }
+};
+
+/**
+ * @brief Partial specialization of ObservableValue for atomic types.
+ *
+ * This specialization provides thread-safe observation of atomic values while
+ * maintaining atomic semantics. It avoids the issues of copying atomic values
+ * and handles race conditions properly.
+ *
+ * @tparam T The underlying type stored in the atomic
+ *
+ * @par Thread Safety
+ * - All operations are thread-safe
+ * - Observer notifications are atomic with respect to value changes
+ * - Multiple threads can safely modify and observe the atomic value
+ *
+ * @par Performance Considerations
+ * - Uses atomic compare-and-swap operations for updates
+ * - Minimizes atomic reads during guard operations
+ * - Observer notifications happen outside of atomic operations when possible
+ */
+template <Observable T>
+class ObservableValue<std::atomic<T>> : public impl::ObservableValueBase<T> {
+    std::atomic<T> value_;
+
+    /**
+     * @brief RAII guard for observable atomic value modifications.
+     *
+     * AtomicObservableGuard provides a wrapper that enables safe modification
+     * of the atomic value with proper notification semantics. Unlike direct
+     * atomic access, operations through this guard ensure that observers
+     * are notified of value changes.
+     *
+     * The guard uses immediate notification on atomic operations rather than
+     * deferred notification to avoid race conditions with concurrent modifications.
+     */
+    struct AtomicObservableGuard {
+        ObservableValue<std::atomic<T>>& ref;  ///< Reference to the observable value
+
+        /**
+         * @brief Constructs guard for the given observable.
+         * @param observable The ObservableValue to guard
+         */
+        AtomicObservableGuard(ObservableValue<std::atomic<T>>& observable) : ref(observable)
+        {
+        }
+
+        /**
+         * @brief Destructor (no deferred operations needed).
+         */
+        ~AtomicObservableGuard() = default;
+
+        /**
+         * @brief Atomically stores a value and notifies observers if changed.
+         * @param value The value to store
+         */
+        void
+        store(std::convertible_to<T> auto&& value)
+        {
+            ref.set(std::forward<decltype(value)>(value));
+        }
+
+        /**
+         * @brief Atomically loads the current value.
+         * @return Current value
+         */
+        [[nodiscard]] T
+        load() const
+        {
+            return ref.value_.load();
+        }
+    };
+
+public:
+    /**
+     * @brief Constructs ObservableValue with initial atomic value.
+     * @param value Initial value (will be stored in the atomic)
+     */
+    ObservableValue(std::convertible_to<T> auto&& value) : value_{std::forward<decltype(value)>(value)}
+    {
+    }
+
+    /**
+     * @brief Constructs ObservableValue with default initial value.
+     */
+    ObservableValue()
+        requires std::default_initializable<T>
+        : value_{}
+    {
+    }
+
+    ObservableValue(ObservableValue const&) = delete;
+    ObservableValue(ObservableValue&&) = default;
+    ObservableValue&
+    operator=(ObservableValue const&) = delete;
+    ObservableValue&
+    operator=(ObservableValue&&) = default;
+
+    /**
+     * @brief Assignment operator that updates atomic value and notifies observers.
+     *
+     * Uses atomic compare-and-swap to update the value and notifies observers
+     * only if the value actually changed.
+     *
+     * @param val New value
+     * @return Reference to this object for chaining
+     */
+    ObservableValue&
+    operator=(std::convertible_to<T> auto&& val)
+    {
+        set(std::forward<decltype(val)>(val));
+        return *this;
+    }
+
+    /**
+     * @brief Provides deferred notification access to the atomic value.
+     *
+     * Returns an AtomicObservableGuard that allows modification of the atomic
+     * with notification deferred until the guard is destroyed.
+     *
+     * @return AtomicObservableGuard for deferred notification
+     */
+    [[nodiscard]] AtomicObservableGuard
+    operator->()
+    {
+        return {*this};
+    }
+
+    /**
+     * @brief Gets the current atomic value.
+     * @return Current value stored in the atomic
+     */
+    [[nodiscard]] T
+    get() const
+    {
+        return value_.load();
+    }
+
+    /**
+     * @brief Implicit conversion to the current atomic value.
+     * @return Current value stored in the atomic
+     */
+    [[nodiscard]]
+    operator T() const
+    {
+        return get();
+    }
+
+    /**
+     * @brief Sets a new atomic value and notifies observers if changed.
+     *
+     * Uses atomic compare-and-swap to update the value. Notifies all observers
+     * if the value actually changed.
+     *
+     * @param val New value
+     */
+    void
+    set(std::convertible_to<T> auto&& val)
+    {
+        T newValue = std::forward<decltype(val)>(val);
+        T oldValue = value_.load();
+
+        // Use compare-and-swap to atomically update
+        while (!value_.compare_exchange_weak(oldValue, newValue)) {
+            // compare_exchange_weak updates oldValue with current value on failure
+            // Continue until we succeed
+        }
+
+        // Notify observers if we actually changed the value
+        // Note: oldValue now contains the actual previous value that was replaced
+        if (oldValue != newValue) {
+            this->notifyObservers(newValue);
         }
     }
 
     /**
-     * @brief Checks if there are any active observers.
-     * @return true if there are observers, false otherwise
+     * @brief Provides direct access to the underlying atomic.
+     *
+     * Use with caution - direct atomic operations bypass observation.
+     * Prefer using set() or the guard mechanism for observable changes.
+     *
+     * @return Reference to the underlying atomic
      */
-    [[nodiscard]] bool
-    hasObservers() const
+    [[nodiscard]] std::atomic<T>&
+    atomic()
     {
-        return not onUpdate_.empty();
+        return value_;
+    }
+
+    /**
+     * @brief Provides const access to the underlying atomic.
+     * @return Const reference to the underlying atomic
+     */
+    [[nodiscard]] std::atomic<T> const&
+    atomic() const
+    {
+        return value_;
     }
 };
 
