@@ -35,28 +35,6 @@ using namespace util;
 
 namespace {
 
-template <typename T>
-struct NotificationCounter {
-    std::atomic<int> count{0};
-    std::vector<T> values;
-    std::mutex valuesMutex;
-
-    void
-    operator()(T const& value)
-    {
-        count.fetch_add(1);
-        std::lock_guard<std::mutex> lock(valuesMutex);
-        values.push_back(value);
-    }
-
-    std::vector<T>
-    getValues() const
-    {
-        std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(valuesMutex));
-        return values;
-    }
-};
-
 }  // namespace
 
 class ObservableValueAtomicTest : public ::testing::Test {};
@@ -85,152 +63,119 @@ TEST_F(ObservableValueAtomicTest, DefaultConstruction)
 TEST_F(ObservableValueAtomicTest, BasicObservation)
 {
     ObservableValue<std::atomic<int>> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(20));
     obs = 20;
     EXPECT_EQ(obs.get(), 20);
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values.size(), 1);
-    EXPECT_EQ(values[0], 20);
 }
 
 TEST_F(ObservableValueAtomicTest, SetMethod)
 {
     ObservableValue<std::atomic<int>> obs{5};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(15));
     obs.set(15);
     EXPECT_EQ(obs.get(), 15);
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 15);
 
     obs.set(15);  // Same value should not notify
     EXPECT_EQ(obs.get(), 15);
-    EXPECT_EQ(counter.count.load(), 1);
 }
 
-TEST_F(ObservableValueAtomicTest, AtomicGuardBasicUsage)
+TEST_F(ObservableValueAtomicTest, AtomicBasicUsage)
 {
     ObservableValue<std::atomic<int>> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
-    {
-        auto guard = obs.operator->();
-        guard.store(25);
-    }
+    EXPECT_CALL(mockObserver, Call(25));
+    obs.set(25);
 
     EXPECT_EQ(obs.get(), 25);
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 25);
 }
 
-TEST_F(ObservableValueAtomicTest, AtomicGuardIntermediateChanges)
+TEST_F(ObservableValueAtomicTest, AtomicMultipleChanges)
 {
     ObservableValue<std::atomic<int>> obs{50};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
-    {
-        auto guard = obs.operator->();
-        guard.store(100);  // Should notify: 50→100
-        guard.store(50);   // Should notify: 100→50
-    }
+    EXPECT_CALL(mockObserver, Call(100));  // First change: 50→100
+    EXPECT_CALL(mockObserver, Call(50));   // Second change: 100→50
+    obs.set(100);                          // Should notify: 50→100
+    obs.set(50);                           // Should notify: 100→50
 
     EXPECT_EQ(obs.get(), 50);
-    EXPECT_EQ(counter.count.load(), 2);  // Two notifications for intermediate changes
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 100);  // First change: 50→100
-    EXPECT_EQ(values[1], 50);   // Second change: 100→50
 }
 
-TEST_F(ObservableValueAtomicTest, AtomicGuardNoChangeNoNotification)
+TEST_F(ObservableValueAtomicTest, AtomicNoChangeNoNotification)
 {
     ObservableValue<std::atomic<int>> obs{42};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
-    {
-        auto guard = obs.operator->();
-        guard.store(42);  // Same value, should not notify
-        guard.store(42);  // Same value again, should not notify
-    }
+    // No EXPECT_CALL since no notification should occur
+    obs.set(42);  // Same value, should not notify
+    obs.set(42);  // Same value again, should not notify
 
     EXPECT_EQ(obs.get(), 42);
-    EXPECT_EQ(counter.count.load(), 0);  // No notifications for same values
 }
 
-TEST_F(ObservableValueAtomicTest, AtomicGuardMultipleChanges)
+TEST_F(ObservableValueAtomicTest, AtomicSequentialChanges)
 {
     ObservableValue<std::atomic<int>> obs{1};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
-    {
-        auto guard = obs.operator->();
-        guard.store(2);
-    }
+    EXPECT_CALL(mockObserver, Call(2));
+    obs.set(2);
 
-    {
-        auto guard = obs.operator->();
-        guard.store(3);
-    }
+    EXPECT_CALL(mockObserver, Call(3));
+    obs.set(3);
 
     EXPECT_EQ(obs.get(), 3);
-    EXPECT_EQ(counter.count.load(), 2);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 2);
-    EXPECT_EQ(values[1], 3);
 }
 
 TEST_F(ObservableValueAtomicTest, MultipleObservers)
 {
     ObservableValue<std::atomic<int>> obs{0};
 
-    NotificationCounter<int> counter1, counter2;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver1;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver2;
 
-    auto conn1 = obs.observe(std::ref(counter1));
-    auto conn2 = obs.observe(std::ref(counter2));
+    auto conn1 = obs.observe(mockObserver1.AsStdFunction());
+    auto conn2 = obs.observe(mockObserver2.AsStdFunction());
 
+    EXPECT_CALL(mockObserver1, Call(42));
+    EXPECT_CALL(mockObserver2, Call(42));
     obs = 42;
 
-    EXPECT_EQ(counter1.count.load(), 1);
-    EXPECT_EQ(counter2.count.load(), 1);
-
-    auto values1 = counter1.getValues();
-    auto values2 = counter2.getValues();
-    EXPECT_EQ(values1[0], 42);
-    EXPECT_EQ(values2[0], 42);
-
     conn1.disconnect();
+    EXPECT_CALL(mockObserver2, Call(100));
     obs = 100;
-
-    EXPECT_EQ(counter1.count.load(), 1);  // No more notifications
-    EXPECT_EQ(counter2.count.load(), 2);  // Still getting notifications
 }
 
 TEST_F(ObservableValueAtomicTest, ThreadSafetyBasic)
 {
     ObservableValue<std::atomic<int>> obs{0};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
+    std::vector<int> values;
+    std::mutex valuesMutex;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const& value) {
+        notificationCount.fetch_add(1);
+        std::lock_guard<std::mutex> lock(valuesMutex);
+        values.push_back(value);
+    });
 
     static constexpr auto kNUM_THREADS = 4;
     static constexpr auto kINCREMENTS_PER_THREAD = 100;
@@ -254,20 +199,20 @@ TEST_F(ObservableValueAtomicTest, ThreadSafetyBasic)
 
     // Final value may be less than kNumThreads * kIncrementsPerThread due to race conditions
     EXPECT_GT(obs.get(), 0);
-    EXPECT_GT(counter.count.load(), 0);
+    EXPECT_GT(notificationCount.load(), 0);
 
-    auto values = counter.getValues();
+    std::lock_guard<std::mutex> lock(valuesMutex);
     for (auto const& value : values) {
         EXPECT_GT(value, 0);
     }
 }
 
-TEST_F(ObservableValueAtomicTest, ThreadSafetyWithGuards)
+TEST_F(ObservableValueAtomicTest, ThreadSafetyWithDirectAccess)
 {
     ObservableValue<std::atomic<int>> obs{0};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const&) { notificationCount.fetch_add(1); });
 
     static constexpr auto kNUM_THREADS = 4;
     static constexpr auto kOPERATIONS_PER_THREAD = 50;
@@ -278,11 +223,8 @@ TEST_F(ObservableValueAtomicTest, ThreadSafetyWithGuards)
     for (int i = 0; i < kNUM_THREADS; ++i) {
         threads.emplace_back([&obs]() {
             for (int j = 0; j < kOPERATIONS_PER_THREAD; ++j) {
-                {
-                    auto guard = obs.operator->();
-                    int current = guard.load();
-                    guard.store(current + 1);
-                }
+                int current = obs.get();
+                obs.set(current + 1);
                 std::this_thread::sleep_for(std::chrono::microseconds(1));
             }
         });
@@ -292,55 +234,53 @@ TEST_F(ObservableValueAtomicTest, ThreadSafetyWithGuards)
         thread.join();
 
     EXPECT_GT(obs.get(), 0);
-    EXPECT_GT(counter.count.load(), 0);
+    EXPECT_GT(notificationCount.load(), 0);
 }
 
 TEST_F(ObservableValueAtomicTest, AtomicBoolSpecialization)
 {
     ObservableValue<std::atomic<bool>> obs{false};
-    NotificationCounter<bool> counter;
+    testing::StrictMock<testing::MockFunction<void(bool const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(true));
     obs = true;
     EXPECT_TRUE(obs.get());
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_TRUE(values[0]);
 
     obs = true;  // Same value should not notify
-    EXPECT_EQ(counter.count.load(), 1);
 
+    EXPECT_CALL(mockObserver, Call(false));
     obs.set(false);
     EXPECT_FALSE(obs.get());
-    EXPECT_EQ(counter.count.load(), 2);
 }
 
 TEST_F(ObservableValueAtomicTest, CompareAndSwapBehavior)
 {
     ObservableValue<std::atomic<int>> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
     // Test that compare-and-swap works correctly in set()
     obs.set(10);  // Same value, should not notify
-    EXPECT_EQ(counter.count.load(), 0);
 
+    EXPECT_CALL(mockObserver, Call(20));
     obs.set(20);  // Different value, should notify
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 20);
 }
 
 TEST_F(ObservableValueAtomicTest, RaceConditionNotificationIntegrity)
 {
     ObservableValue<std::atomic<int>> obs{0};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
+    std::vector<int> values;
+    std::mutex valuesMutex;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const& value) {
+        notificationCount.fetch_add(1);
+        std::lock_guard<std::mutex> lock(valuesMutex);
+        values.push_back(value);
+    });
 
     static constexpr auto kNUM_THREADS = 10;
     static constexpr auto kOPERATIONS_PER_THREAD = 20;
@@ -360,9 +300,9 @@ TEST_F(ObservableValueAtomicTest, RaceConditionNotificationIntegrity)
     for (auto& thread : threads)
         thread.join();
 
-    EXPECT_GT(counter.count.load(), 0);
+    EXPECT_GT(notificationCount.load(), 0);
 
-    auto values = counter.getValues();
+    std::lock_guard<std::mutex> lock(valuesMutex);
     for (auto const& value : values) {
         EXPECT_GE(value, 0);
         EXPECT_LE(value, 2);
@@ -376,9 +316,15 @@ TEST_F(ObservableValueAtomicTest, RaceConditionNotificationIntegrity)
 TEST_F(ObservableValueAtomicTest, DeterministicNotificationTest)
 {
     ObservableValue<std::atomic<int>> obs{0};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
+    std::vector<int> values;
+    std::mutex valuesMutex;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const& value) {
+        notificationCount.fetch_add(1);
+        std::lock_guard<std::mutex> lock(valuesMutex);
+        values.push_back(value);
+    });
 
     static constexpr auto kNUM_THREADS = 5;
 
@@ -393,9 +339,9 @@ TEST_F(ObservableValueAtomicTest, DeterministicNotificationTest)
         thread.join();
 
     // Each thread sets a unique value, so expect exactly kNumThreads notifications
-    EXPECT_EQ(counter.count.load(), kNUM_THREADS);
+    EXPECT_EQ(notificationCount.load(), kNUM_THREADS);
 
-    auto values = counter.getValues();
+    std::lock_guard<std::mutex> lock(valuesMutex);
     EXPECT_EQ(values.size(), kNUM_THREADS);
 
     for (auto const& value : values) {
@@ -411,9 +357,9 @@ TEST_F(ObservableValueAtomicTest, DeterministicNotificationTest)
 TEST_F(ObservableValueAtomicTest, NoNotificationForSameValue)
 {
     ObservableValue<std::atomic<int>> obs{42};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const&) { notificationCount.fetch_add(1); });
 
     static constexpr auto kNUM_THREADS = 10;
 
@@ -427,30 +373,35 @@ TEST_F(ObservableValueAtomicTest, NoNotificationForSameValue)
     for (auto& thread : threads)
         thread.join();
 
-    EXPECT_EQ(counter.count.load(), 0);  // No notifications since value never changed
+    EXPECT_EQ(notificationCount.load(), 0);  // No notifications since value never changed
     EXPECT_EQ(obs.get(), 42);
 }
 
-TEST_F(ObservableValueAtomicTest, AtomicGuardRaceConditionCorrectness)
+TEST_F(ObservableValueAtomicTest, AtomicRaceConditionCorrectness)
 {
     ObservableValue<std::atomic<int>> obs{0};
-    NotificationCounter<int> counter;
+    std::atomic<int> notificationCount{0};
+    std::vector<int> values;
+    std::mutex valuesMutex;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe([&](int const& value) {
+        notificationCount.fetch_add(1);
+        std::lock_guard<std::mutex> lock(valuesMutex);
+        values.push_back(value);
+    });
 
     static constexpr auto kNUM_THREADS = 3;
 
     std::vector<std::thread> threads;
     threads.reserve(kNUM_THREADS);
 
-    // Test that guards properly notify for all value changes
+    // Test that direct access properly notifies for all value changes
     // Each thread will make unique changes to avoid race condition conflicts
     for (int i = 0; i < kNUM_THREADS; ++i) {
         threads.emplace_back([&obs, i]() {
-            auto guard = obs.operator->();
             int baseValue = (i + 1) * 10;  // 10, 20, 30
-            guard.store(baseValue);        // Store unique values
-            guard.store(baseValue + 1);    // Then increment
+            obs.set(baseValue);            // Store unique values
+            obs.set(baseValue + 1);        // Then increment
         });
     }
 
@@ -459,9 +410,9 @@ TEST_F(ObservableValueAtomicTest, AtomicGuardRaceConditionCorrectness)
 
     // We should get some notifications (exact count depends on race conditions)
     // but at least one per thread since they use unique base values
-    EXPECT_GE(counter.count.load(), kNUM_THREADS);
+    EXPECT_GE(notificationCount.load(), kNUM_THREADS);
 
-    auto values = counter.getValues();
+    std::lock_guard<std::mutex> lock(valuesMutex);
     EXPECT_GE(values.size(), kNUM_THREADS);
 
     for (auto const& value : values)

@@ -24,13 +24,10 @@
 #include <gtest/gtest.h>
 
 #include <concepts>
-#include <functional>
 #include <map>
-#include <memory>
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -53,19 +50,6 @@ struct TestStruct {
     operator!=(TestStruct const& other) const
     {
         return !(*this == other);
-    }
-};
-
-template <typename T>
-struct NotificationCounter {
-    int count = 0;
-    std::vector<T> values;
-
-    void
-    operator()(T const& value)
-    {
-        ++count;
-        values.push_back(value);
     }
 };
 
@@ -234,21 +218,18 @@ TEST_F(ObservableValueTest, DefaultConstructionThenAssignment)
     ObservableValue<int> obs;
     EXPECT_EQ(obs.get(), 0);
 
-    NotificationCounter<int> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(42));
     obs = 42;
     EXPECT_EQ(obs.get(), 42);
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 42);
 
-    obs = 42;
-    EXPECT_EQ(counter.count, 1);
+    obs = 42;  // Same value, should not notify
 
+    EXPECT_CALL(mockObserver, Call(100));
     obs.set(100);
     EXPECT_EQ(obs.get(), 100);
-    EXPECT_EQ(counter.count, 2);
-    EXPECT_EQ(counter.values[1], 100);
 }
 
 TEST_F(ObservableValueTest, DefaultConstructionWithGuard)
@@ -256,9 +237,10 @@ TEST_F(ObservableValueTest, DefaultConstructionWithGuard)
     ObservableValue<std::string> obs;
     EXPECT_EQ(obs.get(), "");
 
-    NotificationCounter<std::string> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(std::string const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call("modified through guard"));
     {
         auto guard = obs.operator->();
         std::string& ref = guard;
@@ -266,26 +248,21 @@ TEST_F(ObservableValueTest, DefaultConstructionWithGuard)
     }
 
     EXPECT_EQ(obs.get(), "modified through guard");
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], "modified through guard");
 }
 
 TEST_F(ObservableValueTest, DefaultConstructionNotificationBehavior)
 {
     ObservableValue<int> obs;
-    NotificationCounter<int> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(1));
     obs = 1;
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 1);
 
+    EXPECT_CALL(mockObserver, Call(0));
     obs = 0;
-    EXPECT_EQ(counter.count, 2);
-    EXPECT_EQ(counter.values[1], 0);
 
-    obs = 0;
-    EXPECT_EQ(counter.count, 2);
+    obs = 0;  // Same value, should not notify
 }
 
 TEST_F(ObservableValueTest, NonDefaultInitializableTypeWithParameterizedConstructor)
@@ -312,12 +289,11 @@ TEST_F(ObservableValueTest, NonDefaultInitializableTypeWithParameterizedConstruc
     ObservableValue<NonDefaultInitializable> obs{NonDefaultInitializable{42}};
     EXPECT_EQ(obs.get().value, 42);
 
-    NotificationCounter<NonDefaultInitializable> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(NonDefaultInitializable const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(testing::Field(&NonDefaultInitializable::value, 100)));
     obs = NonDefaultInitializable{100};
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0].value, 100);
     EXPECT_EQ(obs.get().value, 100);
 }
 
@@ -342,35 +318,31 @@ TEST_F(ObservableValueTest, CopyOperationsDeleted)
 TEST_F(ObservableValueTest, AssignmentOperator)
 {
     ObservableValue<int> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(20));
     obs = 20;
     EXPECT_EQ(obs.get(), 20);
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 20);
 
-    obs = 20;
+    obs = 20;  // Same value, should not notify
     EXPECT_EQ(obs.get(), 20);
-    EXPECT_EQ(counter.count, 1);
 }
 
 TEST_F(ObservableValueTest, SetMethod)
 {
     ObservableValue<int> obs{5};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(15));
     obs.set(15);
     EXPECT_EQ(obs.get(), 15);
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 15);
 
-    obs.set(15);
+    obs.set(15);  // Same value, should not notify
     EXPECT_EQ(obs.get(), 15);
-    EXPECT_EQ(counter.count, 1);
 }
 
 TEST_F(ObservableValueTest, ObserverManagement)
@@ -379,41 +351,37 @@ TEST_F(ObservableValueTest, ObserverManagement)
 
     EXPECT_FALSE(obs.hasObservers());
 
-    NotificationCounter<int> counter1, counter2;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver1;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver2;
 
-    auto conn1 = obs.observe(std::ref(counter1));
+    auto conn1 = obs.observe(mockObserver1.AsStdFunction());
     EXPECT_TRUE(obs.hasObservers());
 
-    auto conn2 = obs.observe(std::ref(counter2));
+    auto conn2 = obs.observe(mockObserver2.AsStdFunction());
     EXPECT_TRUE(obs.hasObservers());
 
+    EXPECT_CALL(mockObserver1, Call(42));
+    EXPECT_CALL(mockObserver2, Call(42));
     obs = 42;
-    EXPECT_EQ(counter1.count, 1);
-    EXPECT_EQ(counter2.count, 1);
-    EXPECT_EQ(counter1.values[0], 42);
-    EXPECT_EQ(counter2.values[0], 42);
 
     conn1.disconnect();
+    EXPECT_CALL(mockObserver2, Call(100));
     obs = 100;
-    EXPECT_EQ(counter1.count, 1);
-    EXPECT_EQ(counter2.count, 2);
-    EXPECT_EQ(counter2.values[1], 100);
 
     conn2.disconnect();
     EXPECT_FALSE(obs.hasObservers());
 
-    obs = 200;
-    EXPECT_EQ(counter1.count, 1);
-    EXPECT_EQ(counter2.count, 2);
+    obs = 200;  // No observers, no calls expected
 }
 
 TEST_F(ObservableValueTest, ObservableGuardBasicUsage)
 {
     ObservableValue<int> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(25));
     {
         auto guard = obs.operator->();
         int& ref = guard;
@@ -421,41 +389,41 @@ TEST_F(ObservableValueTest, ObservableGuardBasicUsage)
     }
 
     EXPECT_EQ(obs.get(), 25);
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 25);
 }
 
 TEST_F(ObservableValueTest, ObservableGuardNoChangeNoNotification)
 {
     ObservableValue<int> obs{50};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    // No EXPECT_CALL since no notification should occur
     {
         auto guard = obs.operator->();
         int& ref = guard;
         ref = 100;
-        ref = 50;
+        ref = 50;  // Back to original value
     }
 
     EXPECT_EQ(obs.get(), 50);
-    EXPECT_EQ(counter.count, 0);
 }
 
 TEST_F(ObservableValueTest, ObservableGuardMultipleChanges)
 {
     ObservableValue<int> obs{1};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(2));
     {
         auto guard = obs.operator->();
         int& ref = guard;
         ref = 2;
     }
 
+    EXPECT_CALL(mockObserver, Call(3));
     {
         auto guard = obs.operator->();
         int& ref = guard;
@@ -463,9 +431,6 @@ TEST_F(ObservableValueTest, ObservableGuardMultipleChanges)
     }
 
     EXPECT_EQ(obs.get(), 3);
-    EXPECT_EQ(counter.count, 2);
-    EXPECT_EQ(counter.values[0], 2);
-    EXPECT_EQ(counter.values[1], 3);
 }
 
 TEST_F(ObservableValueTest, ComplexTypeObservation)
@@ -473,15 +438,15 @@ TEST_F(ObservableValueTest, ComplexTypeObservation)
     TestStruct initial{.value = 42, .name = "test"};
     ObservableValue<TestStruct> obs{initial};
 
-    NotificationCounter<TestStruct> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(TestStruct const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
     TestStruct newValue{.value = 100, .name = "changed"};
+    EXPECT_CALL(
+        mockObserver,
+        Call(testing::AllOf(testing::Field(&TestStruct::value, 100), testing::Field(&TestStruct::name, "changed")))
+    );
     obs = newValue;
-
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0].value, 100);
-    EXPECT_EQ(counter.values[0].name, "changed");
 }
 
 TEST_F(ObservableValueTest, ComplexTypeGuardModification)
@@ -489,9 +454,13 @@ TEST_F(ObservableValueTest, ComplexTypeGuardModification)
     TestStruct initial{.value = 10, .name = "initial"};
     ObservableValue<TestStruct> obs{initial};
 
-    NotificationCounter<TestStruct> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(TestStruct const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(
+        mockObserver,
+        Call(testing::AllOf(testing::Field(&TestStruct::value, 20), testing::Field(&TestStruct::name, "modified")))
+    );
     {
         auto guard = obs.operator->();
         TestStruct& ref = guard;
@@ -501,52 +470,47 @@ TEST_F(ObservableValueTest, ComplexTypeGuardModification)
 
     EXPECT_EQ(obs.get().value, 20);
     EXPECT_EQ(obs.get().name, "modified");
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0].value, 20);
-    EXPECT_EQ(counter.values[0].name, "modified");
 }
 
 TEST_F(ObservableValueTest, StringObservation)
 {
     ObservableValue<std::string> obs{"initial"};
-    NotificationCounter<std::string> counter;
+    testing::StrictMock<testing::MockFunction<void(std::string const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call("changed"));
     obs = "changed";
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], "changed");
 
+    EXPECT_CALL(mockObserver, Call("set_method"));
     obs.set("set_method");
-    EXPECT_EQ(counter.count, 2);
-    EXPECT_EQ(counter.values[1], "set_method");
 
-    obs = "set_method";
-    EXPECT_EQ(counter.count, 2);
+    obs = "set_method";  // Same value, should not notify
 }
 
 TEST_F(ObservableValueTest, MultipleObserversWithDifferentLifetimes)
 {
     ObservableValue<int> obs{0};
 
-    NotificationCounter<int> counter1, counter2, counter3;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver1;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver2;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver3;
 
-    auto conn1 = obs.observe(std::ref(counter1));
+    auto conn1 = obs.observe(mockObserver1.AsStdFunction());
 
+    EXPECT_CALL(mockObserver1, Call(1));
     obs = 1;
-    EXPECT_EQ(counter1.count, 1);
 
-    auto conn2 = obs.observe(std::ref(counter2));
+    auto conn2 = obs.observe(mockObserver2.AsStdFunction());
+    EXPECT_CALL(mockObserver1, Call(2));
+    EXPECT_CALL(mockObserver2, Call(2));
     obs = 2;
-    EXPECT_EQ(counter1.count, 2);
-    EXPECT_EQ(counter2.count, 1);
 
     conn1.disconnect();
-    auto conn3 = obs.observe(std::ref(counter3));
+    auto conn3 = obs.observe(mockObserver3.AsStdFunction());
+    EXPECT_CALL(mockObserver2, Call(3));
+    EXPECT_CALL(mockObserver3, Call(3));
     obs = 3;
-    EXPECT_EQ(counter1.count, 2);
-    EXPECT_EQ(counter2.count, 2);
-    EXPECT_EQ(counter3.count, 1);
 }
 
 TEST_F(ObservableValueTest, NoNotificationWhenNoObservers)
@@ -570,23 +534,21 @@ TEST_F(ObservableValueTest, ManyObservers)
 {
     ObservableValue<int> obs{0};
 
-    std::vector<std::unique_ptr<NotificationCounter<int>>> counters;
+    std::vector<std::unique_ptr<testing::StrictMock<testing::MockFunction<void(int const&)>>>> mockObservers;
     std::vector<boost::signals2::connection> connections;
 
     constexpr int kNUM_OBSERVERS = 100;
     for (int i = 0; i < kNUM_OBSERVERS; ++i) {
-        counters.push_back(std::make_unique<NotificationCounter<int>>());
-        connections.push_back(obs.observe(std::ref(*counters.back())));
+        mockObservers.push_back(std::make_unique<testing::StrictMock<testing::MockFunction<void(int const&)>>>());
+        connections.push_back(obs.observe(mockObservers.back()->AsStdFunction()));
     }
 
     EXPECT_TRUE(obs.hasObservers());
 
-    obs = 42;
-
-    for (auto const& counter : counters) {
-        EXPECT_EQ(counter->count, 1);
-        EXPECT_EQ(counter->values[0], 42);
+    for (auto const& mockObserver : mockObservers) {
+        EXPECT_CALL(*mockObserver, Call(42));
     }
+    obs = 42;
 
     for (auto& conn : connections) {
         conn.disconnect();
@@ -599,17 +561,17 @@ TEST_F(ObservableValueTest, TypeConversions)
 {
     ObservableValue<double> obs{1.0};
 
-    NotificationCounter<double> doubleCounter;
-    auto connection = obs.observe(std::ref(doubleCounter));
+    testing::StrictMock<testing::MockFunction<void(double const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(testing::DoubleEq(2.0)));
     obs = 2;
-    obs = 3.14;
-    obs = static_cast<double>(4.0f);
 
-    EXPECT_EQ(doubleCounter.count, 3);
-    EXPECT_DOUBLE_EQ(doubleCounter.values[0], 2.0);
-    EXPECT_DOUBLE_EQ(doubleCounter.values[1], 3.14);
-    EXPECT_DOUBLE_EQ(doubleCounter.values[2], 4.0);
+    EXPECT_CALL(mockObserver, Call(testing::DoubleEq(3.14)));
+    obs = 3.14;
+
+    EXPECT_CALL(mockObserver, Call(testing::DoubleEq(4.0)));
+    obs = static_cast<double>(4.0f);
 }
 
 TEST_F(ObservableValueTest, EnhancedConceptRequirements)
@@ -660,31 +622,36 @@ TEST_F(ObservableValueTest, EnhancedConceptRequirements)
     ComplexObservable initial{"test", 42, {1, 2, 3}};
     ObservableValue<ComplexObservable> obs{std::move(initial)};
 
-    NotificationCounter<ComplexObservable> counter;
-    auto connection = obs.observe(std::ref(counter));
+    testing::StrictMock<testing::MockFunction<void(ComplexObservable const&)>> mockObserver;
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
     ComplexObservable newValue{"changed", 100, {4, 5, 6}};
+    EXPECT_CALL(
+        mockObserver,
+        Call(
+            testing::AllOf(
+                testing::Field(&ComplexObservable::name, "changed"),
+                testing::Field(&ComplexObservable::value, 100),
+                testing::Field(&ComplexObservable::data, std::vector<int>({4, 5, 6}))
+            )
+        )
+    );
     obs = std::move(newValue);
 
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0].name, "changed");
-    EXPECT_EQ(counter.values[0].value, 100);
-    EXPECT_EQ(counter.values[0].data, std::vector<int>({4, 5, 6}));
-
     ComplexObservable sameValue{"changed", 100, {4, 5, 6}};
-    obs = std::move(sameValue);
-    EXPECT_EQ(counter.count, 1);
+    obs = std::move(sameValue);  // Same value, should not notify
 }
 
 TEST_F(ObservableValueTest, ExceptionInObserver)
 {
     ObservableValue<int> obs{0};
 
-    NotificationCounter<int> goodCounter;
-    auto goodConnection = obs.observe(std::ref(goodCounter));
+    testing::StrictMock<testing::MockFunction<void(int const&)>> goodMockObserver;
+    auto goodConnection = obs.observe(goodMockObserver.AsStdFunction());
 
     auto throwingConnection = obs.observe([](int const&) { throw std::runtime_error("Observer exception"); });
 
+    EXPECT_CALL(goodMockObserver, Call(42));
     EXPECT_THROW(obs = 42, std::runtime_error);
 
     // Value is still updated even when observers throw
@@ -694,10 +661,11 @@ TEST_F(ObservableValueTest, ExceptionInObserver)
 TEST_F(ObservableValueTest, GuardExceptionSafety)
 {
     ObservableValue<int> obs{10};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(20));
     try {
         auto guard = obs.operator->();
         int& ref = guard;
@@ -708,22 +676,29 @@ TEST_F(ObservableValueTest, GuardExceptionSafety)
     }
 
     EXPECT_EQ(obs.get(), 20);
-    EXPECT_EQ(counter.count, 1);
-    EXPECT_EQ(counter.values[0], 20);
 }
 
 TEST_F(ObservableValueTest, ComprehensiveIntegrationTest)
 {
     ObservableValue<std::string> obs{"start"};
 
-    NotificationCounter<std::string> counter1, counter2;
-    auto conn1 = obs.observe(std::ref(counter1));
-    auto conn2 = obs.observe(std::ref(counter2));
+    testing::StrictMock<testing::MockFunction<void(std::string const&)>> mockObserver1;
+    testing::StrictMock<testing::MockFunction<void(std::string const&)>> mockObserver2;
+    auto conn1 = obs.observe(mockObserver1.AsStdFunction());
+    auto conn2 = obs.observe(mockObserver2.AsStdFunction());
 
+    EXPECT_CALL(mockObserver1, Call("first"));
+    EXPECT_CALL(mockObserver2, Call("first"));
     obs = "first";
-    obs.set("second");
-    obs = "second";
 
+    EXPECT_CALL(mockObserver1, Call("second"));
+    EXPECT_CALL(mockObserver2, Call("second"));
+    obs.set("second");
+
+    obs = "second";  // Same value, should not notify
+
+    EXPECT_CALL(mockObserver1, Call("third"));
+    EXPECT_CALL(mockObserver2, Call("third"));
     {
         auto guard = obs.operator->();
         std::string& ref = guard;
@@ -731,21 +706,10 @@ TEST_F(ObservableValueTest, ComprehensiveIntegrationTest)
     }
 
     conn1.disconnect();
+    EXPECT_CALL(mockObserver2, Call("fourth"));
     obs = "fourth";
 
     EXPECT_EQ(obs.get(), "fourth");
-
-    EXPECT_EQ(counter1.count, 3);
-    EXPECT_EQ(counter1.values[0], "first");
-    EXPECT_EQ(counter1.values[1], "second");
-    EXPECT_EQ(counter1.values[2], "third");
-
-    EXPECT_EQ(counter2.count, 4);
-    EXPECT_EQ(counter2.values[0], "first");
-    EXPECT_EQ(counter2.values[1], "second");
-    EXPECT_EQ(counter2.values[2], "third");
-    EXPECT_EQ(counter2.values[3], "fourth");
-
     EXPECT_TRUE(obs.hasObservers());
 
     conn2.disconnect();
@@ -755,18 +719,16 @@ TEST_F(ObservableValueTest, ComprehensiveIntegrationTest)
 TEST_F(ObservableValueTest, RegularConnectionPersistsAfterDestruction)
 {
     ObservableValue<int> obs{0};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
     {
-        auto connection = obs.observe(std::ref(counter));
+        auto connection = obs.observe(mockObserver.AsStdFunction());
+        EXPECT_CALL(mockObserver, Call(1));
         obs = 1;
-        EXPECT_EQ(counter.count, 1);
-        EXPECT_EQ(counter.values[0], 1);
     }
 
+    EXPECT_CALL(mockObserver, Call(2));
     obs = 2;
-    EXPECT_EQ(counter.count, 2);
-    EXPECT_EQ(counter.values[1], 2);
 
     EXPECT_TRUE(obs.hasObservers());
 }
@@ -774,79 +736,75 @@ TEST_F(ObservableValueTest, RegularConnectionPersistsAfterDestruction)
 TEST_F(ObservableValueTest, ScopedConnectionDisconnectsOnDestruction)
 {
     ObservableValue<int> obs{0};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
     {
-        boost::signals2::scoped_connection scoped = obs.observe(std::ref(counter));
+        boost::signals2::scoped_connection scoped = obs.observe(mockObserver.AsStdFunction());
+        EXPECT_CALL(mockObserver, Call(1));
         obs = 1;
-        EXPECT_EQ(counter.count, 1);
-        EXPECT_EQ(counter.values[0], 1);
         EXPECT_TRUE(obs.hasObservers());
     }
 
-    obs = 2;
-    EXPECT_EQ(counter.count, 1);
+    obs = 2;  // No call expected since connection was destroyed
     EXPECT_FALSE(obs.hasObservers());
 }
 
 TEST_F(ObservableValueTest, ManualDisconnectWithRegularConnection)
 {
     ObservableValue<int> obs{0};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    auto connection = obs.observe(std::ref(counter));
+    auto connection = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(1));
     obs = 1;
-    EXPECT_EQ(counter.count, 1);
     EXPECT_TRUE(obs.hasObservers());
 
     connection.disconnect();
 
-    obs = 2;
-    EXPECT_EQ(counter.count, 1);
+    obs = 2;  // No call expected since connection was disconnected
     EXPECT_FALSE(obs.hasObservers());
 }
 
 TEST_F(ObservableValueTest, ScopedConnectionCanBeDisconnectedManually)
 {
     ObservableValue<int> obs{0};
-    NotificationCounter<int> counter;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
 
-    boost::signals2::scoped_connection scoped = obs.observe(std::ref(counter));
+    boost::signals2::scoped_connection scoped = obs.observe(mockObserver.AsStdFunction());
 
+    EXPECT_CALL(mockObserver, Call(1));
     obs = 1;
-    EXPECT_EQ(counter.count, 1);
     EXPECT_TRUE(obs.hasObservers());
 
     scoped.disconnect();
 
-    obs = 2;
-    EXPECT_EQ(counter.count, 1);
+    obs = 2;  // No call expected since connection was disconnected
     EXPECT_FALSE(obs.hasObservers());
 }
 
 TEST_F(ObservableValueTest, MixedConnectionTypes)
 {
     ObservableValue<int> obs{0};
-    NotificationCounter<int> counter1, counter2, counter3;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver1;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver2;
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver3;
 
-    auto regularConn = obs.observe(std::ref(counter1));
+    auto regularConn = obs.observe(mockObserver1.AsStdFunction());
 
     {
-        boost::signals2::scoped_connection scoped1 = obs.observe(std::ref(counter2));
-        boost::signals2::scoped_connection scoped2 = obs.observe(std::ref(counter3));
+        boost::signals2::scoped_connection scoped1 = obs.observe(mockObserver2.AsStdFunction());
+        boost::signals2::scoped_connection scoped2 = obs.observe(mockObserver3.AsStdFunction());
 
+        EXPECT_CALL(mockObserver1, Call(1));
+        EXPECT_CALL(mockObserver2, Call(1));
+        EXPECT_CALL(mockObserver3, Call(1));
         obs = 1;
-        EXPECT_EQ(counter1.count, 1);
-        EXPECT_EQ(counter2.count, 1);
-        EXPECT_EQ(counter3.count, 1);
         EXPECT_TRUE(obs.hasObservers());
     }
 
-    obs = 2;
-    EXPECT_EQ(counter1.count, 2);
-    EXPECT_EQ(counter2.count, 1);
-    EXPECT_EQ(counter3.count, 1);
+    EXPECT_CALL(mockObserver1, Call(2));
+    obs = 2;  // Only mockObserver1 should be called since scoped connections were destroyed
     EXPECT_TRUE(obs.hasObservers());
 
     regularConn.disconnect();

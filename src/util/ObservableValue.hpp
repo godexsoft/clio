@@ -30,13 +30,7 @@
 namespace util {
 
 template <typename T>
-struct IsAtomic : std::false_type {};
-
-template <typename T>
-struct IsAtomic<std::atomic<T>> : std::true_type {};
-
-template <typename T>
-constexpr bool kIS_ATOMIC_V = IsAtomic<T>::value;
+concept SomeAtomic = std::same_as<std::remove_cvref_t<T>, std::atomic<std::remove_cvref_t<typename T::value_type>>>;
 
 /**
  * @brief Concept defining types that can be observed for changes.
@@ -163,7 +157,7 @@ class ObservableValue;
  * @endcode
  */
 template <Observable T>
-    requires(not kIS_ATOMIC_V<T>)
+    requires(not SomeAtomic<T>)
 class ObservableValue<T> : public impl::ObservableValueBase<T> {
     T value_;
 
@@ -342,54 +336,6 @@ template <Observable T>
 class ObservableValue<std::atomic<T>> : public impl::ObservableValueBase<T> {
     std::atomic<T> value_;
 
-    /**
-     * @brief RAII guard for observable atomic value modifications.
-     *
-     * AtomicObservableGuard provides a wrapper that enables safe modification
-     * of the atomic value with proper notification semantics. Unlike direct
-     * atomic access, operations through this guard ensure that observers
-     * are notified of value changes.
-     *
-     * The guard uses immediate notification on atomic operations rather than
-     * deferred notification to avoid race conditions with concurrent modifications.
-     */
-    struct AtomicObservableGuard {
-        ObservableValue<std::atomic<T>>& ref;  ///< Reference to the observable value
-
-        /**
-         * @brief Constructs guard for the given observable.
-         * @param observable The ObservableValue to guard
-         */
-        AtomicObservableGuard(ObservableValue<std::atomic<T>>& observable) : ref(observable)
-        {
-        }
-
-        /**
-         * @brief Destructor (no deferred operations needed).
-         */
-        ~AtomicObservableGuard() = default;
-
-        /**
-         * @brief Atomically stores a value and notifies observers if changed.
-         * @param value The value to store
-         */
-        void
-        store(std::convertible_to<T> auto&& value)
-        {
-            ref.set(std::forward<decltype(value)>(value));
-        }
-
-        /**
-         * @brief Atomically loads the current value.
-         * @return Current value
-         */
-        [[nodiscard]] T
-        load() const
-        {
-            return ref.value_.load();
-        }
-    };
-
 public:
     /**
      * @brief Constructs ObservableValue with initial atomic value.
@@ -429,20 +375,6 @@ public:
     {
         set(std::forward<decltype(val)>(val));
         return *this;
-    }
-
-    /**
-     * @brief Provides deferred notification access to the atomic value.
-     *
-     * Returns an AtomicObservableGuard that allows modification of the atomic
-     * with notification deferred until the guard is destroyed.
-     *
-     * @return AtomicObservableGuard for deferred notification
-     */
-    [[nodiscard]] AtomicObservableGuard
-    operator->()
-    {
-        return {*this};
     }
 
     /**
