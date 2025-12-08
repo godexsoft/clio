@@ -810,3 +810,29 @@ TEST_F(ObservableValueTest, MixedConnectionTypes)
     regularConn.disconnect();
     EXPECT_FALSE(obs.hasObservers());
 }
+
+TEST_F(ObservableValueTest, ForceNotify)
+{
+    ObservableValue<int> obs{42};
+    testing::StrictMock<testing::MockFunction<void(int const&)>> mockObserver;
+
+    obs.forceNotify();
+
+    auto connection = obs.observe(mockObserver.AsStdFunction());
+
+    EXPECT_CALL(mockObserver, Call(42));
+    obs.forceNotify();
+
+    EXPECT_CALL(mockObserver, Call(42));
+    obs.forceNotify();
+
+    EXPECT_CALL(mockObserver, Call(100));
+    obs.set(100);
+    EXPECT_CALL(mockObserver, Call(100));
+    obs.forceNotify();
+
+    EXPECT_CALL(mockObserver, Call(100)).Times(3);
+    obs.forceNotify();
+    obs.forceNotify();
+    obs.forceNotify();
+}

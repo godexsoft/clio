@@ -64,6 +64,8 @@ protected:
     boost::signals2::signal<void(T const&)> onUpdate_;
 
 public:
+    virtual ~ObservableValueBase() = default;
+
     /**
      * @brief Registers an observer callback for value changes.
      * @param fn Callback function/lambda that accepts T const&
@@ -84,6 +86,15 @@ public:
     {
         return not onUpdate_.empty();
     }
+
+    /**
+     * @brief Forces notification of all observers with the current value.
+     *
+     * This method will notify all observers with the current value regardless
+     * of whether the value has changed since the last notification.
+     */
+    virtual void
+    forceNotify() = 0;
 
 protected:
     /**
@@ -123,38 +134,6 @@ class ObservableValue;
  * - The value will still be updated even if observers throw exceptions
  * - No guarantee is made about whether other observers will be called if one throws
  * - It is the caller's responsibility to handle exceptions from observer callbacks
- *
- * @par Usage Examples
- * @code
- * // Basic usage
- * util::ObservableValue<int> counter{0};
- *
- * // Subscribe to changes
- * auto connection = counter.observe([](int const& value) {
- *     std::cout << "Counter: " << value << std::endl;
- * });
- *
- * counter = 42;  // Prints "Counter: 42"
- *
- * // Deferred notification using operator->
- * {
- *     auto guard = counter.operator->();
- *     int& ref = guard;
- *     ref = 100;  // No immediate notification
- * } // Notification happens here when guard is destroyed
- *
- * // Manual unsubscribe
- * connection.disconnect();
- *
- * // Automatic unsubscribe using scoped_connection
- * {
- *     boost::signals2::scoped_connection scoped = counter.observe([](int const& value) {
- *         std::cout << "Scoped observer: " << value << std::endl;
- *     });
- *     counter = 200;  // Prints "Scoped observer: 200"
- * } // Automatically disconnects here
- * counter = 300;  // No output - observer was disconnected
- * @endcode
  */
 template <Observable T>
     requires(not SomeAtomic<T>)
@@ -256,11 +235,6 @@ public:
      * with notification deferred until the guard is destroyed.
      *
      * @return ObservableGuard for deferred notification
-     *
-     * @par Example
-     * @code
-     * obs->someMethod();  // Call a method on inner value
-     * @endcode
      */
     [[nodiscard]] ObservableGuard
     operator->()
@@ -310,6 +284,18 @@ public:
             value_ = std::forward<decltype(val)>(val);
             this->notifyObservers(value_);
         }
+    }
+
+    /**
+     * @brief Forces notification of all observers with the current value.
+     *
+     * This method will notify all observers with the current value regardless
+     * of whether the value has changed since the last notification.
+     */
+    void
+    forceNotify() override
+    {
+        this->notifyObservers(value_);
     }
 };
 
@@ -422,6 +408,18 @@ public:
         if (oldValue != newValue) {
             this->notifyObservers(newValue);
         }
+    }
+
+    /**
+     * @brief Forces notification of all observers with the current value.
+     *
+     * This method will notify all observers with the current atomic value
+     * regardless of whether the value has changed since the last notification.
+     */
+    void
+    forceNotify() override
+    {
+        this->notifyObservers(value_.load());
     }
 };
 
