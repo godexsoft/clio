@@ -199,26 +199,6 @@ TEST_F(ObservableValueAtomicTest, AtomicGuardMultipleChanges)
     EXPECT_EQ(values[1], 3);
 }
 
-TEST_F(ObservableValueAtomicTest, DirectAtomicAccess)
-{
-    ObservableValue<std::atomic<int>> obs{100};
-    NotificationCounter<int> counter;
-
-    auto connection = obs.observe(std::ref(counter));
-
-    // Direct atomic access bypasses observation
-    obs.atomic().store(200);
-    EXPECT_EQ(obs.get(), 200);
-    EXPECT_EQ(counter.count.load(), 0);  // No notification
-
-    // But observable operations still work
-    obs.set(300);
-    EXPECT_EQ(counter.count.load(), 1);
-
-    auto values = counter.getValues();
-    EXPECT_EQ(values[0], 300);
-}
-
 TEST_F(ObservableValueAtomicTest, MultipleObservers)
 {
     ObservableValue<std::atomic<int>> obs{0};

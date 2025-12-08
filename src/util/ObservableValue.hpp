@@ -491,30 +491,6 @@ public:
             this->notifyObservers(newValue);
         }
     }
-
-    /**
-     * @brief Provides direct access to the underlying atomic.
-     *
-     * Use with caution - direct atomic operations bypass observation.
-     * Prefer using set() or the guard mechanism for observable changes.
-     *
-     * @return Reference to the underlying atomic
-     */
-    [[nodiscard]] std::atomic<T>&
-    atomic()
-    {
-        return value_;
-    }
-
-    /**
-     * @brief Provides const access to the underlying atomic.
-     * @return Const reference to the underlying atomic
-     */
-    [[nodiscard]] std::atomic<T> const&
-    atomic() const
-    {
-        return value_;
-    }
 };
 
 }  // namespace util
