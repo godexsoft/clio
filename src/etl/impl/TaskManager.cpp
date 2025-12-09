@@ -87,7 +87,7 @@ TaskManager::run(std::size_t numExtractors)
 util::async::AnyOperation<void>
 TaskManager::spawnExtractor(TaskQueue& queue)
 {
-    // TODO 2838: the approach should be changed to a reactive one instead
+    // TODO https://github.com/XRPLF/clio/issues/2838: the approach should be changed to a reactive one instead
     static constexpr auto kDELAY_BETWEEN_ATTEMPTS = std::chrono::milliseconds{10u};
     static constexpr auto kDELAY_BETWEEN_ENQUEUE_ATTEMPTS = std::chrono::milliseconds{1u};
 
