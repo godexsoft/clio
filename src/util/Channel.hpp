@@ -161,8 +161,10 @@ private:
         {
             shared_->channel().async_receive(
                 [fn = std::forward<decltype(fn)>(fn)](boost::system::error_code ec, std::optional<T>&& value) {
-                    if (ec)
+                    if (ec) {
                         fn(std::optional<T>(std::nullopt));
+                        return;
+                    }
 
                     fn(std::move(value));
                 }

@@ -348,27 +348,44 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
                 testCompleted = true;
             });
         } else {
-            // Callback version - simplified test that just verifies basic functionality
-            // Note: Testing closure scenarios properly in callback mode is complex due to
-            // async timing issues, so we focus on basic send/receive functionality
+            // Callback version - test closure scenarios with proper sequencing
             auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 5);
             auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
 
             // Test 1: Channel should be open initially
             EXPECT_FALSE(receiverPtr->isClosed());
 
-            // Test 2: Send and receive a value successfully
-            sender.asyncSend(42, [receiverPtr, &testCompleted](bool success) {
+            // Use a shared_ptr to control sender lifetime
+            auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+            // Test 2: Send and receive a value first
+            senderPtr->value().asyncSend(42, [executor, receiverPtr, senderPtr, &testCompleted](bool success) {
                 EXPECT_TRUE(success);
 
                 // Test 3: Receive the value
-                receiverPtr->asyncReceive([&testCompleted](auto value) {
+                receiverPtr->asyncReceive([executor, receiverPtr, senderPtr, &testCompleted](auto value) {
                     EXPECT_TRUE(value.has_value());
                     EXPECT_EQ(*value, 42);
-                    testCompleted = true;
+
+                    // Test 4: Post operation to destroy sender and then test closure
+                    boost::asio::post(*executor, [executor, receiverPtr, senderPtr, &testCompleted]() {
+                        // Destroy sender to close channel
+                        senderPtr->reset();
+
+                        // Test 5: Channel should now be closed
+                        EXPECT_TRUE(receiverPtr->isClosed());
+
+                        // Test 6: Post another operation to test asyncReceive after closure
+                        boost::asio::post(*executor, [receiverPtr, &testCompleted]() {
+                            // Attempting to receive from closed channel should return nullopt
+                            receiverPtr->asyncReceive([&testCompleted](auto closedValue) {
+                                EXPECT_FALSE(closedValue.has_value());
+                                testCompleted = true;
+                            });
+                        });
+                    });
                 });
             });
-            // sender destroyed when this scope ends
         }
 
         context_->run();
@@ -417,20 +434,37 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
                 // Test 1: Channel should be open initially
                 EXPECT_FALSE(receiverPtr->isClosed());
 
-                // Test 2: Send and receive a value successfully
-                // Note: Testing closure scenarios properly in callback mode is complex due to
-                // async timing issues, so we focus on basic send/receive functionality
-                sender.asyncSend(42, [receiverPtr, &testCompleted](bool success) {
+                // Use a shared_ptr to control sender lifetime
+                auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+                // Test 2: Send and receive a value first
+                senderPtr->value().asyncSend(42, [executor, receiverPtr, senderPtr, &testCompleted](bool success) {
                     EXPECT_TRUE(success);
 
                     // Test 3: Receive the value
-                    receiverPtr->asyncReceive([&testCompleted](auto value) {
+                    receiverPtr->asyncReceive([executor, receiverPtr, senderPtr, &testCompleted](auto value) {
                         EXPECT_TRUE(value.has_value());
                         EXPECT_EQ(*value, 42);
-                        *testCompleted.lock() = true;
+
+                        // Test 4: Post operation to destroy sender and then test closure
+                        boost::asio::post(*executor, [executor, receiverPtr, senderPtr, &testCompleted]() {
+                            // Destroy sender to close channel
+                            senderPtr->reset();
+
+                            // Test 5: Channel should now be closed
+                            EXPECT_TRUE(receiverPtr->isClosed());
+
+                            // Test 6: Post another operation to test asyncReceive after closure
+                            boost::asio::post(*executor, [receiverPtr, &testCompleted]() {
+                                // Attempting to receive from closed channel should return nullopt
+                                receiverPtr->asyncReceive([&testCompleted](auto closedValue) {
+                                    EXPECT_FALSE(closedValue.has_value());
+                                    *testCompleted.lock() = true;
+                                });
+                            });
+                        });
                     });
                 });
-                // sender destroyed when this scope ends
             });
         }
 
@@ -491,24 +525,41 @@ TEST_P(ChannelParameterizedTest, BasicErrorHandling)
                 testCompleted = true;
             });
         } else {
-            // Callback version - simplified test for basic error handling
-            // Note: Testing closure scenarios properly in callback mode is complex due to
-            // async timing issues, so we focus on basic send/receive functionality
+            // Callback version - test error handling including closure scenarios
             auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 5);
             auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
 
-            // Test 1: Send a value successfully
-            sender.asyncSend(42, [receiverPtr, &testCompleted](bool success) {
+            // Use a shared_ptr to control sender lifetime
+            auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+            // Test 1: Send a value successfully first
+            senderPtr->value().asyncSend(42, [executor, receiverPtr, senderPtr, &testCompleted](bool success) {
                 EXPECT_TRUE(success);
 
                 // Test 2: Receive the value
-                receiverPtr->asyncReceive([&testCompleted](auto value) {
+                receiverPtr->asyncReceive([executor, receiverPtr, senderPtr, &testCompleted](auto value) {
                     EXPECT_TRUE(value.has_value());
                     EXPECT_EQ(*value, 42);
-                    testCompleted = true;
+
+                    // Test 3: Post operation to destroy sender and then test error conditions
+                    boost::asio::post(*executor, [executor, receiverPtr, senderPtr, &testCompleted]() {
+                        // Destroy sender to close channel
+                        senderPtr->reset();
+
+                        // Test 4: Channel should now be closed
+                        EXPECT_TRUE(receiverPtr->isClosed());
+
+                        // Test 5: Post another operation to test asyncReceive after closure
+                        boost::asio::post(*executor, [receiverPtr, &testCompleted]() {
+                            // Test 6: Receiving from closed channel should return nullopt
+                            receiverPtr->asyncReceive([&testCompleted](auto closedValue) {
+                                EXPECT_FALSE(closedValue.has_value());
+                                testCompleted = true;
+                            });
+                        });
+                    });
                 });
             });
-            // sender destroyed when this scope ends
         }
 
         context_->run();
@@ -551,20 +602,37 @@ TEST_P(ChannelParameterizedTest, BasicErrorHandling)
                 auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 5);
                 auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
 
-                // Test 1: Send a value successfully
-                // Note: Testing closure scenarios properly in callback mode is complex due to
-                // async timing issues, so we focus on basic send/receive functionality
-                sender.asyncSend(42, [receiverPtr, &testCompleted](bool success) {
+                // Use a shared_ptr to control sender lifetime
+                auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+                // Test 1: Send a value successfully first
+                senderPtr->value().asyncSend(42, [executor, receiverPtr, senderPtr, &testCompleted](bool success) {
                     EXPECT_TRUE(success);
 
                     // Test 2: Receive the value
-                    receiverPtr->asyncReceive([&testCompleted](auto value) {
+                    receiverPtr->asyncReceive([executor, receiverPtr, senderPtr, &testCompleted](auto value) {
                         EXPECT_TRUE(value.has_value());
                         EXPECT_EQ(*value, 42);
-                        *testCompleted.lock() = true;
+
+                        // Test 3: Post operation to destroy sender and then test error conditions
+                        boost::asio::post(*executor, [executor, receiverPtr, senderPtr, &testCompleted]() {
+                            // Destroy sender to close channel
+                            senderPtr->reset();
+
+                            // Test 4: Channel should now be closed
+                            EXPECT_TRUE(receiverPtr->isClosed());
+
+                            // Test 5: Post another operation to test asyncReceive after closure
+                            boost::asio::post(*executor, [receiverPtr, &testCompleted]() {
+                                // Test 6: Receiving from closed channel should return nullopt
+                                receiverPtr->asyncReceive([&testCompleted](auto closedValue) {
+                                    EXPECT_FALSE(closedValue.has_value());
+                                    *testCompleted.lock() = true;
+                                });
+                            });
+                        });
                     });
                 });
-                // sender destroyed when this scope ends
             });
         }
 
