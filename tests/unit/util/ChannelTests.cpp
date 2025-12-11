@@ -641,6 +641,172 @@ TEST_P(ChannelParameterizedTest, BasicErrorHandling)
     }
 }
 
+// Test synchronous try* methods behavior
+TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
+{
+    auto& executorVariant = context_->getExecutor();
+
+    if (params_.contextType == ContextType::IOContext) {
+        auto& executor = std::get<boost::asio::io_context*>(executorVariant);
+
+        bool testCompleted = false;
+
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(*executor, [executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
+                // Test 1: Basic trySend/tryReceive with empty channel
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 3);
+
+                // Test 2: tryReceive on empty channel should return nullopt
+                auto emptyValue = receiver.tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                // Test 3: trySend should succeed when channel has capacity
+                bool sendSuccess1 = sender.trySend(42);
+                EXPECT_TRUE(sendSuccess1);
+
+                bool sendSuccess2 = sender.trySend(43);
+                EXPECT_TRUE(sendSuccess2);
+
+                bool sendSuccess3 = sender.trySend(44);
+                EXPECT_TRUE(sendSuccess3);
+
+                // Test 4: trySend should fail when channel is full (capacity 3)
+                bool sendSuccess4 = sender.trySend(45);
+                EXPECT_FALSE(sendSuccess4);
+
+                // Test 5: tryReceive should return values in FIFO order
+                auto value1 = receiver.tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 42);
+
+                auto value2 = receiver.tryReceive();
+                EXPECT_TRUE(value2.has_value());
+                EXPECT_EQ(*value2, 43);
+
+                // Test 6: After receiving, trySend should work again
+                bool sendSuccess5 = sender.trySend(46);
+                EXPECT_TRUE(sendSuccess5);
+
+                // Test 7: Receive remaining values
+                auto value3 = receiver.tryReceive();
+                EXPECT_TRUE(value3.has_value());
+                EXPECT_EQ(*value3, 44);
+
+                auto value4 = receiver.tryReceive();
+                EXPECT_TRUE(value4.has_value());
+                EXPECT_EQ(*value4, 46);
+
+                // Test 8: Channel should be empty again
+                auto emptyValue2 = receiver.tryReceive();
+                EXPECT_FALSE(emptyValue2.has_value());
+
+                testCompleted = true;
+            });
+        } else {
+            // Callback version - test try* methods with immediate operations
+            auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 2);
+            auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
+            auto senderPtr = std::make_shared<decltype(sender)>(std::move(sender));
+
+            boost::asio::post(*executor, [receiverPtr, senderPtr, &testCompleted]() {
+                // Test 1: tryReceive on empty channel should return nullopt
+                auto emptyValue = receiverPtr->tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                // Test 2: trySend should succeed when channel has capacity
+                bool sendSuccess1 = senderPtr->trySend(100);
+                EXPECT_TRUE(sendSuccess1);
+
+                bool sendSuccess2 = senderPtr->trySend(101);
+                EXPECT_TRUE(sendSuccess2);
+
+                // Test 3: trySend should fail when channel is full (capacity 2)
+                bool sendSuccess3 = senderPtr->trySend(102);
+                EXPECT_FALSE(sendSuccess3);
+
+                // Test 4: tryReceive should return values
+                auto value1 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 100);
+
+                // Test 5: After receiving, trySend should work again
+                bool sendSuccess4 = senderPtr->trySend(103);
+                EXPECT_TRUE(sendSuccess4);
+
+                auto value2 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value2.has_value());
+                EXPECT_EQ(*value2, 101);
+
+                auto value3 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value3.has_value());
+                EXPECT_EQ(*value3, 103);
+
+                testCompleted = true;
+            });
+        }
+
+        context_->run();
+        EXPECT_TRUE(testCompleted);
+    } else {
+        // ThreadPool version
+        auto& executor = std::get<boost::asio::thread_pool*>(executorVariant);
+
+        util::Mutex<bool> testCompleted{false};
+
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(*executor, [executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 2);
+
+                // Test basic try* operations
+                auto emptyValue = receiver.tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                bool sendSuccess1 = sender.trySend(200);
+                EXPECT_TRUE(sendSuccess1);
+
+                bool sendSuccess2 = sender.trySend(201);
+                EXPECT_TRUE(sendSuccess2);
+
+                // Channel should be full now
+                bool sendSuccess3 = sender.trySend(202);
+                EXPECT_FALSE(sendSuccess3);
+
+                auto value1 = receiver.tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 200);
+
+                auto value2 = receiver.tryReceive();
+                EXPECT_TRUE(value2.has_value());
+                EXPECT_EQ(*value2, 201);
+
+                *testCompleted.lock() = true;
+            });
+        } else {
+            boost::asio::post(*executor, [executor, &testCompleted]() mutable {
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 2);
+                auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
+                auto senderPtr = std::make_shared<decltype(sender)>(std::move(sender));
+
+                // Test try* methods
+                auto emptyValue = receiverPtr->tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                bool sendSuccess1 = senderPtr->trySend(300);
+                EXPECT_TRUE(sendSuccess1);
+
+                auto value1 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 300);
+
+                *testCompleted.lock() = true;
+            });
+        }
+
+        context_->run();
+        EXPECT_TRUE(*testCompleted.lock());
+    }
+}
+
 // Test capacity limits and backpressure behavior
 TEST_P(ChannelParameterizedTest, CapacityAndBackpressure)
 {
@@ -733,6 +899,152 @@ TEST_P(ChannelParameterizedTest, CapacityAndBackpressure)
                     });
                 });
                 // sender destroyed when this scope ends
+            });
+        }
+
+        context_->run();
+        EXPECT_TRUE(*testCompleted.lock());
+    }
+}
+
+// Test try* methods behavior with closed channels
+TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
+{
+    auto& executorVariant = context_->getExecutor();
+
+    if (params_.contextType == ContextType::IOContext) {
+        auto& executor = std::get<boost::asio::io_context*>(executorVariant);
+
+        bool testCompleted = false;
+
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(*executor, [executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 3);
+
+                // Test 1: Send some values first
+                bool sendSuccess1 = sender.trySend(42);
+                EXPECT_TRUE(sendSuccess1);
+
+                bool sendSuccess2 = sender.trySend(43);
+                EXPECT_TRUE(sendSuccess2);
+
+                // Test 2: Close channel by destroying sender
+                {
+                    auto tempSender = std::move(sender);
+                    // tempSender destroyed here, closing the channel
+                }
+
+                // Test 3: Channel should be closed
+                EXPECT_TRUE(receiver.isClosed());
+
+                // Test 4: tryReceive should still work for buffered values
+                auto value1 = receiver.tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 42);
+
+                auto value2 = receiver.tryReceive();
+                EXPECT_TRUE(value2.has_value());
+                EXPECT_EQ(*value2, 43);
+
+                // Test 5: tryReceive should return nullopt when buffer is empty and channel is closed
+                auto emptyValue = receiver.tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                testCompleted = true;
+            });
+        } else {
+            // Callback version
+            auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 3);
+            auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
+            auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+            boost::asio::post(*executor, [receiverPtr, senderPtr, &testCompleted]() {
+                // Test 1: Send some values first
+                bool sendSuccess1 = senderPtr->value().trySend(100);
+                EXPECT_TRUE(sendSuccess1);
+
+                bool sendSuccess2 = senderPtr->value().trySend(101);
+                EXPECT_TRUE(sendSuccess2);
+
+                // Test 2: Close channel by destroying sender
+                senderPtr->reset();
+
+                // Test 3: Channel should be closed
+                EXPECT_TRUE(receiverPtr->isClosed());
+
+                // Test 4: tryReceive should still work for buffered values
+                auto value1 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value1.has_value());
+                EXPECT_EQ(*value1, 100);
+
+                auto value2 = receiverPtr->tryReceive();
+                EXPECT_TRUE(value2.has_value());
+                EXPECT_EQ(*value2, 101);
+
+                // Test 5: tryReceive should return nullopt when buffer is empty and channel is closed
+                auto emptyValue = receiverPtr->tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                testCompleted = true;
+            });
+        }
+
+        context_->run();
+        EXPECT_TRUE(testCompleted);
+    } else {
+        // ThreadPool version
+        auto& executor = std::get<boost::asio::thread_pool*>(executorVariant);
+
+        util::Mutex<bool> testCompleted{false};
+
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(*executor, [executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 2);
+
+                // Send values and close channel
+                bool sendSuccess = sender.trySend(200);
+                EXPECT_TRUE(sendSuccess);
+
+                {
+                    auto tempSender = std::move(sender);
+                    // Channel closed here
+                }
+
+                EXPECT_TRUE(receiver.isClosed());
+
+                // Should still be able to receive buffered value
+                auto value = receiver.tryReceive();
+                EXPECT_TRUE(value.has_value());
+                EXPECT_EQ(*value, 200);
+
+                // Should return nullopt when empty and closed
+                auto emptyValue = receiver.tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                *testCompleted.lock() = true;
+            });
+        } else {
+            boost::asio::post(*executor, [executor, &testCompleted]() mutable {
+                auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 2);
+                auto receiverPtr = std::make_shared<decltype(receiver)>(std::move(receiver));
+                auto senderPtr = std::make_shared<std::optional<decltype(sender)>>(std::move(sender));
+
+                // Send and close
+                bool sendSuccess = senderPtr->value().trySend(300);
+                EXPECT_TRUE(sendSuccess);
+
+                senderPtr->reset();  // Close channel
+
+                EXPECT_TRUE(receiverPtr->isClosed());
+
+                auto value = receiverPtr->tryReceive();
+                EXPECT_TRUE(value.has_value());
+                EXPECT_EQ(*value, 300);
+
+                auto emptyValue = receiverPtr->tryReceive();
+                EXPECT_FALSE(emptyValue.has_value());
+
+                *testCompleted.lock() = true;
             });
         }
 

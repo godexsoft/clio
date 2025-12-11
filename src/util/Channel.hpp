@@ -115,7 +115,8 @@ private:
         trySend(D&& data)
             requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
         {
-            return shared_->channel().try_send(std::forward<decltype(data)>(data));
+            boost::system::error_code ec;
+            return shared_->channel().try_send(ec, std::forward<decltype(data)>(data));
         }
     };
 
@@ -135,8 +136,9 @@ private:
         tryReceive()
         {
             std::optional<T> result;
-            auto const received = shared_->channel().try_receive([&result](auto&& value) {
-                result = std::forward<decltype(value)>(value);
+            auto const received = shared_->channel().try_receive([&result](boost::system::error_code ec, auto&& value) {
+                if (not ec)
+                    result = std::forward<decltype(value)>(value);
             });
 
             if (received)
