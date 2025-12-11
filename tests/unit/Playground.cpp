@@ -37,165 +37,276 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
+#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace testing;
 
-TEST(ChannelTests, MultipleSendersOneReceiverIOContext)
-{
-    boost::asio::io_context ioc{};
-    auto [sender, receiver] = util::Channel<int>::createChannel(ioc, 10);
+enum class ContextType { IOContext, ThreadPool };
+enum class ApproachType { Spawn, Callback };
 
-    std::vector<int> receivedValues;
-    auto const numSenders = 3uz;
-    auto const valuesPerSender = 500uz;
+struct ChannelTestParams {
+    ContextType contextType;
+    ApproachType approachType;
 
-    util::spawn(
-        ioc,
-        [&receiver,
-         &receivedValues,
-         totalExpected = numSenders * valuesPerSender](boost::asio::yield_context yield) mutable {
-            while (receivedValues.size() < totalExpected) {
-                auto value = receiver.asyncReceive(yield);
-                if (value.has_value()) {
-                    receivedValues.push_back(*value);
-                } else {
-                    break;
-                }
-            }
-        }
-    );
-
-    for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-        util::spawn(ioc, [senderCopy = sender, senderId](boost::asio::yield_context yield) mutable {
-            for (auto i = 0uz; i < valuesPerSender; ++i) {
-                int value = (senderId * 100) + i;
-                bool success = senderCopy.asyncSend(value, yield);
-                if (not success)
-                    break;
-            }
-        });
-    }
-
-    ioc.run();
-
-    EXPECT_EQ(receivedValues.size(), numSenders * valuesPerSender);
-
-    std::ranges::sort(receivedValues);
-    std::vector<int> expectedValues;
-    for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-        for (auto i = 0uz; i < valuesPerSender; ++i)
-            expectedValues.push_back((senderId * 100) + i);
-    }
-    std::ranges::sort(expectedValues);
-
-    EXPECT_EQ(receivedValues, expectedValues);
-}
-
-TEST(ChannelTests, MultipleSendersOneReceiverThreadPool)
-{
-    boost::asio::thread_pool ioc{4};
-    auto [sender, receiver] = util::Channel<int>::createChannel(ioc, 10);
-
-    util::Mutex<std::vector<int>> receivedValues;
-    auto const numSenders = 3uz;
-    auto const valuesPerSender = 500uz;
-
-    util::spawn(ioc, [&receiver, &receivedValues](boost::asio::yield_context yield) mutable {
-        auto value = receiver.asyncReceive(yield);
-        while (value.has_value()) {
-            receivedValues.lock()->push_back(*value);
-            value = receiver.asyncReceive(yield);
-        }
-    });
-
+    std::string
+    toString() const
     {
-        auto localSender = std::move(sender);
-        for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-            util::spawn(ioc, [senderCopy = localSender, senderId](boost::asio::yield_context yield) mutable {
-                for (auto i = 0uz; i < valuesPerSender; ++i) {
-                    int value = (senderId * 100) + i;
-                    bool success = senderCopy.asyncSend(value, yield);
-                    if (not success)
+        std::string context = (contextType == ContextType::IOContext) ? "IOContext" : "ThreadPool";
+        std::string approach = (approachType == ApproachType::Spawn) ? "Spawn" : "Callback";
+        return context + "_" + approach;
+    }
+};
+
+class ContextWrapper {
+public:
+    using ContextVariant = std::variant<boost::asio::io_context*, boost::asio::thread_pool*>;
+
+    explicit ContextWrapper(ContextType type) : type_(type)
+    {
+        if (type == ContextType::IOContext) {
+            ioContext_ = std::make_unique<boost::asio::io_context>();
+            context_ = ioContext_.get();
+        } else {
+            threadPool_ = std::make_unique<boost::asio::thread_pool>(4);
+            context_ = threadPool_.get();
+        }
+    }
+
+    template <typename T>
+    T&
+    get()
+    {
+        return *std::get<T*>(context_);
+    }
+
+    void
+    run()
+    {
+        if (type_ == ContextType::IOContext) {
+            get<boost::asio::io_context>().run();
+        } else {
+            get<boost::asio::thread_pool>().join();
+        }
+    }
+
+    ContextVariant&
+    getExecutor()
+    {
+        return context_;
+    }
+
+private:
+    ContextType type_;
+    ContextVariant context_;
+    std::unique_ptr<boost::asio::io_context> ioContext_;
+    std::unique_ptr<boost::asio::thread_pool> threadPool_;
+};
+
+class ChannelParameterizedTest : public TestWithParam<ChannelTestParams> {
+protected:
+    void
+    SetUp() override
+    {
+        params_ = GetParam();
+        context_ = std::make_unique<ContextWrapper>(params_.contextType);
+    }
+
+    ChannelTestParams params_{};
+    std::unique_ptr<ContextWrapper> context_;
+
+    static constexpr auto kNUM_SENDERS = 3uz;
+    static constexpr auto kVALUES_PER_SENDER = 500uz;
+    static constexpr auto kTOTAL_EXPECTED = kNUM_SENDERS * kVALUES_PER_SENDER;
+
+public:
+    template <typename Sender, typename Receiver>
+    void
+    runIOContextTest(Sender sender, Receiver receiver, boost::asio::io_context& executor)
+    {
+        std::vector<int> receivedValues;
+
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(executor, [&receiver, &receivedValues](boost::asio::yield_context yield) mutable {
+                while (receivedValues.size() < kTOTAL_EXPECTED) {
+                    auto value = receiver.asyncReceive(yield);
+                    if (value.has_value()) {
+                        receivedValues.push_back(*value);
+                    } else {
                         break;
+                    }
                 }
             });
-        }
-    }
 
-    ioc.join();
-
-    EXPECT_EQ(receivedValues.lock()->size(), numSenders * valuesPerSender);
-
-    std::ranges::sort(receivedValues.lock().get());
-    std::vector<int> expectedValues;
-    for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-        for (auto i = 0uz; i < valuesPerSender; ++i)
-            expectedValues.push_back((senderId * 100) + i);
-    }
-    std::ranges::sort(expectedValues);
-
-    EXPECT_EQ(receivedValues.lock().get(), expectedValues);
-}
-
-TEST(ChannelTests, MultipleSendersOneReceiverThreadPoolWithPost)
-{
-    boost::asio::thread_pool pool{4};
-    auto [sender, receiver] = util::Channel<int>::createChannel(pool, 10);  // buffered channel
-
-    util::Mutex<std::vector<int>> receivedValues;
-    auto const numSenders = 3uz;
-    auto const valuesPerSender = 500uz;
-    auto const totalExpected = numSenders * valuesPerSender;
-
-    auto receiveNext = [&receiver, &receivedValues, totalExpected](this auto&& self) -> void {
-        if (receivedValues.lock()->size() >= totalExpected)
-            return;
-
-        receiver.asyncReceive([&receivedValues, self = std::forward<decltype(self)>(self)](auto value) {
-            if (value.has_value()) {
-                receivedValues.lock()->push_back(*value);
-                self();
+            for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                util::spawn(executor, [sender, senderId](boost::asio::yield_context yield) mutable {
+                    for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                        int value = (senderId * 100) + i;
+                        bool success = sender.asyncSend(value, yield);
+                        if (!success)
+                            break;
+                    }
+                });
             }
-        });
-    };
-
-    boost::asio::post(pool, receiveNext);
-
-    for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-        auto senderCopy = sender;
-
-        boost::asio::post(pool, [senderCopy = std::move(senderCopy), senderId, &pool]() mutable {
-            auto sendNext =
-                [senderCopy = std::move(senderCopy), senderId, &pool](this auto&& self, std::size_t i) -> void {
-                if (i >= valuesPerSender)
+        } else {
+            auto receiveNext = [&receiver, &receivedValues](this auto&& self) -> void {
+                if (receivedValues.size() >= kTOTAL_EXPECTED)
                     return;
 
-                int value = (senderId * 100) + i;
-                senderCopy.asyncSend(
-                    value, [self = std::forward<decltype(self)>(self), &pool, i](bool success) mutable {
-                        if (success)
-                            boost::asio::post(pool, [self = std::move(self), i]() mutable { self(i + 1); });
+                receiver.asyncReceive([&receivedValues, self = std::forward<decltype(self)>(self)](auto value) {
+                    if (value.has_value()) {
+                        receivedValues.push_back(*value);
+                        self();
                     }
-                );
+                });
             };
 
-            sendNext(0);
-        });
+            boost::asio::post(executor, receiveNext);
+
+            for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                auto senderCopy = sender;
+                boost::asio::post(executor, [senderCopy = std::move(senderCopy), senderId, &executor]() mutable {
+                    auto sendNext = [senderCopy = std::move(senderCopy),
+                                     senderId,
+                                     &executor](this auto&& self, std::size_t i) -> void {
+                        if (i >= kVALUES_PER_SENDER)
+                            return;
+
+                        int value = (senderId * 100) + i;
+                        senderCopy.asyncSend(
+                            value, [self = std::forward<decltype(self)>(self), &executor, i](bool success) mutable {
+                                if (success)
+                                    boost::asio::post(executor, [self = std::move(self), i]() mutable { self(i + 1); });
+                            }
+                        );
+                    };
+                    sendNext(0);
+                });
+            }
+        }
+
+        context_->run();
+
+        EXPECT_EQ(receivedValues.size(), kTOTAL_EXPECTED);
+        std::ranges::sort(receivedValues);
+
+        std::vector<int> expectedValues;
+        for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                expectedValues.push_back((senderId * 100) + i);
+            }
+        }
+        std::ranges::sort(expectedValues);
+        EXPECT_EQ(receivedValues, expectedValues);
     }
 
-    pool.join();
+    template <typename Sender, typename Receiver>
+    void
+    runThreadPoolTest(Sender sender, Receiver receiver, boost::asio::thread_pool& executor)
+    {
+        util::Mutex<std::vector<int>> receivedValues;
 
-    EXPECT_EQ(receivedValues.lock()->size(), numSenders * valuesPerSender);
+        if (params_.approachType == ApproachType::Spawn) {
+            util::spawn(executor, [&receiver, &receivedValues](boost::asio::yield_context yield) mutable {
+                auto value = receiver.asyncReceive(yield);
+                while (value.has_value()) {
+                    receivedValues.lock()->push_back(*value);
+                    value = receiver.asyncReceive(yield);
+                }
+            });
 
-    std::ranges::sort(receivedValues.lock().get());
-    std::vector<int> expectedValues;
-    for (auto senderId = 0uz; senderId < numSenders; ++senderId) {
-        for (auto i = 0uz; i < valuesPerSender; ++i)
-            expectedValues.push_back((senderId * 100) + i);
+            auto localSender = std::move(sender);
+            for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                util::spawn(executor, [senderCopy = localSender, senderId](boost::asio::yield_context yield) mutable {
+                    for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                        int value = (senderId * 100) + i;
+                        bool success = senderCopy.asyncSend(value, yield);
+                        if (!success)
+                            break;
+                    }
+                });
+            }
+        } else {
+            auto receiveNext = [&receiver, &receivedValues](this auto&& self) -> void {
+                if (receivedValues.lock()->size() >= kTOTAL_EXPECTED)
+                    return;
+
+                receiver.asyncReceive([&receivedValues, self = std::forward<decltype(self)>(self)](auto value) {
+                    if (value.has_value()) {
+                        receivedValues.lock()->push_back(*value);
+                        self();
+                    }
+                });
+            };
+
+            boost::asio::post(executor, receiveNext);
+
+            for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                auto senderCopy = sender;
+                boost::asio::post(executor, [senderCopy = std::move(senderCopy), senderId, &executor]() mutable {
+                    auto sendNext = [senderCopy = std::move(senderCopy),
+                                     senderId,
+                                     &executor](this auto&& self, std::size_t i) -> void {
+                        if (i >= kVALUES_PER_SENDER)
+                            return;
+
+                        int value = (senderId * 100) + i;
+                        senderCopy.asyncSend(
+                            value, [self = std::forward<decltype(self)>(self), &executor, i](bool success) mutable {
+                                if (success) {
+                                    boost::asio::post(executor, [self = std::move(self), i]() mutable { self(i + 1); });
+                                }
+                            }
+                        );
+                    };
+                    sendNext(0);
+                });
+            }
+        }
+
+        context_->run();
+
+        EXPECT_EQ(receivedValues.lock()->size(), kTOTAL_EXPECTED);
+        std::ranges::sort(receivedValues.lock().get());
+
+        std::vector<int> expectedValues;
+        for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                expectedValues.push_back((senderId * 100) + i);
+            }
+        }
+        std::ranges::sort(expectedValues);
+        EXPECT_EQ(receivedValues.lock().get(), expectedValues);
     }
-    std::ranges::sort(expectedValues);
+};
 
-    EXPECT_EQ(receivedValues.lock().get(), expectedValues);
+TEST_P(ChannelParameterizedTest, MultipleSendersOneReceiver)
+{
+    auto& executorVariant = context_->getExecutor();
+
+    if (params_.contextType == ContextType::IOContext) {
+        auto& executor = std::get<boost::asio::io_context*>(executorVariant);
+        auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 10);
+        runIOContextTest(std::move(sender), std::move(receiver), *executor);
+    } else {
+        auto& executor = std::get<boost::asio::thread_pool*>(executorVariant);
+        auto [sender, receiver] = util::Channel<int>::createChannel(*executor, 10);
+        runThreadPoolTest(std::move(sender), std::move(receiver), *executor);
+    }
 }
+
+// Test parameter combinations
+INSTANTIATE_TEST_SUITE_P(
+    AllCombinations,
+    ChannelParameterizedTest,
+    Values(
+        ChannelTestParams{ContextType::IOContext, ApproachType::Spawn},
+        ChannelTestParams{ContextType::IOContext, ApproachType::Callback},
+        ChannelTestParams{ContextType::ThreadPool, ApproachType::Spawn},
+        ChannelTestParams{ContextType::ThreadPool, ApproachType::Callback}
+    ),
+    [](TestParamInfo<ChannelTestParams> const& info) { return info.param.toString(); }
+);
