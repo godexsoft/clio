@@ -46,7 +46,7 @@ private:
         {
         }
 
-        auto&
+        [[nodiscard]] auto&
         channel()
         {
             return ch_;
@@ -58,7 +58,7 @@ private:
             ch_.close();
         }
 
-        bool
+        [[nodiscard]] bool
         isClosed() const
         {
             return not ch_.is_open();
@@ -147,7 +147,7 @@ private:
             return std::nullopt;
         }
 
-        std::optional<T>
+        [[nodiscard]] std::optional<T>
         asyncReceive(boost::asio::yield_context yield)
         {
             boost::system::error_code ec;
@@ -173,7 +173,7 @@ private:
             );
         }
 
-        bool
+        [[nodiscard]] bool
         isClosed() const
         {
             return shared_->isClosed();

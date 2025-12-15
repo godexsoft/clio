@@ -52,7 +52,7 @@ struct ChannelTestParams {
     ContextType contextType;
     ApproachType approachType;
 
-    std::string
+    [[nodiscard]] std::string
     toString() const
     {
         std::string context = (contextType == ContextType::IOContext) ? "IOContext" : "ThreadPool";
@@ -76,7 +76,7 @@ public:
     }
 
     template <typename T>
-    T&
+    [[nodiscard]] T&
     get()
     {
         return *std::get<std::unique_ptr<T>>(context_);
