@@ -182,7 +182,7 @@ private:
 
 public:
     static std::pair<Sender, Receiver>
-    createChannel(auto&& context, std::size_t capacity)
+    create(auto&& context, std::size_t capacity)
     {
         auto shared = std::make_shared<Shared>(context, capacity);
         auto sender = Sender{shared};
