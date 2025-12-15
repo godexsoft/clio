@@ -93,9 +93,9 @@ private:
         asyncSend(D&& data, boost::asio::yield_context yield)
             requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
         {
-            boost::system::error_code ec;
-            shared_->channel().async_send(ec, std::forward<D>(data), yield[ec]);
-            return not ec;
+            boost::system::error_code ecIn, ecOut;
+            shared_->channel().async_send(ecIn, std::forward<D>(data), yield[ecOut]);
+            return not ecOut;
         }
 
         template <typename D>
