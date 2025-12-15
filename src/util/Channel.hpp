@@ -37,16 +37,17 @@ namespace util {
 template <typename T>
 class Channel {
 private:
-    class Shared {
+    class ControlBlock {
+        using InternalChannelType = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, T)>;
         boost::asio::any_io_executor executor_;
-        boost::asio::experimental::concurrent_channel<void(boost::system::error_code, T)> ch_;
+        InternalChannelType ch_;
 
     public:
-        Shared(auto&& context, std::size_t capacity) : executor_(context.get_executor()), ch_(context, capacity)
+        ControlBlock(auto&& context, std::size_t capacity) : executor_(context.get_executor()), ch_(context, capacity)
         {
         }
 
-        [[nodiscard]] auto&
+        [[nodiscard]] InternalChannelType&
         channel()
         {
             return ch_;
@@ -66,9 +67,9 @@ private:
     };
 
     class Sender {
-        std::shared_ptr<Shared> shared_;
+        std::shared_ptr<ControlBlock> shared_;
         struct Inner {
-            std::shared_ptr<Shared> shared;
+            std::shared_ptr<ControlBlock> shared;
 
             ~Inner()
             {
@@ -78,7 +79,7 @@ private:
         std::shared_ptr<Inner> inner_;
 
     public:
-        Sender(std::shared_ptr<Shared> shared)
+        Sender(std::shared_ptr<ControlBlock> shared)
             : shared_(std::move(shared)), inner_(std::make_shared<Inner>(shared_)) {};
         Sender(Sender&&) = default;
         Sender(Sender const&) = default;
@@ -93,7 +94,7 @@ private:
             requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
         {
             boost::system::error_code ec;
-            shared_->channel().async_send(ec, std::forward<decltype(data)>(data), yield[ec]);
+            shared_->channel().async_send(ec, std::forward<D>(data), yield[ec]);
             return not ec;
         }
 
@@ -102,10 +103,10 @@ private:
         asyncSend(D&& data, std::invocable<bool> auto&& fn)
             requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
         {
-            boost::system::error_code ec;
+            boost::system::error_code ecIn;
             shared_->channel().async_send(
-                ec,
-                std::forward<decltype(data)>(data),
+                ecIn,
+                std::forward<D>(data),
                 [fn = std::forward<decltype(fn)>(fn)](boost::system::error_code ec) mutable { fn(not ec); }
             );
         }
@@ -116,15 +117,15 @@ private:
             requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
         {
             boost::system::error_code ec;
-            return shared_->channel().try_send(ec, std::forward<decltype(data)>(data));
+            return shared_->channel().try_send(ec, std::forward<D>(data));
         }
     };
 
     class Receiver {
-        std::shared_ptr<Shared> shared_;
+        std::shared_ptr<ControlBlock> shared_;
 
     public:
-        Receiver(std::shared_ptr<Shared> shared) : shared_(std::move(shared)) {};
+        Receiver(std::shared_ptr<ControlBlock> shared) : shared_(std::move(shared)) {};
         Receiver(Receiver&&) = default;
         Receiver(Receiver const&) = delete;
         Receiver&
@@ -184,7 +185,7 @@ public:
     static std::pair<Sender, Receiver>
     create(auto&& context, std::size_t capacity)
     {
-        auto shared = std::make_shared<Shared>(context, capacity);
+        auto shared = std::make_shared<ControlBlock>(std::forward<decltype(context)>(context), capacity);
         auto sender = Sender{shared};
         auto receiver = Receiver{shared};
 

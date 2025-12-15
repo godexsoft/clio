@@ -19,6 +19,7 @@
 
 #include "util/Channel.hpp"
 #include "util/Mutex.hpp"
+#include "util/OverloadSet.hpp"
 #include "util/Spawn.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -36,7 +37,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -44,6 +44,8 @@
 using namespace testing;
 
 namespace {
+
+constexpr auto kDEFAULT_THREAD_POOL_SIZE = 4;
 
 enum class ContextType { IOContext, ThreadPool };
 enum class ApproachType { Spawn, Callback };
@@ -63,36 +65,33 @@ struct ChannelTestParams {
 
 class ContextWrapper {
 public:
-    using ContextVariant =
-        std::variant<std::unique_ptr<boost::asio::io_context>, std::unique_ptr<boost::asio::thread_pool>>;
+    using ContextVariant = std::variant<boost::asio::io_context, boost::asio::thread_pool>;
 
     explicit ContextWrapper(ContextType type)
+        : context_([type] {
+            if (type == ContextType::IOContext) {
+                return ContextVariant(std::in_place_type_t<boost::asio::io_context>());
+            }
+
+            return ContextVariant(std::in_place_type_t<boost::asio::thread_pool>(), kDEFAULT_THREAD_POOL_SIZE);
+        }())
     {
-        if (type == ContextType::IOContext) {
-            context_ = std::make_unique<boost::asio::io_context>();
-        } else {
-            context_ = std::make_unique<boost::asio::thread_pool>(4);
-        }
     }
 
     template <typename T>
     [[nodiscard]] T&
     get()
     {
-        return *std::get<std::unique_ptr<T>>(context_);
+        return std::get<T>(context_);
     }
 
     void
     run()
     {
         std::visit(
-            [](auto& contextPtr) {
-                using ContextType = std::decay_t<decltype(*contextPtr)>;
-                if constexpr (std::is_same_v<ContextType, boost::asio::io_context>) {
-                    contextPtr->run();
-                } else {
-                    contextPtr->join();
-                }
+            util::OverloadSet{
+                [](boost::asio::io_context& context) { context.run(); },
+                [](boost::asio::thread_pool& context) { context.join(); },
             },
             context_
         );
