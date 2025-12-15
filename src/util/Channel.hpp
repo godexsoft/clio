@@ -34,6 +34,10 @@
 
 namespace util {
 
+/**
+ * @brief Represents a go-like channel synchronization primitive.
+ * @tparam T The type of data the channel transfers
+ */
 template <typename T>
 class Channel {
 private:
@@ -182,6 +186,12 @@ private:
     };
 
 public:
+    /**
+     * @brief Factory function to create channel components.
+     * @param context A supported context type (either io_context or thread_pool)
+     * @param capacity Size of the internal buffer on the channel
+     * @return A pair of Sender and Receiver
+     */
     static std::pair<Sender, Receiver>
     create(auto&& context, std::size_t capacity)
     {
