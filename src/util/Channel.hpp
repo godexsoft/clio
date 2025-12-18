@@ -35,7 +35,7 @@
 namespace util {
 
 /**
- * @brief Represents a go-like channel synchronization primitive.
+ * @brief Represents a go-like channel, a single-producer (Sender) multi-consumer (Receiver) thread-safe data pipe.
  * @tparam T The type of data the channel transfers
  */
 template <typename T>

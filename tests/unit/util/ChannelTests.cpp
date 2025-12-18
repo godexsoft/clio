@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "util/Assert.hpp"
 #include "util/Channel.hpp"
 #include "util/Mutex.hpp"
 #include "util/OverloadSet.hpp"
@@ -29,6 +30,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/system/detail/error_code.hpp>
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -59,7 +61,7 @@ struct ChannelTestParams {
     {
         std::string context = (contextType == ContextType::IOContext) ? "IOContext" : "ThreadPool";
         std::string approach = (approachType == ApproachType::Spawn) ? "Spawn" : "Callback";
-        return context + "_" + approach;
+        return fmt::format("{}Using{}", context, approach);
     }
 };
 
@@ -69,11 +71,14 @@ public:
 
     explicit ContextWrapper(ContextType type)
         : context_([type] {
-            if (type == ContextType::IOContext) {
+            if (type == ContextType::IOContext)
                 return ContextVariant(std::in_place_type_t<boost::asio::io_context>());
-            }
 
-            return ContextVariant(std::in_place_type_t<boost::asio::thread_pool>(), kDEFAULT_THREAD_POOL_SIZE);
+            if (type == ContextType::ThreadPool)
+                return ContextVariant(std::in_place_type_t<boost::asio::thread_pool>(), kDEFAULT_THREAD_POOL_SIZE);
+
+            ASSERT(false, "Unknown new type of context");
+            std::unreachable();
         }())
     {
     }
@@ -127,11 +132,9 @@ protected:
             util::spawn(executor, [&receiver, &receivedValues](boost::asio::yield_context yield) mutable {
                 while (receivedValues.size() < kTOTAL_EXPECTED) {
                     auto value = receiver.asyncReceive(yield);
-                    if (value.has_value()) {
-                        receivedValues.push_back(*value);
-                    } else {
+                    if (not value.has_value())
                         break;
-                    }
+                    receivedValues.push_back(*value);
                 }
             });
 
@@ -241,7 +244,7 @@ protected:
                 boost::asio::post(executor, [senderCopy = std::move(senderCopy), senderId, &executor]() mutable {
                     auto sendNext = [senderCopy = std::move(senderCopy),
                                      senderId,
-                                     &executor](this auto&& self, std::size_t i) -> void {
+                                     &executor](this auto&& self, std::size_t i) {
                         if (i >= kVALUES_PER_SENDER)
                             return;
 
