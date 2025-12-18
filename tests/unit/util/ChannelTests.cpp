@@ -105,15 +105,12 @@ private:
 
 class ChannelParameterizedTest : public TestWithParam<ChannelTestParams> {
 protected:
-    void
-    SetUp() override
+    ChannelParameterizedTest() : params_(GetParam()), context_(params_.contextType)
     {
-        params_ = GetParam();
-        context_ = std::make_unique<ContextWrapper>(params_.contextType);
     }
 
     ChannelTestParams params_{};
-    std::unique_ptr<ContextWrapper> context_;
+    ContextWrapper context_;
 
     static constexpr auto kNUM_SENDERS = 3uz;
     static constexpr auto kVALUES_PER_SENDER = 500uz;
@@ -142,8 +139,7 @@ protected:
                 util::spawn(executor, [sender, senderId](boost::asio::yield_context yield) mutable {
                     for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
                         int value = (senderId * 100) + i;
-                        bool success = sender.asyncSend(value, yield);
-                        if (!success)
+                        if (not sender.asyncSend(value, yield))
                             break;
                     }
                 });
@@ -185,7 +181,7 @@ protected:
             }
         }
 
-        context_->run();
+        context_.run();
 
         EXPECT_EQ(receivedValues.size(), kTOTAL_EXPECTED);
         std::ranges::sort(receivedValues);
@@ -220,8 +216,7 @@ protected:
                 util::spawn(executor, [senderCopy = localSender, senderId](boost::asio::yield_context yield) mutable {
                     for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
                         int value = (senderId * 100) + i;
-                        bool success = senderCopy.asyncSend(value, yield);
-                        if (!success)
+                        if (not senderCopy.asyncSend(value, yield))
                             break;
                     }
                 });
@@ -253,9 +248,8 @@ protected:
                         int value = (senderId * 100) + i;
                         senderCopy.asyncSend(
                             value, [self = std::forward<decltype(self)>(self), &executor, i](bool success) mutable {
-                                if (success) {
+                                if (success)
                                     boost::asio::post(executor, [self = std::move(self), i]() mutable { self(i + 1); });
-                                }
                             }
                         );
                     };
@@ -264,7 +258,7 @@ protected:
             }
         }
 
-        context_->run();
+        context_.run();
 
         EXPECT_EQ(receivedValues.lock()->size(), kTOTAL_EXPECTED);
         std::ranges::sort(receivedValues.lock().get());
@@ -283,11 +277,11 @@ protected:
 TEST_P(ChannelParameterizedTest, MultipleSendersOneReceiver)
 {
     if (params_.contextType == ContextType::IOContext) {
-        auto& executor = context_->get<boost::asio::io_context>();
+        auto& executor = context_.get<boost::asio::io_context>();
         auto [sender, receiver] = util::Channel<int>::create(executor, 10);
         runIOContextTest(std::move(sender), std::move(receiver), executor);
     } else {
-        auto& executor = context_->get<boost::asio::thread_pool>();
+        auto& executor = context_.get<boost::asio::thread_pool>();
         auto [sender, receiver] = util::Channel<int>::create(executor, 10);
         runThreadPoolTest(std::move(sender), std::move(receiver), executor);
     }
@@ -308,7 +302,7 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
 {
     if (params_.contextType == ContextType::IOContext) {
-        auto& executor = context_->get<boost::asio::io_context>();
+        auto& executor = context_.get<boost::asio::io_context>();
 
         bool testCompleted = false;
 
@@ -369,10 +363,10 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(testCompleted);
     } else {
-        auto& executor = context_->get<boost::asio::thread_pool>();
+        auto& executor = context_.get<boost::asio::thread_pool>();
 
         util::Mutex<bool> testCompleted{false};
 
@@ -436,7 +430,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(*testCompleted.lock());
     }
 }
@@ -444,7 +438,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
 TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
 {
     if (params_.contextType == ContextType::IOContext) {
-        auto& executor = context_->get<boost::asio::io_context>();
+        auto& executor = context_.get<boost::asio::io_context>();
 
         bool testCompleted = false;
 
@@ -530,10 +524,10 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(testCompleted);
     } else {
-        auto& executor = context_->get<boost::asio::thread_pool>();
+        auto& executor = context_.get<boost::asio::thread_pool>();
 
         util::Mutex<bool> testCompleted{false};
 
@@ -583,7 +577,7 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(*testCompleted.lock());
     }
 }
@@ -591,7 +585,7 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
 TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
 {
     if (params_.contextType == ContextType::IOContext) {
-        auto& executor = context_->get<boost::asio::io_context>();
+        auto& executor = context_.get<boost::asio::io_context>();
 
         bool testCompleted = false;
 
@@ -656,10 +650,10 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(testCompleted);
     } else {
-        auto& executor = context_->get<boost::asio::thread_pool>();
+        auto& executor = context_.get<boost::asio::thread_pool>();
 
         util::Mutex<bool> testCompleted{false};
 
@@ -709,7 +703,7 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
             });
         }
 
-        context_->run();
+        context_.run();
         EXPECT_TRUE(*testCompleted.lock());
     }
 }
