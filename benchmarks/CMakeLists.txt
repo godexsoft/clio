@@ -10,7 +10,7 @@ target_sources(
           # Logger
           util/log/LoggerBenchmark.cpp
           # WorkQueue
-          util/WorkQueueBenchmarks.cpp
+          rpc/WorkQueueBenchmarks.cpp
 )
 
 include(deps/gbench)
