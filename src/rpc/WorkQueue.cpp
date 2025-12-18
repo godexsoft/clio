@@ -36,7 +36,6 @@
 #include <functional>
 #include <optional>
 #include <utility>
-#include <vector>
 
 namespace rpc {
 

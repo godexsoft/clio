@@ -45,7 +45,9 @@
 using namespace rpc;
 using namespace util::config;
 
-static auto const kCONFIG = ClioConfigDefinition{
+namespace {
+
+auto const kCONFIG = ClioConfigDefinition{
     {"prometheus.compress_reply", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
     {"prometheus.enabled", ConfigValue{ConfigType::Boolean}.defaultValue(true)},
     {"log.channels.[].channel", Array{ConfigValue{ConfigType::String}}},
@@ -61,7 +63,7 @@ static auto const kCONFIG = ClioConfigDefinition{
 };
 
 // this should be a fixture but it did not work with Args very well
-static void
+void
 init()
 {
     static std::once_flag kONCE;
@@ -70,6 +72,8 @@ init()
         (void)util::LogService::init(kCONFIG);
     });
 }
+
+}  // namespace
 
 static void
 benchmarkWorkQueue(benchmark::State& state)

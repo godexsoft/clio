@@ -9,7 +9,7 @@ target_sources(
           util/async/ExecutionContextBenchmarks.cpp
           # Logger
           util/log/LoggerBenchmark.cpp
-          # WQ test
+          # WorkQueue
           util/WorkQueueBenchmarks.cpp
 )
 
