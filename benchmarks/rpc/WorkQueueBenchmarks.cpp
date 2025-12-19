@@ -121,6 +121,7 @@ benchmarkWorkQueue(benchmark::State& state)
     --benchmark_min_time=1x \
     --benchmark_filter="WorkQueue"
 */
+// TODO: figure out what happens on 1 thread
 BENCHMARK(benchmarkWorkQueue)
     ->ArgsProduct({{1'000, 10'000, 100'000}, {2, 4, 8}, {0, 5'000}, {10, 100, 250}})
     ->Unit(benchmark::kMillisecond);
