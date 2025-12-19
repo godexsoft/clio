@@ -80,7 +80,7 @@ benchmarkWorkQueue(benchmark::State& state)
 {
     init();
 
-    auto const kTOTAL = static_cast<size_t>(state.range(0));
+    auto const total = static_cast<size_t>(state.range(0));
     auto const numThreads = static_cast<uint32_t>(state.range(1));
     auto const maxSize = static_cast<uint32_t>(state.range(2));
     auto const delayMs = static_cast<uint32_t>(state.range(3));
@@ -93,7 +93,7 @@ benchmarkWorkQueue(benchmark::State& state)
         WorkQueue queue(numThreads, maxSize);
         state.ResumeTiming();
 
-        for (auto i = 0uz; i < kTOTAL; ++i) {
+        for (auto i = 0uz; i < total; ++i) {
             totalQueued += static_cast<std::size_t>(queue.postCoro(
                 [&delayMs, &totalExecuted](auto yield) {
                     ++totalExecuted;
@@ -106,7 +106,7 @@ benchmarkWorkQueue(benchmark::State& state)
         }
 
         queue.stop();
-        ASSERT(totalQueued <= kTOTAL && totalExecuted == totalQueued, "Totals don't match");
+        ASSERT(totalQueued <= total && totalExecuted == totalQueued, "Totals don't match");
     }
 }
 
