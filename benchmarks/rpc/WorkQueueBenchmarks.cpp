@@ -112,10 +112,10 @@ benchmarkWorkQueue(benchmark::State& state)
 
 // Usage example:
 /*
-  clio_benchmark
-    --benchmark_repetitions=10
-    --benchmark_display_aggregates_only=true
-    --benchmark_min_time=1x
+  ./clio_benchmark \
+    --benchmark_repetitions=10 \
+    --benchmark_display_aggregates_only=true \
+    --benchmark_min_time=1x \
     --benchmark_filter="WorkQueue"
 */
 BENCHMARK(benchmarkWorkQueue)
