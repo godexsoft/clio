@@ -106,7 +106,10 @@ benchmarkWorkQueue(benchmark::State& state)
         }
 
         queue.stop();
-        ASSERT(totalQueued <= total && totalExecuted == totalQueued, "Totals don't match");
+
+        ASSERT(totalExecuted == totalQueued, "Totals don't match");
+        ASSERT(totalQueued <= total, "Queued more than requested");
+        ASSERT(totalQueued >= maxSize, "Queued less than maxSize");
     }
 }
 
