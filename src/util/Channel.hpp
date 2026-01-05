@@ -145,15 +145,12 @@ private:
         tryReceive()
         {
             std::optional<T> result;
-            auto const received = shared_->channel().try_receive([&result](boost::system::error_code ec, auto&& value) {
+            shared_->channel().try_receive([&result](boost::system::error_code ec, auto&& value) {
                 if (not ec)
                     result = std::forward<decltype(value)>(value);
             });
 
-            if (received)
-                return result;
-
-            return std::nullopt;
+            return result;
         }
 
         [[nodiscard]] std::optional<T>
