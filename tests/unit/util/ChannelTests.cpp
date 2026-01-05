@@ -290,6 +290,194 @@ TEST_P(ChannelParameterizedTest, MultipleSendersOneReceiver)
     }
 }
 
+TEST_P(ChannelParameterizedTest, MultipleSendersMultipleReceivers)
+{
+    static constexpr auto kNUM_RECEIVERS = 3uz;
+
+    if (params_.contextType == ContextType::IOContext) {
+        auto& executor = context_.get<boost::asio::io_context>();
+        auto [sender, receiver] = util::Channel<int>::create(executor, 10);
+
+        util::Mutex<std::vector<int>> receivedValues;
+        std::vector<decltype(receiver)> receivers(kNUM_RECEIVERS, receiver);
+
+        if (params_.approachType == ApproachType::Spawn) {
+            for (auto receiverId = 0uz; receiverId < kNUM_RECEIVERS; ++receiverId) {
+                util::spawn(
+                    executor,
+                    [&receiverRef = receivers[receiverId], &receivedValues](boost::asio::yield_context yield) mutable {
+                        while (true) {
+                            auto value = receiverRef.asyncReceive(yield);
+                            if (not value.has_value())
+                                break;
+                            receivedValues.lock()->push_back(*value);
+                        }
+                    }
+                );
+            }
+
+            {
+                auto localSender = std::move(sender);
+                for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                    util::spawn(
+                        executor, [senderCopy = localSender, senderId](boost::asio::yield_context yield) mutable {
+                            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                                int value = (senderId * 100) + i;
+                                if (not senderCopy.asyncSend(value, yield))
+                                    break;
+                            }
+                        }
+                    );
+                }
+            }  // original sender destroyed here
+        } else {
+            for (auto receiverId = 0uz; receiverId < kNUM_RECEIVERS; ++receiverId) {
+                auto& receiverRef = receivers[receiverId];
+                auto receiveNext = [&receiverRef, &receivedValues](this auto&& self) -> void {
+                    receiverRef.asyncReceive([&receivedValues, self = std::forward<decltype(self)>(self)](auto value) {
+                        if (value.has_value()) {
+                            receivedValues.lock()->push_back(*value);
+                            self();
+                        }
+                    });
+                };
+                boost::asio::post(executor, receiveNext);
+            }
+
+            {
+                auto localSender = std::move(sender);
+                for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                    auto senderCopy = localSender;
+                    boost::asio::post(executor, [senderCopy = std::move(senderCopy), senderId, &executor]() mutable {
+                        auto sendNext = [senderCopy = std::move(senderCopy),
+                                         senderId,
+                                         &executor](this auto&& self, std::size_t i) -> void {
+                            if (i >= kVALUES_PER_SENDER)
+                                return;
+
+                            int value = (senderId * 100) + i;
+                            senderCopy.asyncSend(
+                                value, [self = std::forward<decltype(self)>(self), &executor, i](bool success) mutable {
+                                    if (success)
+                                        boost::asio::post(executor, [self = std::move(self), i]() mutable {
+                                            self(i + 1);
+                                        });
+                                }
+                            );
+                        };
+                        sendNext(0);
+                    });
+                }
+            }  // original sender destroyed here
+        }
+
+        context_.run();
+
+        EXPECT_EQ(receivedValues.lock()->size(), kTOTAL_EXPECTED);
+        std::ranges::sort(receivedValues.lock().get());
+
+        std::vector<int> expectedValues;
+        for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                expectedValues.push_back((senderId * 100) + i);
+            }
+        }
+        std::ranges::sort(expectedValues);
+        EXPECT_EQ(receivedValues.lock().get(), expectedValues);
+    } else {
+        auto& executor = context_.get<boost::asio::thread_pool>();
+        auto [sender, receiver] = util::Channel<int>::create(executor, 10);
+
+        util::Mutex<std::vector<int>> receivedValues;
+        std::vector<decltype(receiver)> receivers(kNUM_RECEIVERS, receiver);
+
+        if (params_.approachType == ApproachType::Spawn) {
+            for (auto receiverId = 0uz; receiverId < kNUM_RECEIVERS; ++receiverId) {
+                util::spawn(
+                    executor,
+                    [&receiverRef = receivers[receiverId], &receivedValues](boost::asio::yield_context yield) mutable {
+                        while (true) {
+                            auto value = receiverRef.asyncReceive(yield);
+                            if (not value.has_value())
+                                break;
+                            receivedValues.lock()->push_back(*value);
+                        }
+                    }
+                );
+            }
+
+            {
+                auto localSender = std::move(sender);
+                for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                    util::spawn(
+                        executor, [senderCopy = localSender, senderId](boost::asio::yield_context yield) mutable {
+                            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                                int value = (senderId * 100) + i;
+                                if (not senderCopy.asyncSend(value, yield))
+                                    break;
+                            }
+                        }
+                    );
+                }
+
+            }  // original sender destroyed here
+        } else {
+            for (auto receiverId = 0uz; receiverId < kNUM_RECEIVERS; ++receiverId) {
+                auto& receiverRef = receivers[receiverId];
+                auto receiveNext = [&receiverRef, &receivedValues](this auto&& self) -> void {
+                    receiverRef.asyncReceive([&receivedValues, self = std::forward<decltype(self)>(self)](auto value) {
+                        if (value.has_value()) {
+                            receivedValues.lock()->push_back(*value);
+                            self();
+                        }
+                    });
+                };
+                boost::asio::post(executor, receiveNext);
+            }
+
+            {
+                auto localSender = std::move(sender);
+                for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+                    auto senderCopy = localSender;
+                    boost::asio::post(executor, [senderCopy = std::move(senderCopy), senderId, &executor]() mutable {
+                        auto sendNext = [senderCopy = std::move(senderCopy),
+                                         senderId,
+                                         &executor](this auto&& self, std::size_t i) -> void {
+                            if (i >= kVALUES_PER_SENDER)
+                                return;
+
+                            int value = (senderId * 100) + i;
+                            senderCopy.asyncSend(
+                                value, [self = std::forward<decltype(self)>(self), &executor, i](bool success) mutable {
+                                    if (success)
+                                        boost::asio::post(executor, [self = std::move(self), i]() mutable {
+                                            self(i + 1);
+                                        });
+                                }
+                            );
+                        };
+                        sendNext(0);
+                    });
+                }
+            }  // original sender destroyed here
+        }
+
+        context_.run();
+
+        EXPECT_EQ(receivedValues.lock()->size(), kTOTAL_EXPECTED);
+        std::ranges::sort(receivedValues.lock().get());
+
+        std::vector<int> expectedValues;
+        for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
+            for (auto i = 0uz; i < kVALUES_PER_SENDER; ++i) {
+                expectedValues.push_back((senderId * 100) + i);
+            }
+        }
+        std::ranges::sort(expectedValues);
+        EXPECT_EQ(receivedValues.lock().get(), expectedValues);
+    }
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllContextAndDispatchTypes,
     ChannelParameterizedTest,

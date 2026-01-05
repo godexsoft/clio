@@ -35,7 +35,7 @@
 namespace util {
 
 /**
- * @brief Represents a go-like channel, a single-producer (Sender) multi-consumer (Receiver) thread-safe data pipe.
+ * @brief Represents a go-like channel, a multi-producer (Sender) multi-consumer (Receiver) thread-safe data pipe.
  * @tparam T The type of data the channel transfers
  */
 template <typename T>
@@ -131,11 +131,11 @@ private:
     public:
         Receiver(std::shared_ptr<ControlBlock> shared) : shared_(std::move(shared)) {};
         Receiver(Receiver&&) = default;
-        Receiver(Receiver const&) = delete;
+        Receiver(Receiver const&) = default;
         Receiver&
         operator=(Receiver&&) = default;
         Receiver&
-        operator=(Receiver const&) = delete;
+        operator=(Receiver const&) = default;
 
         std::optional<T>
         tryReceive()
