@@ -71,7 +71,9 @@ private:
     };
 
     class Sender {
-        std::shared_ptr<ControlBlock> shared_;
+        /**
+         * @brief This is used to close the channel once all Senders are destroyed
+         */
         struct Inner {
             std::shared_ptr<ControlBlock> shared;
 
@@ -80,6 +82,8 @@ private:
                 shared->close();
             }
         };
+
+        std::shared_ptr<ControlBlock> shared_;
         std::shared_ptr<Inner> inner_;
 
     public:
@@ -95,7 +99,7 @@ private:
         template <typename D>
         bool
         asyncSend(D&& data, boost::asio::yield_context yield)
-            requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
+            requires(std::convertible_to<std::remove_cvref_t<D>, std::remove_cvref_t<T>>)
         {
             boost::system::error_code ecIn, ecOut;
             shared_->channel().async_send(ecIn, std::forward<D>(data), yield[ecOut]);
@@ -105,7 +109,7 @@ private:
         template <typename D>
         void
         asyncSend(D&& data, std::invocable<bool> auto&& fn)
-            requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
+            requires(std::convertible_to<std::remove_cvref_t<D>, std::remove_cvref_t<T>>)
         {
             boost::system::error_code ecIn;
             shared_->channel().async_send(
@@ -118,7 +122,7 @@ private:
         template <typename D>
         bool
         trySend(D&& data)
-            requires(std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<D>>)
+            requires(std::convertible_to<std::remove_cvref_t<D>, std::remove_cvref_t<T>>)
         {
             boost::system::error_code ec;
             return shared_->channel().try_send(ec, std::forward<D>(data));

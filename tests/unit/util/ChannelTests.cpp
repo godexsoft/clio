@@ -35,6 +35,8 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -48,6 +50,7 @@ using namespace testing;
 namespace {
 
 constexpr auto kDEFAULT_THREAD_POOL_SIZE = 4;
+constexpr auto kTEST_TIMEOUT = std::chrono::seconds{1};
 
 enum class ContextType { IOContext, ThreadPool };
 enum class ApproachType { Spawn, Callback };
@@ -95,7 +98,7 @@ public:
     {
         std::visit(
             util::OverloadSet{
-                [](boost::asio::io_context& context) { context.run(); },
+                [](boost::asio::io_context& context) { context.run_for(kTEST_TIMEOUT); },
                 [](boost::asio::thread_pool& context) { context.join(); },
             },
             context_
@@ -136,6 +139,9 @@ protected:
                         break;
                     receivedValues.push_back(*value);
                 }
+
+                // no more values should be available after receiving all kTOTAL_EXPECTED
+                EXPECT_FALSE(receiver.tryReceive().has_value());
             });
 
             for (auto senderId = 0uz; senderId < kNUM_SENDERS; ++senderId) {
@@ -494,7 +500,6 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
 {
     if (params_.contextType == ContextType::IOContext) {
         auto& executor = context_.get<boost::asio::io_context>();
-
         bool testCompleted = false;
 
         if (params_.approachType == ApproachType::Spawn) {
@@ -558,8 +563,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
         EXPECT_TRUE(testCompleted);
     } else {
         auto& executor = context_.get<boost::asio::thread_pool>();
-
-        util::Mutex<bool> testCompleted{false};
+        std::atomic_bool testCompleted{false};
 
         if (params_.approachType == ApproachType::Spawn) {
             util::spawn(executor, [&executor, &testCompleted](boost::asio::yield_context yield) mutable {
@@ -585,7 +589,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
                 auto closedValue = receiver.asyncReceive(yield);
                 EXPECT_FALSE(closedValue.has_value());
 
-                *testCompleted.lock() = true;
+                testCompleted = true;
             });
         } else {
             boost::asio::post(executor, [&executor, &testCompleted]() mutable {
@@ -612,7 +616,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
                                 // attempting to receive from closed channel should return nullopt
                                 receiverPtr->asyncReceive([&testCompleted](auto closedValue) {
                                     EXPECT_FALSE(closedValue.has_value());
-                                    *testCompleted.lock() = true;
+                                    testCompleted = true;
                                 });
                             });
                         });
@@ -622,7 +626,7 @@ TEST_P(ChannelParameterizedTest, ChannelClosureScenarios)
         }
 
         context_.run();
-        EXPECT_TRUE(*testCompleted.lock());
+        EXPECT_TRUE(testCompleted);
     }
 }
 
@@ -630,7 +634,6 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
 {
     if (params_.contextType == ContextType::IOContext) {
         auto& executor = context_.get<boost::asio::io_context>();
-
         bool testCompleted = false;
 
         if (params_.approachType == ApproachType::Spawn) {
@@ -720,7 +723,7 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
     } else {
         auto& executor = context_.get<boost::asio::thread_pool>();
 
-        util::Mutex<bool> testCompleted{false};
+        std::atomic_bool testCompleted{false};
 
         if (params_.approachType == ApproachType::Spawn) {
             util::spawn(executor, [&executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
@@ -746,7 +749,7 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
                 EXPECT_TRUE(value2.has_value());
                 EXPECT_EQ(*value2, 201);
 
-                *testCompleted.lock() = true;
+                testCompleted = true;
             });
         } else {
             boost::asio::post(executor, [&executor, &testCompleted]() mutable {
@@ -764,12 +767,12 @@ TEST_P(ChannelParameterizedTest, TrySendTryReceiveMethods)
                 EXPECT_TRUE(value1.has_value());
                 EXPECT_EQ(*value1, 300);
 
-                *testCompleted.lock() = true;
+                testCompleted = true;
             });
         }
 
         context_.run();
-        EXPECT_TRUE(*testCompleted.lock());
+        EXPECT_TRUE(testCompleted);
     }
 }
 
@@ -777,7 +780,6 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
 {
     if (params_.contextType == ContextType::IOContext) {
         auto& executor = context_.get<boost::asio::io_context>();
-
         bool testCompleted = false;
 
         if (params_.approachType == ApproachType::Spawn) {
@@ -845,8 +847,7 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
         EXPECT_TRUE(testCompleted);
     } else {
         auto& executor = context_.get<boost::asio::thread_pool>();
-
-        util::Mutex<bool> testCompleted{false};
+        std::atomic_bool testCompleted{false};
 
         if (params_.approachType == ApproachType::Spawn) {
             util::spawn(executor, [&executor, &testCompleted](boost::asio::yield_context /*yield*/) mutable {
@@ -868,7 +869,7 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
                 auto emptyValue = receiver.tryReceive();
                 EXPECT_FALSE(emptyValue.has_value());
 
-                *testCompleted.lock() = true;
+                testCompleted = true;
             });
         } else {
             boost::asio::post(executor, [&executor, &testCompleted]() mutable {
@@ -890,12 +891,12 @@ TEST_P(ChannelParameterizedTest, TryMethodsWithClosedChannel)
                 auto emptyValue = receiverPtr->tryReceive();
                 EXPECT_FALSE(emptyValue.has_value());
 
-                *testCompleted.lock() = true;
+                testCompleted = true;
             });
         }
 
         context_.run();
-        EXPECT_TRUE(*testCompleted.lock());
+        EXPECT_TRUE(testCompleted);
     }
 }
 
@@ -935,6 +936,6 @@ TEST(ChannelTest, MultipleSenderCopiesErrorHandling)
         testCompleted = true;
     });
 
-    executor.run();
+    executor.run_for(kTEST_TIMEOUT);
     EXPECT_TRUE(testCompleted);
 }
