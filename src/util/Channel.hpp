@@ -60,7 +60,8 @@ private:
         void
         close()
         {
-            ch_.close();
+            if (not isClosed())
+                ch_.close();
         }
 
         [[nodiscard]] bool
@@ -70,25 +71,36 @@ private:
         }
     };
 
+    /**
+     * @brief This is used to close the channel once either all Senders or all Receivers are destroyed
+     */
+    struct Guard {
+        std::shared_ptr<ControlBlock> shared;
+
+        ~Guard()
+        {
+            shared->close();
+        }
+    };
+
+    /**
+     * @brief The sending end of a channel.
+     *
+     * Sender is copyable and movable. The channel remains open as long as at least one Sender exists.
+     * When all Sender instances are destroyed, the channel is closed and receivers will receive std::nullopt.
+     */
     class Sender {
-        /**
-         * @brief This is used to close the channel once all Senders are destroyed
-         */
-        struct Inner {
-            std::shared_ptr<ControlBlock> shared;
-
-            ~Inner()
-            {
-                shared->close();
-            }
-        };
-
         std::shared_ptr<ControlBlock> shared_;
-        std::shared_ptr<Inner> inner_;
+        std::shared_ptr<Guard> guard_;
 
     public:
+        /**
+         * @brief Constructs a Sender from a shared control block.
+         * @param shared The shared control block managing the channel state
+         */
         Sender(std::shared_ptr<ControlBlock> shared)
-            : shared_(std::move(shared)), inner_(std::make_shared<Inner>(shared_)) {};
+            : shared_(std::move(shared)), guard_(std::make_shared<Guard>(shared_)) {};
+
         Sender(Sender&&) = default;
         Sender(Sender const&) = default;
         Sender&
@@ -96,6 +108,16 @@ private:
         Sender&
         operator=(Sender const&) = default;
 
+        /**
+         * @brief Asynchronously sends data through the channel using a coroutine.
+         *
+         * Blocks the coroutine until the data is sent or the channel is closed.
+         *
+         * @tparam D The type of data to send (must be convertible to T)
+         * @param data The data to send
+         * @param yield The Boost.Asio yield context for coroutine suspension
+         * @return true if the data was sent successfully, false if the channel is closed
+         */
         template <typename D>
         bool
         asyncSend(D&& data, boost::asio::yield_context yield)
@@ -106,6 +128,15 @@ private:
             return not ecOut;
         }
 
+        /**
+         * @brief Asynchronously sends data through the channel using a callback.
+         *
+         * The callback is invoked when the send operation completes.
+         *
+         * @tparam D The type of data to send (must be convertible to T)
+         * @param data The data to send
+         * @param fn Callback function invoked with true if successful, false if the channel is closed
+         */
         template <typename D>
         void
         asyncSend(D&& data, std::invocable<bool> auto&& fn)
@@ -119,6 +150,13 @@ private:
             );
         }
 
+        /**
+         * @brief Attempts to send data through the channel without blocking.
+         *
+         * @tparam D The type of data to send (must be convertible to T)
+         * @param data The data to send
+         * @return true if the data was sent successfully, false if the channel is full or closed
+         */
         template <typename D>
         bool
         trySend(D&& data)
@@ -129,11 +167,24 @@ private:
         }
     };
 
+    /**
+     * @brief The receiving end of a channel.
+     *
+     * Receiver is copyable and movable. Multiple receivers can consume from the same channel concurrently.
+     * When all Receiver instances are destroyed, the channel is closed and senders will fail to send.
+     */
     class Receiver {
         std::shared_ptr<ControlBlock> shared_;
+        std::shared_ptr<Guard> guard_;
 
     public:
-        Receiver(std::shared_ptr<ControlBlock> shared) : shared_(std::move(shared)) {};
+        /**
+         * @brief Constructs a Receiver from a shared control block.
+         * @param shared The shared control block managing the channel state
+         */
+        Receiver(std::shared_ptr<ControlBlock> shared)
+            : shared_(std::move(shared)), guard_(std::make_shared<Guard>(shared_)) {};
+
         Receiver(Receiver&&) = default;
         Receiver(Receiver const&) = default;
         Receiver&
@@ -141,6 +192,11 @@ private:
         Receiver&
         operator=(Receiver const&) = default;
 
+        /**
+         * @brief Attempts to receive data from the channel without blocking.
+         *
+         * @return std::optional containing the received value, or std::nullopt if the channel is empty or closed
+         */
         std::optional<T>
         tryReceive()
         {
@@ -153,6 +209,14 @@ private:
             return result;
         }
 
+        /**
+         * @brief Asynchronously receives data from the channel using a coroutine.
+         *
+         * Blocks the coroutine until data is available or the channel is closed.
+         *
+         * @param yield The Boost.Asio yield context for coroutine suspension
+         * @return std::optional containing the received value, or std::nullopt if the channel is closed
+         */
         [[nodiscard]] std::optional<T>
         asyncReceive(boost::asio::yield_context yield)
         {
@@ -161,9 +225,17 @@ private:
 
             if (ec)
                 return std::nullopt;
+
             return value;
         }
 
+        /**
+         * @brief Asynchronously receives data from the channel using a callback.
+         *
+         * The callback is invoked when data is available or the channel is closed.
+         *
+         * @param fn Callback function invoked with std::optional containing the value, or std::nullopt if closed
+         */
         void
         asyncReceive(std::invocable<std::optional<std::remove_cvref_t<T>>> auto&& fn)
         {
@@ -179,6 +251,13 @@ private:
             );
         }
 
+        /**
+         * @brief Checks if the channel is closed.
+         *
+         * A channel is closed when all Sender instances have been destroyed.
+         *
+         * @return true if the channel is closed, false otherwise
+         */
         [[nodiscard]] bool
         isClosed() const
         {
