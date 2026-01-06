@@ -659,7 +659,7 @@ TEST(ChannelTest, ChannelClosesWhenAllReceiversDestroyed)
 TEST(ChannelTest, PendingAsyncSendsNotCancelledOnClose)
 {
     boost::asio::thread_pool pool{4};
-    static constexpr auto kNUM_SENDERS = 10uz;
+    static constexpr auto kPENDING_NUM_SENDERS = 10uz;
 
     // Channel with capacity 0 - all sends will block waiting for a receiver
     auto [sender, receiver] = util::Channel<int>::create(pool, 0);
@@ -667,7 +667,7 @@ TEST(ChannelTest, PendingAsyncSendsNotCancelledOnClose)
     std::atomic<std::size_t> completedSends{0};
 
     // Spawn multiple senders that will all block (no receiver is consuming)
-    for (auto i = 0uz; i < kNUM_SENDERS; ++i) {
+    for (auto i = 0uz; i < kPENDING_NUM_SENDERS; ++i) {
         util::spawn(pool, [senderCopy = sender, i, &completedSends](boost::asio::yield_context yield) mutable {
             senderCopy.asyncSend(static_cast<int>(i), yield);
             ++completedSends;
@@ -687,5 +687,5 @@ TEST(ChannelTest, PendingAsyncSendsNotCancelledOnClose)
     pool.join();
 
     // All sends should have completed (returned false due to closed channel)
-    EXPECT_EQ(completedSends, kNUM_SENDERS);
+    EXPECT_EQ(completedSends, kPENDING_NUM_SENDERS);
 }
