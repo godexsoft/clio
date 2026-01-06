@@ -66,6 +66,7 @@ private:
                 // We must call cancel() to unblock them. The bug also causes cancel() to return
                 // error_code 0 instead of channel_cancelled, so async operations must check
                 // isClosed() to detect this case.
+                // https://github.com/chriskohlhoff/asio/issues/1575
                 ch_.cancel();
             }
         }
@@ -296,7 +297,7 @@ public:
     {
         auto shared = std::make_shared<ControlBlock>(std::forward<decltype(context)>(context), capacity);
         auto sender = Sender{shared};
-        auto receiver = Receiver{shared};
+        auto receiver = Receiver{std::move(shared)};
 
         return {std::move(sender), std::move(receiver)};
     }
