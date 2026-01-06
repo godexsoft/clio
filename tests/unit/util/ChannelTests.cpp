@@ -238,7 +238,7 @@ TEST_P(ChannelSpawnTest, ChannelClosureScenarios)
             EXPECT_EQ(*value, 42);
 
             {
-                auto tempSender = std::move(sender);
+                [[maybe_unused]] auto tempSender = std::move(sender);
             }
 
             EXPECT_TRUE(receiver.isClosed());
@@ -309,7 +309,7 @@ TEST_P(ChannelSpawnTest, TryMethodsWithClosedChannel)
             EXPECT_TRUE(sender.trySend(43));
 
             {
-                auto tempSender = std::move(sender);
+                [[maybe_unused]] auto tempSender = std::move(sender);
             }
 
             EXPECT_TRUE(receiver.isClosed());
@@ -590,14 +590,14 @@ TEST(ChannelTest, MultipleSenderCopiesErrorHandling)
 
         auto senderCopy = sender;
         {
-            auto tempSender = std::move(sender);
+            [[maybe_unused]] auto tempSender = std::move(sender);
             // tempSender destroyed here, but senderCopy still exists
         }
 
         EXPECT_FALSE(receiver.isClosed());
 
         {
-            auto tempSender = std::move(senderCopy);
+            [[maybe_unused]] auto tempSender = std::move(senderCopy);
             // now all senders are destroyed, channel should close
         }
 
@@ -611,4 +611,42 @@ TEST(ChannelTest, MultipleSenderCopiesErrorHandling)
 
     executor.run_for(kTEST_TIMEOUT);
     EXPECT_TRUE(testCompleted);
+}
+
+TEST(ChannelTest, ChannelClosesWhenAllSendersDestroyed)
+{
+    boost::asio::io_context executor;
+    auto [sender, receiver] = util::Channel<int>::create(executor, 5);
+
+    EXPECT_FALSE(receiver.isClosed());
+
+    auto senderCopy = sender;
+    {
+        [[maybe_unused]] auto temp = std::move(sender);
+    }
+    EXPECT_FALSE(receiver.isClosed());  // one sender still exists
+
+    {
+        [[maybe_unused]] auto temp = std::move(senderCopy);
+    }
+    EXPECT_TRUE(receiver.isClosed());  // all senders destroyed
+}
+
+TEST(ChannelTest, ChannelClosesWhenAllReceiversDestroyed)
+{
+    boost::asio::io_context executor;
+    auto [sender, receiver] = util::Channel<int>::create(executor, 5);
+
+    EXPECT_TRUE(sender.trySend(42));
+
+    auto receiverCopy = receiver;
+    {
+        [[maybe_unused]] auto temp = std::move(receiver);
+    }
+    EXPECT_TRUE(sender.trySend(43));  // one receiver still exists, can send
+
+    {
+        [[maybe_unused]] auto temp = std::move(receiverCopy);
+    }
+    EXPECT_FALSE(sender.trySend(44));  // all receivers destroyed, channel closed
 }
