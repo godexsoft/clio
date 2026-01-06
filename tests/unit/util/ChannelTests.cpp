@@ -41,6 +41,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -649,4 +650,42 @@ TEST(ChannelTest, ChannelClosesWhenAllReceiversDestroyed)
         [[maybe_unused]] auto temp = std::move(receiverCopy);
     }
     EXPECT_FALSE(sender.trySend(44));  // all receivers destroyed, channel closed
+}
+
+// This test verifies the workaround for a bug in boost::asio::experimental::concurrent_channel where close() does not
+// cancel pending async operations. Our Channel wrapper calls cancel() after close() to ensure pending operations are
+// unblocked.
+// See: https://github.com/chriskohlhoff/asio/issues/1575
+TEST(ChannelTest, PendingAsyncSendsNotCancelledOnClose)
+{
+    boost::asio::thread_pool pool{4};
+    static constexpr auto kNUM_SENDERS = 10uz;
+
+    // Channel with capacity 0 - all sends will block waiting for a receiver
+    auto [sender, receiver] = util::Channel<int>::create(pool, 0);
+
+    std::atomic<std::size_t> completedSends{0};
+
+    // Spawn multiple senders that will all block (no receiver is consuming)
+    for (auto i = 0uz; i < kNUM_SENDERS; ++i) {
+        util::spawn(pool, [senderCopy = sender, i, &completedSends](boost::asio::yield_context yield) mutable {
+            senderCopy.asyncSend(static_cast<int>(i), yield);
+            ++completedSends;
+        });
+    }
+
+    // Give senders time to start and block
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+
+    // Close the channel by destroying the only receiver we have.
+    // Our workaround calls cancel() after close() to unblock pending operations
+    {
+        [[maybe_unused]] auto r = std::move(receiver);
+    }
+
+    // All senders should complete (unblocked by our cancel() workaround)
+    pool.join();
+
+    // All sends should have completed (returned false due to closed channel)
+    EXPECT_EQ(completedSends, kNUM_SENDERS);
 }

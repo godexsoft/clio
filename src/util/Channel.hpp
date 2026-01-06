@@ -60,8 +60,14 @@ private:
         void
         close()
         {
-            if (not isClosed())
+            if (not isClosed()) {
                 ch_.close();
+                // Workaround for Boost bug: close() alone doesn't cancel pending async operations.
+                // We must call cancel() to unblock them. The bug also causes cancel() to return
+                // error_code 0 instead of channel_cancelled, so async operations must check
+                // isClosed() to detect this case.
+                ch_.cancel();
+            }
         }
 
         [[nodiscard]] bool
@@ -125,6 +131,11 @@ private:
         {
             boost::system::error_code ecIn, ecOut;
             shared_->channel().async_send(ecIn, std::forward<D>(data), yield[ecOut]);
+
+            // Workaround: asio channels bug returns ec=0 on cancel, check isClosed() instead
+            if (not ecOut and shared_->isClosed())
+                return false;
+
             return not ecOut;
         }
 
@@ -146,7 +157,15 @@ private:
             shared_->channel().async_send(
                 ecIn,
                 std::forward<D>(data),
-                [fn = std::forward<decltype(fn)>(fn)](boost::system::error_code ec) mutable { fn(not ec); }
+                [fn = std::forward<decltype(fn)>(fn), shared = shared_](boost::system::error_code ec) mutable {
+                    // Workaround: asio channels bug returns ec=0 on cancel, check isClosed() instead
+                    if (not ec and shared->isClosed()) {
+                        fn(false);
+                        return;
+                    }
+
+                    fn(not ec);
+                }
             );
         }
 
@@ -240,13 +259,13 @@ private:
         asyncReceive(std::invocable<std::optional<std::remove_cvref_t<T>>> auto&& fn)
         {
             shared_->channel().async_receive(
-                [fn = std::forward<decltype(fn)>(fn)](boost::system::error_code ec, std::optional<T>&& value) {
+                [fn = std::forward<decltype(fn)>(fn)](boost::system::error_code ec, T&& value) mutable {
                     if (ec) {
                         fn(std::optional<T>(std::nullopt));
                         return;
                     }
 
-                    fn(std::move(value));
+                    fn(std::make_optional<T>(std::move(value)));
                 }
             );
         }
