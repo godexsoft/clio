@@ -207,11 +207,7 @@ TEST_F(WorkQueueStopTest, CallsOnTasksCompleteWhenStoppingOnLastTask)
     queue.stop();
 }
 
-struct WorkQueueMockPrometheusTest : WithMockPrometheus, RPCWorkQueueTestBase {
-    WorkQueueMockPrometheusTest() : RPCWorkQueueTestBase(/* workers = */ 1, /*maxQueueSize = */ 2)
-    {
-    }
-};
+struct WorkQueueMockPrometheusTest : WithMockPrometheus {};
 
 TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 {
@@ -221,7 +217,9 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 
     std::binary_semaphore semaphore{0};
 
-    EXPECT_CALL(curSizeMock, value()).WillOnce(::testing::Return(0)).WillRepeatedly(::testing::Return(1));
+    EXPECT_CALL(curSizeMock, value())
+        .WillOnce(::testing::Return(0))   // in startProcessing
+        .WillOnce(::testing::Return(0));  // first check in postCoro
     EXPECT_CALL(curSizeMock, add(1));
     EXPECT_CALL(queuedMock, add(1));
     EXPECT_CALL(durationMock, add(::testing::Ge(0))).WillOnce([&](auto) {
@@ -230,8 +228,9 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
         semaphore.release();
     });
 
+    // Note: the queue is not in the fixture because above expectations must be setup before startProcessing runs
+    WorkQueue queue(/* numWorkers = */ 4, /* maxSize = */ 2);
     auto const res = queue.postCoro([&](auto /* yield */) { semaphore.acquire(); }, /* isWhiteListed = */ false);
 
     ASSERT_TRUE(res);
-    queue.stop();
 }

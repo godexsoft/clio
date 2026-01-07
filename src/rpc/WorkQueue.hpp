@@ -25,12 +25,8 @@
 #include "util/prometheus/Counter.hpp"
 #include "util/prometheus/Gauge.hpp"
 
-#include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/strand.hpp>
 #include <boost/asio/thread_pool.hpp>
-#include <boost/json.hpp>
 #include <boost/json/object.hpp>
 
 #include <atomic>
@@ -76,11 +72,10 @@ public:
     };
 
 private:
-    struct DispatcherState {
+    struct QueueState {
         QueueType high;
         QueueType normal;
 
-        bool isIdle = false;
         size_t highPriorityCounter = 0;
 
         void
@@ -133,14 +128,26 @@ private:
 
     util::Logger log_{"RPC"};
     boost::asio::thread_pool ioc_;
-    boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
-    bool hasDispatcher_ = false;
 
     std::atomic_bool stopping_;
+    std::atomic_bool processingStarted_{false};
 
-    util::Mutex<std::function<void()>> onQueueEmpty_;
-    util::Mutex<DispatcherState> dispatcherState_;
-    boost::asio::steady_timer waitTimer_;
+    class OneTimeCallable {
+        std::function<void()> func_;
+        bool called_{false};
+
+    public:
+        void
+        setCallable(std::function<void()> func);
+
+        void
+        operator()();
+
+        explicit
+        operator bool() const;
+    };
+    util::Mutex<OneTimeCallable> onQueueEmpty_;
+    util::Mutex<QueueState> queueState_;
 
 public:
     struct DontStartProcessingTag {};
@@ -231,10 +238,6 @@ public:
      */
     [[nodiscard]] size_t
     size() const;
-
-private:
-    void
-    dispatcherLoop(boost::asio::yield_context yield);
 };
 
 }  // namespace rpc
