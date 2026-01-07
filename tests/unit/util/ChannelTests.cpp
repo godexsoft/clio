@@ -756,7 +756,4 @@ TEST(ChannelTest, PendingAsyncSendsAreCancelledOnClose)
     EXPECT_EQ(completedSends, kPENDING_NUM_SENDERS);
 }
 
-// Clang/Apple Clang workaround: Explicit template instantiation for Channel<int>
-// This is required to avoid linker errors with Boost.Asio experimental channels on Clang.
-// See Channel.hpp for detailed explanation.
 INSTANTIATE_CHANNEL_FOR_CLANG(int);

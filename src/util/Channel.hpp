@@ -34,6 +34,14 @@
 
 namespace util {
 
+#ifdef __clang__
+namespace detail {
+// Forward declaration for compile-time check
+template <typename T>
+struct ChannelInstantiated;
+}  // namespace detail
+#endif
+
 /**
  * @brief Represents a go-like channel, a multi-producer (Sender) multi-consumer (Receiver) thread-safe data pipe.
  * @note Use INSTANTIATE_CHANNEL_FOR_CLANG macro when using this class. See docs at the bottom of the file for more
@@ -298,6 +306,13 @@ public:
     static std::pair<Sender, Receiver>
     create(auto&& context, std::size_t capacity)
     {
+#ifdef __clang__
+        static_assert(
+            util::detail::ChannelInstantiated<T>::value,
+            "When using Channel<T> with Clang, you must add INSTANTIATE_CHANNEL_FOR_CLANG(T) "
+            "to one .cpp file. See documentation at the bottom of Channel.hpp for details."
+        );
+#endif
         auto shared = std::make_shared<ControlBlock>(std::forward<decltype(context)>(context), capacity);
         auto sender = Sender{shared};
         auto receiver = Receiver{std::move(shared)};
@@ -342,11 +357,21 @@ public:
 #include <boost/asio/experimental/channel_traits.hpp>
 #include <boost/asio/experimental/detail/channel_service.hpp>
 
-#define INSTANTIATE_CHANNEL_FOR_CLANG(T)                                                       \
-    /* NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor) */                           \
-    template class boost::asio::detail::cancellation_handler<                                  \
-        boost::asio::experimental::detail::channel_service<boost::asio::detail::posix_mutex>:: \
-            op_cancellation<boost::asio::experimental::channel_traits<>, void(boost::system::error_code, T)>>
+namespace util::detail {
+// Tag type used to verify that INSTANTIATE_CHANNEL_FOR_CLANG was called for a given type
+template <typename T>
+struct ChannelInstantiated : std::false_type {};
+}  // namespace util::detail
+
+#define INSTANTIATE_CHANNEL_FOR_CLANG(T)                                                                       \
+    /* NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor) */                                           \
+    template class boost::asio::detail::cancellation_handler<                                                  \
+        boost::asio::experimental::detail::channel_service<boost::asio::detail::posix_mutex>::                 \
+            op_cancellation<boost::asio::experimental::channel_traits<>, void(boost::system::error_code, T)>>; \
+    namespace util::detail {                                                                                   \
+    template <>                                                                                                \
+    struct ChannelInstantiated<T> : std::true_type {};                                                         \
+    }
 
 #else
 
