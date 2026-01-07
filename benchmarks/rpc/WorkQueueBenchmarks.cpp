@@ -115,10 +115,8 @@ benchmarkWorkQueue(benchmark::State& state)
             });
         }
 
-        for (auto& t : threads) {
-            if (t.joinable())
-                t.join();
-        }
+        for (auto& t : threads)
+            t.join();
 
         queue.stop();
 
