@@ -36,6 +36,9 @@ namespace util {
 
 /**
  * @brief Represents a go-like channel, a multi-producer (Sender) multi-consumer (Receiver) thread-safe data pipe.
+ * @note Use INSTANTIATE_CHANNEL_FOR_CLANG macro when using this class. See docs at the bottom of the file for more
+ * details.
+ *
  * @tparam T The type of data the channel transfers
  */
 template <typename T>
@@ -304,3 +307,50 @@ public:
 };
 
 }  // namespace util
+
+// ================================================================================================
+// Clang/Apple Clang Workaround for Boost.Asio Experimental Channels
+// ================================================================================================
+//
+// IMPORTANT: When using Channel<T> with Clang or Apple Clang, you MUST add the following line
+// to ONE .cpp file that uses Channel<T>:
+//
+//     INSTANTIATE_CHANNEL_FOR_CLANG(YourType)
+//
+// Example:
+//     // In ChannelTests.cpp or any .cpp file that uses Channel<int>:
+//     #include "util/Channel.hpp"
+//     INSTANTIATE_CHANNEL_FOR_CLANG(int)
+//
+// Why this is needed:
+// Boost.Asio's experimental concurrent_channel has a bug where close() doesn't properly cancel
+// pending async operations. When using cancellation signals (which we do in our workaround),
+// Clang generates vtable references for internal cancellation_handler types but Boost.Asio
+// doesn't provide the definitions, causing linker errors:
+//
+//   Undefined symbols for architecture arm64:
+//     "boost::asio::detail::cancellation_handler<...>::call(boost::asio::cancellation_type)"
+//     "boost::asio::detail::cancellation_handler<...>::destroy()"
+//
+// This macro explicitly instantiates the required template specializations.
+//
+// See: https://github.com/chriskohlhoff/asio/issues/1575
+//
+#ifdef __clang__
+
+#include <boost/asio/cancellation_signal.hpp>
+#include <boost/asio/experimental/channel_traits.hpp>
+#include <boost/asio/experimental/detail/channel_service.hpp>
+
+#define INSTANTIATE_CHANNEL_FOR_CLANG(T)                                                       \
+    /* NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor) */                           \
+    template class boost::asio::detail::cancellation_handler<                                  \
+        boost::asio::experimental::detail::channel_service<boost::asio::detail::posix_mutex>:: \
+            op_cancellation<boost::asio::experimental::channel_traits<>, void(boost::system::error_code, T)>>
+
+#else
+
+// No workaround needed for non-Clang compilers
+#define INSTANTIATE_CHANNEL_FOR_CLANG(T)
+
+#endif
