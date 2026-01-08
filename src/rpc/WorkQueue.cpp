@@ -40,7 +40,7 @@ namespace rpc {
 void
 WorkQueue::OneTimeCallable::setCallable(std::function<void()> func)
 {
-    func_ = func;
+    func_ = std::move(func);
 }
 
 void
@@ -100,25 +100,7 @@ WorkQueue::startProcessing()
     // Spawn workers for all tasks that were queued before processing started
     auto const numTasks = size();
     for (auto i = 0uz; i < numTasks; ++i) {
-        util::spawn(ioc_, [this](auto yield) {
-            std::optional<TaskType> task;
-            auto const spawnedAt = std::chrono::system_clock::now();
-
-            {
-                auto state = queueState_.lock();
-                task = state->popNext();
-            }
-
-            auto const takenAt = std::chrono::system_clock::now();
-            auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(takenAt - spawnedAt).count();
-
-            ++queued_.get();
-            durationUs_.get() += waited;
-            LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
-
-            task->operator()(yield);
-            --curSize_.get();
-        });
+        util::spawn(ioc_, [this](auto yield) { executeTask(std::chrono::system_clock::now(), yield); });
     }
 }
 
@@ -147,30 +129,7 @@ WorkQueue::postCoro(TaskType func, bool isWhiteListed, Priority priority)
     if (not processingStarted_)
         return true;
 
-    util::spawn(ioc_, [this, queuedAt](auto yield) {
-        std::optional<TaskType> task;
-
-        {
-            auto state = queueState_.lock();
-            task = state->popNext();
-        }
-
-        auto const takenAt = std::chrono::system_clock::now();
-        auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(takenAt - queuedAt).count();
-
-        ++queued_.get();
-        durationUs_.get() += waited;
-        LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
-
-        task->operator()(yield);
-        --curSize_.get();
-
-        if (curSize_.get().value() == 0 && stopping_) {
-            auto onTasksComplete = onQueueEmpty_.lock();
-            ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
-            onTasksComplete->operator()();
-        }
-    });
+    util::spawn(ioc_, [this, queuedAt](auto yield) { executeTask(queuedAt, yield); });
 
     return true;
 }
@@ -226,6 +185,26 @@ size_t
 WorkQueue::size() const
 {
     return curSize_.get().value();
+}
+
+void
+WorkQueue::executeTask(std::chrono::system_clock::time_point opTime, boost::asio::yield_context yield)
+{
+    std::optional<TaskType> task;
+    {
+        auto state = queueState_.lock();
+        task = state->popNext();
+    }
+
+    auto const takenAt = std::chrono::system_clock::now();
+    auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(takenAt - opTime).count();
+
+    ++queued_.get();
+    durationUs_.get() += waited;
+    LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
+
+    task->operator()(yield);
+    --curSize_.get();
 }
 
 }  // namespace rpc

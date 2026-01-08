@@ -30,6 +30,7 @@
 #include <boost/json/object.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -238,6 +239,10 @@ public:
      */
     [[nodiscard]] size_t
     size() const;
+
+private:
+    void
+    executeTask(std::chrono::system_clock::time_point opTime, boost::asio::yield_context yield);
 };
 
 }  // namespace rpc

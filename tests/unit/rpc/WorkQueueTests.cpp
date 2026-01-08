@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "rpc/WorkQueue.hpp"
+#include "util/LoggerFixtures.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ConfigValue.hpp"
@@ -54,7 +55,7 @@ struct RPCWorkQueueTestBase : public virtual ::testing::Test {
     }
 };
 
-struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {
+struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase, LoggerFixture {
     WorkQueueTest() : RPCWorkQueueTestBase(/* workers = */ 4, /* maxQueueSize = */ 2)
     {
     }
@@ -233,4 +234,5 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
     auto const res = queue.postCoro([&](auto /* yield */) { semaphore.acquire(); }, /* isWhiteListed = */ false);
 
     ASSERT_TRUE(res);
+    queue.stop();
 }
