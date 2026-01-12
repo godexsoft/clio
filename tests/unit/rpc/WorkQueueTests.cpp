@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include "rpc/WorkQueue.hpp"
-#include "util/LoggerFixtures.hpp"
 #include "util/MockAssert.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/config/ConfigDefinition.hpp"
@@ -58,7 +57,7 @@ struct RPCWorkQueueTestBase : public virtual ::testing::Test {
     }
 };
 
-struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase, LoggerFixture {
+struct WorkQueueTest : WithPrometheus, RPCWorkQueueTestBase {
     WorkQueueTest() : RPCWorkQueueTestBase(/* workers = */ 4, /* maxQueueSize = */ 2)
     {
     }
@@ -115,7 +114,7 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
     EXPECT_TRUE(unblocked);
 }
 
-struct WorkQueueDelayedStartTest : WithPrometheus, LoggerFixture {
+struct WorkQueueDelayedStartTest : WithPrometheus {
     WorkQueue queue{WorkQueue::kDONT_START_PROCESSING_TAG, /* numWorkers = */ 1, /* maxSize = */ 100};
 };
 
@@ -265,9 +264,10 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 }
 
 // Note: not using EXPECT_CLIO_ASSERT_FAIL because exception is swallowed by the WQ context
+// TODO [https://github.com/XRPLF/clio/issues/2906]: Enable the test once we figure out a better way to do it without
+// using up >2 minutes of CI time
 struct WorkQueueDeathTest : WorkQueueMockPrometheusTest, common::util::WithMockAssert {};
-
-TEST_F(WorkQueueDeathTest, ExecuteTaskAssertsWhenQueueIsEmpty)
+TEST_F(WorkQueueDeathTest, DISABLED_ExecuteTaskAssertsWhenQueueIsEmpty)
 {
     [[maybe_unused]] auto& queuedMock = makeMock<CounterInt>("work_queue_queued_total_number", "");
     [[maybe_unused]] auto& durationMock = makeMock<CounterInt>("work_queue_cumulative_tasks_duration_us", "");
