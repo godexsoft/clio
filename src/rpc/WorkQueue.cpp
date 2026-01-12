@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <utility>
 
@@ -151,9 +152,11 @@ WorkQueue::stop()
 
     ioc_.join();
 
-    auto onTasksComplete = onQueueEmpty_.lock();
-    ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
-    onTasksComplete->operator()();
+    {
+        auto onTasksComplete = onQueueEmpty_.lock();
+        ASSERT(onTasksComplete->operator bool(), "onTasksComplete must be set when stopping is true.");
+        onTasksComplete->operator()();
+    }
 }
 
 WorkQueue
@@ -196,6 +199,7 @@ WorkQueue::executeTask(std::chrono::system_clock::time_point opTime, boost::asio
         task = state->popNext();
     }
 
+    ASSERT(task.has_value(), "Queue should not be empty as we spawn a coro with executeTask for each postCoro.");
     auto const takenAt = std::chrono::system_clock::now();
     auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(takenAt - opTime).count();
 

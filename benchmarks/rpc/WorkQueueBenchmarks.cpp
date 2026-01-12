@@ -80,18 +80,18 @@ benchmarkWorkQueue(benchmark::State& state)
 {
     init();
 
-    auto const queueThreads = static_cast<uint32_t>(state.range(0));
-    auto const clientThreads = static_cast<uint32_t>(state.range(1));
-    auto const itemsPerThread = static_cast<uint32_t>(state.range(2));
-    auto const maxSize = static_cast<uint32_t>(state.range(3));
-    auto const delayMs = static_cast<uint32_t>(state.range(4));
+    auto const wqThreads = static_cast<uint32_t>(state.range(0));
+    auto const maxQueueSize = static_cast<uint32_t>(state.range(1));
+    auto const clientThreads = static_cast<uint32_t>(state.range(2));
+    auto const itemsPerClient = static_cast<uint32_t>(state.range(3));
+    auto const clientProcessingMs = static_cast<uint32_t>(state.range(4));
 
     for (auto _ : state) {
         std::atomic_size_t totalExecuted = 0uz;
         std::atomic_size_t totalQueued = 0uz;
 
         state.PauseTiming();
-        WorkQueue queue(queueThreads, maxSize);
+        WorkQueue queue(wqThreads, maxQueueSize);
         state.ResumeTiming();
 
         std::vector<std::thread> threads;
@@ -99,12 +99,14 @@ benchmarkWorkQueue(benchmark::State& state)
 
         for (auto t = 0uz; t < clientThreads; ++t) {
             threads.emplace_back([&] {
-                for (auto i = 0uz; i < itemsPerThread; ++i) {
+                for (auto i = 0uz; i < itemsPerClient; ++i) {
                     totalQueued += static_cast<std::size_t>(queue.postCoro(
-                        [&delayMs, &totalExecuted](auto yield) {
+                        [&clientProcessingMs, &totalExecuted](auto yield) {
                             ++totalExecuted;
 
-                            boost::asio::steady_timer timer(yield.get_executor(), std::chrono::milliseconds{delayMs});
+                            boost::asio::steady_timer timer(
+                                yield.get_executor(), std::chrono::milliseconds{clientProcessingMs}
+                            );
                             timer.async_wait(yield);
 
                             std::this_thread::sleep_for(std::chrono::microseconds{10});
@@ -121,12 +123,12 @@ benchmarkWorkQueue(benchmark::State& state)
         queue.stop();
 
         ASSERT(totalExecuted == totalQueued, "Totals don't match");
-        ASSERT(totalQueued <= itemsPerThread * clientThreads, "Queued more than requested");
+        ASSERT(totalQueued <= itemsPerClient * clientThreads, "Queued more than requested");
 
-        if (maxSize == 0) {
-            ASSERT(totalQueued == itemsPerThread * clientThreads, "Queued exactly the expected amount");
+        if (maxQueueSize == 0) {
+            ASSERT(totalQueued == itemsPerClient * clientThreads, "Queued exactly the expected amount");
         } else {
-            ASSERT(totalQueued >= std::min(maxSize, itemsPerThread * clientThreads), "Queued less than expected");
+            ASSERT(totalQueued >= std::min(maxQueueSize, itemsPerClient * clientThreads), "Queued less than expected");
         }
     }
 }
@@ -141,5 +143,5 @@ benchmarkWorkQueue(benchmark::State& state)
 */
 // TODO: figure out what happens on 1 thread
 BENCHMARK(benchmarkWorkQueue)
-    ->ArgsProduct({{2, 4, 8, 16}, {4, 8, 16}, {1'000, 10'000}, {0, 5'000}, {10, 100, 250}})
+    ->ArgsProduct({{2, 4, 8, 16}, {0, 5'000}, {4, 8, 16}, {1'000, 10'000}, {10, 100, 250}})
     ->Unit(benchmark::kMillisecond);

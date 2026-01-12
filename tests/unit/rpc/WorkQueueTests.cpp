@@ -19,6 +19,7 @@
 
 #include "rpc/WorkQueue.hpp"
 #include "util/LoggerFixtures.hpp"
+#include "util/MockAssert.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/config/ConfigDefinition.hpp"
 #include "util/config/ConfigValue.hpp"
@@ -234,4 +235,23 @@ TEST_F(WorkQueueMockPrometheusTest, postCoroCounters)
 
     ASSERT_TRUE(res);
     queue.stop();
+}
+
+// Note: not using EXPECT_CLIO_ASSERT_FAIL because exception is swallowed by the WQ context
+struct WorkQueueDeathTest : WorkQueueMockPrometheusTest, common::util::WithMockAssert {};
+
+TEST_F(WorkQueueDeathTest, ExecuteTaskAssertsWhenQueueIsEmpty)
+{
+    [[maybe_unused]] auto& queuedMock = makeMock<CounterInt>("work_queue_queued_total_number", "");
+    [[maybe_unused]] auto& durationMock = makeMock<CounterInt>("work_queue_cumulative_tasks_duration_us", "");
+    auto& curSizeMock = makeMock<GaugeInt>("work_queue_current_size", "");
+
+    EXPECT_CALL(curSizeMock, value()).WillRepeatedly(::testing::Return(1));  // lie about the size
+    EXPECT_DEATH(
+        {
+            WorkQueue queue(WorkQueue::kDONT_START_PROCESSING_TAG, /* numWorkers = */ 1, /* maxSize = */ 2);
+            queue.startProcessing();  // the actual queue is empty which will lead to assertion failure
+        },
+        ".*"
+    );
 }
