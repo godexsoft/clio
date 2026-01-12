@@ -140,7 +140,7 @@ TEST_F(WorkQueueDelayedStartTest, WaitTimeIncludesDelayBeforeStartProcessing)
     EXPECT_GE(durationUs, 50000u) << "Wait time should include the delay before startProcessing";
 }
 
-struct WorkQueuePriorityTest : WithPrometheus, virtual ::testing::Test {
+struct WorkQueuePriorityTest : WithPrometheus {
     WorkQueue queue{WorkQueue::kDONT_START_PROCESSING_TAG, /* numWorkers = */ 1, /* maxSize = */ 100};
 };
 
