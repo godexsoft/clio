@@ -61,7 +61,13 @@ struct Reportable {
  */
 class WorkQueue : public Reportable {
     using TaskType = std::function<void(boost::asio::yield_context)>;
-    using QueueType = std::queue<TaskType>;
+
+    struct TaskWithTimestamp {
+        TaskType task;
+        std::chrono::system_clock::time_point queuedAt;
+    };
+
+    using QueueType = std::queue<TaskWithTimestamp>;
 
 public:
     /**
@@ -80,14 +86,14 @@ private:
         size_t highPriorityCounter = 0;
 
         void
-        push(Priority priority, auto&& task)
+        push(Priority priority, TaskType&& task)
         {
             auto& queue = [this, priority] -> QueueType& {
                 if (priority == Priority::High)
                     return high;
                 return normal;
             }();
-            queue.push(std::forward<decltype(task)>(task));
+            queue.push(TaskWithTimestamp{.task = std::move(task), .queuedAt = std::chrono::system_clock::now()});
         }
 
         [[nodiscard]] bool
@@ -96,21 +102,21 @@ private:
             return high.empty() and normal.empty();
         }
 
-        [[nodiscard]] std::optional<TaskType>
+        [[nodiscard]] std::optional<TaskWithTimestamp>
         popNext()
         {
             if (not high.empty() and (highPriorityCounter < kTAKE_HIGH_PRIO or normal.empty())) {
-                auto task = std::move(high.front());
+                auto taskWithTimestamp = std::move(high.front());
                 high.pop();
                 ++highPriorityCounter;
-                return task;
+                return taskWithTimestamp;
             }
 
             if (not normal.empty()) {
-                auto task = std::move(normal.front());
+                auto taskWithTimestamp = std::move(normal.front());
                 normal.pop();
                 highPriorityCounter = 0;
-                return task;
+                return taskWithTimestamp;
             }
 
             return std::nullopt;
@@ -242,7 +248,7 @@ public:
 
 private:
     void
-    executeTask(std::chrono::system_clock::time_point opTime, boost::asio::yield_context yield);
+    executeTask(boost::asio::yield_context yield);
 };
 
 }  // namespace rpc

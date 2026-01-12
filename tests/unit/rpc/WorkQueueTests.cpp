@@ -31,10 +31,12 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <semaphore>
+#include <thread>
 #include <vector>
 
 using namespace util;
@@ -111,6 +113,31 @@ TEST_F(WorkQueueTest, NonWhitelistedPreventSchedulingAtQueueLimitExceeded)
 
     queue.stop();
     EXPECT_TRUE(unblocked);
+}
+
+struct WorkQueueDelayedStartTest : WithPrometheus, LoggerFixture {
+    WorkQueue queue{WorkQueue::kDONT_START_PROCESSING_TAG, /* numWorkers = */ 1, /* maxSize = */ 100};
+};
+
+TEST_F(WorkQueueDelayedStartTest, WaitTimeIncludesDelayBeforeStartProcessing)
+{
+    std::atomic_bool taskExecuted = false;
+
+    ASSERT_TRUE(queue.postCoro(
+        [&taskExecuted](auto /* yield */) { taskExecuted = true; },
+        /* isWhiteListed = */ true
+    ));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    queue.startProcessing();
+    queue.stop();
+
+    EXPECT_TRUE(taskExecuted);
+
+    auto const report = queue.report();
+    auto const durationUs = report.at("queued_duration_us").as_uint64();
+
+    EXPECT_GE(durationUs, 50000u) << "Wait time should include the delay before startProcessing";
 }
 
 struct WorkQueuePriorityTest : WithPrometheus, virtual ::testing::Test {

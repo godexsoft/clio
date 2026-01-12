@@ -101,7 +101,7 @@ WorkQueue::startProcessing()
     // Spawn workers for all tasks that were queued before processing started
     auto const numTasks = size();
     for (auto i = 0uz; i < numTasks; ++i) {
-        util::spawn(ioc_, [this](auto yield) { executeTask(std::chrono::system_clock::now(), yield); });
+        util::spawn(ioc_, [this](auto yield) { executeTask(yield); });
     }
 }
 
@@ -118,8 +118,6 @@ WorkQueue::postCoro(TaskType func, bool isWhiteListed, Priority priority)
         return false;
     }
 
-    auto const queuedAt = std::chrono::system_clock::now();
-
     {
         auto state = queueState_.lock();
         state->push(priority, std::move(func));
@@ -130,7 +128,7 @@ WorkQueue::postCoro(TaskType func, bool isWhiteListed, Priority priority)
     if (not processingStarted_)
         return true;
 
-    util::spawn(ioc_, [this, queuedAt](auto yield) { executeTask(queuedAt, yield); });
+    util::spawn(ioc_, [this](auto yield) { executeTask(yield); });
 
     return true;
 }
@@ -191,23 +189,27 @@ WorkQueue::size() const
 }
 
 void
-WorkQueue::executeTask(std::chrono::system_clock::time_point opTime, boost::asio::yield_context yield)
+WorkQueue::executeTask(boost::asio::yield_context yield)
 {
-    std::optional<TaskType> task;
+    std::optional<TaskWithTimestamp> taskWithTimestamp;
     {
         auto state = queueState_.lock();
-        task = state->popNext();
+        taskWithTimestamp = state->popNext();
     }
 
-    ASSERT(task.has_value(), "Queue should not be empty as we spawn a coro with executeTask for each postCoro.");
+    ASSERT(
+        taskWithTimestamp.has_value(),
+        "Queue should not be empty as we spawn a coro with executeTask for each postCoro."
+    );
     auto const takenAt = std::chrono::system_clock::now();
-    auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(takenAt - opTime).count();
+    auto const waited =
+        std::chrono::duration_cast<std::chrono::microseconds>(takenAt - taskWithTimestamp->queuedAt).count();
 
     ++queued_.get();
     durationUs_.get() += waited;
     LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
 
-    task->operator()(yield);
+    taskWithTimestamp->task(yield);
     --curSize_.get();
 }
 
