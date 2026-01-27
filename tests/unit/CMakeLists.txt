@@ -21,8 +21,12 @@ target_sources(
           data/impl/LedgerCacheFileTests.cpp
           data/impl/OutputFileTests.cpp
           # Cluster
+          cluster/BackendTests.cpp
           cluster/ClioNodeTests.cpp
           cluster/ClusterCommunicationServiceTests.cpp
+          cluster/MetricsTests.cpp
+          cluster/RepeatedTaskTests.cpp
+          cluster/WriterDeciderTests.cpp
           # ETL
           etl/AmendmentBlockHandlerTests.cpp
           etl/CacheLoaderSettingsTests.cpp
@@ -46,7 +50,9 @@ target_sources(
           etl/SchedulingTests.cpp
           etl/SourceImplTests.cpp
           etl/SubscriptionSourceTests.cpp
+          etl/SystemStateTests.cpp
           etl/TaskManagerTests.cpp
+          etl/WriterStateTests.cpp
           etl/ext/CoreTests.cpp
           etl/ext/CacheTests.cpp
           etl/ext/MPTTests.cpp
@@ -167,8 +173,11 @@ target_sources(
           util/AccountUtilsTests.cpp
           util/AssertTests.cpp
           util/BytesConverterTests.cpp
+          util/ChannelTests.cpp
           util/CoroutineTest.cpp
           util/MoveTrackerTests.cpp
+          util/ObservableValueTest.cpp
+          util/ObservableValueAtomicTest.cpp
           util/RandomTests.cpp
           util/RepeatTests.cpp
           util/ResponseExpirationCacheTests.cpp
