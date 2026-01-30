@@ -73,13 +73,13 @@ public:
 
         // This class can't hold the trackable's shared_ptr, because disconnect should be able to be called in the
         // the trackable's destructor. However, the trackable can not be destroyed when the slot is being called
-        // either. `track_foreign` is racey because the control block can be released from some thread without a mutex
-        // protecting it while another one is invoking the slot. Therefore we are storing a weak_ptr of the trackable
-        // and explicitly checking it in the slot invocation instead. The invocation is guaranteed to happen under an
-        // internal mutex so it's safe.
+        // either. `track_foreign` is racey when one shared_ptr is tracked by multiple signals. Therefore we are storing
+        // a weak_ptr of the trackable and using weak_ptr::lock() to atomically check existence and acquire a shared_ptr
+        // during slot invocation. This guarantees to keep the trackable alive for the duration of the slot call and
+        // avoids potential race conditions.
         connections->emplace(
             trackable.get(), signal_.connect([slot, weakTrackable = std::weak_ptr(trackable)](Args&&... args) {
-                if (not weakTrackable.expired())
+                if (auto lifeExtender = weakTrackable.lock(); lifeExtender)
                     std::invoke(slot, std::forward<Args...>(args)...);
             })
         );
