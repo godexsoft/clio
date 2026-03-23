@@ -39,7 +39,9 @@
 namespace feed::impl {
 
 void
-ProposedTransactionFeed::ProposedTransactionSlot::operator()(AllVersionMsgsType const& allVersionMsgs) const
+ProposedTransactionFeed::ProposedTransactionSlot::operator()(
+    AllVersionMsgsType const& allVersionMsgs
+) const
 {
     if (auto connectionPtr = subscriptionContextWeakPtr.lock()) {
         if (feed.get().notified_.contains(connectionPtr.get()))
@@ -58,7 +60,8 @@ ProposedTransactionFeed::ProposedTransactionSlot::operator()(AllVersionMsgsType 
 void
 ProposedTransactionFeed::sub(SubscriberSharedPtr const& subscriber)
 {
-    auto const added = signal_.connectTrackableSlot(subscriber, ProposedTransactionSlot(*this, subscriber));
+    auto const added =
+        signal_.connectTrackableSlot(subscriber, ProposedTransactionSlot(*this, subscriber));
 
     if (added) {
         LOG(logger_.info()) << subscriber->tag() << "Subscribed tx_proposed";
@@ -73,8 +76,9 @@ ProposedTransactionFeed::sub(
     SubscriberSharedPtr const& subscriber
 )
 {
-    auto const added =
-        accountSignal_.connectTrackableSlot(subscriber, account, ProposedTransactionSlot(*this, subscriber));
+    auto const added = accountSignal_.connectTrackableSlot(
+        subscriber, account, ProposedTransactionSlot(*this, subscriber)
+    );
 
     if (added) {
         LOG(logger_.info()) << subscriber->tag() << "Subscribed accounts_proposed " << account;
@@ -131,8 +135,8 @@ ProposedTransactionFeed::pub(boost::json::object const& receivedTxJson)
     auto affectedAccounts =
         std::unordered_set<ripple::AccountID>(accounts.cbegin(), accounts.cend());
 
-    [[maybe_unused]] auto task = strand_.execute(
-        [this, allVersionMsgs, affectedAccounts = std::move(affectedAccounts)]() {
+    [[maybe_unused]] auto task =
+        strand_.execute([this, allVersionMsgs, affectedAccounts = std::move(affectedAccounts)]() {
             notified_.clear();
             signal_.emit(allVersionMsgs);
             // Prevent the same connection from receiving the same message twice if it is subscribed
@@ -143,8 +147,7 @@ ProposedTransactionFeed::pub(boost::json::object const& receivedTxJson)
             notified_.clear();
             for (auto const& account : affectedAccounts)
                 accountSignal_.emit(account, allVersionMsgs);
-        }
-    );
+        });
 }
 
 std::uint64_t

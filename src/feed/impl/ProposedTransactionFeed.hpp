@@ -56,7 +56,10 @@ class ProposedTransactionFeed {
         std::reference_wrapper<ProposedTransactionFeed> feed;
         std::weak_ptr<Subscriber> subscriptionContextWeakPtr;
 
-        ProposedTransactionSlot(ProposedTransactionFeed& feed, SubscriberSharedPtr const& connection)
+        ProposedTransactionSlot(
+            ProposedTransactionFeed& feed,
+            SubscriberSharedPtr const& connection
+        )
             : feed(feed), subscriptionContextWeakPtr(connection)
         {
         }
@@ -78,7 +81,8 @@ class ProposedTransactionFeed {
 
 public:
     /**
-     * @brief Move constructor is deleted because ProposedTransactionSlot takes ProposedTransactionFeed by reference.
+     * @brief Move constructor is deleted because ProposedTransactionSlot takes
+     * ProposedTransactionFeed by reference.
      */
     ProposedTransactionFeed(ProposedTransactionFeed&&) = delete;
 
