@@ -36,6 +36,7 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -46,9 +47,24 @@ namespace feed::impl {
 
 /**
  * @brief Feed that publishes the Proposed Transactions.
- * @note Be aware that the Clio only forwards this stream, not respect api_version.
  */
 class ProposedTransactionFeed {
+    // Hold two versions of transaction messages: [0] = v1, [1] = v2
+    using AllVersionMsgsType = std::array<std::shared_ptr<std::string>, 2>;
+
+    struct ProposedTransactionSlot {
+        std::reference_wrapper<ProposedTransactionFeed> feed;
+        std::weak_ptr<Subscriber> subscriptionContextWeakPtr;
+
+        ProposedTransactionSlot(ProposedTransactionFeed& feed, SubscriberSharedPtr const& connection)
+            : feed(feed), subscriptionContextWeakPtr(connection)
+        {
+        }
+
+        void
+        operator()(AllVersionMsgsType const& allVersionMsgs) const;
+    };
+
     util::Logger logger_{"Subscriptions"};
 
     std::unordered_set<SubscriberPtr> notified_;  // Used by slots to prevent double notifications
@@ -57,10 +73,15 @@ class ProposedTransactionFeed {
     std::reference_wrapper<util::prometheus::GaugeInt> subAllCount_;
     std::reference_wrapper<util::prometheus::GaugeInt> subAccountCount_;
 
-    TrackableSignalMap<ripple::AccountID, Subscriber, std::shared_ptr<std::string>> accountSignal_;
-    TrackableSignal<Subscriber, std::shared_ptr<std::string>> signal_;
+    TrackableSignalMap<ripple::AccountID, Subscriber, AllVersionMsgsType const&> accountSignal_;
+    TrackableSignal<Subscriber, AllVersionMsgsType const&> signal_;
 
 public:
+    /**
+     * @brief Move constructor is deleted because ProposedTransactionSlot takes ProposedTransactionFeed by reference.
+     */
+    ProposedTransactionFeed(ProposedTransactionFeed&&) = delete;
+
     /**
      * @brief Construct a Proposed Transaction Feed object.
      * @param executionCtx The actual publish will be called in the strand of this.

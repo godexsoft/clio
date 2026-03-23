@@ -20,12 +20,15 @@
 #include "feed/impl/ProposedTransactionFeed.hpp"
 
 #include "feed/Types.hpp"
+#include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/object.hpp>
 #include <boost/json/serialize.hpp>
+#include <boost/json/value.hpp>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
@@ -36,16 +39,26 @@
 namespace feed::impl {
 
 void
+ProposedTransactionFeed::ProposedTransactionSlot::operator()(AllVersionMsgsType const& allVersionMsgs) const
+{
+    if (auto connectionPtr = subscriptionContextWeakPtr.lock()) {
+        if (feed.get().notified_.contains(connectionPtr.get()))
+            return;
+
+        feed.get().notified_.insert(connectionPtr.get());
+
+        if (connectionPtr->apiSubversion() < 2u) {
+            connectionPtr->send(allVersionMsgs[0]);
+        } else {
+            connectionPtr->send(allVersionMsgs[1]);
+        }
+    }
+}
+
+void
 ProposedTransactionFeed::sub(SubscriberSharedPtr const& subscriber)
 {
-    auto const weakPtr = std::weak_ptr(subscriber);
-    auto const added = signal_.connectTrackableSlot(
-        subscriber, [weakPtr](std::shared_ptr<std::string> const& msg) {
-            if (auto connectionPtr = weakPtr.lock()) {
-                connectionPtr->send(msg);
-            }
-        }
-    );
+    auto const added = signal_.connectTrackableSlot(subscriber, ProposedTransactionSlot(*this, subscriber));
 
     if (added) {
         LOG(logger_.info()) << subscriber->tag() << "Subscribed tx_proposed";
@@ -60,19 +73,9 @@ ProposedTransactionFeed::sub(
     SubscriberSharedPtr const& subscriber
 )
 {
-    auto const weakPtr = std::weak_ptr(subscriber);
-    auto const added = accountSignal_.connectTrackableSlot(
-        subscriber, account, [this, weakPtr](std::shared_ptr<std::string> const& msg) {
-            if (auto connectionPtr = weakPtr.lock()) {
-                // Check if this connection already sent
-                if (notified_.contains(connectionPtr.get()))
-                    return;
+    auto const added =
+        accountSignal_.connectTrackableSlot(subscriber, account, ProposedTransactionSlot(*this, subscriber));
 
-                notified_.insert(connectionPtr.get());
-                connectionPtr->send(msg);
-            }
-        }
-    );
     if (added) {
         LOG(logger_.info()) << subscriber->tag() << "Subscribed accounts_proposed " << account;
         ++subAccountCount_.get();
@@ -100,25 +103,46 @@ ProposedTransactionFeed::unsub(
 void
 ProposedTransactionFeed::pub(boost::json::object const& receivedTxJson)
 {
-    auto pubMsg = std::make_shared<std::string>(boost::json::serialize(receivedTxJson));
+    // v1: forward as-is (rippled sends "transaction" key)
+    auto const v1Msg = std::make_shared<std::string>(boost::json::serialize(receivedTxJson));
 
-    auto const transaction = receivedTxJson.at("transaction").as_object();
+    // v2: rename "transaction" → "tx_json", move "hash" to top level
+    auto const v2Msg = [&]() {
+        boost::json::object v2Json = receivedTxJson;
+        if (v2Json.contains(JS(transaction))) {
+            boost::json::value txVal = v2Json.at(JS(transaction));
+            v2Json.erase(JS(transaction));
+            if (txVal.is_object()) {
+                auto& txObj = txVal.as_object();
+                if (txObj.contains(JS(hash))) {
+                    v2Json[JS(hash)] = txObj.at(JS(hash));
+                    txObj.erase(JS(hash));
+                }
+            }
+            v2Json[JS(tx_json)] = std::move(txVal);
+        }
+        return std::make_shared<std::string>(boost::json::serialize(v2Json));
+    }();
+
+    AllVersionMsgsType const allVersionMsgs{v1Msg, v2Msg};
+
+    auto const transaction = receivedTxJson.at(JS(transaction)).as_object();
     auto const accounts = rpc::getAccountsFromTransaction(transaction);
     auto affectedAccounts =
         std::unordered_set<ripple::AccountID>(accounts.cbegin(), accounts.cend());
 
     [[maybe_unused]] auto task = strand_.execute(
-        [this, pubMsg = std::move(pubMsg), affectedAccounts = std::move(affectedAccounts)]() {
+        [this, allVersionMsgs, affectedAccounts = std::move(affectedAccounts)]() {
             notified_.clear();
-            signal_.emit(pubMsg);
+            signal_.emit(allVersionMsgs);
             // Prevent the same connection from receiving the same message twice if it is subscribed
-            // to multiple accounts However, if the same connection subscribe both stream and
+            // to multiple accounts. However, if the same connection subscribes both stream and
             // account, it will still receive the message twice. notified_ can be cleared before
             // signal_ emit to improve this, but let's keep it as is for now, since rippled acts
             // like this.
             notified_.clear();
             for (auto const& account : affectedAccounts)
-                accountSignal_.emit(account, pubMsg);
+                accountSignal_.emit(account, allVersionMsgs);
         }
     );
 }
