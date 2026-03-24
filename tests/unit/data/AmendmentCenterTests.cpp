@@ -167,6 +167,32 @@ TEST_F(AmendmentCenterTest, IsEnabledReturnsVectorOfFalseWhenNoAmendments)
     });
 }
 
+TEST_F(AmendmentCenterTest, DeletedLibXRPLAmendmentIsNotKnownToLibXRPL)
+{
+    // OwnerPaysFee was removed from libXRPL in 2.6.0; confirm it's not present upstream
+    EXPECT_FALSE(ripple::allAmendments().contains(std::string{Amendments::OwnerPaysFee}));
+}
+
+TEST_F(AmendmentCenterTest, DeletedLibXRPLAmendmentIsPresentInGetAllWithCorrectFlags)
+{
+    auto const& all = amendmentCenter.getAll();
+    auto const it = std::ranges::find(all, std::string{Amendments::OwnerPaysFee}, &Amendment::name);
+
+    ASSERT_NE(
+        it, all.end()
+    ) << "OwnerPaysFee must be present in getAll() even after libXRPL deleted it";
+    EXPECT_FALSE(it->isSupportedByXRPL);
+    EXPECT_TRUE(it->isSupportedByClio);
+    EXPECT_TRUE(it->isRetired);
+}
+
+TEST_F(AmendmentCenterTest, DeletedLibXRPLAmendmentIsSupportedByClio)
+{
+    // Clio still registers OwnerPaysFee so isSupported() and getSupported() must include it
+    EXPECT_TRUE(amendmentCenter.isSupported(Amendments::OwnerPaysFee));
+    EXPECT_TRUE(amendmentCenter.getSupported().contains(std::string{Amendments::OwnerPaysFee}));
+}
+
 TEST(AmendmentTest, GenerateAmendmentId)
 {
     // https://xrpl.org/known-amendments.html#disallowincoming refer to the published id
