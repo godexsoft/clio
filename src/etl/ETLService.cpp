@@ -2,6 +2,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/LedgerCacheInterface.hpp"
+#include "data/LedgerCacheLoadingState.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoader.hpp"
 #include "etl/CacheLoaderInterface.hpp"
@@ -60,6 +61,7 @@ std::shared_ptr<ETLServiceInterface>
 ETLService::makeETLService(
     util::config::ClioConfigDefinition const& config,
     std::shared_ptr<SystemState> state,
+    std::unique_ptr<data::LedgerCacheLoadingStateInterface const> cacheLoadingState,
     util::async::AnyExecutionContext ctx,
     std::shared_ptr<BackendInterface> backend,
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions,
@@ -72,7 +74,9 @@ ETLService::makeETLService(
     auto fetcher = std::make_shared<impl::LedgerFetcher>(backend, balancer);
     auto extractor = std::make_shared<impl::Extractor>(fetcher);
     auto publisher = std::make_shared<impl::LedgerPublisher>(ctx, backend, subscriptions, *state);
-    auto cacheLoader = std::make_shared<CacheLoader<>>(config, backend, backend->cache());
+    auto cacheLoader = std::make_shared<CacheLoader<>>(
+        config, backend, backend->cache(), std::move(cacheLoadingState)
+    );
     auto cacheUpdater = std::make_shared<impl::CacheUpdater>(backend->cache());
     auto amendmentBlockHandler = std::make_shared<impl::AmendmentBlockHandler>(ctx, *state);
     auto monitorProvider = std::make_shared<impl::MonitorProvider>();
@@ -196,13 +200,13 @@ ETLService::run()
             return;
         }
 
-        auto const nextSequence = syncCacheWithDb();
+        auto const nextSequence = rng->maxSequence + 1;
         LOG(log_.debug()) << "Database is populated. Starting monitor loop. sequence = "
                           << nextSequence;
 
         startMonitor(nextSequence);
 
-        state_->isLoadingCache = false;
+        state_->etlStarted = true;
 
         // If we are a writer as the result of loading the initial ledger - start loading
         if (state_->isWriting)
@@ -335,24 +339,6 @@ ETLService::loadInitialLedgerIfNeeded()
     }
 
     return rng;
-}
-
-uint32_t
-ETLService::syncCacheWithDb()
-{
-    auto rng = backend_->hardFetchLedgerRangeNoThrow();
-
-    while (not backend_->cache().isDisabled() and
-           rng->maxSequence > backend_->cache().latestLedgerSequence()) {
-        LOG(log_.info()) << "Syncing cache with DB. DB latest seq: " << rng->maxSequence
-                         << ". Cache latest seq: " << backend_->cache().latestLedgerSequence();
-        for (auto seq = backend_->cache().latestLedgerSequence(); seq <= rng->maxSequence; ++seq) {
-            LOG(log_.info()) << "ETLService (via syncCacheWithDb) got new seq from db: " << seq;
-            updateCache(seq);
-        }
-        rng = backend_->hardFetchLedgerRangeNoThrow();
-    }
-    return rng->maxSequence + 1;
 }
 
 void

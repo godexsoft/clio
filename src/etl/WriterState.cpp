@@ -1,5 +1,6 @@
 #include "etl/WriterState.hpp"
 
+#include "data/LedgerCacheInterface.hpp"
 #include "etl/SystemState.hpp"
 
 #include <memory>
@@ -7,7 +8,11 @@
 
 namespace etl {
 
-WriterState::WriterState(std::shared_ptr<SystemState> state) : systemState_(std::move(state))
+WriterState::WriterState(
+    std::shared_ptr<SystemState> state,
+    data::LedgerCacheInterface const& cache
+)
+    : systemState_(std::move(state)), cache_(cache)
 {
 }
 
@@ -45,6 +50,7 @@ void
 WriterState::setWriterDecidingFallback()
 {
     systemState_->isWriterDecidingFallback = true;
+    isFallbackRecovery_ = false;
 }
 
 bool
@@ -54,9 +60,30 @@ WriterState::isFallback() const
 }
 
 bool
-WriterState::isLoadingCache() const
+WriterState::isFallbackRecovery() const
 {
-    return systemState_->isLoadingCache;
+    return isFallbackRecovery_;
+}
+
+void
+WriterState::setFallbackRecovery(bool newValue)
+{
+    if (newValue) {
+        systemState_->isWriterDecidingFallback = false;
+    }
+    isFallbackRecovery_ = newValue;
+}
+
+bool
+WriterState::isEtlStarted() const
+{
+    return systemState_->etlStarted;
+}
+
+bool
+WriterState::isCacheFull() const
+{
+    return cache_.get().isFull();
 }
 
 std::unique_ptr<WriterStateInterface>

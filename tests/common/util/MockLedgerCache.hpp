@@ -16,7 +16,7 @@
 struct MockLedgerCache : data::LedgerCacheInterface {
     MOCK_METHOD(
         void,
-        updateImp,
+        updateImpl,
         (std::vector<data::LedgerObject> const& a, uint32_t b, bool c),
         ()
     );
@@ -24,7 +24,7 @@ struct MockLedgerCache : data::LedgerCacheInterface {
     void
     update(std::vector<data::LedgerObject> const& a, uint32_t b, bool c = false) override
     {
-        updateImp(a, b, c);
+        updateImpl(a, b, c);
     }
 
     MOCK_METHOD(
@@ -85,4 +85,8 @@ struct MockLedgerCache : data::LedgerCacheInterface {
         (std::string const& path, uint32_t minLatestSequence),
         (override)
     );
+
+    MOCK_METHOD(void, startLoading, (), (override));
+
+    MOCK_METHOD(bool, isCurrentlyLoading, (), (const, override));
 };

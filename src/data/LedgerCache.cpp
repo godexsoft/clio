@@ -205,6 +205,7 @@ LedgerCache::setFull()
         return;
 
     full_ = true;
+    isCurrentlyLoading_ = false;
     std::scoped_lock const lck{mtx_};
     deletes_.clear();
 }
@@ -269,6 +270,18 @@ LedgerCache::loadFromFile(std::string const& path, uint32_t minLatestSequence)
     deleted_ = std::move(deleted);
     full_ = true;
     return {};
+}
+
+void
+LedgerCache::startLoading()
+{
+    isCurrentlyLoading_ = true;
+}
+
+bool
+LedgerCache::isCurrentlyLoading() const
+{
+    return isCurrentlyLoading_;
 }
 
 }  // namespace data

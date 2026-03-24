@@ -1,7 +1,12 @@
 #pragma once
 
+#include "data/LedgerCacheInterface.hpp"
 #include "etl/SystemState.hpp"
+#include "util/prometheus/Bool.hpp"
+#include "util/prometheus/Label.hpp"
+#include "util/prometheus/Prometheus.hpp"
 
+#include <functional>
 #include <memory>
 
 namespace etl {
@@ -58,23 +63,64 @@ public:
     isFallback() const = 0;
 
     /**
+     * @brief Check if this node is in fallback recovery mode.
+     *
+     * Fallback recovery is an intermediate state entered when the node has been in
+     * fallback mode long enough to attempt returning to election-based writer selection.
+     * In this state the node continues participating in the fallback write-race while
+     * coordinating with other nodes to exit fallback together.
+     *
+     * @return true if the node is in fallback recovery mode, false otherwise
+     */
+    [[nodiscard]] virtual bool
+    isFallbackRecovery() const = 0;
+
+    /**
+     * @brief Set or clear the fallback recovery flag.
+     *
+     * When @p newValue is true, the node enters fallback recovery mode:
+     *   - @ref isFallbackRecovery returns true
+     *   - The plain fallback flag (@ref isFallback) is cleared so the node no longer
+     *     publishes @c DbRole::Fallback; it publishes @c DbRole::FallbackRecovery instead.
+     *
+     * When @p newValue is false, the recovery flag is cleared without touching the
+     * plain fallback flag.  This is used when the recovery coordination completes and
+     * the node transitions back to election mode.
+     *
+     * @param newValue true to enter recovery mode, false to leave it
+     */
+    virtual void
+    setFallbackRecovery(bool newValue) = 0;
+
+    /**
      * @brief Switch the cluster to the fallback writer decision mechanism.
      *
      * This method is called when the cluster needs to transition from the cluster
      * communication mechanism to the slower but more reliable fallback mechanism.
      * Once set, this flag propagates to all nodes in the cluster through the
      * ClioNode DbRole::Fallback state.
+     *
+     * Also clears the fallback recovery flag (@ref isFallbackRecovery) because entering
+     * a fresh fallback period cancels any in-progress recovery attempt.
      */
     virtual void
     setWriterDecidingFallback() = 0;
 
     /**
-     * @brief Whether clio is still loading cache after startup.
+     * @brief Whether the ETL monitor has started and the node is ready to become a writer.
      *
-     * @return true if clio is still loading cache, false otherwise.
+     * @return true if ETL has started the monitor loop, false otherwise.
      */
     [[nodiscard]] virtual bool
-    isLoadingCache() const = 0;
+    isEtlStarted() const = 0;
+
+    /**
+     * @brief Whether the ledger cache is fully loaded.
+     *
+     * @return true if the cache is full, false otherwise.
+     */
+    [[nodiscard]] virtual bool
+    isCacheFull() const = 0;
 
     /**
      * @brief Create a clone of this writer state.
@@ -100,13 +146,30 @@ class WriterState : public WriterStateInterface {
 private:
     std::shared_ptr<SystemState>
         systemState_; /**< @brief Shared system state for ETL coordination */
+    std::reference_wrapper<data::LedgerCacheInterface const> cache_;
+
+    /**
+     * @brief Prometheus metric tracking whether this node is in fallback recovery mode.
+     *
+     * @note Because @c prometheus::Bool holds a @c std::reference_wrapper to the underlying
+     * gauge, copies of @c WriterState (including clones) share the same metric value.
+     * Mutations made through a clone are therefore immediately visible on the original
+     * instance and vice-versa.
+     */
+    util::prometheus::Bool isFallbackRecovery_ = PrometheusService::boolMetric(
+        "etl_writing_deciding_fallback_recovery",
+        util::prometheus::Labels{},
+        "Whether clio is in recovery from the fallback writer decision mechanism"
+    );
 
 public:
     /**
-     * @brief Construct a WriterState with the given system state.
+     * @brief Construct a WriterState with the given system state and cache.
+     *
      * @param state Shared pointer to the system state for coordination
+     * @param cache The ledger cache used to report cache fullness
      */
-    WriterState(std::shared_ptr<SystemState> state);
+    WriterState(std::shared_ptr<SystemState> state, data::LedgerCacheInterface const& cache);
 
     bool
     isReadOnly() const override;
@@ -153,13 +216,21 @@ public:
     bool
     isFallback() const override;
 
-    /**
-     * @brief Whether clio is still loading cache after startup.
-     *
-     * @return true if clio is still loading cache, false otherwise.
-     */
+    /** @copydoc WriterStateInterface::isFallbackRecovery */
     bool
-    isLoadingCache() const override;
+    isFallbackRecovery() const override;
+
+    /** @copydoc WriterStateInterface::setFallbackRecovery */
+    void
+    setFallbackRecovery(bool newValue) override;
+
+    /** @copydoc WriterStateInterface::isEtlStarted */
+    bool
+    isEtlStarted() const override;
+
+    /** @copydoc WriterStateInterface::isCacheFull */
+    bool
+    isCacheFull() const override;
 
     /**
      * @brief Create a clone of this writer state.

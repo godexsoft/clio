@@ -1,9 +1,15 @@
 #include "cluster/ClioNode.hpp"
 #include "cluster/ClusterCommunicationService.hpp"
 #include "data/BackendInterface.hpp"
+#include "etl/SystemState.hpp"
 #include "util/MockBackendTestFixture.hpp"
+#include "util/MockLedgerCacheLoadingState.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/MockWriterState.hpp"
+#include "util/NameGenerator.hpp"
+#include "util/config/ConfigDefinition.hpp"
+#include "util/config/ConfigValue.hpp"
+#include "util/config/Types.hpp"
 #include "util/prometheus/Prometheus.hpp"
 
 #include <boost/json/object.hpp>
@@ -29,6 +35,8 @@ using namespace cluster;
 struct ClusterCommunicationServiceTest : util::prometheus::WithPrometheus, MockBackendTest {
     std::unique_ptr<NiceMockWriterState> writerState = std::make_unique<NiceMockWriterState>();
     NiceMockWriterState& writerStateRef = *writerState;
+    std::unique_ptr<NiceMockLedgerCacheLoadingState> cacheLoadingState =
+        std::make_unique<NiceMockLedgerCacheLoadingState>();
 
     static constexpr std::chrono::milliseconds kSHORT_INTERVAL{1};
 
@@ -46,7 +54,10 @@ struct ClusterCommunicationServiceTest : util::prometheus::WithPrometheus, MockB
         return ClioNode{
             .uuid = std::make_shared<boost::uuids::uuid>(uuid),
             .updateTime = std::chrono::system_clock::now(),
-            .dbRole = role
+            .dbRole = role,
+            .etlStarted = true,
+            .cacheIsFull = true,
+            .cacheIsCurrentlyLoading = false,
         };
     }
 
@@ -67,6 +78,9 @@ struct ClusterCommunicationServiceTest : util::prometheus::WithPrometheus, MockB
         }));
         ON_CALL(writerStateRef, isReadOnly()).WillByDefault(testing::Return(false));
         ON_CALL(writerStateRef, isWriting()).WillByDefault(testing::Return(true));
+        ON_CALL(*cacheLoadingState, clone()).WillByDefault(testing::Invoke([]() {
+            return std::make_unique<NiceMockLedgerCacheLoadingState>();
+        }));
     }
 
     static bool
@@ -101,7 +115,11 @@ TEST_F(ClusterCommunicationServiceTest, BackendReadsAndWritesData)
     }));
 
     ClusterCommunicationService service{
-        backend_, std::move(writerState), kSHORT_INTERVAL, kSHORT_INTERVAL
+        backend_,
+        std::move(writerState),
+        std::move(cacheLoadingState),
+        kSHORT_INTERVAL,
+        kSHORT_INTERVAL
     };
 
     service.run();
@@ -142,7 +160,11 @@ TEST_F(ClusterCommunicationServiceTest, MetricsGetsNewStateFromBackend)
     auto isHealthyMetric = PrometheusService::boolMetric("cluster_communication_is_healthy", {});
 
     ClusterCommunicationService service{
-        backend_, std::move(writerState), kSHORT_INTERVAL, kSHORT_INTERVAL
+        backend_,
+        std::move(writerState),
+        std::move(cacheLoadingState),
+        kSHORT_INTERVAL,
+        kSHORT_INTERVAL
     };
 
     service.run();
@@ -187,7 +209,11 @@ TEST_F(ClusterCommunicationServiceTest, WriterDeciderCallsWriterStateMethodsAcco
     }));
 
     ClusterCommunicationService service{
-        backend_, std::move(writerState), kSHORT_INTERVAL, kSHORT_INTERVAL
+        backend_,
+        std::move(writerState),
+        std::move(cacheLoadingState),
+        kSHORT_INTERVAL,
+        kSHORT_INTERVAL
     };
 
     service.run();
@@ -217,7 +243,11 @@ TEST_F(ClusterCommunicationServiceTest, StopHaltsBackendOperations)
     }));
 
     ClusterCommunicationService service{
-        backend_, std::move(writerState), kSHORT_INTERVAL, kSHORT_INTERVAL
+        backend_,
+        std::move(writerState),
+        std::move(cacheLoadingState),
+        kSHORT_INTERVAL,
+        kSHORT_INTERVAL
     };
 
     service.run();
@@ -227,4 +257,48 @@ TEST_F(ClusterCommunicationServiceTest, StopHaltsBackendOperations)
     auto const countAfterStop = backendOperationsCount.load();
     std::this_thread::sleep_for(std::chrono::milliseconds{50});
     EXPECT_EQ(backendOperationsCount.load(), countAfterStop);
+}
+
+struct ClusterCommunicationServiceMakeTestBundle {
+    std::string testName;
+    bool limitLoadInCluster;
+};
+
+struct ClusterCommunicationServiceMakeTest
+    : util::prometheus::WithPrometheus,
+      MockBackendTest,
+      testing::WithParamInterface<ClusterCommunicationServiceMakeTestBundle> {
+    std::shared_ptr<etl::SystemState> systemState = std::make_shared<etl::SystemState>();
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    LimitLoadInCluster,
+    ClusterCommunicationServiceMakeTest,
+    testing::Values(
+        ClusterCommunicationServiceMakeTestBundle{
+            .testName = "AllowsLoadingWhenTrue",
+            .limitLoadInCluster = true
+        },
+        ClusterCommunicationServiceMakeTestBundle{
+            .testName = "DoesNotAllowLoadingWhenFalse",
+            .limitLoadInCluster = false
+        }
+    ),
+    tests::util::kNAME_GENERATOR
+);
+
+TEST_P(ClusterCommunicationServiceMakeTest, LoadingAllowedMatchesConfig)
+{
+    auto const& param = GetParam();
+    util::config::ClioConfigDefinition const config{
+        {{"cache.limit_load_in_cluster",
+          util::config::ConfigValue{util::config::ConfigType::Boolean}.defaultValue(
+              param.limitLoadInCluster
+          )}}
+    };
+
+    auto result = ClusterCommunicationService::make(config, backend_, systemState);
+
+    ASSERT_NE(result.cacheLoadingState, nullptr);
+    EXPECT_EQ(result.cacheLoadingState->isLoadingAllowed(), not param.limitLoadInCluster);
 }

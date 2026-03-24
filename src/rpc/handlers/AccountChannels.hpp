@@ -89,8 +89,8 @@ public:
      *
      * @param sharedPtrBackend The backend to use
      */
-    AccountChannelsHandler(std::shared_ptr<BackendInterface> const& sharedPtrBackend)
-        : sharedPtrBackend_(sharedPtrBackend)
+    AccountChannelsHandler(std::shared_ptr<BackendInterface> sharedPtrBackend)
+        : sharedPtrBackend_(std::move(sharedPtrBackend))
     {
     }
 

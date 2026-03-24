@@ -56,7 +56,7 @@ AccountOffersHandler::process(AccountOffersHandler::Input const& input, Context 
         *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
     );
 
-    if (!expectedLgrInfo.has_value())
+    if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = expectedLgrInfo.value();
@@ -66,7 +66,7 @@ AccountOffersHandler::process(AccountOffersHandler::Input const& input, Context 
     );
 
     if (!accountLedgerObject)
-        return Error{Status{RippledError::rpcACT_NOT_FOUND, "accountNotFound"}};
+        return Error{Status{RippledError::rpcACT_NOT_FOUND}};
 
     Output response;
     response.account = ripple::to_string(*accountID);
@@ -90,7 +90,7 @@ AccountOffersHandler::process(AccountOffersHandler::Input const& input, Context 
         addToResponse
     );
 
-    if (!expectedNext.has_value())
+    if (not expectedNext.has_value())
         return Error{expectedNext.error()};
 
     auto const nextMarker = expectedNext.value();

@@ -2,6 +2,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "data/LedgerCacheInterface.hpp"
+#include "data/LedgerCacheLoadingState.hpp"
 #include "data/Types.hpp"
 #include "etl/CacheLoaderInterface.hpp"
 #include "etl/CacheLoaderSettings.hpp"
@@ -41,6 +42,7 @@ class CacheLoader : public CacheLoaderInterface {
     std::reference_wrapper<data::LedgerCacheInterface> cache_;
 
     CacheLoaderSettings settings_;
+    std::unique_ptr<data::LedgerCacheLoadingStateInterface const> cacheLoadingState_;
     ExecutionContextType ctx_;
     std::unique_ptr<CacheLoaderType> loader_;
 
@@ -51,15 +53,18 @@ public:
      * @param config The configuration to use
      * @param backend The backend to use
      * @param cache The cache to load into
+     * @param cacheLoadingState State controlling whether loading from backend is currently allowed
      */
     CacheLoader(
         util::config::ClioConfigDefinition const& config,
         std::shared_ptr<BackendInterface> backend,
-        data::LedgerCacheInterface& cache
+        data::LedgerCacheInterface& cache,
+        std::unique_ptr<data::LedgerCacheLoadingStateInterface const> cacheLoadingState
     )
         : backend_{std::move(backend)}
         , cache_{cache}
         , settings_{makeCacheLoaderSettings(config)}
+        , cacheLoadingState_(std::move(cacheLoadingState))
         , ctx_{settings_.numThreads}
     {
     }
@@ -84,8 +89,16 @@ public:
         }
 
         if (loadCacheFromFile()) {
+            // Cache file may contain outdated data, so fetch whatever left up to seq from DB
+            updateCacheToSeq(seq);
+            cache_.get().setFull();
             return;
         }
+
+        LOG(log_.info()) << "Waiting for ledger cache loading to become allowed";
+        cacheLoadingState_->waitForLoadingAllowed();
+        LOG(log_.info()) << "Ledger cache loading is now allowed. Start loading...";
+        cache_.get().startLoading();
 
         std::shared_ptr<impl::BaseCursorProvider> provider;
         if (settings_.numCacheCursorsFromDiff != 0) {
@@ -172,8 +185,22 @@ private:
 
         LOG(log_.info()) << "Loaded cache from file in " << duration_ms
                          << " ms. Latest sequence: " << cache_.get().latestLedgerSequence();
-        backend_->forceUpdateRange(cache_.get().latestLedgerSequence());
         return true;
+    }
+
+    void
+    updateCacheToSeq(uint32_t const seq)
+    {
+        while (cache_.get().latestLedgerSequence() < seq) {
+            auto const seqToLoad = cache_.get().latestLedgerSequence() + 1;
+            LOG(log_.info()) << "Fetching ledger " << seqToLoad
+                             << "from DB after loading cache from file";
+            auto const diff = data::synchronousAndRetryOnTimeout([this, seqToLoad](auto yield) {
+                return backend_->fetchLedgerDiff(seqToLoad, yield);
+            });
+            cache_.get().update(diff, seqToLoad);
+            LOG(log_.info()) << "Updated cache to " << seqToLoad;
+        }
     }
 };
 

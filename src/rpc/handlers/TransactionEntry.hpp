@@ -60,8 +60,8 @@ public:
      *
      * @param sharedPtrBackend The backend to use
      */
-    TransactionEntryHandler(std::shared_ptr<BackendInterface> const& sharedPtrBackend)
-        : sharedPtrBackend_(sharedPtrBackend)
+    TransactionEntryHandler(std::shared_ptr<BackendInterface> sharedPtrBackend)
+        : sharedPtrBackend_(std::move(sharedPtrBackend))
     {
     }
 

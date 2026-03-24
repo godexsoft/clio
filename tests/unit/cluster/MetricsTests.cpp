@@ -52,17 +52,26 @@ TEST_F(MetricsTest, OnNewStateWithValidClusterData)
     ClioNode const node1{
         .uuid = uuid1,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::Writer
+        .dbRole = ClioNode::DbRole::Writer,
+        .etlStarted = true,
+        .cacheIsFull = true,
+        .cacheIsCurrentlyLoading = false
     };
     ClioNode const node2{
         .uuid = uuid2,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::ReadOnly
+        .dbRole = ClioNode::DbRole::ReadOnly,
+        .etlStarted = true,
+        .cacheIsFull = true,
+        .cacheIsCurrentlyLoading = false
     };
     ClioNode const node3{
         .uuid = uuid3,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::NotWriter
+        .dbRole = ClioNode::DbRole::NotWriter,
+        .etlStarted = true,
+        .cacheIsFull = false,
+        .cacheIsCurrentlyLoading = false
     };
 
     std::vector<ClioNode> const nodes = {node1, node2, node3};
@@ -130,7 +139,10 @@ TEST_F(MetricsTest, OnNewStateWithSingleNode)
     ClioNode const node1{
         .uuid = uuid1,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::Writer
+        .dbRole = ClioNode::DbRole::Writer,
+        .etlStarted = true,
+        .cacheIsFull = false,
+        .cacheIsCurrentlyLoading = false
     };
 
     std::vector<ClioNode> const nodes = {node1};
@@ -166,12 +178,18 @@ TEST_F(MetricsTest, OnNewStateRecoveryFromFailure)
     ClioNode const node1{
         .uuid = uuid1,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::Writer
+        .dbRole = ClioNode::DbRole::Writer,
+        .etlStarted = true,
+        .cacheIsFull = true,
+        .cacheIsCurrentlyLoading = false
     };
     ClioNode const node2{
         .uuid = uuid2,
         .updateTime = std::chrono::system_clock::now(),
-        .dbRole = ClioNode::DbRole::ReadOnly
+        .dbRole = ClioNode::DbRole::ReadOnly,
+        .etlStarted = true,
+        .cacheIsFull = false,
+        .cacheIsCurrentlyLoading = false
     };
 
     std::vector<ClioNode> const nodes = {node1, node2};

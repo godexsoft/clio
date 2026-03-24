@@ -20,7 +20,7 @@ public:
      *
      * @param sharedPtrBackend The backend to use
      */
-    NFTBuyOffersHandler(std::shared_ptr<BackendInterface> const& sharedPtrBackend)
+    NFTBuyOffersHandler(std::shared_ptr<BackendInterface> sharedPtrBackend)
         : NFTOffersHandlerBase(sharedPtrBackend)
     {
     }
