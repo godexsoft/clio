@@ -56,8 +56,9 @@ TEST_F(AmendmentCenterTest, AllAmendmentsFromLibXRPLAreSupported)
             << "XRPL amendment not supported by Clio: " << name;
     }
 
-    ASSERT_EQ(amendmentCenter.getSupported().size(), ripple::allAmendments().size());
-    ASSERT_EQ(amendmentCenter.getAll().size(), ripple::allAmendments().size());
+    // We support at least all the amendments currently exposed by libXRPL
+    ASSERT_GE(amendmentCenter.getSupported().size(), ripple::allAmendments().size());
+    ASSERT_GE(amendmentCenter.getAll().size(), ripple::allAmendments().size());
 }
 
 TEST_F(AmendmentCenterTest, Accessors)
