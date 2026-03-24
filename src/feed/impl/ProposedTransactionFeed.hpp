@@ -36,7 +36,6 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
-#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -49,23 +48,29 @@ namespace feed::impl {
  * @brief Feed that publishes the Proposed Transactions.
  */
 class ProposedTransactionFeed {
-    // Hold two versions of transaction messages: [0] = v1, [1] = v2
-    using AllVersionMsgsType = std::array<std::shared_ptr<std::string>, 2>;
+    // Hold two versions of transaction messages
+    struct AllVersionMsgsType {
+        std::string v1;
+        std::string v2;
+    };
 
-    struct ProposedTransactionSlot {
-        std::reference_wrapper<ProposedTransactionFeed> feed;
-        std::weak_ptr<Subscriber> subscriptionContextWeakPtr;
+    using AllVersionsMsgsPtrType = std::shared_ptr<AllVersionMsgsType>;
 
+    class ProposedTransactionSlot {
+        std::reference_wrapper<ProposedTransactionFeed> feed_;
+        std::weak_ptr<Subscriber> subscriptionContextWeakPtr_;
+
+    public:
         ProposedTransactionSlot(
             ProposedTransactionFeed& feed,
             SubscriberSharedPtr const& connection
         )
-            : feed(feed), subscriptionContextWeakPtr(connection)
+            : feed_(feed), subscriptionContextWeakPtr_(connection)
         {
         }
 
         void
-        operator()(AllVersionMsgsType const& allVersionMsgs) const;
+        operator()(AllVersionsMsgsPtrType const& allVersionMsgs) const;
     };
 
     util::Logger logger_{"Subscriptions"};
@@ -76,8 +81,8 @@ class ProposedTransactionFeed {
     std::reference_wrapper<util::prometheus::GaugeInt> subAllCount_;
     std::reference_wrapper<util::prometheus::GaugeInt> subAccountCount_;
 
-    TrackableSignalMap<ripple::AccountID, Subscriber, AllVersionMsgsType const&> accountSignal_;
-    TrackableSignal<Subscriber, AllVersionMsgsType const&> signal_;
+    TrackableSignalMap<ripple::AccountID, Subscriber, AllVersionsMsgsPtrType> accountSignal_;
+    TrackableSignal<Subscriber, AllVersionsMsgsPtrType> signal_;
 
 public:
     /**

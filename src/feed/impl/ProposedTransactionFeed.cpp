@@ -40,19 +40,19 @@ namespace feed::impl {
 
 void
 ProposedTransactionFeed::ProposedTransactionSlot::operator()(
-    AllVersionMsgsType const& allVersionMsgs
+    AllVersionsMsgsPtrType const& allVersionMsgs
 ) const
 {
-    if (auto connectionPtr = subscriptionContextWeakPtr.lock()) {
-        if (feed.get().notified_.contains(connectionPtr.get()))
+    if (auto connectionPtr = subscriptionContextWeakPtr_.lock()) {
+        if (feed_.get().notified_.contains(connectionPtr.get()))
             return;
 
-        feed.get().notified_.insert(connectionPtr.get());
+        feed_.get().notified_.insert(connectionPtr.get());
 
         if (connectionPtr->apiSubversion() < 2u) {
-            connectionPtr->send(allVersionMsgs[0]);
+            connectionPtr->send(std::shared_ptr<std::string>(allVersionMsgs, &allVersionMsgs->v1));
         } else {
-            connectionPtr->send(allVersionMsgs[1]);
+            connectionPtr->send(std::shared_ptr<std::string>(allVersionMsgs, &allVersionMsgs->v2));
         }
     }
 }
@@ -107,11 +107,8 @@ ProposedTransactionFeed::unsub(
 void
 ProposedTransactionFeed::pub(boost::json::object const& receivedTxJson)
 {
-    // v1: forward as-is (rippled sends "transaction" key)
-    auto const v1Msg = std::make_shared<std::string>(boost::json::serialize(receivedTxJson));
-
     // v2: rename "transaction" → "tx_json", move "hash" to top level
-    auto const v2Msg = [&]() {
+    auto const v2Json = [&]() {
         boost::json::object v2Json = receivedTxJson;
         if (v2Json.contains(JS(transaction))) {
             boost::json::value txVal = v2Json.at(JS(transaction));
@@ -125,10 +122,14 @@ ProposedTransactionFeed::pub(boost::json::object const& receivedTxJson)
             }
             v2Json[JS(tx_json)] = std::move(txVal);
         }
-        return std::make_shared<std::string>(boost::json::serialize(v2Json));
+        return v2Json;
     }();
 
-    AllVersionMsgsType const allVersionMsgs{v1Msg, v2Msg};
+    auto const allVersionMsgs = std::make_shared<AllVersionMsgsType>(
+        // v1: forward as-is (rippled sends "transaction" key)
+        boost::json::serialize(receivedTxJson),
+        boost::json::serialize(v2Json)
+    );
 
     auto const transaction = receivedTxJson.at(JS(transaction)).as_object();
     auto const accounts = rpc::getAccountsFromTransaction(transaction);
