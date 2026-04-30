@@ -90,7 +90,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
             if (not expectedLgrInfo.has_value())
                 return Error{expectedLgrInfo.error()};
 
-            maxIndex = minIndex = *expectedLgrInfo.seq;
+            maxIndex = minIndex = (*expectedLgrInfo).seq;
         }
     }
 

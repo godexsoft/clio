@@ -73,7 +73,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
         if (not expectedLgrInfo.has_value())
             return Error{expectedLgrInfo.error()};
 
-        maxIndex = minIndex = *expectedLgrInfo.seq;
+        maxIndex = minIndex = (*expectedLgrInfo).seq;
     }
 
     std::optional<data::TransactionsCursor> cursor;

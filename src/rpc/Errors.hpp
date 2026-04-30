@@ -178,7 +178,8 @@ struct Status {
 };
 
 /** @brief Warning codes that can be returned by clio. */
-enum class WarningCode {
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum WarningCode {
     WarnUnknown = -1,
     WarnRpcClio = 2001,
     WarnRpcOutdated = 2002,

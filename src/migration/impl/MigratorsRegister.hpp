@@ -61,7 +61,7 @@ class MigratorsRegister {
             LOG(log_.info()) << "Running migration: " << name;
             Migrator::runMigration(backend_, config);
             backend_->writeMigratorStatus(
-                name, MigratorStatus(MigratorStatus::Migrated).toString()
+                name, MigratorStatus(MigratorStatus::Status::Migrated).toString()
             );
             LOG(log_.info()) << "Finished migration: " << name;
         }
