@@ -178,7 +178,7 @@ struct Status {
 };
 
 /** @brief Warning codes that can be returned by clio. */
-enum WarningCode {
+enum class WarningCode {
     WarnUnknown = -1,
     WarnRpcClio = 2001,
     WarnRpcOutdated = 2002,
@@ -200,7 +200,7 @@ struct WarningInfo {
     {
     }
 
-    WarningCode code = WarnUnknown;
+    WarningCode code = WarningCode::WarnUnknown;
     std::string_view const message = "unknown warning";
 };
 

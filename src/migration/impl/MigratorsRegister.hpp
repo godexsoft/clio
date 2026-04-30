@@ -150,14 +150,14 @@ public:
     {
         auto const fullList = getMigratorNames();
         if (std::ranges::find(fullList, name) == fullList.end()) {
-            return MigratorStatus::NotKnown;
+            return MigratorStatus::Status::NotKnown;
         }
         auto const statusStringOpt = data::synchronous([&](auto yield) {
             return backend_->fetchMigratorStatus(name, yield);
         });
 
         return statusStringOpt ? MigratorStatus::fromString(statusStringOpt.value())
-                               : MigratorStatus::NotMigrated;
+                               : MigratorStatus::Status::NotMigrated;
     }
 
     /**

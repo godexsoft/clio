@@ -317,10 +317,10 @@ private:
             }
 
             boost::json::array warnings = std::move(result.warnings);
-            warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcClio));
+            warnings.emplace_back(rpc::makeWarning(rpc::WarningCode::WarnRpcClio));
 
             if (etl_->lastCloseAgeSeconds() >= 60)
-                warnings.emplace_back(rpc::makeWarning(rpc::WarnRpcOutdated));
+                warnings.emplace_back(rpc::makeWarning(rpc::WarningCode::WarnRpcOutdated));
 
             response["warnings"] = warnings;
             return Response{boost::beast::http::status::ok, response, rawRequest};
@@ -361,9 +361,12 @@ private:
         auto jsonResponse = boost::json::parse(response.message()).as_object();
         jsonResponse["warning"] = "load";
         if (jsonResponse.contains("warnings") && jsonResponse["warnings"].is_array()) {
-            jsonResponse["warnings"].as_array().push_back(rpc::makeWarning(rpc::WarnRpcRateLimit));
+            jsonResponse["warnings"].as_array().push_back(
+                rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)
+            );
         } else {
-            jsonResponse["warnings"] = boost::json::array{rpc::makeWarning(rpc::WarnRpcRateLimit)};
+            jsonResponse["warnings"] =
+                boost::json::array{rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)};
         }
         return jsonResponse;
     }

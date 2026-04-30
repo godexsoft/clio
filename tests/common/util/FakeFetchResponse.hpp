@@ -52,14 +52,14 @@ public:
 
 class FakeLedgerObject {
 public:
-    enum ModType : int { MODIFIED, DELETED };
+    enum class ModType : int { MODIFIED, DELETED };
 
 private:
     std::string key_;
     std::string data_;
     std::string predecessor_;
     std::string successor_;
-    ModType mod_ = MODIFIED;
+    ModType mod_ = ModType::MODIFIED;
 
 public:
     [[nodiscard]] ModType
