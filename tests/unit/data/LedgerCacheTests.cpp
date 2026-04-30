@@ -129,11 +129,11 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFile)
 
     auto const blob1 = cache.get(key1, kLEDGER_SEQ);
     ASSERT_TRUE(blob1.has_value());
-    EXPECT_EQ(blob1.value(), objs.front().data);
+    EXPECT_EQ(blob1.value(), objs.front().data);  // NOLINT(bugprone-unchecked-optional-access)
 
     auto const blob2 = cache.get(key2, kLEDGER_SEQ);
     ASSERT_TRUE(blob2.has_value());
-    EXPECT_EQ(blob2.value(), objs.back().data);
+    EXPECT_EQ(blob2.value(), objs.back().data);  // NOLINT(bugprone-unchecked-optional-access)
 
     auto const tmpFile = TmpFile::empty();
     auto const saveResult = cache.saveToFile(tmpFile.path);
@@ -149,11 +149,11 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFile)
 
     auto const loadedBlob1 = newCache.get(key1, kLEDGER_SEQ);
     ASSERT_TRUE(loadedBlob1.has_value());
-    EXPECT_EQ(loadedBlob1.value(), blob1);
+    EXPECT_EQ(loadedBlob1.value(), blob1);  // NOLINT(bugprone-unchecked-optional-access)
 
     auto const loadedBlob2 = newCache.get(key2, kLEDGER_SEQ);
     ASSERT_TRUE(loadedBlob2.has_value());
-    EXPECT_EQ(loadedBlob2.value(), blob2);
+    EXPECT_EQ(loadedBlob2.value(), blob2);  // NOLINT(bugprone-unchecked-optional-access)
 
     EXPECT_EQ(newCache.latestLedgerSequence(), cache.latestLedgerSequence());
 }
@@ -174,11 +174,13 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFileWithDeletedObjects)
 
     auto const blob2 = cache.get(key2, kLEDGER_SEQ);
     ASSERT_TRUE(blob2.has_value());
-    EXPECT_EQ(blob2.value(), objs.back().data);
+    EXPECT_EQ(blob2.value(), objs.back().data);  // NOLINT(bugprone-unchecked-optional-access)
 
     auto const deletedBlob = cache.getDeleted(key1, kLEDGER_SEQ - 1);
     ASSERT_TRUE(deletedBlob.has_value());
-    EXPECT_EQ(deletedBlob.value(), objs.front().data);
+    EXPECT_EQ(
+        deletedBlob.value(), objs.front().data
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     // Save and load
     auto const tmpFile = TmpFile::empty();
@@ -192,7 +194,9 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFileWithDeletedObjects)
     // Verify deleted object is preserved
     auto const loadedDeletedBlob = newCache.getDeleted(key1, kLEDGER_SEQ - 1);
     ASSERT_TRUE(loadedDeletedBlob.has_value());
-    EXPECT_EQ(loadedDeletedBlob.value(), deletedBlob);
+    EXPECT_EQ(
+        loadedDeletedBlob.value(), deletedBlob
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     // Verify active object
     auto const loadedBlob1 = newCache.get(key1, kLEDGER_SEQ);
@@ -200,7 +204,7 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFileWithDeletedObjects)
 
     auto const loadedBlob2 = newCache.get(key2, kLEDGER_SEQ);
     ASSERT_TRUE(loadedBlob2.has_value());
-    EXPECT_EQ(loadedBlob2.value(), blob2);
+    EXPECT_EQ(loadedBlob2.value(), blob2);  // NOLINT(bugprone-unchecked-optional-access)
 
     EXPECT_TRUE(newCache.isFull());
     EXPECT_EQ(newCache.latestLedgerSequence(), cache.latestLedgerSequence());

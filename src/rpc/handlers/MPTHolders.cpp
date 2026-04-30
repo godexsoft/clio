@@ -35,7 +35,11 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
     ASSERT(range.has_value(), "MPTHolder's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};

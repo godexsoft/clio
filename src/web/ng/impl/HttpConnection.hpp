@@ -211,7 +211,7 @@ public:
             std::move(stream_),
             std::move(ip_),
             std::move(buffer_),
-            std::move(*request_),
+            std::move(*request_),  // NOLINT(bugprone-unchecked-optional-access)
             tagDecoratorFactory,
             yield
         );

@@ -43,7 +43,7 @@ handleHttpRequest(
 )
 {
     ASSERT(request.target().has_value(), "Got not a HTTP request");
-    auto it = handlers.find(*request.target());
+    auto it = handlers.find(*request.target());  // NOLINT(bugprone-unchecked-optional-access)
     if (it == handlers.end()) {
         return Response{boost::beast::http::status::bad_request, "Bad target", request};
     }

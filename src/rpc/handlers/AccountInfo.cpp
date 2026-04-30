@@ -47,7 +47,11 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountInfo's ledger range must be available");
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -56,7 +60,8 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountStr = input.account.value_or(input.ident.value_or(""));
     auto const accountID = accountFromStringStrict(accountStr);
-    auto const accountKeylet = ripple::keylet::account(*accountID);
+    auto const accountKeylet =
+        ripple::keylet::account(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
     auto const accountLedgerObject =
         sharedPtrBackend_->fetchLedgerObject(accountKeylet.key, lgrInfo.seq, ctx.yield);
 
@@ -94,7 +99,8 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     if (input.signerLists) {
         // We put the SignerList in an array because of an anticipated
         // future when we support multiple signer lists on one account.
-        auto const signersKey = ripple::keylet::signers(*accountID);
+        auto const signersKey =
+            ripple::keylet::signers(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
 
         // This code will need to be revisited if in the future we
         // support multiple SignerLists on one account.

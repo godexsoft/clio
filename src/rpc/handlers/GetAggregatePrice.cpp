@@ -49,7 +49,11 @@ GetAggregatePriceHandler::process(
     ASSERT(range.has_value(), "GetAggregatePrice's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -268,7 +272,8 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
                 .documentId = boost::json::value_to<std::uint64_t>(
                     oracle.as_object().at(JS(oracle_document_id))
                 ),
-                .account = *util::parseBase58Wrapper<ripple::AccountID>(
+                .account = *util::parseBase58Wrapper<
+                    ripple::AccountID>(  // NOLINT(bugprone-unchecked-optional-access)
                     boost::json::value_to<std::string>(oracle.as_object().at(JS(account)))
                 )
             }

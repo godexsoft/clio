@@ -229,7 +229,9 @@ TEST_F(ServerTest, BadEndpoint)
 
     auto maybeError = server.run();
     ASSERT_TRUE(maybeError.has_value());
-    EXPECT_THAT(*maybeError, testing::HasSubstr("Error creating TCP acceptor"));
+    EXPECT_THAT(
+        *maybeError, testing::HasSubstr("Error creating TCP acceptor")
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 struct ServerHttpTestBundle {

@@ -83,7 +83,7 @@ MetricsHandler::operator()(
     ASSERT(onTaskComplete.has_value(), "Coroutine group can't be full");
 
     bool const postSuccessful = workQueue_.get().postCoro(
-        [this, &request, &response, &onTaskComplete = *onTaskComplete, &connectionMetadata](
+        [this, &request, &response, &onTaskComplete = *onTaskComplete, &connectionMetadata](  // NOLINT(bugprone-unchecked-optional-access)
             boost::asio::yield_context
         ) mutable {
             auto const maybeHttpRequest = request.asHttpRequest();
@@ -114,7 +114,7 @@ MetricsHandler::operator()(
     coroutineGroup.asyncWait(yield);
     ASSERT(response.has_value(), "Woke up coroutine without setting response");
 
-    return *std::move(response);
+    return *std::move(response);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 web::ng::Response

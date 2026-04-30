@@ -63,7 +63,9 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderSkipDueToAge)
 
     // Verify last published sequence is set immediately
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     // Since age > MAX_LEDGER_AGE_SECONDS, these should not be called
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(0);
@@ -97,7 +99,9 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderWithinAgeLimit)
 
     // Verify last published sequence is set immediately
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
     EXPECT_TRUE(publisher.lastPublishAgeSeconds() <= 1);
@@ -112,7 +116,9 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderIsWritingTrue)
 
     publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 
@@ -153,7 +159,9 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderInRange)
 
     publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 
@@ -199,7 +207,9 @@ TEST_F(ETLLedgerPublisherTest, PublishLedgerHeaderCloseTimeGreaterThanNow)
 
     publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 
@@ -290,7 +300,9 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleTxInOrder)
 
     publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 
@@ -313,7 +325,9 @@ TEST_F(ETLLedgerPublisherTest, PublishVeryOldLedgerShouldSkip)
 
     publisher.publish(dummyLedgerHeader);
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 }
@@ -361,7 +375,9 @@ TEST_F(ETLLedgerPublisherTest, PublishMultipleLedgersInQuickSuccession)
     publisher.publish(dummyLedgerHeader2);
 
     EXPECT_TRUE(publisher.getLastPublishedSequence());
-    EXPECT_EQ(publisher.getLastPublishedSequence().value(), kSEQ + 1);
+    EXPECT_EQ(
+        publisher.getLastPublishedSequence().value(), kSEQ + 1
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     ctx.join();
 }

@@ -75,7 +75,11 @@ AccountChannelsHandler::process(
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountChannel's ledger range must be available");
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -84,7 +88,9 @@ AccountChannelsHandler::process(
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        ripple::keylet::account(*accountID).key, lgrInfo.seq, ctx.yield
+        ripple::keylet::account(*accountID).key,
+        lgrInfo.seq,
+        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (!accountLedgerObject)
@@ -107,7 +113,7 @@ AccountChannelsHandler::process(
 
     auto const expectedNext = traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,
+        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
         lgrInfo.seq,
         input.limit,
         input.marker,

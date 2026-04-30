@@ -30,7 +30,11 @@ TransactionEntryHandler::process(
     ASSERT(range.has_value(), "TransactionEntry's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -77,12 +81,15 @@ tag_invoke(
         {JS(validated), output.validated},
         {metaKey, output.metadata},
         {JS(tx_json), output.tx},
-        {JS(ledger_index), output.ledgerHeader->seq},
-        {JS(ledger_hash), ripple::strHex(output.ledgerHeader->hash)},
+        {JS(ledger_index), output.ledgerHeader->seq},  // NOLINT(bugprone-unchecked-optional-access)
+        {JS(ledger_hash),
+         ripple::strHex(output.ledgerHeader->hash)},  // NOLINT(bugprone-unchecked-optional-access)
     };
 
     if (output.apiVersion > 1u) {
-        jv.as_object()[JS(close_time_iso)] = ripple::to_string_iso(output.ledgerHeader->closeTime);
+        jv.as_object()[JS(close_time_iso)] = ripple::to_string_iso(
+            output.ledgerHeader->closeTime
+        );  // NOLINT(bugprone-unchecked-optional-access)
         if (output.tx.contains(JS(hash))) {
             jv.as_object()[JS(hash)] = output.tx.at(JS(hash));
             jv.as_object()[JS(tx_json)].as_object().erase(JS(hash));

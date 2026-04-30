@@ -2832,8 +2832,10 @@ generateTestValuesForNormalPathTest()
                                  account1,
                                  account2,
                                  ripple::Slice(
-                                     ripple::strUnHex(kCREDENTIAL_TYPE)->data(),
-                                     ripple::strUnHex(kCREDENTIAL_TYPE)->size()
+                                     ripple::strUnHex(kCREDENTIAL_TYPE)
+                                         ->data(),  // NOLINT(bugprone-unchecked-optional-access)
+                                     ripple::strUnHex(kCREDENTIAL_TYPE)
+                                         ->size()  // NOLINT(bugprone-unchecked-optional-access)
                                  )
             )
                                  .key,
@@ -3225,7 +3227,8 @@ generateTestValuesForNormalPathTest()
                 kRANGE_MAX
             ),
             .expectedIndex = ripple::keylet::permissionedDomain(
-                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT),
+                                 kRANGE_MAX  // NOLINT(bugprone-unchecked-optional-access)
             )
                                  .key,
             .mockedEntity = createPermissionedDomainObject(
@@ -3267,9 +3270,10 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 kRANGE_MAX
             ),
-            .expectedIndex =
-                ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX)
-                    .key,
+            .expectedIndex = ripple::keylet::vault(
+                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+            )  // NOLINT(bugprone-unchecked-optional-access)
+                                 .key,
             .mockedEntity = createVault(
                 kACCOUNT,
                 kACCOUNT,
@@ -3310,7 +3314,8 @@ generateTestValuesForNormalPathTest()
                 kRANGE_MAX
             ),
             .expectedIndex = ripple::keylet::loanbroker(
-                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT),
+                                 kRANGE_MAX  // NOLINT(bugprone-unchecked-optional-access)
             )
                                  .key,
             .mockedEntity = createLoanBroker(
@@ -3494,7 +3499,8 @@ TEST_F(RPCLedgerEntryTest, Vault_BinaryFalse)
     );
 
     auto const vaultKey =
-        ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX).key;
+        ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX)
+            .key;  // NOLINT(bugprone-unchecked-optional-access)
 
     ripple::STLedgerEntry const sle{
         ripple::SerialIter{
@@ -3541,9 +3547,10 @@ TEST_F(RPCLedgerEntryTest, LoanBroker_BinaryFalse)
         kACCOUNT, kACCOUNT, kRANGE_MAX, ripple::uint256{kINDEX1}, 1, ripple::uint256{1}, 0
     );
 
-    auto const loanBrokerKey =
-        ripple::keylet::loanbroker(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX)
-            .key;
+    auto const loanBrokerKey = ripple::keylet::loanbroker(
+                                   *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+    )  // NOLINT(bugprone-unchecked-optional-access)
+                                   .key;
 
     ripple::STLedgerEntry const sle{
         ripple::SerialIter{

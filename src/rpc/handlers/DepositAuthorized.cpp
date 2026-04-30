@@ -40,7 +40,11 @@ DepositAuthorizedHandler::process(
     ASSERT(range.has_value(), "DepositAuthorized ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -51,13 +55,16 @@ DepositAuthorizedHandler::process(
     auto const destinationAccountID = accountFromStringStrict(input.destinationAccount);
 
     auto const srcAccountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        ripple::keylet::account(*sourceAccountID).key, lgrInfo.seq, ctx.yield
+        ripple::keylet::account(*sourceAccountID).key,
+        lgrInfo.seq,
+        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (!srcAccountLedgerObject)
         return Error{Status{RippledError::rpcSRC_ACT_NOT_FOUND, "source_accountNotFound"}};
 
-    auto const dstKeylet = ripple::keylet::account(*destinationAccountID).key;
+    auto const dstKeylet = ripple::keylet::account(*destinationAccountID)
+                               .key;  // NOLINT(bugprone-unchecked-optional-access)
     auto const dstAccountLedgerObject =
         sharedPtrBackend_->fetchLedgerObject(dstKeylet, lgrInfo.seq, ctx.yield);
 
@@ -84,7 +91,11 @@ DepositAuthorizedHandler::process(
             return Error{Status{RippledError::rpcINVALID_PARAMS, "credential array too long."}};
         }
         auto const credArray = credentials::fetchCredentialArray(
-            input.credentials, *sourceAccountID, *sharedPtrBackend_, lgrInfo, ctx.yield
+            input.credentials,
+            *sourceAccountID,
+            *sharedPtrBackend_,
+            lgrInfo,
+            ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
         );
         if (!credArray.has_value())
             return Error{std::move(credArray).error()};
@@ -104,9 +115,11 @@ DepositAuthorizedHandler::process(
                 "should already be checked above that there is no duplicate"
             );
 
-            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, sortedAuthCreds).key;
+            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, sortedAuthCreds)
+                          .key;  // NOLINT(bugprone-unchecked-optional-access)
         } else {
-            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, *sourceAccountID).key;
+            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, *sourceAccountID)
+                          .key;  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         depositAuthorized =

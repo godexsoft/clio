@@ -93,7 +93,8 @@ TEST_F(LoadingTests, LoadInitialLedger)
     auto const res = loader_.loadInitialLedger(data);
     EXPECT_TRUE(res.has_value());
     EXPECT_EQ(
-        rpc::ledgerHeaderToBlob(res.value(), true), rpc::ledgerHeaderToBlob(data.header, true)
+        rpc::ledgerHeaderToBlob(res.value(), true),
+        rpc::ledgerHeaderToBlob(data.header, true)  // NOLINT(bugprone-unchecked-optional-access)
     );
 }
 

@@ -47,7 +47,11 @@ LedgerDataHandler::process(Input const& input, Context const& ctx) const
     ASSERT(range.has_value(), "LedgerData's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -107,7 +111,7 @@ LedgerDataHandler::process(Input const& input, Context const& ctx) const
         if (page.cursor) {
             output.marker = ripple::strHex(*(page.cursor));
         } else if (input.outOfOrder) {
-            output.diffMarker = (*range).maxSequence;
+            output.diffMarker = (*range).maxSequence;  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 

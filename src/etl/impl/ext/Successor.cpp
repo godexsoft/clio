@@ -37,7 +37,7 @@ SuccessorExt::onInitialData(model::LedgerData const& data) const
     ASSERT(data.edgeKeys.has_value(), "Expecting to have edge keys on initial data load");
     ASSERT(data.objects.empty(), "Should not have objects from initial data");
     writeSuccessors(data.seq);
-    writeEdgeKeys(data.seq, *data.edgeKeys);
+    writeEdgeKeys(data.seq, *data.edgeKeys);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 void
@@ -135,7 +135,7 @@ SuccessorExt::updateSuccessorFromCache(uint32_t seq, model::Object const& obj) c
         auto const old = cache_.get().getDeleted(obj.key, seq - 1);
         ASSERT(old.has_value(), "Deleted object {} must be in cache", ripple::strHex(obj.key));
 
-        checkBookBase = isBookDir(obj.key, *old);
+        checkBookBase = isBookDir(obj.key, *old);  // NOLINT(bugprone-unchecked-optional-access)
     } else {
         checkBookBase = isBookDir(obj.key, obj.data);
     }
@@ -191,7 +191,7 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
                     succ.has_value(), "Book base {} must have a successor", ripple::strHex(base)
                 );
 
-                if ((*succ).key == cur->key)
+                if ((*succ).key == cur->key)  // NOLINT(bugprone-unchecked-optional-access)
                     backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
             }
         }
@@ -206,7 +206,9 @@ void
 SuccessorExt::writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
 {
     for (auto const& key : edgeKeys) {
-        auto succ = cache_.get().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
+        auto succ = cache_.get().getSuccessor(
+            *ripple::uint256::fromVoidChecked(key), seq
+        );  // NOLINT(bugprone-unchecked-optional-access)
         if (succ)
             backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
     }

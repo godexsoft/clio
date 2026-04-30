@@ -73,7 +73,8 @@ makeData(http::status status, MessageType message, Request const& request)
     if (not request.isHttp())
         return std::move(messageData).body;
 
-    auto const& httpRequest = (*request.asHttpRequest()).get();
+    auto const& httpRequest =
+        (*request.asHttpRequest()).get();  // NOLINT(bugprone-unchecked-optional-access)
     return makeHttpData(
         std::move(messageData), status, httpRequest.version(), httpRequest.keep_alive()
     );
@@ -131,7 +132,9 @@ Response::Response(
 )
 {
     ASSERT(request.isHttp(), "Request must be HTTP to construct response from HTTP response");
-    data = prepareResponse(std::move(response), (*request.asHttpRequest()).get().keep_alive());
+    data = prepareResponse(
+        std::move(response), (*request.asHttpRequest()).get().keep_alive()
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 std::string const&

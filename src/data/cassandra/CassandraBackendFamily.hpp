@@ -929,7 +929,9 @@ public:
             } else {
                 // only uri changed, we update the uri table only
                 statements.push_back(
-                    schema_->insertNFTURI.bind(record.tokenID, record.ledgerSequence, *record.uri)
+                    schema_->insertNFTURI.bind(
+                        record.tokenID, record.ledgerSequence, *record.uri
+                    )  // NOLINT(bugprone-unchecked-optional-access)
                 );
             }
         }

@@ -166,7 +166,9 @@ SubscribeHandler::subscribeToAccountsProposed(
 {
     for (auto const& account : accounts) {
         auto const accountID = accountFromStringStrict(account);
-        subscriptions_->subProposedAccount(*accountID, session);
+        subscriptions_->subProposedAccount(
+            *accountID, session
+        );  // NOLINT(bugprone-unchecked-optional-access)
     }
 }
 
@@ -178,7 +180,9 @@ SubscribeHandler::subscribeToAccounts(
 {
     for (auto const& account : accounts) {
         auto const accountID = accountFromStringStrict(account);
-        subscriptions_->subAccount(*accountID, session);
+        subscriptions_->subAccount(
+            *accountID, session
+        );  // NOLINT(bugprone-unchecked-optional-access)
     }
 }
 

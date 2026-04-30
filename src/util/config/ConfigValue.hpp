@@ -185,7 +185,7 @@ public:
     getValue() const
     {
         ASSERT(value_.has_value(), "getValue() is called when there is no value set");
-        return *value_;
+        return *value_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     /**

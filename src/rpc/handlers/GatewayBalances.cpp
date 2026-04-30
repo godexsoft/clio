@@ -47,7 +47,11 @@ GatewayBalancesHandler::process(
     ASSERT(range.has_value(), "GatewayBalances' ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        input.ledgerHash,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -57,7 +61,9 @@ GatewayBalancesHandler::process(
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        ripple::keylet::account(*accountID).key, lgrInfo.seq, ctx.yield
+        ripple::keylet::account(*accountID).key,
+        lgrInfo.seq,
+        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (!accountLedgerObject)
@@ -148,7 +154,7 @@ GatewayBalancesHandler::process(
     // traverse all owned nodes, limit->max, marker->empty
     auto const ret = traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,
+        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
         lgrInfo.seq,
         std::numeric_limits<std::uint32_t>::max(),
         {},
@@ -252,7 +258,9 @@ tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json
     if (jsonObject.contains(JS(hotwallet))) {
         if (jsonObject.at(JS(hotwallet)).is_string()) {
             input.hotWallets.insert(
-                *accountFromStringStrict(boost::json::value_to<std::string>(jv.at(JS(hotwallet))))
+                *accountFromStringStrict(
+                    boost::json::value_to<std::string>(jv.at(JS(hotwallet)))
+                )  // NOLINT(bugprone-unchecked-optional-access)
             );
         } else {
             auto const& hotWallets = jv.at(JS(hotwallet)).as_array();

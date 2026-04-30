@@ -37,19 +37,23 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NFTHistory's ledger range must be available");
 
-    auto [minIndex, maxIndex] = *range;
+    auto [minIndex, maxIndex] = *range;  // NOLINT(bugprone-unchecked-optional-access)
 
     if (input.ledgerIndexMin) {
-        if ((*range).maxSequence < input.ledgerIndexMin ||
-            (*range).minSequence > input.ledgerIndexMin)
+        if ((*range).maxSequence <
+                input.ledgerIndexMin ||  // NOLINT(bugprone-unchecked-optional-access)
+            (*range).minSequence >
+                input.ledgerIndexMin)  // NOLINT(bugprone-unchecked-optional-access)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
 
         minIndex = *input.ledgerIndexMin;
     }
 
     if (input.ledgerIndexMax) {
-        if ((*range).maxSequence < input.ledgerIndexMax ||
-            (*range).minSequence > input.ledgerIndexMax)
+        if ((*range).maxSequence <
+                input.ledgerIndexMax ||  // NOLINT(bugprone-unchecked-optional-access)
+            (*range).minSequence >
+                input.ledgerIndexMax)  // NOLINT(bugprone-unchecked-optional-access)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
 
         maxIndex = *input.ledgerIndexMax;
@@ -67,7 +71,11 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
         }
 
         auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-            *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
+            *sharedPtrBackend_,
+            ctx.yield,
+            input.ledgerHash,
+            input.ledgerIndex,
+            (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
         );
 
         if (not expectedLgrInfo.has_value())

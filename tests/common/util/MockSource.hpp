@@ -233,7 +233,7 @@ public:
     {
         auto& callbacks = mockData_.at(index).callbacks;
         [&]() { ASSERT_TRUE(callbacks.has_value()) << "Callbacks not set"; }();
-        return *callbacks;
+        return *callbacks;  // NOLINT(bugprone-unchecked-optional-access)
     }
 };
 

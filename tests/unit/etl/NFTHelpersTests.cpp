@@ -70,7 +70,9 @@ protected:
         if (sttx.getTxnType() == ripple::ttNFTOKEN_MINT ||
             sttx.getTxnType() == ripple::ttNFTOKEN_MODIFY) {
             EXPECT_TRUE(data.uri.has_value());
-            EXPECT_EQ(*data.uri, sttx.getFieldVL(ripple::sfURI));
+            EXPECT_EQ(
+                *data.uri, sttx.getFieldVL(ripple::sfURI)
+            );  // NOLINT(bugprone-unchecked-optional-access)
         } else {
             EXPECT_FALSE(data.uri.has_value());
         }
@@ -149,7 +151,9 @@ TEST_F(NFTHelpersTest, NFTModifyWithURI)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, std::nullopt);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, std::nullopt
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTModifyWithoutURI)
@@ -162,7 +166,9 @@ TEST_F(NFTHelpersTest, NFTModifyWithoutURI)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, std::nullopt);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, std::nullopt
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTMintFromModifiedNode)
@@ -176,7 +182,9 @@ TEST_F(NFTHelpersTest, NFTMintFromModifiedNode)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTMintCantFindNewNFT)
@@ -209,7 +217,9 @@ TEST_F(NFTHelpersTest, NFTMintFromCreatedNode)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTMintWithoutUriField)
@@ -225,7 +235,9 @@ TEST_F(NFTHelpersTest, NFTMintWithoutUriField)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTMintZeroMetaNode)
@@ -255,7 +267,9 @@ TEST_F(NFTHelpersTest, NFTBurnFromDeletedNode)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTBurnZeroMetaNode)
@@ -284,7 +298,9 @@ TEST_F(NFTHelpersTest, NFTBurnFromModifiedNode)
 
     EXPECT_EQ(nftTxs.size(), 1);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTCancelOffer)
@@ -365,7 +381,9 @@ TEST_F(NFTHelpersTest, NFTAcceptBuyerOffer)
     EXPECT_EQ(nftTxs.size(), 1);
     EXPECT_TRUE(nftDatas);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 // The offer id in tx is different from the offer id in deleted node in metadata
@@ -397,7 +415,9 @@ TEST_F(NFTHelpersTest, NFTAcceptSellerOfferFromCreatedNode)
     EXPECT_EQ(nftTxs.size(), 1);
     EXPECT_TRUE(nftDatas);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTAcceptSellerOfferFromModifiedNode)
@@ -413,7 +433,9 @@ TEST_F(NFTHelpersTest, NFTAcceptSellerOfferFromModifiedNode)
     EXPECT_EQ(nftTxs.size(), 1);
     EXPECT_TRUE(nftDatas);
     verifyNFTTransactionsData(nftTxs[0], sttx, txMeta, kNFT_ID);
-    verifyNFTsData(*nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT);
+    verifyNFTsData(
+        *nftDatas, sttx, txMeta, kNFT_ID, kACCOUNT
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(NFTHelpersTest, NFTAcceptSellerOfferCheckFail)
@@ -523,14 +545,14 @@ TEST_F(NFTHelpersTest, NFTDataFromLedgerObject)
 
     EXPECT_EQ(nftDatas.size(), 2);
     EXPECT_EQ(nftDatas[0].tokenID, ripple::uint256(kNFT_ID));
-    EXPECT_EQ(*(nftDatas[0].uri), uri1Blob);
+    EXPECT_EQ(*(nftDatas[0].uri), uri1Blob);  // NOLINT(bugprone-unchecked-optional-access)
     EXPECT_FALSE(nftDatas[0].onlyUriChanged);
     EXPECT_EQ(nftDatas[0].owner, account);
     EXPECT_EQ(nftDatas[0].ledgerSequence, kSEQ);
     EXPECT_FALSE(nftDatas[0].isBurned);
 
     EXPECT_EQ(nftDatas[1].tokenID, ripple::uint256(kNFT_ID2));
-    EXPECT_EQ(*(nftDatas[1].uri), uri2Blob);
+    EXPECT_EQ(*(nftDatas[1].uri), uri2Blob);  // NOLINT(bugprone-unchecked-optional-access)
     EXPECT_FALSE(nftDatas[1].onlyUriChanged);
     EXPECT_EQ(nftDatas[1].owner, account);
     EXPECT_EQ(nftDatas[1].ledgerSequence, kSEQ);

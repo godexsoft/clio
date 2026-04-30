@@ -115,7 +115,7 @@ public:
             [this,
              &request,
              &response,
-             &onTaskComplete = *onTaskComplete,
+             &onTaskComplete = *onTaskComplete,  // NOLINT(bugprone-unchecked-optional-access)
              &connectionMetadata,
              subscriptionContext =
                  std::move(subscriptionContext)](boost::asio::yield_context innerYield) mutable {
@@ -171,7 +171,7 @@ public:
 
         if (not postSuccessful) {
             // onTaskComplete must be called to notify coroutineGroup that the foreign task is done
-            (*onTaskComplete)();
+            (*onTaskComplete)();  // NOLINT(bugprone-unchecked-optional-access)
             rpcEngine_->notifyTooBusy();
             return impl::ErrorHelper{request}.makeTooBusyError();
         }
@@ -180,11 +180,15 @@ public:
         coroutineGroup.asyncWait(yield);
         ASSERT(response.has_value(), "Woke up coroutine without setting response");
 
-        if (not dosguard_.get().add(connectionMetadata.ip(), (*response).message().size())) {
-            (*response).setMessage(makeLoadWarning(*response));
+        if (not dosguard_.get().add(
+                connectionMetadata.ip(), (*response).message().size()
+            )) {  // NOLINT(bugprone-unchecked-optional-access)
+            (*response).setMessage(
+                makeLoadWarning(*response)
+            );  // NOLINT(bugprone-unchecked-optional-access)
         }
 
-        return *std::move(response);
+        return *std::move(response);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
 private:

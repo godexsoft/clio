@@ -68,7 +68,11 @@ VaultInfoHandler::process(VaultInfoHandler::Input const& input, Context const& c
     ASSERT(range.has_value(), "VaultInfo's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, std::nullopt, input.ledgerIndex, (*range).maxSequence
+        *sharedPtrBackend_,
+        ctx.yield,
+        std::nullopt,
+        input.ledgerIndex,
+        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())

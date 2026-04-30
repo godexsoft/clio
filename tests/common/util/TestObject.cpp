@@ -47,7 +47,9 @@ ripple::Slice const kSLICE("test", 4);
 ripple::AccountID
 getAccountIdWithString(std::string_view id)
 {
-    return *util::parseBase58Wrapper<ripple::AccountID>(std::string(id));
+    return *util::parseBase58Wrapper<ripple::AccountID>(
+        std::string(id)
+    );  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 ripple::uint256
@@ -178,11 +180,13 @@ createPaymentTransactionObject(
     ripple::STObject obj(ripple::sfTransaction);
     obj.setFieldU16(ripple::sfTransactionType, ripple::ttPAYMENT);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId1));
-    obj.setAccountID(ripple::sfAccount, *account);
+    obj.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     obj.setFieldAmount(ripple::sfAmount, ripple::STAmount(amount, false));
     obj.setFieldAmount(ripple::sfFee, ripple::STAmount(fee, false));
     auto account2 = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId2));
-    obj.setAccountID(ripple::sfDestination, *account2);
+    obj.setAccountID(
+        ripple::sfDestination, *account2
+    );  // NOLINT(bugprone-unchecked-optional-access)
     obj.setFieldU32(ripple::sfSequence, seq);
     obj.setFieldVL(ripple::sfSigningPubKey, kSLICE);
     return obj;
@@ -290,14 +294,16 @@ createCreateOfferTransactionObject(
     ripple::STObject obj(ripple::sfTransaction);
     obj.setFieldU16(ripple::sfTransactionType, ripple::ttOFFER_CREATE);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    obj.setAccountID(ripple::sfAccount, *account);
+    obj.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     obj.setFieldAmount(ripple::sfFee, amount);
     obj.setFieldU32(ripple::sfSequence, seq);
     // add amount
     ripple::Issue const issue1(
         ripple::Currency{currency},
-        *util::parseBase58Wrapper<ripple::AccountID>(std::string(issuer))
+        *util::parseBase58Wrapper<ripple::AccountID>(
+            std::string(issuer)
+        )  // NOLINT(bugprone-unchecked-optional-access)
     );
     if (reverse) {
         obj.setFieldAmount(ripple::sfTakerPays, ripple::STAmount(issue1, takerGets));
@@ -320,12 +326,16 @@ getIssue(std::string_view currency, std::string_view issuerId)
     if (currency.size() == 3) {
         return ripple::Issue(
             ripple::to_currency(std::string(currency)),
-            *util::parseBase58Wrapper<ripple::AccountID>(std::string(issuerId))
+            *util::parseBase58Wrapper<ripple::AccountID>(
+                std::string(issuerId)
+            )  // NOLINT(bugprone-unchecked-optional-access)
         );
     }
     return ripple::Issue(
         ripple::Currency{currency},
-        *util::parseBase58Wrapper<ripple::AccountID>(std::string(issuerId))
+        *util::parseBase58Wrapper<ripple::AccountID>(
+            std::string(issuerId)
+        )  // NOLINT(bugprone-unchecked-optional-access)
     );
 }
 
@@ -709,7 +719,7 @@ createMintNftTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_MINT);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     // required field for ttNFTOKEN_MINT
@@ -772,7 +782,7 @@ createMintNftTxWithMetadataOfCreatedNode(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_MINT);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     // required field for ttNFTOKEN_MINT
@@ -829,7 +839,7 @@ createNftModifyTxWithMetadata(std::string_view accountId, std::string_view nftID
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_MODIFY);
     auto account = ripple::parseBase58<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(10, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldH256(ripple::sfNFTokenID, ripple::uint256{nftID});
@@ -979,7 +989,7 @@ createAcceptNftBuyerOfferTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_ACCEPT_OFFER);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfSequence, seq);
@@ -996,7 +1006,9 @@ createAcceptNftBuyerOfferTxWithMetadata(
     ripple::STObject finalFields(ripple::sfFinalFields);
     finalFields.setFieldH256(ripple::sfNFTokenID, ripple::uint256{nftId});
     // for buyer offer, the offer owner is the nft's new owner
-    finalFields.setAccountID(ripple::sfOwner, *account);
+    finalFields.setAccountID(
+        ripple::sfOwner, *account
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     node.emplace_back(std::move(finalFields));
     node.setFieldH256(ripple::sfLedgerIndex, ripple::uint256{offerId});
@@ -1026,7 +1038,7 @@ createAcceptNftSellerOfferTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_ACCEPT_OFFER);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfSequence, seq);
@@ -1044,7 +1056,9 @@ createAcceptNftSellerOfferTxWithMetadata(
     finalFields.setFieldH256(ripple::sfNFTokenID, ripple::uint256{nftId});
     // offer owner is not the nft's new owner for seller offer, we need to create other nodes for
     // processing new owner
-    finalFields.setAccountID(ripple::sfOwner, *account);
+    finalFields.setAccountID(
+        ripple::sfOwner, *account
+    );  // NOLINT(bugprone-unchecked-optional-access)
 
     node.emplace_back(finalFields);
     node.setFieldH256(ripple::sfLedgerIndex, ripple::uint256{offerId});
@@ -1116,7 +1130,7 @@ createCancelNftOffersTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_CANCEL_OFFER);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfSequence, seq);
@@ -1168,7 +1182,7 @@ createCreateNftOfferTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttNFTOKEN_CREATE_OFFER);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     auto price = ripple::STAmount(offerPrice, false);
@@ -1214,7 +1228,7 @@ createOracleSetTxWithMetadata(
     ripple::STObject tx(ripple::sfTransaction);
     tx.setFieldU16(ripple::sfTransactionType, ripple::ttORACLE_SET);
     auto account = util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId));
-    tx.setAccountID(ripple::sfAccount, *account);
+    tx.setAccountID(ripple::sfAccount, *account);  // NOLINT(bugprone-unchecked-optional-access)
     auto amount = ripple::STAmount(fee, false);
     tx.setFieldAmount(ripple::sfFee, amount);
     tx.setFieldU32(ripple::sfLastUpdateTime, lastUpdateTime);
@@ -1295,7 +1309,9 @@ createAmmObject(
     );
     ripple::Issue const issue1(
         ripple::Currency{lpTokenBalanceIssueCurrency},
-        *util::parseBase58Wrapper<ripple::AccountID>(std::string(accountId))
+        *util::parseBase58Wrapper<ripple::AccountID>(
+            std::string(accountId)
+        )  // NOLINT(bugprone-unchecked-optional-access)
     );
     amm.setFieldAmount(
         ripple::sfLPTokenBalance, ripple::STAmount(issue1, lpTokenBalanceIssueAmount)
@@ -1809,7 +1825,10 @@ createAuthCredentialArray(
         auto credential = ripple::STObject::makeInnerObject(ripple::sfCredential);
         credential.setAccountID(ripple::sfIssuer, getAccountIdWithString(issuer[i]));
         credential.setFieldVL(
-            ripple::sfCredentialType, *ripple::strUnHex(std::string(credType[i]))
+            ripple::sfCredentialType,
+            *ripple::strUnHex(
+                std::string(credType[i])
+            )  // NOLINT(bugprone-unchecked-optional-access)
         );
         arr.push_back(credential);
     }
