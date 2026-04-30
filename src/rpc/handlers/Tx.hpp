@@ -183,10 +183,11 @@ public:
                 auto const range = sharedPtrBackend_->fetchLedgerRange();
                 ASSERT(range.has_value(), "Tx's ledger range must be available");
 
-                auto const searchedAll = (*range).maxSequence >=
-                        *input.maxLedger &&  // NOLINT(bugprone-unchecked-optional-access)
-                    (*range).minSequence <=
-                        *input.minLedger;  // NOLINT(bugprone-unchecked-optional-access)
+                // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                auto const searchedAll = (*range).maxSequence >= *input.maxLedger &&
+                    (*range).minSequence <= *input.minLedger;
+                // NOLINTEND(bugprone-unchecked-optional-access)
+
                 boost::json::object extra;
                 extra["searched_all"] = searchedAll;
 

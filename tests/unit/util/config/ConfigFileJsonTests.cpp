@@ -385,12 +385,10 @@ TEST_F(ConfigFileJsonTest, getArray)
 
     auto const arrayFromObject = jsonFileObj.getArray("object.array.[]");
     ASSERT_EQ(arrayFromObject.size(), 2);
-    EXPECT_EQ(
-        std::get<int64_t>((*arrayFromObject.at(0))), 3
-    );  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(
-        std::get<int64_t>((*arrayFromObject.at(1))), 4
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(std::get<int64_t>((*arrayFromObject.at(0))), 3);
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(std::get<int64_t>((*arrayFromObject.at(1))), 4);
 }
 
 TEST_F(ConfigFileJsonTest, getArrayObjectInArray)
@@ -405,21 +403,19 @@ TEST_F(ConfigFileJsonTest, getArrayObjectInArray)
 
     auto const ints = jsonFileObj.getArray("array.[].int");
     ASSERT_EQ(ints.size(), 2);
-    ASSERT_TRUE(
-        std::holds_alternative<int64_t>((*ints.at(0)))
-    );                                                // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(std::get<int64_t>((*ints.at(0))), 42);  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    ASSERT_TRUE(std::holds_alternative<int64_t>((*ints.at(0))));
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(std::get<int64_t>((*ints.at(0))), 42);
     EXPECT_FALSE(ints.at(1).has_value());
 
     auto const strings = jsonFileObj.getArray("array.[].string");
     ASSERT_EQ(strings.size(), 2);
     EXPECT_FALSE(strings.at(0).has_value());
-    ASSERT_TRUE(
-        std::holds_alternative<std::string>((*strings.at(1)))
-    );  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(
-        std::get<std::string>((*strings.at(1))), "some string"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    ASSERT_TRUE(std::holds_alternative<std::string>((*strings.at(1))));
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(std::get<std::string>((*strings.at(1))), "some string");
 }
 
 TEST_F(ConfigFileJsonTest, getArrayOptionalInArray)
@@ -434,22 +430,18 @@ TEST_F(ConfigFileJsonTest, getArrayOptionalInArray)
 
     auto const ints = jsonFileObj.getArray("array.[].int");
     ASSERT_EQ(ints.size(), 2);
-    ASSERT_TRUE(
-        std::holds_alternative<int64_t>((*ints.at(0)))
-    );                                                // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(std::get<int64_t>((*ints.at(0))), 42);  // NOLINT(bugprone-unchecked-optional-access)
-    ASSERT_TRUE(
-        std::holds_alternative<int64_t>((*ints.at(1)))
-    );                                                // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(std::get<int64_t>((*ints.at(1))), 24);  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    ASSERT_TRUE(std::holds_alternative<int64_t>((*ints.at(0))));
+    EXPECT_EQ(std::get<int64_t>((*ints.at(0))), 42);
+    ASSERT_TRUE(std::holds_alternative<int64_t>((*ints.at(1))));
+    EXPECT_EQ(std::get<int64_t>((*ints.at(1))), 24);
 
     auto const bools = jsonFileObj.getArray("array.[].bool");
     ASSERT_EQ(bools.size(), 2);
     EXPECT_FALSE(bools.at(0).has_value());
-    ASSERT_TRUE(
-        std::holds_alternative<bool>((*bools.at(1)))
-    );                                                // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(std::get<bool>((*bools.at(1))), true);  // NOLINT(bugprone-unchecked-optional-access)
+    ASSERT_TRUE(std::holds_alternative<bool>((*bools.at(1))));
+    EXPECT_EQ(std::get<bool>((*bools.at(1))), true);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_F(ConfigFileJsonAssertTest, getArrayInvalidKey)

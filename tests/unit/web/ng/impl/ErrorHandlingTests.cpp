@@ -140,9 +140,8 @@ TEST_P(NgErrorHandlingMakeInternalErrorTest, ComposeError)
 {
     auto const request = makeRequest(GetParam().isHttp, GetParam().request);
     std::optional<boost::json::object> const requestJson = GetParam().request.has_value()
-        ? std::make_optional(
-              boost::json::parse(*GetParam().request).as_object()
-          )  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        ? std::make_optional(boost::json::parse(*GetParam().request).as_object())
         : std::nullopt;
     ErrorHelper const errorHelper{request, requestJson};
 

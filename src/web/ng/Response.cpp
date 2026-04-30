@@ -132,9 +132,8 @@ Response::Response(
 )
 {
     ASSERT(request.isHttp(), "Request must be HTTP to construct response from HTTP response");
-    data = prepareResponse(
-        std::move(response), (*request.asHttpRequest()).get().keep_alive()
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    data = prepareResponse(std::move(response), (*request.asHttpRequest()).get().keep_alive());
 }
 
 std::string const&

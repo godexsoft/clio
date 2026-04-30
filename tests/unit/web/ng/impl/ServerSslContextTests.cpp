@@ -58,9 +58,8 @@ TEST_P(MakeServerSslContextFromConfigTest, makeFromConfig)
         ASSERT_FALSE(expectedServerSslContext.has_value());
         EXPECT_THAT(
             expectedServerSslContext.error(),
-            testing::HasSubstr(
-                *GetParam().expectedError
-            )  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            testing::HasSubstr(*GetParam().expectedError)
         );
     } else {
         EXPECT_EQ(expectedServerSslContext.value().has_value(), GetParam().expectContext);

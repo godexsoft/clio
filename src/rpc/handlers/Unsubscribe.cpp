@@ -126,9 +126,8 @@ UnsubscribeHandler::unsubscribeFromAccounts(
 {
     for (auto const& account : accounts) {
         auto const accountID = accountFromStringStrict(account);
-        subscriptions_->unsubAccount(
-            *accountID, session
-        );  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        subscriptions_->unsubAccount(*accountID, session);
     }
 }
 
@@ -140,9 +139,8 @@ UnsubscribeHandler::unsubscribeFromProposedAccounts(
 {
     for (auto const& account : accountsProposed) {
         auto const accountID = accountFromStringStrict(account);
-        subscriptions_->unsubProposedAccount(
-            *accountID, session
-        );  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        subscriptions_->unsubProposedAccount(*accountID, session);
     }
 }
 void

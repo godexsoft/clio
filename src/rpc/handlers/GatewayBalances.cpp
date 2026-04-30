@@ -61,9 +61,10 @@ GatewayBalancesHandler::process(
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         ripple::keylet::account(*accountID).key,
         lgrInfo.seq,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     if (!accountLedgerObject)
@@ -258,9 +259,8 @@ tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json
     if (jsonObject.contains(JS(hotwallet))) {
         if (jsonObject.at(JS(hotwallet)).is_string()) {
             input.hotWallets.insert(
-                *accountFromStringStrict(
-                    boost::json::value_to<std::string>(jv.at(JS(hotwallet)))
-                )  // NOLINT(bugprone-unchecked-optional-access)
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                *accountFromStringStrict(boost::json::value_to<std::string>(jv.at(JS(hotwallet))))
             );
         } else {
             auto const& hotWallets = jv.at(JS(hotwallet)).as_array();

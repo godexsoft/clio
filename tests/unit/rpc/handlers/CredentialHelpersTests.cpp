@@ -88,10 +88,8 @@ TEST(ParseAuthorizeCredentialsTest, ValidCredentialsArray)
             static_cast<std::string>(credential1[JS(issuer)].as_string())
         );
     auto const expectedCredentialType =
-        ripple::strUnHex(
-            static_cast<std::string>(credential1[JS(credential_type)].as_string())
-        )  // NOLINT(bugprone-unchecked-optional-access)
-            .value();
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        *ripple::strUnHex(static_cast<std::string>(credential1[JS(credential_type)].as_string()));
 
     EXPECT_EQ(cred.getAccountID(ripple::sfIssuer), expectedIssuer);
     EXPECT_EQ(cred.getFieldVL(ripple::sfCredentialType), expectedCredentialType);

@@ -315,9 +315,8 @@ BackendInterface::fetchLedgerPage(
             return (cursor ? *cursor : kFIRST_KEY);
         }();
 
-        std::uint32_t const seq = outOfOrder
-            ? (*range_).maxSequence
-            : ledgerSequence;  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        std::uint32_t const seq = outOfOrder ? (*range_).maxSequence : ledgerSequence;
         auto succ = fetchSuccessorKey(curCursor, seq, yield);
 
         if (!succ) {

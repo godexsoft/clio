@@ -206,9 +206,8 @@ void
 SuccessorExt::writeEdgeKeys(std::uint32_t seq, auto const& edgeKeys) const
 {
     for (auto const& key : edgeKeys) {
-        auto succ = cache_.get().getSuccessor(
-            *ripple::uint256::fromVoidChecked(key), seq
-        );  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        auto succ = cache_.get().getSuccessor(*ripple::uint256::fromVoidChecked(key), seq);
         if (succ)
             backend_->writeSuccessor(auto{key}, seq, uint256ToString(succ->key));
     }

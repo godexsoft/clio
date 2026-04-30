@@ -50,9 +50,10 @@ AccountObjectsHandler::process(AccountObjectsHandler::Input const& input, Contex
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         ripple::keylet::account(*accountID).key,
         lgrInfo.seq,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     if (!accountLedgerObject)

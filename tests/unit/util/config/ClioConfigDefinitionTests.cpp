@@ -435,10 +435,10 @@ TEST_F(ClioConfigDefinitionParseArrayTest, missingRequiredFields)
     auto const configFile = ConfigFileJson{configJson};
     auto const result = config.parse(configFile);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result->size(), 1);  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_THAT(
-        result->at(0).error, testing::StartsWith("The value of array.[].int")
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    EXPECT_EQ(result->size(), 1);
+    EXPECT_THAT(result->at(0).error, testing::StartsWith("The value of array.[].int"));
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_F(ClioConfigDefinitionParseArrayTest, missingAllRequiredFields)
@@ -454,10 +454,10 @@ TEST_F(ClioConfigDefinitionParseArrayTest, missingAllRequiredFields)
     auto const configFile = ConfigFileJson{configJson};
     auto const result = config.parse(configFile);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result->size(), 1);  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_THAT(
-        result->at(0).error, testing::StartsWith("The value of array.[].int")
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    EXPECT_EQ(result->size(), 1);
+    EXPECT_THAT(result->at(0).error, testing::StartsWith("The value of array.[].int"));
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST(ClioConfigDefinitionParse, unexpectedFields)
@@ -483,24 +483,17 @@ TEST(ClioConfigDefinitionParse, unexpectedFields)
     auto const configFile = ConfigFileJson{configJson};
     auto result = config.parse(configFile);
     std::ranges::sort(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *result,
-        [](auto const& lhs, auto const& rhs) {  // NOLINT(bugprone-unchecked-optional-access)
-            return lhs.error < rhs.error;
-        }
+        [](auto const& lhs, auto const& rhs) { return lhs.error < rhs.error; }
     );
     ASSERT_TRUE(result.has_value());
-    ASSERT_EQ(result->size(), 4);  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    ASSERT_EQ(result->size(), 4);
 
-    EXPECT_EQ(
-        result->at(0).error, "Unknown key: unexpected_empty_array.[]"
-    );  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(
-        result->at(1).error, "Unknown key: unexpected_non_empty_array.[].string"
-    );  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(
-        result->at(2).error, "Unknown key: unexpected_object.string"
-    );  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(
-        result->at(3).error, "Unknown key: unexpected_string"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    EXPECT_EQ(result->at(0).error, "Unknown key: unexpected_empty_array.[]");
+    EXPECT_EQ(result->at(1).error, "Unknown key: unexpected_non_empty_array.[].string");
+    EXPECT_EQ(result->at(2).error, "Unknown key: unexpected_object.string");
+    EXPECT_EQ(result->at(3).error, "Unknown key: unexpected_string");
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }

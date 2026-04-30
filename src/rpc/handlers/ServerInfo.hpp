@@ -177,8 +177,10 @@ public:
         ASSERT(range.has_value(), "ServerInfo's ledger range must be available");
 
         auto const lgrInfo = backend_->fetchLedgerBySequence(
-            (*range).maxSequence, ctx.yield
-        );  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            (*range).maxSequence,
+            ctx.yield
+        );
         if (not lgrInfo.has_value())
             return Error{Status{RippledError::rpcINTERNAL}};
 
@@ -193,9 +195,10 @@ public:
             static_cast<int32_t>((*lgrInfo).closeTime.time_since_epoch().count()) -
             static_cast<int32_t>(kRIPPLE_EPOCH_START);
 
-        output.info.completeLedgers = fmt::format(
-            "{}-{}", (*range).minSequence, (*range).maxSequence
-        );  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        output.info.completeLedgers =
+            fmt::format("{}-{}", (*range).minSequence, (*range).maxSequence);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         if (ctx.isAdmin) {
             output.info.adminSection = {
@@ -302,18 +305,16 @@ private:
         ValidatedLedgerSection const& validated
     )
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
         jv = {
             {JS(age), validated.age},
             {JS(hash), validated.hash},
             {JS(seq), validated.seq},
-            {JS(base_fee_xrp),
-             (*validated.fees).base.decimalXRP()},  // NOLINT(bugprone-unchecked-optional-access)
-            {JS(reserve_base_xrp),
-             (*validated.fees).reserve.decimalXRP()},  // NOLINT(bugprone-unchecked-optional-access)
-            {
-                JS(reserve_inc_xrp), (*validated.fees).increment.decimalXRP()
-            },  // NOLINT(bugprone-unchecked-optional-access)
+            {JS(base_fee_xrp), (*validated.fees).base.decimalXRP()},
+            {JS(reserve_base_xrp), (*validated.fees).reserve.decimalXRP()},
+            {JS(reserve_inc_xrp), (*validated.fees).increment.decimalXRP()},
         };
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     friend void

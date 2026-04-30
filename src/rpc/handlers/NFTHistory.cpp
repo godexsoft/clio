@@ -40,21 +40,21 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     auto [minIndex, maxIndex] = *range;  // NOLINT(bugprone-unchecked-optional-access)
 
     if (input.ledgerIndexMin) {
-        if ((*range).maxSequence <
-                input.ledgerIndexMin ||  // NOLINT(bugprone-unchecked-optional-access)
-            (*range).minSequence >
-                input.ledgerIndexMin)  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        if ((*range).maxSequence < input.ledgerIndexMin ||
+            (*range).minSequence > input.ledgerIndexMin)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         minIndex = *input.ledgerIndexMin;
     }
 
     if (input.ledgerIndexMax) {
-        if ((*range).maxSequence <
-                input.ledgerIndexMax ||  // NOLINT(bugprone-unchecked-optional-access)
-            (*range).minSequence >
-                input.ledgerIndexMax)  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        if ((*range).maxSequence < input.ledgerIndexMax ||
+            (*range).minSequence > input.ledgerIndexMax)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         maxIndex = *input.ledgerIndexMax;
     }

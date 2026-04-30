@@ -57,22 +57,21 @@ LedgerFeed::sub(
     auto const ledgerRange = backend->fetchLedgerRange();
     ASSERT(ledgerRange.has_value(), "Ledger range must be valid");
 
-    auto const lgrInfo = backend->fetchLedgerBySequence(
-        (*ledgerRange).maxSequence, yield
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    auto const lgrInfo = backend->fetchLedgerBySequence((*ledgerRange).maxSequence, yield);
     ASSERT(lgrInfo.has_value(), "Ledger must be valid");
 
-    auto const fees =
-        backend->fetchFees((*lgrInfo).seq, yield);  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    auto const fees = backend->fetchFees((*lgrInfo).seq, yield);
     ASSERT(fees.has_value(), "Fees must be valid");
 
-    auto const range = std::to_string((*ledgerRange).minSequence) +
-        "-" +                                        // NOLINT(bugprone-unchecked-optional-access)
-        std::to_string((*ledgerRange).maxSequence);  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    auto const range = std::to_string((*ledgerRange).minSequence) + "-" +
+        std::to_string((*ledgerRange).maxSequence);
 
-    auto pubMsg = makeLedgerPubMessage(
-        *lgrInfo, *fees, range, 0, networkID
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    auto pubMsg = makeLedgerPubMessage(*lgrInfo, *fees, range, 0, networkID);
+    // NOLINTEND(bugprone-unchecked-optional-access)
+
     pubMsg.erase("txn_count");
     pubMsg.erase("type");
 

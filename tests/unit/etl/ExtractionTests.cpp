@@ -395,13 +395,13 @@ TEST_F(ExtractorTests, ExtractLedgerWithDiffWithResult)
     auto res = extractor.extractLedgerWithDiff(kSEQ);
 
     EXPECT_TRUE(res.has_value());
-    EXPECT_EQ(res->objects.size(), 10);        // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(res->transactions.size(), 10);   // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_TRUE(res->successors.has_value());  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(res->successors->size(), 10);    // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_FALSE(
-        res->edgeKeys.has_value()
-    );  // this is set separately in ETL  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    EXPECT_EQ(res->objects.size(), 10);
+    EXPECT_EQ(res->transactions.size(), 10);
+    EXPECT_TRUE(res->successors.has_value());
+    EXPECT_EQ(res->successors->size(), 10);
+    EXPECT_FALSE(res->edgeKeys.has_value());  // this is set separately in ETL
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_F(ExtractorTests, ExtractLedgerOnlyWithResult)
@@ -412,10 +412,10 @@ TEST_F(ExtractorTests, ExtractLedgerOnlyWithResult)
     auto res = extractor.extractLedgerOnly(kSEQ);
 
     EXPECT_TRUE(res.has_value());
-    EXPECT_TRUE(res->objects.empty());          // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_EQ(res->transactions.size(), 10);    // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_FALSE(res->successors.has_value());  // NOLINT(bugprone-unchecked-optional-access)
-    EXPECT_FALSE(
-        res->edgeKeys.has_value()
-    );  // this is set separately in ETL  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    EXPECT_TRUE(res->objects.empty());
+    EXPECT_EQ(res->transactions.size(), 10);
+    EXPECT_FALSE(res->successors.has_value());
+    EXPECT_FALSE(res->edgeKeys.has_value());  // this is set separately in ETL
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }

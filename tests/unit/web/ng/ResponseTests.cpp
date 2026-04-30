@@ -64,9 +64,8 @@ TEST_F(ResponseTest, intoHttpResponse)
     EXPECT_EQ(httpResponse.result(), responseStatus_);
     EXPECT_EQ(httpResponse.body(), responseMessage);
     EXPECT_EQ(httpResponse.version(), httpVersion_);
-    EXPECT_EQ(
-        httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive()
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive());
 
     ASSERT_GT(httpResponse.count(http::field::content_type), 0);
     EXPECT_EQ(httpResponse[http::field::content_type], "text/html");
@@ -91,9 +90,8 @@ TEST_F(ResponseTest, intoHttpResponseJson)
     EXPECT_EQ(httpResponse.result(), responseStatus_);
     EXPECT_EQ(httpResponse.body(), boost::json::serialize(responseMessage));
     EXPECT_EQ(httpResponse.version(), httpVersion_);
-    EXPECT_EQ(
-        httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive()
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(httpResponse.keep_alive(), request.asHttpRequest()->get().keep_alive());
 
     ASSERT_GT(httpResponse.count(http::field::content_type), 0);
     EXPECT_EQ(httpResponse[http::field::content_type], "application/json");

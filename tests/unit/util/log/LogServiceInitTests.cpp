@@ -211,16 +211,17 @@ TEST_F(LogServiceInitTests, LogSizeAndHourRotationCannotBeZero)
 
     auto const parsingErrors =
         config_.parse(ConfigFileJson{boost::json::parse(jsonStr).as_object()});
-    ASSERT_EQ(parsingErrors->size(), 2);  // NOLINT(bugprone-unchecked-optional-access)
-    for (std::size_t i = 0; i < parsingErrors->size();
-         ++i) {  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    ASSERT_EQ(parsingErrors->size(), 2);
+    for (std::size_t i = 0; i < parsingErrors->size(); ++i) {
         EXPECT_EQ(
-            (*parsingErrors)[i].error,  // NOLINT(bugprone-unchecked-optional-access)
+            (*parsingErrors)[i].error,
             fmt::format(
                 "{} Number must be between 1 and {}", keys[i], std::numeric_limits<uint32_t>::max()
             )
         );
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_F(LogServiceInitTests, RotateDefaultsToTrue)

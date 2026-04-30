@@ -272,8 +272,8 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
                 .documentId = boost::json::value_to<std::uint64_t>(
                     oracle.as_object().at(JS(oracle_document_id))
                 ),
-                .account = *util::parseBase58Wrapper<
-                    ripple::AccountID>(  // NOLINT(bugprone-unchecked-optional-access)
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                .account = *util::parseBase58Wrapper<ripple::AccountID>(
                     boost::json::value_to<std::string>(oracle.as_object().at(JS(account)))
                 )
             }

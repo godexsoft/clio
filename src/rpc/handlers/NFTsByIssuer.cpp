@@ -49,9 +49,10 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input const& input, Context co
 
     auto const issuer = accountFromStringStrict(input.issuer);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         ripple::keylet::account(*issuer).key,
         lgrInfo.seq,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     if (!accountLedgerObject)
@@ -62,12 +63,13 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input const& input, Context co
         cursor = uint256{input.marker->c_str()};
 
     auto const dbResponse = sharedPtrBackend_->fetchNFTsByIssuer(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *issuer,
         input.nftTaxon,
         lgrInfo.seq,
         limit,
         cursor,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     auto output = NFTsByIssuerHandler::Output{};

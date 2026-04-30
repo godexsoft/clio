@@ -85,12 +85,12 @@ parseAuthorizeCredentials(boost::json::array const& jv)
         );
 
         auto credential = ripple::STObject::makeInnerObject(ripple::sfCredential);
-        credential.setAccountID(
-            ripple::sfIssuer, *issuer
-        );  // NOLINT(bugprone-unchecked-optional-access)
-        credential.setFieldVL(
-            ripple::sfCredentialType, *credentialType
-        );  // NOLINT(bugprone-unchecked-optional-access)
+
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        credential.setAccountID(ripple::sfIssuer, *issuer);
+        credential.setFieldVL(ripple::sfCredentialType, *credentialType);
+        // NOLINTEND(bugprone-unchecked-optional-access)
+
         arr.push_back(std::move(credential));
     }
 

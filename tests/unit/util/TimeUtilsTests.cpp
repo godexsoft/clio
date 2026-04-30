@@ -11,9 +11,8 @@ TEST(TimeUtilTests, SystemTpFromUTCStrSuccess)
 {
     auto const tp = util::systemTpFromUtcStr("2024-01-01T10:50:40Z", "%Y-%m-%dT%H:%M:%SZ");
     ASSERT_TRUE(tp.has_value());
-    auto const time = std::chrono::system_clock::to_time_t(
-        tp.value()
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    auto const time = std::chrono::system_clock::to_time_t(tp.value());
     std::tm timeStruct{};
     gmtime_r(&time, &timeStruct);
     EXPECT_EQ(timeStruct.tm_year + 1900, 2024);
@@ -57,9 +56,8 @@ TEST(TimeUtilTests, StringToTimePointToString)
     auto timePoint = util::systemTpFromUtcStr(originalStr, isoFormat);
     ASSERT_TRUE(timePoint.has_value());
 
-    std::string const convertedStr = util::systemTpToUtcStr(
-        *timePoint, isoFormat
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    std::string const convertedStr = util::systemTpToUtcStr(*timePoint, isoFormat);
     EXPECT_EQ(originalStr, convertedStr);
 
     std::string const customFormat = "%d/%m/%Y %H:%M:%S";
@@ -67,9 +65,8 @@ TEST(TimeUtilTests, StringToTimePointToString)
     auto timePoint2 = util::systemTpFromUtcStr(originalCustomStr, customFormat);
     ASSERT_TRUE(timePoint2.has_value());
 
-    std::string const convertedCustomStr = util::systemTpToUtcStr(
-        *timePoint2, customFormat
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    std::string const convertedCustomStr = util::systemTpToUtcStr(*timePoint2, customFormat);
     EXPECT_EQ(originalCustomStr, convertedCustomStr);
 
     EXPECT_EQ(*timePoint, *timePoint2);  // NOLINT(bugprone-unchecked-optional-access)

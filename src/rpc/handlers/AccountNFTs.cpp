@@ -49,9 +49,10 @@ AccountNFTsHandler::process(AccountNFTsHandler::Input const& input, Context cons
     auto const& lgrInfo = *expectedLgrInfo;
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         ripple::keylet::account(*accountID).key,
         lgrInfo.seq,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     if (!accountLedgerObject)
@@ -65,8 +66,8 @@ AccountNFTsHandler::process(AccountNFTsHandler::Input const& input, Context cons
 
     // if a marker was passed, start at the page specified in marker. Else, start at the max page
     auto const pageKey = input.marker ? ripple::uint256{input.marker->c_str()}
-                                      : ripple::keylet::nftpage_max(*accountID)
-                                            .key;  // NOLINT(bugprone-unchecked-optional-access)
+                                      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                                      : ripple::keylet::nftpage_max(*accountID).key;
     auto const blob = sharedPtrBackend_->fetchLedgerObject(pageKey, lgrInfo.seq, ctx.yield);
 
     if (!blob) {
@@ -120,8 +121,8 @@ AccountNFTsHandler::process(AccountNFTsHandler::Input const& input, Context cons
             auto const nextBlob =
                 sharedPtrBackend_->fetchLedgerObject(nextKey.key, lgrInfo.seq, ctx.yield);
             page.emplace(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 ripple::SLE{ripple::SerialIter{nextBlob->data(), nextBlob->size()}, nextKey.key}
-                // NOLINT(bugprone-unchecked-optional-access)
             );
         } else {
             page.reset();

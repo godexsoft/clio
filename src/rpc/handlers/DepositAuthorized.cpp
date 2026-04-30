@@ -55,16 +55,17 @@ DepositAuthorizedHandler::process(
     auto const destinationAccountID = accountFromStringStrict(input.destinationAccount);
 
     auto const srcAccountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         ripple::keylet::account(*sourceAccountID).key,
         lgrInfo.seq,
-        ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+        ctx.yield
     );
 
     if (!srcAccountLedgerObject)
         return Error{Status{RippledError::rpcSRC_ACT_NOT_FOUND, "source_accountNotFound"}};
 
-    auto const dstKeylet = ripple::keylet::account(*destinationAccountID)
-                               .key;  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    auto const dstKeylet = ripple::keylet::account(*destinationAccountID).key;
     auto const dstAccountLedgerObject =
         sharedPtrBackend_->fetchLedgerObject(dstKeylet, lgrInfo.seq, ctx.yield);
 
@@ -92,10 +93,10 @@ DepositAuthorizedHandler::process(
         }
         auto const credArray = credentials::fetchCredentialArray(
             input.credentials,
-            *sourceAccountID,
+            *sourceAccountID,  // NOLINT(bugprone-unchecked-optional-access)
             *sharedPtrBackend_,
             lgrInfo,
-            ctx.yield  // NOLINT(bugprone-unchecked-optional-access)
+            ctx.yield
         );
         if (!credArray.has_value())
             return Error{std::move(credArray).error()};
@@ -115,11 +116,11 @@ DepositAuthorizedHandler::process(
                 "should already be checked above that there is no duplicate"
             );
 
-            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, sortedAuthCreds)
-                          .key;  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, sortedAuthCreds).key;
         } else {
-            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, *sourceAccountID)
-                          .key;  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            hashKey = ripple::keylet::depositPreauth(*destinationAccountID, *sourceAccountID).key;
         }
 
         depositAuthorized =

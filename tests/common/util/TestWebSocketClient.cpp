@@ -119,9 +119,8 @@ WebServerSslSyncClient::connect(std::string const& host, std::string const& port
 void
 WebServerSslSyncClient::disconnect()
 {
-    ws_->close(
-        boost::beast::websocket::close_code::normal
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    ws_->close(boost::beast::websocket::close_code::normal);
 }
 
 std::string

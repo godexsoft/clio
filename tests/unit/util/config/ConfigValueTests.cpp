@@ -136,13 +136,13 @@ TEST_F(ConstraintTest, SetValuesOnPortConstraint)
     auto cvPort = ConfigValue{ConfigType::Integer}.defaultValue(4444).withConstraint(gValidatePort);
     auto const err = cvPort.setValue(99999);
     EXPECT_TRUE(err.has_value());
-    EXPECT_EQ(
-        err->error, "Unknown_key Port does not satisfy the constraint bounds"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(err->error, "Unknown_key Port does not satisfy the constraint bounds");
     EXPECT_TRUE(cvPort.setValue(33.33).has_value());
     EXPECT_EQ(
-        cvPort.setValue(33.33).value().error,
-        "Unknown_key value does not match type integer"  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        cvPort.setValue(33.33)->error,
+        "Unknown_key value does not match type integer"
     );
     EXPECT_FALSE(cvPort.setValue(1).has_value());
 
@@ -150,9 +150,8 @@ TEST_F(ConstraintTest, SetValuesOnPortConstraint)
         ConfigValue{ConfigType::String}.defaultValue("4444").withConstraint(gValidatePort);
     auto const strPortError = cvPort2.setValue("100000");
     EXPECT_TRUE(strPortError.has_value());
-    EXPECT_EQ(
-        strPortError->error, "Unknown_key Port does not satisfy the constraint bounds"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(strPortError->error, "Unknown_key Port does not satisfy the constraint bounds");
 }
 
 TEST_F(ConstraintTest, OneOfConstraintOneValue)
@@ -163,15 +162,15 @@ TEST_F(ConstraintTest, OneOfConstraintOneValue)
 
     EXPECT_TRUE(databaseConstraint.checkConstraint(345).has_value());
     EXPECT_EQ(
-        databaseConstraint.checkConstraint(345)
-            ->error,  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        databaseConstraint.checkConstraint(345)->error,
         R"(Key "database.type"'s value must be a string)"
     );
 
     EXPECT_TRUE(databaseConstraint.checkConstraint("123.44").has_value());
     EXPECT_EQ(
-        databaseConstraint.checkConstraint("123.44")
-            ->error,  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        databaseConstraint.checkConstraint("123.44")->error,
         R"(You provided value "123.44". Key "database.type"'s value must be one of the following: tracer)"
     );
 }
@@ -184,14 +183,13 @@ TEST_F(ConstraintTest, OneOfConstraint)
     EXPECT_FALSE(oneOfCons.checkConstraint("trace").has_value());
 
     EXPECT_TRUE(oneOfCons.checkConstraint(345).has_value());
-    EXPECT_EQ(
-        oneOfCons.checkConstraint(345)->error, R"(Key "log.level"'s value must be a string)"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(oneOfCons.checkConstraint(345)->error, R"(Key "log.level"'s value must be a string)");
 
     EXPECT_TRUE(oneOfCons.checkConstraint("PETER_WAS_HERE").has_value());
     EXPECT_EQ(
-        oneOfCons.checkConstraint("PETER_WAS_HERE")
-            ->error,  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        oneOfCons.checkConstraint("PETER_WAS_HERE")->error,
         R"(You provided value "PETER_WAS_HERE". Key "log.level"'s value must be one of the following: 123, trace, haha)"
     );
 }
@@ -215,9 +213,8 @@ TEST_F(ConstraintTest, IpConstraint)
 
     auto const err = ip.setValue("extra$@symbols");
     ASSERT_TRUE(err.has_value());
-    EXPECT_EQ(
-        err->error, "Unknown_key Ip is not a valid ip address or hostname"
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(err->error, "Unknown_key Ip is not a valid ip address or hostname");
 }
 
 TEST_F(ConstraintTest, positiveNumConstraint)
@@ -227,16 +224,14 @@ TEST_F(ConstraintTest, positiveNumConstraint)
     EXPECT_FALSE(numCons.checkConstraint(5));
 
     EXPECT_TRUE(numCons.checkConstraint(true));
-    EXPECT_EQ(
-        numCons.checkConstraint(true)->error, fmt::format("Number must be of type integer")
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(numCons.checkConstraint(true)->error, fmt::format("Number must be of type integer"));
 
     EXPECT_TRUE(numCons.checkConstraint(8));
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         numCons.checkConstraint(8)->error,
-        fmt::format(
-            "Number must be between {} and {}", 0, 5
-        )  // NOLINT(bugprone-unchecked-optional-access)
+        fmt::format("Number must be between {} and {}", 0, 5)
     );
 }
 
@@ -246,9 +241,8 @@ TEST_F(ConstraintTest, SetValuesOnNumberConstraint)
         ConfigValue{ConfigType::Integer}.defaultValue(20u).withConstraint(gValidateUint16);
     auto const err = positiveNum.setValue(-22, "key");
     EXPECT_TRUE(err.has_value());
-    EXPECT_EQ(
-        err->error, fmt::format("key Number must be between {} and {}", 1, 65535)
-    );  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    EXPECT_EQ(err->error, fmt::format("key Number must be between {} and {}", 1, 65535));
     EXPECT_FALSE(positiveNum.setValue(99, "key"));
 }
 
@@ -260,12 +254,14 @@ TEST_F(ConstraintTest, PositiveDoubleConstraint)
     EXPECT_FALSE(doubleCons.checkConstraint(3));
     EXPECT_TRUE(doubleCons.checkConstraint("-5"));
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doubleCons.checkConstraint("-5")->error,
-        "Double number must be of type int or double"  // NOLINT(bugprone-unchecked-optional-access)
+        "Double number must be of type int or double"
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doubleCons.checkConstraint(-5.6)->error,
-        "Double number must be greater than or equal to 0"  // NOLINT(bugprone-unchecked-optional-access)
+        "Double number must be greater than or equal to 0"
     );
     EXPECT_FALSE(doubleCons.checkConstraint(12.1));
 }

@@ -102,9 +102,8 @@ TEST_P(FieldProcessorTests, FieldSpecWithRequirementProcess)
     EXPECT_CALL(requirementMock, verify).WillOnce(testing::Return(GetParam().requirementResult));
     if (GetParam().otherRequirementResult) {
         EXPECT_CALL(anotherRequirementMock, verify)
-            .WillOnce(
-                testing::Return(GetParam().otherRequirementResult.value())
-            );  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            .WillOnce(testing::Return(GetParam().otherRequirementResult.value()));
     }
 
     auto const result = spec_.process(json_);
@@ -208,9 +207,8 @@ TEST_P(RpcSpecProcessTests, Process)
     EXPECT_CALL(requirementMock, verify).WillOnce(testing::Return(GetParam().requirementResult));
     if (GetParam().otherRequirementResult) {
         EXPECT_CALL(anotherRequirementMock, verify)
-            .WillOnce(
-                testing::Return(GetParam().otherRequirementResult.value())
-            );  // NOLINT(bugprone-unchecked-optional-access)
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            .WillOnce(testing::Return(GetParam().otherRequirementResult.value()));
     }
     auto const result = spec.process(json);
     EXPECT_EQ(result, GetParam().expectedResult);

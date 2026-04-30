@@ -77,19 +77,20 @@ tag_invoke(
 )
 {
     auto const metaKey = output.apiVersion > 1u ? JS(meta) : JS(metadata);
+
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
     jv = {
         {JS(validated), output.validated},
         {metaKey, output.metadata},
         {JS(tx_json), output.tx},
-        {JS(ledger_index), output.ledgerHeader->seq},  // NOLINT(bugprone-unchecked-optional-access)
-        {JS(ledger_hash),
-         ripple::strHex(output.ledgerHeader->hash)},  // NOLINT(bugprone-unchecked-optional-access)
+        {JS(ledger_index), output.ledgerHeader->seq},
+        {JS(ledger_hash), ripple::strHex(output.ledgerHeader->hash)},
     };
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     if (output.apiVersion > 1u) {
-        jv.as_object()[JS(close_time_iso)] = ripple::to_string_iso(
-            output.ledgerHeader->closeTime
-        );  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        jv.as_object()[JS(close_time_iso)] = ripple::to_string_iso(output.ledgerHeader->closeTime);
         if (output.tx.contains(JS(hash))) {
             jv.as_object()[JS(hash)] = output.tx.at(JS(hash));
             jv.as_object()[JS(tx_json)].as_object().erase(JS(hash));

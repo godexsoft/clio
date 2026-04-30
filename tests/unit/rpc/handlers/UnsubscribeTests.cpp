@@ -548,16 +548,14 @@ TEST_F(RPCUnsubscribeTest, Accounts)
 
     EXPECT_CALL(
         *mockSubscriptionManagerPtr_,
-        unsubAccount(
-            rpc::accountFromStringStrict(kACCOUNT).value(), _
-        )  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        unsubAccount(*rpc::accountFromStringStrict(kACCOUNT), _)
     )
         .Times(1);
     EXPECT_CALL(
         *mockSubscriptionManagerPtr_,
-        unsubAccount(
-            rpc::accountFromStringStrict(kACCOUNT2).value(), _
-        )  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        unsubAccount(*rpc::accountFromStringStrict(kACCOUNT2), _)
     )
         .Times(1);
 
@@ -583,16 +581,14 @@ TEST_F(RPCUnsubscribeTest, AccountsProposed)
 
     EXPECT_CALL(
         *mockSubscriptionManagerPtr_,
-        unsubProposedAccount(
-            rpc::accountFromStringStrict(kACCOUNT).value(), _
-        )  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        unsubProposedAccount(*rpc::accountFromStringStrict(kACCOUNT), _)
     )
         .Times(1);
     EXPECT_CALL(
         *mockSubscriptionManagerPtr_,
-        unsubProposedAccount(
-            rpc::accountFromStringStrict(kACCOUNT2).value(), _
-        )  // NOLINT(bugprone-unchecked-optional-access)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        unsubProposedAccount(*rpc::accountFromStringStrict(kACCOUNT2), _)
     )
         .Times(1);
 
