@@ -176,11 +176,11 @@ public:
         auto const range = backend_->fetchLedgerRange();
         ASSERT(range.has_value(), "ServerInfo's ledger range must be available");
 
-        auto const lgrInfo = backend_->fetchLedgerBySequence(range->maxSequence, ctx.yield);
+        auto const lgrInfo = backend_->fetchLedgerBySequence((*range).maxSequence, ctx.yield);
         if (not lgrInfo.has_value())
             return Error{Status{RippledError::rpcINTERNAL}};
 
-        auto const fees = backend_->fetchFees(lgrInfo->seq, ctx.yield);
+        auto const fees = backend_->fetchFees((*lgrInfo).seq, ctx.yield);
         if (not fees.has_value())
             return Error{Status{RippledError::rpcINTERNAL}};
 
@@ -188,10 +188,11 @@ public:
         auto const sinceEpoch =
             duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         auto const age = static_cast<int32_t>(sinceEpoch) -
-            static_cast<int32_t>(lgrInfo->closeTime.time_since_epoch().count()) -
+            static_cast<int32_t>((*lgrInfo).closeTime.time_since_epoch().count()) -
             static_cast<int32_t>(kRIPPLE_EPOCH_START);
 
-        output.info.completeLedgers = fmt::format("{}-{}", range->minSequence, range->maxSequence);
+        output.info.completeLedgers =
+            fmt::format("{}-{}", (*range).minSequence, (*range).maxSequence);
 
         if (ctx.isAdmin) {
             output.info.adminSection = {
@@ -216,8 +217,8 @@ public:
         }
 
         output.info.validatedLedger.age = age < 0 ? 0 : age;
-        output.info.validatedLedger.hash = ripple::strHex(lgrInfo->hash);
-        output.info.validatedLedger.seq = lgrInfo->seq;
+        output.info.validatedLedger.hash = ripple::strHex((*lgrInfo).hash);
+        output.info.validatedLedger.seq = (*lgrInfo).seq;
         output.info.validatedLedger.fees = fees;
         output.info.cache.size = backend_->cache().size();
         output.info.cache.isFull = backend_->cache().isFull();
@@ -268,7 +269,7 @@ private:
             jv.as_object()["corruption_detected"] = true;
 
         if (info.rippledInfo) {
-            auto const& rippledInfo = info.rippledInfo.value();
+            auto const& rippledInfo = *info.rippledInfo;
 
             if (rippledInfo.contains(JS(load_factor)))
                 jv.as_object()[JS(load_factor)] = rippledInfo.at(JS(load_factor));
@@ -302,9 +303,9 @@ private:
             {JS(age), validated.age},
             {JS(hash), validated.hash},
             {JS(seq), validated.seq},
-            {JS(base_fee_xrp), validated.fees->base.decimalXRP()},
-            {JS(reserve_base_xrp), validated.fees->reserve.decimalXRP()},
-            {JS(reserve_inc_xrp), validated.fees->increment.decimalXRP()},
+            {JS(base_fee_xrp), (*validated.fees).base.decimalXRP()},
+            {JS(reserve_base_xrp), (*validated.fees).reserve.decimalXRP()},
+            {JS(reserve_inc_xrp), (*validated.fees).increment.decimalXRP()},
         };
     }
 

@@ -115,7 +115,7 @@ public:
             [this,
              &request,
              &response,
-             &onTaskComplete = onTaskComplete.value(),
+             &onTaskComplete = *onTaskComplete,
              &connectionMetadata,
              subscriptionContext =
                  std::move(subscriptionContext)](boost::asio::yield_context innerYield) mutable {
@@ -171,7 +171,7 @@ public:
 
         if (not postSuccessful) {
             // onTaskComplete must be called to notify coroutineGroup that the foreign task is done
-            onTaskComplete->operator()();
+            (*onTaskComplete)();
             rpcEngine_->notifyTooBusy();
             return impl::ErrorHelper{request}.makeTooBusyError();
         }
@@ -180,11 +180,11 @@ public:
         coroutineGroup.asyncWait(yield);
         ASSERT(response.has_value(), "Woke up coroutine without setting response");
 
-        if (not dosguard_.get().add(connectionMetadata.ip(), response->message().size())) {
-            response->setMessage(makeLoadWarning(*response));
+        if (not dosguard_.get().add(connectionMetadata.ip(), (*response).message().size())) {
+            (*response).setMessage(makeLoadWarning(*response));
         }
 
-        return std::move(response).value();
+        return *std::move(response);
     }
 
 private:

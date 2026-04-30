@@ -34,12 +34,12 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input const& input, Context co
     ASSERT(range.has_value(), "NFTsByIssuer's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
-    auto const& lgrInfo = expectedLgrInfo.value();
+    auto const& lgrInfo = *expectedLgrInfo;
 
     auto const limit = input.limit.value_or(NFTsByIssuerHandler::kLIMIT_DEFAULT);
 

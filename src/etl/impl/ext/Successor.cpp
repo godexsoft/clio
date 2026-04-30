@@ -37,7 +37,7 @@ SuccessorExt::onInitialData(model::LedgerData const& data) const
     ASSERT(data.edgeKeys.has_value(), "Expecting to have edge keys on initial data load");
     ASSERT(data.objects.empty(), "Should not have objects from initial data");
     writeSuccessors(data.seq);
-    writeEdgeKeys(data.seq, data.edgeKeys.value());
+    writeEdgeKeys(data.seq, *data.edgeKeys);
 }
 
 void
@@ -67,7 +67,7 @@ SuccessorExt::onLedgerData(model::LedgerData const& data) const
         | vs::filter([](auto const& obj) { return obj.type != model::Object::ModType::Modified; });
 
     if (data.successors.has_value()) {
-        for (auto const& successor : data.successors.value())
+        for (auto const& successor : *data.successors)
             writeIncludedSuccessor(data.seq, successor);
 
         for (auto const& obj : filteredObjects)
@@ -191,7 +191,7 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
                     succ.has_value(), "Book base {} must have a successor", ripple::strHex(base)
                 );
 
-                if (succ->key == cur->key)
+                if ((*succ).key == cur->key)
                     backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
             }
         }

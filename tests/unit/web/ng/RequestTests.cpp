@@ -204,7 +204,7 @@ TEST_F(RequestHeaderValueTest, headerValue)
     Request const request{httpRequest};
     auto const maybeHeaderValue = request.headerValue(headerName);
     ASSERT_TRUE(maybeHeaderValue.has_value());
-    EXPECT_EQ(maybeHeaderValue.value(), headerValue);
+    EXPECT_EQ(*maybeHeaderValue, headerValue);
 }
 
 TEST_F(RequestHeaderValueTest, headerValueString)
@@ -216,7 +216,7 @@ TEST_F(RequestHeaderValueTest, headerValueString)
     Request const request{httpRequest};
     auto const maybeHeaderValue = request.headerValue(headerName);
     ASSERT_TRUE(maybeHeaderValue.has_value());
-    EXPECT_EQ(maybeHeaderValue.value(), headerValue);
+    EXPECT_EQ(*maybeHeaderValue, headerValue);
 }
 
 TEST_F(RequestHeaderValueTest, headerValueNotFound)
@@ -236,5 +236,5 @@ TEST_F(RequestHeaderValueTest, headerValueWebsocketRequest)
     Request const request{"websocket message", headers};
     auto const maybeHeaderValue = request.headerValue(headerName);
     ASSERT_TRUE(maybeHeaderValue.has_value());
-    EXPECT_EQ(maybeHeaderValue.value(), headerValue);
+    EXPECT_EQ(*maybeHeaderValue, headerValue);
 }

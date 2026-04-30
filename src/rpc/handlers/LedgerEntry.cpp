@@ -60,7 +60,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
         if (!expectedkey.has_value())
             return Error{expectedkey.error()};
 
-        key = expectedkey.value();
+        key = expectedkey.value();  // std::expected, not optional
     } else if (input.offer) {
         auto const id = util::parseBase58Wrapper<ripple::AccountID>(
             boost::json::value_to<std::string>(input.offer->at(JS(account)))
@@ -120,7 +120,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
                 }};
             }
 
-            key = ripple::keylet::depositPreauth(owner.value(), authCreds).key;
+            key = ripple::keylet::depositPreauth(*owner, authCreds).key;
         }
     } else if (input.ticket) {
         auto const id = util::parseBase58Wrapper<ripple::AccountID>(
@@ -164,18 +164,17 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
 
             key = ripple::keylet::bridge(input.bridge->value(), chainType).key;
         } else if (input.chainClaimId) {
-            key = ripple::keylet::xChainClaimID(input.bridge->value(), input.chainClaimId.value())
-                      .key;
+            key = ripple::keylet::xChainClaimID(input.bridge->value(), *input.chainClaimId).key;
         } else {
             key = ripple::keylet::xChainCreateAccountClaimID(
-                      input.bridge->value(), input.createAccountClaimId.value()
+                      input.bridge->value(), *input.createAccountClaimId
             )
                       .key;
         }
     } else if (input.oracleNode) {
-        key = input.oracleNode.value();
+        key = *input.oracleNode;
     } else if (input.credential) {
-        key = input.credential.value();
+        key = *input.credential;
     } else if (input.mptIssuance) {
         auto const mptIssuanceID = ripple::uint192{std::string_view(*(input.mptIssuance))};
         key = ripple::keylet::mptIssuance(mptIssuanceID).key;
@@ -230,13 +229,13 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "LedgerEntry's ledger range must be available");
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
 
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
-    auto const& lgrInfo = expectedLgrInfo.value();
+    auto const& lgrInfo = *expectedLgrInfo;
     auto output = LedgerEntryHandler::Output{};
     auto ledgerObject = sharedPtrBackend_->fetchLedgerObject(key, lgrInfo.seq, ctx.yield);
 
@@ -247,7 +246,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
             sharedPtrBackend_->fetchLedgerObjectSeq(key, lgrInfo.seq, ctx.yield);
         if (!deletedSeq)
             return Error{Status{RippledError::rpcENTRY_NOT_FOUND}};
-        ledgerObject = sharedPtrBackend_->fetchLedgerObject(key, deletedSeq.value() - 1, ctx.yield);
+        ledgerObject = sharedPtrBackend_->fetchLedgerObject(key, *deletedSeq - 1, ctx.yield);
         if (!ledgerObject || ledgerObject->empty())
             return Error{Status{RippledError::rpcENTRY_NOT_FOUND}};
         output.deletedLedgerIndex = deletedSeq;

@@ -220,7 +220,7 @@ makeError(Status const& status)
     );
 
     if (status.extraInfo) {
-        for (auto& [key, value] : status.extraInfo.value())
+        for (auto& [key, value] : *status.extraInfo)
             res[key] = value;
     }
 

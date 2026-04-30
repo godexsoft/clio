@@ -3224,11 +3224,10 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 kRANGE_MAX
             ),
-            .expectedIndex =
-                ripple::keylet::permissionedDomain(
-                    ripple::parseBase58<ripple::AccountID>(kACCOUNT).value(), kRANGE_MAX
-                )
-                    .key,
+            .expectedIndex = ripple::keylet::permissionedDomain(
+                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+            )
+                                 .key,
             .mockedEntity = createPermissionedDomainObject(
                 kACCOUNT, kINDEX1, kRANGE_MAX, 0, ripple::uint256{0}, 0
             )
@@ -3269,9 +3268,7 @@ generateTestValuesForNormalPathTest()
                 kRANGE_MAX
             ),
             .expectedIndex =
-                ripple::keylet::vault(
-                    ripple::parseBase58<ripple::AccountID>(kACCOUNT).value(), kRANGE_MAX
-                )
+                ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX)
                     .key,
             .mockedEntity = createVault(
                 kACCOUNT,
@@ -3312,11 +3309,10 @@ generateTestValuesForNormalPathTest()
                 kACCOUNT,
                 kRANGE_MAX
             ),
-            .expectedIndex =
-                ripple::keylet::loanbroker(
-                    ripple::parseBase58<ripple::AccountID>(kACCOUNT).value(), kRANGE_MAX
-                )
-                    .key,
+            .expectedIndex = ripple::keylet::loanbroker(
+                                 *ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX
+            )
+                                 .key,
             .mockedEntity = createLoanBroker(
                 kACCOUNT, kACCOUNT, kRANGE_MAX, ripple::uint256{kINDEX1}, 1, ripple::uint256{0}, 0
             )
@@ -3498,8 +3494,7 @@ TEST_F(RPCLedgerEntryTest, Vault_BinaryFalse)
     );
 
     auto const vaultKey =
-        ripple::keylet::vault(ripple::parseBase58<ripple::AccountID>(kACCOUNT).value(), kRANGE_MAX)
-            .key;
+        ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX).key;
 
     ripple::STLedgerEntry const sle{
         ripple::SerialIter{
@@ -3547,9 +3542,7 @@ TEST_F(RPCLedgerEntryTest, LoanBroker_BinaryFalse)
     );
 
     auto const loanBrokerKey =
-        ripple::keylet::loanbroker(
-            ripple::parseBase58<ripple::AccountID>(kACCOUNT).value(), kRANGE_MAX
-        )
+        ripple::keylet::loanbroker(*ripple::parseBase58<ripple::AccountID>(kACCOUNT), kRANGE_MAX)
             .key;
 
     ripple::STLedgerEntry const sle{

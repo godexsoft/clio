@@ -40,13 +40,13 @@ DepositAuthorizedHandler::process(
     ASSERT(range.has_value(), "DepositAuthorized ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
 
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
-    auto const& lgrInfo = expectedLgrInfo.value();
+    auto const& lgrInfo = *expectedLgrInfo;
     auto const sourceAccountID = accountFromStringStrict(input.sourceAccount);
     auto const destinationAccountID = accountFromStringStrict(input.destinationAccount);
 
@@ -75,12 +75,12 @@ DepositAuthorizedHandler::process(
 
     ripple::STArray authCreds;
     if (credentialsPresent) {
-        if (creds.value().empty()) {
+        if ((*creds).empty()) {
             return Error{
                 Status{RippledError::rpcINVALID_PARAMS, "credential array has no elements."}
             };
         }
-        if (creds.value().size() > ripple::maxCredentialsArraySize) {
+        if ((*creds).size() > ripple::maxCredentialsArraySize) {
             return Error{Status{RippledError::rpcINVALID_PARAMS, "credential array too long."}};
         }
         auto const credArray = credentials::fetchCredentialArray(
@@ -88,7 +88,7 @@ DepositAuthorizedHandler::process(
         );
         if (!credArray.has_value())
             return Error{std::move(credArray).error()};
-        authCreds = std::move(credArray).value();
+        authCreds = *std::move(credArray);
     }
 
     // If the two accounts are the same OR if that flag is
@@ -119,7 +119,7 @@ DepositAuthorizedHandler::process(
     response.ledgerIndex = lgrInfo.seq;
     response.depositAuthorized = depositAuthorized;
     if (credentialsPresent)
-        response.credentials = input.credentials.value();
+        response.credentials = *input.credentials;
 
     return response;
 }

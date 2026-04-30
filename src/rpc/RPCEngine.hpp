@@ -142,7 +142,7 @@ public:
 
         if (not ctx.isAdmin and responseCache_) {
             if (auto res = responseCache_->get(ctx.method); res.has_value())
-                return Result{std::move(res).value()};
+                return Result{*std::move(res)};
         }
 
         if (backend_->isTooBusy()) {

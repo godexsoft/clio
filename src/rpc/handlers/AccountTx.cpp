@@ -42,8 +42,8 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
 
     if (input.ledgerIndexMin) {
         if (ctx.apiVersion > 1u &&
-            (input.ledgerIndexMin > range->maxSequence ||
-             input.ledgerIndexMin < range->minSequence)) {
+            (input.ledgerIndexMin > (*range).maxSequence ||
+             input.ledgerIndexMin < (*range).minSequence)) {
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
         }
 
@@ -53,8 +53,8 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
 
     if (input.ledgerIndexMax) {
         if (ctx.apiVersion > 1u &&
-            (input.ledgerIndexMax > range->maxSequence ||
-             input.ledgerIndexMax < range->minSequence)) {
+            (input.ledgerIndexMax > (*range).maxSequence ||
+             input.ledgerIndexMax < (*range).minSequence)) {
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
         }
 
@@ -84,13 +84,13 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                 ctx.yield,
                 input.ledgerHash,
                 input.ledgerIndex,
-                range->maxSequence
+                (*range).maxSequence
             );
 
             if (not expectedLgrInfo.has_value())
                 return Error{expectedLgrInfo.error()};
 
-            maxIndex = minIndex = expectedLgrInfo.value().seq;
+            maxIndex = minIndex = *expectedLgrInfo.seq;
         }
     }
 
@@ -146,7 +146,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
 
             if (txn.contains(JS(TransactionType)) && input.transactionTypeInLowercase.has_value() &&
                 util::toLower(boost::json::value_to<std::string>(txn[JS(TransactionType)])) !=
-                    input.transactionTypeInLowercase.value())
+                    *input.transactionTypeInLowercase)
                 continue;
 
             if (!input.binary) {
@@ -166,7 +166,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                     if (auto const& ctid =
                             rpc::encodeCTID(txnPlusMeta.ledgerSequence, txnIdx, networkID);
                         ctid)
-                        obj[txKey].as_object()[JS(ctid)] = ctid.value();
+                        obj[txKey].as_object()[JS(ctid)] = *ctid;
                 }
 
                 obj[txKey].as_object()[JS(date)] = txnPlusMeta.date;

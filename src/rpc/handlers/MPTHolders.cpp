@@ -35,12 +35,12 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
     ASSERT(range.has_value(), "MPTHolder's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
-    auto const& lgrInfo = expectedLgrInfo.value();
+    auto const& lgrInfo = *expectedLgrInfo;
     auto const limit = input.limit.value_or(MPTHoldersHandler::kLIMIT_DEFAULT);
     auto const mptID = ripple::uint192{input.mptID.c_str()};
 

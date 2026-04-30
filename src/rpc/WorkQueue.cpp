@@ -186,15 +186,16 @@ WorkQueue::executeTask(boost::asio::yield_context yield)
         "Queue should not be empty as we spawn a coro with executeTask for each postCoro."
     );
     auto const takenAt = std::chrono::system_clock::now();
-    auto const waited =
-        std::chrono::duration_cast<std::chrono::microseconds>(takenAt - taskWithTimestamp->queuedAt)
-            .count();
+    auto const waited = std::chrono::duration_cast<std::chrono::microseconds>(
+                            takenAt - (*taskWithTimestamp).queuedAt
+    )
+                            .count();
 
     ++queued_.get();
     durationUs_.get() += waited;
     LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
 
-    taskWithTimestamp->task(yield);
+    (*taskWithTimestamp).task(yield);
     --curSize_.get();
 }
 

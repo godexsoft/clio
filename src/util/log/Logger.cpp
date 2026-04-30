@@ -334,7 +334,7 @@ LogService::getSinks(config::ClioConfigDefinition const& config)
         createConsoleSinks(config.get<bool>("log.enable_console"), format);
 
     if (auto const logDir = config.maybeValue<std::string>("log.directory"); logDir.has_value()) {
-        std::filesystem::path const dirPath{logDir.value()};
+        std::filesystem::path const dirPath{*logDir};
         if (not std::filesystem::exists(dirPath)) {
             if (std::error_code error; not std::filesystem::create_directories(dirPath, error)) {
                 return std::unexpected{fmt::format(
@@ -352,7 +352,7 @@ LogService::getSinks(config::ClioConfigDefinition const& config)
         }
 
         FileLoggingParams const params{
-            .logDir = logDir.value(),
+            .logDir = *logDir,
             .rotation = rotation,
         };
         allSinks.push_back(createFileSink(params, format));

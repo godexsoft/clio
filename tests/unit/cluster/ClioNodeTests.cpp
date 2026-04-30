@@ -25,7 +25,7 @@ using namespace cluster;
 struct ClioNodeTest : testing::Test {
     std::string const updateTimeStr = "2015-05-15T12:00:00Z";
     std::chrono::system_clock::time_point const updateTime =
-        util::systemTpFromUtcStr(updateTimeStr, ClioNode::kTIME_FORMAT).value();
+        *util::systemTpFromUtcStr(updateTimeStr, ClioNode::kTIME_FORMAT);
 };
 
 TEST_F(ClioNodeTest, Serialization)

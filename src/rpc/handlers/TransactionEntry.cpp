@@ -30,7 +30,7 @@ TransactionEntryHandler::process(
     ASSERT(range.has_value(), "TransactionEntry's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
 
     if (not expectedLgrInfo.has_value())
@@ -39,7 +39,7 @@ TransactionEntryHandler::process(
     auto output = TransactionEntryHandler::Output{};
     output.apiVersion = ctx.apiVersion;
 
-    output.ledgerHeader = expectedLgrInfo.value();
+    output.ledgerHeader = *expectedLgrInfo;
     auto const dbRet =
         sharedPtrBackend_->fetchTransaction(ripple::uint256{input.txHash.c_str()}, ctx.yield);
     // Note: transaction_entry is meant to only search a specified ledger for

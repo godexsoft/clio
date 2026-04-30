@@ -104,7 +104,7 @@ fetchCredentialArray(
 {
     ripple::STArray authCreds;
     std::unordered_set<std::string_view> elems;
-    for (auto const& elem : credID.value()) {
+    for (auto const& elem : *credID) {
         ASSERT(
             elem.is_string(), "should already be checked in validators.hpp that elem is a string."
         );

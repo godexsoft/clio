@@ -47,13 +47,13 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountInfo's ledger range must be available");
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, input.ledgerHash, input.ledgerIndex, (*range).maxSequence
     );
 
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
-    auto const& lgrInfo = expectedLgrInfo.value();
+    auto const& lgrInfo = *expectedLgrInfo;
     auto const accountStr = input.account.value_or(input.ident.value_or(""));
     auto const accountID = accountFromStringStrict(accountStr);
     auto const accountKeylet = ripple::keylet::account(*accountID);
@@ -184,8 +184,8 @@ tag_invoke(
     if (output.signerLists) {
         auto signers = boost::json::array();
         std::transform(
-            std::cbegin(output.signerLists.value()),
-            std::cend(output.signerLists.value()),
+            std::cbegin(*output.signerLists),
+            std::cend(*output.signerLists),
             std::back_inserter(signers),
             [](auto const& signerList) { return toJson(signerList); }
         );

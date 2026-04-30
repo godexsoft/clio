@@ -46,7 +46,7 @@ public:
         std::set<ripple::uint256> liveCursors;
         std::set<ripple::uint256> deletedCursors;
         auto i = 0;
-        while (liveCursors.size() < numCursors_ and seq - i >= range->minSequence) {
+        while (liveCursors.size() < numCursors_ and seq - i >= (*range).minSequence) {
             auto diffs = fetchDiff(i++);
             rg::copy(
                 diffs  //

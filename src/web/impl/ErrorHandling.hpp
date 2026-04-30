@@ -163,7 +163,7 @@ public:
             if (connection_->upgraded)
                 appendFieldIfExist(JS(api_version));
 
-            e[JS(request)] = request_.value();
+            e[JS(request)] = *request_;
         }
 
         if (connection_->upgraded) {

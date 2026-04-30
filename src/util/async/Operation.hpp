@@ -72,7 +72,7 @@ struct BasicScheduledOperation : util::MoveTracker {
         {
             std::unique_lock lock{m_};
             ready_.wait(lock, [this] { return op_.has_value(); });
-            return op_.value();
+            return *op_;
         }
     };
 

@@ -68,7 +68,7 @@ VaultInfoHandler::process(VaultInfoHandler::Input const& input, Context const& c
     ASSERT(range.has_value(), "VaultInfo's ledger range must be available");
 
     auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
-        *sharedPtrBackend_, ctx.yield, std::nullopt, input.ledgerIndex, range->maxSequence
+        *sharedPtrBackend_, ctx.yield, std::nullopt, input.ledgerIndex, (*range).maxSequence
     );
 
     if (not expectedLgrInfo.has_value())
@@ -106,14 +106,13 @@ VaultInfoHandler::process(VaultInfoHandler::Input const& input, Context const& c
 
     // Fetch the vault object and it's associated issuance ID
     auto const vaultLedgerObject =
-        sharedPtrBackend_->fetchLedgerObject(vaultKeylet.value().key, lgrInfo.seq, ctx.yield);
+        sharedPtrBackend_->fetchLedgerObject((*vaultKeylet).key, lgrInfo.seq, ctx.yield);
 
     if (not vaultLedgerObject)
         return Error{Status{RippledError::rpcENTRY_NOT_FOUND, "vault object not found."}};
 
     ripple::STLedgerEntry const vaultSle{
-        ripple::SerialIter{vaultLedgerObject->data(), vaultLedgerObject->size()},
-        vaultKeylet.value().key
+        ripple::SerialIter{vaultLedgerObject->data(), vaultLedgerObject->size()}, (*vaultKeylet).key
     };
 
     auto const issuanceKeylet = ripple::keylet::mptIssuance(vaultSle[ripple::sfShareMPTID]).key;

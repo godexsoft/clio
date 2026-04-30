@@ -311,7 +311,7 @@ TEST_F(IncorrectOverrideValues, InvalidJsonErrors)
     };
 
     std::set<std::string_view> actualErrors;
-    for (auto const& error : errors.value()) {
+    for (auto const& error : *errors) {
         actualErrors.insert(error.error);
     }
     EXPECT_EQ(expectedErrors, actualErrors);
