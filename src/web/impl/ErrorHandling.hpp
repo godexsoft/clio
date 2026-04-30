@@ -147,7 +147,7 @@ public:
         }
     }
 
-    boost::json::object
+    [[nodiscard]] boost::json::object
     composeError(auto const& error) const
     {
         auto e = rpc::makeError(error);

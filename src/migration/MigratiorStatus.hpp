@@ -48,7 +48,7 @@ public:
      *
      * @return The string representation of the status
      */
-    std::string
+    [[nodiscard]] std::string
     toString() const;
 
     /**

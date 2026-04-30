@@ -277,7 +277,7 @@ private:
         }
     }
 
-    bool
+    [[nodiscard]] bool
     shouldReplaceParams(boost::json::object const& req) const
     {
         auto const hasParams = req.contains(JS(params));

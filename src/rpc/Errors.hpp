@@ -223,7 +223,7 @@ public:
      *
      * @return The error message
      */
-    char const*
+    [[nodiscard]] char const*
     what() const throw() override
     {
         return msg_.c_str();
@@ -249,7 +249,7 @@ public:
      *
      * @return The error message
      */
-    char const*
+    [[nodiscard]] char const*
     what() const throw() override
     {
         return account_.c_str();

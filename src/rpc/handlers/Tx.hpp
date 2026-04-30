@@ -124,7 +124,7 @@ public:
      * @param ctx The context of the request
      * @return The result of the operation
      */
-    Result
+    [[nodiscard]] Result
     process(Input const& input, Context const& ctx) const
     {
         if (input.ctid && input.transaction)  // ambiguous identifier
@@ -233,7 +233,7 @@ public:
     }
 
 private:
-    std::optional<data::TransactionAndMetadata>
+    [[nodiscard]] std::optional<data::TransactionAndMetadata>
     fetchTxViaCtid(uint32_t ledgerSeq, uint32_t txId, boost::asio::yield_context yield) const
     {
         auto const txs = sharedPtrBackend_->fetchAllTransactionsInLedger(ledgerSeq, yield);

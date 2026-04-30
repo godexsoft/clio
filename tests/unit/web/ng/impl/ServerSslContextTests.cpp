@@ -24,7 +24,7 @@ struct MakeServerSslContextFromConfigTestBundle {
     std::optional<std::string> expectedError;
     bool expectContext;
 
-    boost::json::value
+    [[nodiscard]] boost::json::value
     configJson() const
     {
         boost::json::object result;

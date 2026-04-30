@@ -41,7 +41,7 @@ TEST_F(ResponseAssertTest, asConstBufferWithHttpData)
 {
     Request const request{http::request<http::string_body>{http::verb::get, "/", 11}};
     Response const response{boost::beast::http::status::ok, "message", request};
-    EXPECT_CLIO_ASSERT_FAIL(response.asWsResponse());
+    EXPECT_CLIO_ASSERT_FAIL([&] { [[maybe_unused]] auto const _ = response.asWsResponse(); }());
 }
 
 struct ResponseTest : testing::Test {

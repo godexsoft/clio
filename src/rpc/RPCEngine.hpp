@@ -321,7 +321,7 @@ public:
     }
 
 private:
-    bool
+    [[nodiscard]] bool
     validHandler(std::string const& method) const
     {
         return handlerProvider_->contains(method) || forwardingProxy_.isProxied(method);

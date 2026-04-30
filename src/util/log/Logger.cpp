@@ -132,7 +132,7 @@ public:
         }
     }
 
-    std::unique_ptr<formatter>
+    [[nodiscard]] std::unique_ptr<formatter>
     clone() const override
     {
         return std::make_unique<NonCriticalFormatter>(wrapped_formatter_->clone());

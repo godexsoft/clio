@@ -236,7 +236,7 @@ struct ServerHttpTestBundle {
     std::string testName;
     http::verb method;
 
-    Request::Method
+    [[nodiscard]] Request::Method
     expectedMethod() const
     {
         switch (method) {

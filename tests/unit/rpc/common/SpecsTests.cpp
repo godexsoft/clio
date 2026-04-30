@@ -44,7 +44,7 @@ struct SpecsTests : testing::Test {
         {
         }
 
-        std::optional<check::Warning>
+        [[nodiscard]] std::optional<check::Warning>
         check(boost::json::value const& value, std::string key) const
         {
             return ref.check(value, key);

@@ -361,7 +361,7 @@ public:
     }
 
 private:
-    http::response<http::string_body>
+    [[nodiscard]] http::response<http::string_body>
     httpResponse(http::status status, std::string contentType, std::string message) const
     {
         http::response<http::string_body> res{status, req_.version()};
