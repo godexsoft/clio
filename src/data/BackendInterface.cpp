@@ -208,10 +208,10 @@ BackendInterface::fetchBookOffers(
             auto nextKey = ripple::keylet::page(uTipIndex, next);
             auto nextDir = fetchLedgerObject(nextKey.key, ledgerSequence, yield);
             ASSERT(nextDir.has_value(), "Next dir must exist");
-            if (!nextDir)
-                break;
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
             offerDir->blob = *nextDir;
             offerDir->key = nextKey.key;
+            // NOLINTEND(bugprone-unchecked-optional-access)
         }
         auto mid3 = std::chrono::system_clock::now();
         pageMillis += getMillis(mid3 - mid2);
