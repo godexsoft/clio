@@ -188,7 +188,7 @@ WorkQueue::executeTask(boost::asio::yield_context yield)
     auto const takenAt = std::chrono::system_clock::now();
     auto const waited =
         std::chrono::duration_cast<std::chrono::microseconds>(
-            takenAt - (*taskWithTimestamp).queuedAt  // NOLINT(bugprone-unchecked-optional-access)
+            takenAt - taskWithTimestamp->queuedAt  // NOLINT(bugprone-unchecked-optional-access)
         )
             .count();
 
@@ -196,7 +196,7 @@ WorkQueue::executeTask(boost::asio::yield_context yield)
     durationUs_.get() += waited;
     LOG(log_.info()) << "WorkQueue wait time: " << waited << ", queue size: " << size();
 
-    (*taskWithTimestamp).task(yield);  // NOLINT(bugprone-unchecked-optional-access)
+    taskWithTimestamp->task(yield);  // NOLINT(bugprone-unchecked-optional-access)
     --curSize_.get();
 }
 

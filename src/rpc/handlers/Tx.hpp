@@ -184,8 +184,8 @@ public:
                 ASSERT(range.has_value(), "Tx's ledger range must be available");
 
                 // NOLINTBEGIN(bugprone-unchecked-optional-access)
-                auto const searchedAll = (*range).maxSequence >= *input.maxLedger &&
-                    (*range).minSequence <= *input.minLedger;
+                auto const searchedAll = range->maxSequence >= *input.maxLedger &&
+                    range->minSequence <= *input.minLedger;
                 // NOLINTEND(bugprone-unchecked-optional-access)
 
                 boost::json::object extra;

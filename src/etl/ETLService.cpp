@@ -417,8 +417,8 @@ ETLService::attemptTakeoverWriter()
     auto rng = backend_->hardFetchLedgerRangeNoThrow();
     ASSERT(rng.has_value(), "Ledger range can't be null");
 
-    if (backend_->cache().latestLedgerSequence() !=
-        (*rng).maxSequence) {  // NOLINT(bugprone-unchecked-optional-access)
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    if (backend_->cache().latestLedgerSequence() != rng->maxSequence) {
         LOG(log_.info()) << "Wanted to take over the ETL writer seat but LedgerCache is outdated";
         // Give ETL time to update LedgerCache. This method will be called because
         // ClusterCommunication will likely to continue sending StartWriting signal every 1 second
@@ -427,7 +427,7 @@ ETLService::attemptTakeoverWriter()
 
     state_->isWriting = true;  // switch to writer
     LOG(log_.info()) << "Taking over the ETL writer seat";
-    startLoading((*rng).maxSequence + 1);  // NOLINT(bugprone-unchecked-optional-access)
+    startLoading(rng->maxSequence + 1);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 void

@@ -85,7 +85,7 @@ AMMInfoHandler::process(AMMInfoHandler::Input const& input, Context const& ctx) 
         ctx.yield,
         input.ledgerHash,
         input.ledgerIndex,
-        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
+        range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())

@@ -191,7 +191,7 @@ SuccessorExt::writeSuccessors(uint32_t seq) const
                     succ.has_value(), "Book base {} must have a successor", ripple::strHex(base)
                 );
 
-                if ((*succ).key == cur->key)  // NOLINT(bugprone-unchecked-optional-access)
+                if (succ->key == cur->key)  // NOLINT(bugprone-unchecked-optional-access)
                     backend_->writeSuccessor(uint256ToString(base), seq, uint256ToString(cur->key));
             }
         }

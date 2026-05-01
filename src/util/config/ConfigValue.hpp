@@ -101,7 +101,7 @@ public:
         ASSERT(cons_.has_value(), "Constraint must be defined");
 
         if (value_.has_value()) {
-            auto const& temp = (*cons_).get();
+            auto const& temp = cons_->get();
             auto const& result = temp.checkConstraint(*value_);
             if (result.has_value()) {
                 // useful for specifying clear Error message

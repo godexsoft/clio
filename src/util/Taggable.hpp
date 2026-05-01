@@ -132,7 +132,7 @@ public:
         os << "[";
 
         if (parent_.has_value())
-            (*parent_).get().decorate(os);
+            parent_->get().decorate(os);
 
         os << tag_ << "] ";
     }

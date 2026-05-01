@@ -167,7 +167,7 @@ public:
                 .clientIp = ctx.clientIp,
                 .apiVersion = ctx.apiVersion
             };
-            auto v = (*method).process(ctx.params, context);
+            auto v = method->process(ctx.params, context);
 
             LOG(perfLog_.debug()) << ctx.tag() << " finish executing rpc `" << ctx.method << '`';
 
@@ -352,7 +352,7 @@ private:
                 .clientIp = ctx.clientIp,
                 .apiVersion = ctx.apiVersion
             };
-            auto v = (*method).process(ctx.params, context);
+            auto v = method->process(ctx.params, context);
 
             LOG(perfLog_.debug()) << ctx.tag() << " finish executing rpc `" << ctx.method << '`';
 

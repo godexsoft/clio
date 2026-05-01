@@ -38,7 +38,7 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input const& input, Context co
         ctx.yield,
         input.ledgerHash,
         input.ledgerIndex,
-        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
+        range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};

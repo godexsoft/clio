@@ -41,8 +41,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
 
     if (input.ledgerIndexMin) {
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        if ((*range).maxSequence < input.ledgerIndexMin ||
-            (*range).minSequence > input.ledgerIndexMin)
+        if (range->maxSequence < input.ledgerIndexMin || range->minSequence > input.ledgerIndexMin)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
@@ -51,8 +50,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
 
     if (input.ledgerIndexMax) {
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        if ((*range).maxSequence < input.ledgerIndexMax ||
-            (*range).minSequence > input.ledgerIndexMax)
+        if (range->maxSequence < input.ledgerIndexMax || range->minSequence > input.ledgerIndexMax)
             return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
@@ -75,13 +73,13 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
             ctx.yield,
             input.ledgerHash,
             input.ledgerIndex,
-            (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
+            range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
         );
 
         if (not expectedLgrInfo.has_value())
             return Error{expectedLgrInfo.error()};
 
-        maxIndex = minIndex = (*expectedLgrInfo).seq;
+        maxIndex = minIndex = expectedLgrInfo->seq;
     }
 
     std::optional<data::TransactionsCursor> cursor;
@@ -145,8 +143,8 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
                         txnPlusMeta.ledgerSequence, ctx.yield
                     );
                     lgrInfo) {
-                    obj[JS(close_time_iso)] = ripple::to_string_iso((*lgrInfo).closeTime);
-                    obj[JS(ledger_hash)] = ripple::strHex((*lgrInfo).hash);
+                    obj[JS(close_time_iso)] = ripple::to_string_iso(lgrInfo->closeTime);
+                    obj[JS(ledger_hash)] = ripple::strHex(lgrInfo->hash);
                 }
             }
         } else {

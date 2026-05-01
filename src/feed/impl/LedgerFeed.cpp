@@ -58,16 +58,16 @@ LedgerFeed::sub(
     ASSERT(ledgerRange.has_value(), "Ledger range must be valid");
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    auto const lgrInfo = backend->fetchLedgerBySequence((*ledgerRange).maxSequence, yield);
+    auto const lgrInfo = backend->fetchLedgerBySequence(ledgerRange->maxSequence, yield);
     ASSERT(lgrInfo.has_value(), "Ledger must be valid");
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    auto const fees = backend->fetchFees((*lgrInfo).seq, yield);
+    auto const fees = backend->fetchFees(lgrInfo->seq, yield);
     ASSERT(fees.has_value(), "Fees must be valid");
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
-    auto const range = std::to_string((*ledgerRange).minSequence) + "-" +
-        std::to_string((*ledgerRange).maxSequence);
+    auto const range =
+        std::to_string(ledgerRange->minSequence) + "-" + std::to_string(ledgerRange->maxSequence);
 
     auto pubMsg = makeLedgerPubMessage(*lgrInfo, *fees, range, 0, networkID);
     // NOLINTEND(bugprone-unchecked-optional-access)

@@ -53,7 +53,7 @@ Monitor::notifySequenceLoaded(uint32_t seq)
     }
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    (*repeatedTask_).invoke();  // force-invoke doWork immediately
+    repeatedTask_->invoke();  // force-invoke doWork immediately
 };
 
 void
@@ -114,7 +114,7 @@ Monitor::onNextSequence(uint32_t seq)
     LOG(log_.debug()) << "Notified about new sequence on the network: " << seq;
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    (*repeatedTask_).invoke();  // force-invoke immediately
+    repeatedTask_->invoke();  // force-invoke immediately
 }
 
 void

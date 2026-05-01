@@ -178,13 +178,13 @@ public:
 
         auto const lgrInfo = backend_->fetchLedgerBySequence(
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            (*range).maxSequence,
+            range->maxSequence,
             ctx.yield
         );
         if (not lgrInfo.has_value())
             return Error{Status{RippledError::rpcINTERNAL}};
 
-        auto const fees = backend_->fetchFees((*lgrInfo).seq, ctx.yield);
+        auto const fees = backend_->fetchFees(lgrInfo->seq, ctx.yield);
         if (not fees.has_value())
             return Error{Status{RippledError::rpcINTERNAL}};
 
@@ -192,12 +192,11 @@ public:
         auto const sinceEpoch =
             duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         auto const age = static_cast<int32_t>(sinceEpoch) -
-            static_cast<int32_t>((*lgrInfo).closeTime.time_since_epoch().count()) -
+            static_cast<int32_t>(lgrInfo->closeTime.time_since_epoch().count()) -
             static_cast<int32_t>(kRIPPLE_EPOCH_START);
 
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        output.info.completeLedgers =
-            fmt::format("{}-{}", (*range).minSequence, (*range).maxSequence);
+        output.info.completeLedgers = fmt::format("{}-{}", range->minSequence, range->maxSequence);
         // NOLINTEND(bugprone-unchecked-optional-access)
 
         if (ctx.isAdmin) {
@@ -223,8 +222,8 @@ public:
         }
 
         output.info.validatedLedger.age = age < 0 ? 0 : age;
-        output.info.validatedLedger.hash = ripple::strHex((*lgrInfo).hash);
-        output.info.validatedLedger.seq = (*lgrInfo).seq;
+        output.info.validatedLedger.hash = ripple::strHex(lgrInfo->hash);
+        output.info.validatedLedger.seq = lgrInfo->seq;
         output.info.validatedLedger.fees = fees;
         output.info.cache.size = backend_->cache().size();
         output.info.cache.isFull = backend_->cache().isFull();
@@ -310,9 +309,9 @@ private:
             {JS(age), validated.age},
             {JS(hash), validated.hash},
             {JS(seq), validated.seq},
-            {JS(base_fee_xrp), (*validated.fees).base.decimalXRP()},
-            {JS(reserve_base_xrp), (*validated.fees).reserve.decimalXRP()},
-            {JS(reserve_inc_xrp), (*validated.fees).increment.decimalXRP()},
+            {JS(base_fee_xrp), validated.fees->base.decimalXRP()},
+            {JS(reserve_base_xrp), validated.fees->reserve.decimalXRP()},
+            {JS(reserve_inc_xrp), validated.fees->increment.decimalXRP()},
         };
         // NOLINTEND(bugprone-unchecked-optional-access)
     }

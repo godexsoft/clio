@@ -44,7 +44,7 @@ DepositAuthorizedHandler::process(
         ctx.yield,
         input.ledgerHash,
         input.ledgerIndex,
-        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
+        range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
@@ -83,12 +83,12 @@ DepositAuthorizedHandler::process(
 
     ripple::STArray authCreds;
     if (credentialsPresent) {
-        if ((*creds).empty()) {
+        if (creds->empty()) {
             return Error{
                 Status{RippledError::rpcINVALID_PARAMS, "credential array has no elements."}
             };
         }
-        if ((*creds).size() > ripple::maxCredentialsArraySize) {
+        if (creds->size() > ripple::maxCredentialsArraySize) {
             return Error{Status{RippledError::rpcINVALID_PARAMS, "credential array too long."}};
         }
         auto const credArray = credentials::fetchCredentialArray(

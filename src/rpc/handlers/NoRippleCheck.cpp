@@ -47,7 +47,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
         ctx.yield,
         input.ledgerHash,
         input.ledgerIndex,
-        (*range).maxSequence  // NOLINT(bugprone-unchecked-optional-access)
+        range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
     if (not expectedLgrInfo.has_value())
