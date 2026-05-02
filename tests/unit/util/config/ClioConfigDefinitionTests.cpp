@@ -482,11 +482,10 @@ TEST(ClioConfigDefinitionParse, unexpectedFields)
 
     auto const configFile = ConfigFileJson{configJson};
     auto result = config.parse(configFile);
-    std::ranges::sort(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        *result,
-        [](auto const& lhs, auto const& rhs) { return lhs.error < rhs.error; }
-    );
+    ASSERT_TRUE(result.has_value());
+    std::ranges::sort(*result, [](auto const& lhs, auto const& rhs) {
+        return lhs.error < rhs.error;
+    });
     ASSERT_TRUE(result.has_value());
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
     ASSERT_EQ(result->size(), 4);

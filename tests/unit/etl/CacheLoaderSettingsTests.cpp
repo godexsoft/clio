@@ -130,7 +130,6 @@ TEST_F(CacheLoaderSettingsTest, CacheFilePathCorrectlyPropagatedThroughConfig)
     auto const settings = makeCacheLoaderSettings(cfg);
 
     ASSERT_TRUE(settings.cacheFileSettings.has_value());
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(settings.cacheFileSettings->path, kCACHE_FILE_PATH);
 }
 
@@ -153,6 +152,5 @@ TEST_F(CacheLoaderSettingsTest, MaxSequenceLagPropagatedThoughConfig)
     auto const settings = makeCacheLoaderSettings(cfg);
 
     ASSERT_TRUE(settings.cacheFileSettings.has_value());
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(settings.cacheFileSettings->maxAge, seq);
 }
