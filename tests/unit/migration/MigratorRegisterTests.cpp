@@ -73,7 +73,7 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorsStatusWhenError)
         .Times(3)
         .WillRepeatedly(testing::Return(std::nullopt));
 
-    ASSERT_TRUE(migratorRegister.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto const status = migratorRegister->getMigratorsStatus();
     EXPECT_EQ(status.size(), 3);
     EXPECT_TRUE(
@@ -102,7 +102,7 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorsStatusWhenReturnInvalidStatus)
         .Times(3)
         .WillRepeatedly(testing::Return("Invalid"));
 
-    ASSERT_TRUE(migratorRegister.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto const status = migratorRegister->getMigratorsStatus();
     EXPECT_EQ(status.size(), 3);
     EXPECT_TRUE(
@@ -134,7 +134,7 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorsStatusWhenOneMigrated)
     EXPECT_CALL(*backend_, fetchMigratorStatus("SimpleTestMigrator3", testing::_))
         .WillOnce(testing::Return("NotMigrated"));
 
-    ASSERT_TRUE(migratorRegister.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto const status = migratorRegister->getMigratorsStatus();
     EXPECT_EQ(status.size(), 3);
     EXPECT_TRUE(
@@ -164,15 +164,18 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorStatus)
     EXPECT_CALL(*backend_, fetchMigratorStatus("SimpleTestMigrator2", testing::_))
         .WillOnce(testing::Return("NotMigrated"));
 
-    ASSERT_TRUE(migratorRegister.has_value());
     EXPECT_EQ(
-        migratorRegister->getMigratorStatus("unknown"), migration::MigratorStatus::Status::NotKnown
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        migratorRegister->getMigratorStatus("unknown"),
+        migration::MigratorStatus::Status::NotKnown
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorStatus("SimpleTestMigrator"),
         migration::MigratorStatus::Status::Migrated
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorStatus("SimpleTestMigrator2"),
         migration::MigratorStatus::Status::NotMigrated
     );
@@ -184,15 +187,18 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorStatusWhenError)
         .Times(2)
         .WillRepeatedly(testing::Return(std::nullopt));
 
-    ASSERT_TRUE(migratorRegister.has_value());
     EXPECT_EQ(
-        migratorRegister->getMigratorStatus("unknown"), migration::MigratorStatus::Status::NotKnown
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        migratorRegister->getMigratorStatus("unknown"),
+        migration::MigratorStatus::Status::NotKnown
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorStatus("SimpleTestMigrator"),
         migration::MigratorStatus::Status::NotMigrated
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorStatus("SimpleTestMigrator2"),
         migration::MigratorStatus::Status::NotMigrated
     );
@@ -200,8 +206,7 @@ TEST_F(MultipleMigratorRegisterTests, GetMigratorStatusWhenError)
 
 TEST_F(MultipleMigratorRegisterTests, Names)
 {
-    ASSERT_TRUE(migratorRegister.has_value());
-
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto names = migratorRegister->getMigratorNames();
     EXPECT_EQ(names.size(), 3);
     EXPECT_TRUE(std::ranges::find(names, "SimpleTestMigrator") != names.end());
@@ -211,13 +216,15 @@ TEST_F(MultipleMigratorRegisterTests, Names)
 
 TEST_F(MultipleMigratorRegisterTests, Description)
 {
-    ASSERT_TRUE(migratorRegister.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(migratorRegister->getMigratorDescription("unknown"), "No Description");
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorDescription("SimpleTestMigrator"),
         "The migrator for version 0 -> 1"
     );
     EXPECT_EQ(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->getMigratorDescription("SimpleTestMigrator2"),
         "The migrator for version 1 -> 2"
     );
@@ -226,32 +233,39 @@ TEST_F(MultipleMigratorRegisterTests, Description)
 TEST_F(MultipleMigratorRegisterTests, RunUnknownMigrator)
 {
     EXPECT_CALL(*backend_, writeMigratorStatus(testing::_, testing::_)).Times(0);
-    EXPECT_NO_THROW(migratorRegister->runMigrator("unknown", gCfg.getObject("migration")));
+    EXPECT_NO_THROW(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        migratorRegister->runMigrator("unknown", gCfg.getObject("migration"))
+    );
 }
 
 TEST_F(MultipleMigratorRegisterTests, MigrateNormalMigrator)
 {
     EXPECT_CALL(*backend_, writeMigratorStatus("SimpleTestMigrator", "Migrated")).Times(1);
     EXPECT_NO_THROW(
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         migratorRegister->runMigrator("SimpleTestMigrator", gCfg.getObject("migration"))
     );
 }
 
 TEST_F(MultipleMigratorRegisterTests, canBlock)
 {
-    ASSERT_TRUE(migratorRegister.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator");
-    ASSERT_TRUE(canBlock);
-    EXPECT_TRUE(*canBlock);
+    EXPECT_TRUE(canBlock);
+    EXPECT_TRUE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator2");
-    ASSERT_TRUE(canBlock);
-    EXPECT_FALSE(*canBlock);
+    EXPECT_TRUE(canBlock);
+    EXPECT_FALSE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator3");
-    ASSERT_TRUE(canBlock);
-    EXPECT_FALSE(*canBlock);
+    EXPECT_TRUE(canBlock);
+    EXPECT_FALSE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("NotAMigrator");
     EXPECT_FALSE(canBlock);
 }

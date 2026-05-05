@@ -178,6 +178,7 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFileWithDeletedObjects)
 
     auto const deletedBlob = cache.getDeleted(key1, kLEDGER_SEQ - 1);
     ASSERT_TRUE(deletedBlob.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(deletedBlob.value(), objs.front().data);
 
     // Save and load
@@ -192,6 +193,7 @@ TEST_F(LedgerCacheSaveLoadTest, saveAndLoadFromFileWithDeletedObjects)
     // Verify deleted object is preserved
     auto const loadedDeletedBlob = newCache.getDeleted(key1, kLEDGER_SEQ - 1);
     ASSERT_TRUE(loadedDeletedBlob.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(loadedDeletedBlob.value(), deletedBlob);
 
     // Verify active object
