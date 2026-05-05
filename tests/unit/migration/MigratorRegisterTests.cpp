@@ -260,20 +260,20 @@ TEST_F(MultipleMigratorRegisterTests, canBlock)
     ASSERT_TRUE(migratorRegister.has_value());
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     auto canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator");
-    ASSERT_TRUE(canBlock);
+    ASSERT_TRUE(canBlock.has_value());
     EXPECT_TRUE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator2");
-    ASSERT_TRUE(canBlock);
+    ASSERT_TRUE(canBlock.has_value());
     EXPECT_FALSE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("SimpleTestMigrator3");
-    ASSERT_TRUE(canBlock);
+    ASSERT_TRUE(canBlock.has_value());
     EXPECT_FALSE(*canBlock);  // NOLINT(bugprone-unchecked-optional-access)
 
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     canBlock = migratorRegister->canMigratorBlockClio("NotAMigrator");
-    EXPECT_FALSE(canBlock);
+    EXPECT_FALSE(canBlock.has_value());
 }
