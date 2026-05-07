@@ -97,6 +97,7 @@ target_sources(
         rpc/ErrorTests.cpp
         rpc/ForwardingProxyTests.cpp
         rpc/common/CheckersTests.cpp
+        rpc/common/SpecTests.cpp
         rpc/common/SpecsTests.cpp
         rpc/common/TypesTests.cpp
         rpc/common/impl/HandlerProviderTests.cpp
