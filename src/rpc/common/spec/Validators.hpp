@@ -447,6 +447,69 @@ struct IssuerValidator {
     }
 };
 
+// Validates a {currency, issuer} object as a ripple::Issue.
+// All failures return ClioError::RpcMalformedRequest.
+// Rules: currency is required; XRP must have no issuer; non-XRP must have a valid issuer.
+struct CurrencyIssueValidator {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isObject()) {
+            return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+        }
+        auto const currFa = f.child("currency");
+        if (!currFa.present() || !currFa.isString()) {
+            return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+        }
+        ripple::Currency currency{};
+        if (!ripple::to_currency(currency, std::string{currFa.asString()})) {
+            return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+        }
+        auto const issuerFa = f.child("issuer");
+        if (ripple::isXRP(currency)) {
+            if (issuerFa.present()) {
+                return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+            }
+        } else {
+            if (!issuerFa.present() || !issuerFa.isString()) {
+                return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+            }
+            ripple::AccountID issuer;
+            if (!ripple::to_issuer(issuer, std::string{issuerFa.asString()})) {
+                return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+            }
+        }
+        return {};
+    }
+};
+
+// Converts a string field to an integer in-place.
+// No-op when field is absent or already an integer.
+// Returns rpcINVALID_PARAMS if the string looks like a float or is not numeric.
+struct ToNumberModifier {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    modify(FA& f)
+    {
+        if (!f.present() || !f.isString())
+            return {};
+        auto const sv = f.asString();
+        if (sv.find('.') != std::string_view::npos) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        int64_t val = 0;
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
+        if (ec != std::errc() || ptr != sv.data() + sv.size()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        f.set(val);
+        return {};
+    }
+};
+
 // Validates a credential_type hex string: must be non-empty and <= maxCredentialTypeLength.
 // All errors use ClioError::RpcMalformedAuthorizedCredentials.
 struct CredentialTypeValidator {
@@ -535,7 +598,9 @@ struct AuthorizeCredentialValidator {
                 }};
             }
             if (auto err = IssuerValidator::verify(issuerFa); !err) {
-                return err;
+                return std::unexpected{rpc::Status{
+                    rpc::ClioError::RpcMalformedAuthorizedCredentials, "issuer NotString"
+                }};
             }
             auto const credFa = elem.child("credential_type");
             if (!credFa.present()) {
