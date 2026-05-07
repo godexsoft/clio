@@ -31,18 +31,14 @@ struct IfType {
         if (!fa.present() || !fa.template is<T>())
             return {};
 
-        if constexpr (sizeof...(SubItems) == 0) {
-            return {};
-        } else {
-            MaybeError result{};
-            std::apply(
-                [&](auto const&... item) {
-                    ((result = callIfProcessor(item, fa), result.has_value()) && ...);
-                },
-                subItems
-            );
-            return result;
-        }
+        MaybeError result{};
+        std::apply(
+            [&](auto const&... item) {
+                (void)((result = callIfProcessor(item, fa), result.has_value()) && ...);
+            },
+            subItems
+        );
+        return result;
     }
 };
 

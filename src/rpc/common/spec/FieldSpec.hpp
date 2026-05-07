@@ -61,7 +61,7 @@ struct FieldSpec {
         MaybeError result{};
         std::apply(
             [&](auto const&... item) {
-                ((result = callIfProcessor(item, fa), result.has_value()) && ...);
+                (void)((result = callIfProcessor(item, fa), result.has_value()) && ...);
             },
             items
         );

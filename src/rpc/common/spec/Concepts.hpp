@@ -39,22 +39,64 @@ concept SomeFieldAccess = requires(T f, T const cf) {
 
 static_assert(SomeFieldAccess<BoostJsonFieldAccess>);
 
-// Validator concepts use BoostJsonFieldAccess as the archetype. Validators written
-// as templates over SomeFieldAccess satisfy the concept automatically since
-// BoostJsonFieldAccess satisfies SomeFieldAccess.
+namespace detail {
+
+// Archetype satisfying SomeFieldAccess. Used as the witness type for
+// validator/modifier/checker concepts so they aren't coupled to any backend.
+// Never instantiated; declarations only.
+struct FieldAccessArchetype {
+    [[nodiscard]] std::string_view
+    key() const noexcept;
+    [[nodiscard]] bool
+    present() const noexcept;
+    [[nodiscard]] bool
+    isInt64() const noexcept;
+    [[nodiscard]] int64_t
+    asInt64() const;
+    [[nodiscard]] bool
+    isBool() const noexcept;
+    [[nodiscard]] bool
+    asBool() const;
+    [[nodiscard]] bool
+    isString() const noexcept;
+    [[nodiscard]] std::string_view
+    asString() const;
+    [[nodiscard]] bool
+    isDouble() const noexcept;
+    [[nodiscard]] double
+    asDouble() const;
+    template <typename T>
+    [[nodiscard]] bool
+    is() const noexcept;
+    void
+    set(int64_t);
+    void set(std::string_view);
+    void
+    set(bool);
+    void
+    set(double);
+};
+
+}  // namespace detail
+
+static_assert(SomeFieldAccess<detail::FieldAccessArchetype>);
+
+// Validator concepts use detail::FieldAccessArchetype as the witness type so they
+// are decoupled from any concrete backend. Validators written as templates over
+// SomeFieldAccess satisfy these concepts automatically.
 
 template <typename T>
-concept SomeRequirement = requires(T const a, BoostJsonFieldAccess const& f) {
+concept SomeRequirement = requires(T const a, detail::FieldAccessArchetype const& f) {
     { a.verify(f) } -> std::same_as<MaybeError>;
 };
 
 template <typename T>
-concept SomeModifier = requires(T const a, BoostJsonFieldAccess& f) {
+concept SomeModifier = requires(T const a, detail::FieldAccessArchetype& f) {
     { a.modify(f) } -> std::same_as<MaybeError>;
 };
 
 template <typename T>
-concept SomeCheck = requires(T const a, BoostJsonFieldAccess const& f) {
+concept SomeCheck = requires(T const a, detail::FieldAccessArchetype const& f) {
     { a.check(f) } -> std::same_as<std::optional<Warning>>;
 };
 

@@ -5,6 +5,7 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -15,9 +16,10 @@ namespace rpc::spec {
  * @brief Non-owning view of a single resolved field, usable by validators and modifiers.
  *
  * Backends provide a concrete type satisfying SomeFieldAccess (defined in Concepts.hpp)
- * and a corresponding makeFieldAccess(JsonObject[const]&, std::string_view) factory pair
- * found via ADL. FieldSpec constructs the access object once per field; validators never
- * see the raw JSON type.
+ * and a makeFieldAccess(JsonObject[const]&, std::string_view) factory. The factory must
+ * be findable from inside namespace rpc::spec — either declare it directly in rpc::spec,
+ * or in the namespace of JsonObject so ADL can find it. FieldSpec constructs the access
+ * object once per field; validators never see the raw JSON type.
  *
  * Two constructors carry const-correctness through:
  *   - mutable ctor (from JsonObject&):       both readValue_ and writeValue_ are set
@@ -56,7 +58,11 @@ public:
     [[nodiscard]] bool
     isInt64() const noexcept
     {
-        return readValue_ != nullptr && (readValue_->is_int64() || readValue_->is_uint64());
+        return readValue_ != nullptr &&
+            (readValue_->is_int64() ||
+             (readValue_->is_uint64() &&
+              readValue_->as_uint64() <=
+                  static_cast<uint64_t>(std::numeric_limits<int64_t>::max())));
     }
 
     [[nodiscard]] int64_t
@@ -114,8 +120,9 @@ public:
             return isString();
         } else if constexpr (std::is_same_v<T, double>) {
             return isDouble();
+        } else {
+            static_assert(false, "unsupported type for is<T>()");
         }
-        return false;
     }
 
     void

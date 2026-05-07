@@ -4,6 +4,7 @@
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
 #include "rpc/common/spec/Types.hpp"
+#include "rpc/common/spec/Validators.hpp"
 
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>
@@ -12,6 +13,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <variant>
 
 using namespace rpc::spec;
@@ -597,3 +599,224 @@ TEST(RpcSpecDSL_MockBackend, DeprecatedFieldProducesWarning)
     ASSERT_EQ(warnings.size(), 1u);
     EXPECT_EQ(warnings[0].field, "ident");
 }
+
+// ============================================================================
+// check() must never mutate — even when the spec contains modifiers.
+// ============================================================================
+
+TEST(RpcSpecDSL, CheckDoesNotInvokeModifiers)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("limit", type<int64_t>, clamp(int64_t{10}, int64_t{400})),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "limit": 2 })JSON");
+    auto const warnings = kSPEC.check(request);
+    EXPECT_TRUE(warnings.empty());
+    EXPECT_EQ(request.as_object().at("limit").as_int64(), 2);  // unchanged
+}
+
+// ============================================================================
+// Non-object root: every field appears absent; required fields fire.
+// ============================================================================
+
+TEST(RpcSpecDSL, NonObjectRootTreatsAllFieldsAsAbsent)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("limit", type<int64_t>),  // optional — absent is fine
+    };
+
+    auto arr = boost::json::parse(R"JSON([1, 2, 3])JSON");
+    EXPECT_TRUE(kSPEC.process(arr).has_value());
+
+    auto scalar = boost::json::parse(R"JSON(42)JSON");
+    EXPECT_TRUE(kSPEC.process(scalar).has_value());
+}
+
+TEST(RpcSpecDSL, NonObjectRootWithRequiredFieldFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required),
+    };
+
+    auto arr = boost::json::parse(R"JSON([])JSON");
+    auto const result = kSPEC.process(arr);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "account: required field missing");
+}
+
+// ============================================================================
+// Boundary cases: empty spec, empty field.
+// ============================================================================
+
+TEST(RpcSpecDSL, EmptySpecAcceptsEverything)
+{
+    static constexpr auto kSPEC = RpcSpec{};
+
+    auto request = boost::json::parse(R"JSON({ "anything": 42 })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+    EXPECT_TRUE(kSPEC.check(request).empty());
+}
+
+TEST(RpcSpecDSL, FieldWithNoItemsIsNoOp)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("anything") | required,  // pipe-style starts from zero-item field
+    };
+
+    auto request = boost::json::parse(R"JSON({ "anything": 42 })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+// ============================================================================
+// Type<T> direct coverage for every supported T.
+// ============================================================================
+
+TEST(RpcSpecDSL, TypeStringDirect)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("name", type<std::string>),
+    };
+
+    auto good = boost::json::parse(R"JSON({ "name": "alice" })JSON");
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+
+    auto bad = boost::json::parse(R"JSON({ "name": 42 })JSON");
+    auto const result = kSPEC.process(bad);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "name: expected string");
+}
+
+TEST(RpcSpecDSL, TypeDoubleAcceptsDoubleAndRejectsOthers)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("ratio", type<double>),
+    };
+
+    auto good = boost::json::parse(R"JSON({ "ratio": 1.5 })JSON");
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+
+    auto bad = boost::json::parse(R"JSON({ "ratio": "high" })JSON");
+    auto const result = kSPEC.process(bad);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "ratio: expected double");
+
+    auto absent = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC.process(absent).has_value());
+}
+
+// ============================================================================
+// Double-typed Min and Clamp — proves the new requires-clause supports double.
+// ============================================================================
+
+TEST(RpcSpecDSL, MinDouble)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("ratio", type<double>, min(0.5)),
+    };
+
+    auto bad = boost::json::parse(R"JSON({ "ratio": 0.1 })JSON");
+    auto const result = kSPEC.process(bad);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "ratio: value below minimum");
+
+    auto good = boost::json::parse(R"JSON({ "ratio": 1.0 })JSON");
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+}
+
+TEST(RpcSpecDSL, ClampDouble)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("ratio", type<double>, clamp(0.0, 1.0)),
+    };
+
+    auto tooLow = boost::json::parse(R"JSON({ "ratio": -0.5 })JSON");
+    ASSERT_TRUE(kSPEC.process(tooLow).has_value());
+    EXPECT_DOUBLE_EQ(tooLow.as_object().at("ratio").as_double(), 0.0);
+
+    auto tooHigh = boost::json::parse(R"JSON({ "ratio": 1.5 })JSON");
+    ASSERT_TRUE(kSPEC.process(tooHigh).has_value());
+    EXPECT_DOUBLE_EQ(tooHigh.as_object().at("ratio").as_double(), 1.0);
+}
+
+// ============================================================================
+// uint64 boundary: BoostJsonFieldAccess::isInt64() guards against overflow.
+// Values > INT64_MAX must not satisfy Type<int64_t>.
+// ============================================================================
+
+TEST(RpcSpecDSL, Uint64AboveInt64MaxFailsTypeInt64)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("n", type<int64_t>),
+    };
+
+    // 2^63 — one above INT64_MAX, parsed as uint64 by boost::json.
+    auto request = boost::json::parse(R"JSON({ "n": 9223372036854775808 })JSON");
+    auto const result = kSPEC.process(request);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "n: expected integer");
+}
+
+TEST(RpcSpecDSL, Uint64WithinInt64RangePassesTypeInt64)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("n", type<int64_t>, min(int64_t{0})),
+    };
+
+    // INT64_MAX exactly — boost::json may parse as uint64; must still be accepted.
+    auto request = boost::json::parse(R"JSON({ "n": 9223372036854775807 })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+// ============================================================================
+// Pipe-style IfType with sub-items.
+// ============================================================================
+
+TEST(RpcSpecDSL_IfType, PipeStyleWithSubItems)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("limit") | ifType<int64_t>(min(int64_t{1}), clamp(int64_t{10}, int64_t{400})),
+    };
+
+    auto low = boost::json::parse(R"JSON({ "limit": 5 })JSON");
+    ASSERT_TRUE(kSPEC.process(low).has_value());
+    EXPECT_EQ(low.as_object().at("limit").as_int64(), 10);
+
+    auto bad = boost::json::parse(R"JSON({ "limit": 0 })JSON");
+    EXPECT_FALSE(kSPEC.process(bad).has_value());
+}
+
+// ============================================================================
+// Consteval smoke test — proves the spec is genuinely constant-evaluable.
+// ============================================================================
+
+TEST(RpcSpecDSL, SpecIsConstantEvaluable)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("a", required),
+        field("b", type<int64_t>, min(int64_t{1})),
+        field("c", deprecated),
+    };
+    static constexpr auto kFIELD_COUNT = std::tuple_size_v<decltype(kSPEC.fields)>;
+    static_assert(kFIELD_COUNT == 3);
+    EXPECT_EQ(kFIELD_COUNT, 3u);
+}
+
+// ============================================================================
+// Concept satisfaction — every shipped validator is recognised by the
+// SomeRequirement / SomeModifier / SomeCheck concepts. The concepts witness
+// against a private archetype (not BoostJsonFieldAccess), so satisfaction
+// proves the validators are genuinely backend-agnostic.
+// ============================================================================
+
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Required>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Type<int64_t>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Type<bool>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Type<std::string>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Type<double>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Min<int64_t>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::Min<double>>);
+static_assert(rpc::spec::SomeRequirement<rpc::spec::AccountFormat>);
+static_assert(rpc::spec::SomeModifier<rpc::spec::Clamp<int64_t>>);
+static_assert(rpc::spec::SomeModifier<rpc::spec::Clamp<double>>);
+static_assert(rpc::spec::SomeCheck<rpc::spec::Deprecated>);

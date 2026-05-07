@@ -15,9 +15,6 @@ struct RpcSpec {
     consteval RpcSpec(Fields... f) : fields{f...}
     {
     }
-    consteval explicit RpcSpec(std::tuple<Fields...> t) : fields{t}
-    {
-    }
 
     template <typename JsonObject>
     [[nodiscard]] MaybeError
@@ -25,7 +22,7 @@ struct RpcSpec {
     {
         MaybeError result{};
         std::apply(
-            [&](auto const&... f) { ((result = f.process(obj), result.has_value()) && ...); },
+            [&](auto const&... f) { (void)((result = f.process(obj), result.has_value()) && ...); },
             fields
         );
         return result;

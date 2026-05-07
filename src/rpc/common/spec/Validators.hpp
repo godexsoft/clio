@@ -69,7 +69,22 @@ struct Type<std::string> {
     }
 };
 
+template <>
+struct Type<double> {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isDouble())
+            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected double"}};
+        return {};
+    }
+};
+
 template <typename T>
+    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, double>)
 struct Min {
     T bound;
     consteval explicit Min(T v) : bound{v}
@@ -88,6 +103,12 @@ struct Min {
             if (f.asInt64() < bound) {
                 return std::unexpected{rpc::Status{std::string{f.key()} + ": value below minimum"}};
             }
+        } else if constexpr (std::is_same_v<T, double>) {
+            if (!f.isDouble())
+                return {};
+            if (f.asDouble() < bound) {
+                return std::unexpected{rpc::Status{std::string{f.key()} + ": value below minimum"}};
+            }
         }
         return {};
     }
@@ -97,6 +118,7 @@ template <typename T>
 Min(T) -> Min<T>;
 
 template <typename T>
+    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, double>)
 struct Clamp {
     T lo, hi;
     consteval Clamp(T l, T h) : lo{l}, hi{h}
@@ -113,6 +135,10 @@ struct Clamp {
             if (!f.isInt64())
                 return {};
             f.set(std::clamp(f.asInt64(), lo, hi));
+        } else if constexpr (std::is_same_v<T, double>) {
+            if (!f.isDouble())
+                return {};
+            f.set(std::clamp(f.asDouble(), lo, hi));
         }
         return {};
     }
