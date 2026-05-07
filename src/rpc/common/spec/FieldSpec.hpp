@@ -4,32 +4,30 @@
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/Types.hpp"
 
-#include <boost/json/value.hpp>
-
 #include <string_view>
 #include <tuple>
 
 namespace rpc::spec {
 
-template <typename Item>
+template <typename Item, typename FA>
 MaybeError
-callIfProcessor(Item const& item, boost::json::value& val, std::string_view key)
+callIfProcessor(Item const& item, FA& fa)
 {
     if constexpr (SomeRequirement<Item>) {
-        return item.verify(val, key);
+        return item.verify(fa);
     } else if constexpr (SomeModifier<Item>) {
-        return item.modify(val, key);
+        return item.modify(fa);
     } else {
         return {};
     }
 }
 
-template <typename Item>
+template <typename Item, typename FA>
 void
-callIfChecker(Item const& item, boost::json::value const& val, std::string_view key, Warnings& out)
+callIfChecker(Item const& item, FA const& fa, Warnings& out)
 {
     if constexpr (SomeCheck<Item>) {
-        if (auto w = item.check(val, key))
+        if (auto w = item.check(fa))
             out.push_back(std::move(*w));
     }
 }
@@ -55,24 +53,28 @@ struct FieldSpec {
         );
     }
 
+    template <typename JsonObject>
     [[nodiscard]] MaybeError
-    process(boost::json::value& val) const
+    process(JsonObject& obj) const
     {
+        auto fa = makeFieldAccess(obj, key);
         MaybeError result{};
         std::apply(
             [&](auto const&... item) {
-                ((result = callIfProcessor(item, val, key), result.has_value()) && ...);
+                ((result = callIfProcessor(item, fa), result.has_value()) && ...);
             },
             items
         );
         return result;
     }
 
+    template <typename JsonObject>
     [[nodiscard]] Warnings
-    check(boost::json::value const& val) const
+    check(JsonObject const& obj) const
     {
+        auto fa = makeFieldAccess(obj, key);
         Warnings out;
-        std::apply([&](auto const&... item) { (callIfChecker(item, val, key, out), ...); }, items);
+        std::apply([&](auto const&... item) { (callIfChecker(item, fa, out), ...); }, items);
         return out;
     }
 };

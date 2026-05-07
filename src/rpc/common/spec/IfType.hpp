@@ -5,36 +5,14 @@
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
-#include <boost/json/value.hpp>
-
-#include <cstdint>
-#include <string>
-#include <string_view>
 #include <tuple>
-#include <type_traits>
 
 namespace rpc::spec {
 
-template <typename T>
-bool
-jsonTypeMatches(boost::json::value const& fieldVal)
-{
-    if constexpr (std::is_same_v<T, int64_t>) {
-        return fieldVal.is_int64() || fieldVal.is_uint64();
-    } else if constexpr (std::is_same_v<T, bool>) {
-        return fieldVal.is_bool();
-    } else if constexpr (std::is_same_v<T, std::string>) {
-        return fieldVal.is_string();
-    } else if constexpr (std::is_same_v<T, double>) {
-        return fieldVal.is_double();
-    }
-    return false;
-}
-
 /**
- * @brief Runs sub-processors only when the field's JSON type matches T at runtime.
+ * @brief Runs sub-processors only when the field's runtime type matches T.
  *
- * Satisfies SomeModifier so it receives a mutable reference, enabling both
+ * Satisfies SomeModifier so it receives a mutable field access, enabling both
  * requirement and modifier sub-items. Checkers are excluded from sub-items;
  * hang them directly on the FieldSpec if conditional warning emission is needed.
  */
@@ -46,15 +24,11 @@ struct IfType {
     {
     }
 
+    template <SomeFieldAccess FA>
     [[nodiscard]] MaybeError
-    modify(boost::json::value& val, std::string_view key) const
+    modify(FA& fa) const
     {
-        if (!val.is_object())
-            return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
-            return {};
-        if (!jsonTypeMatches<T>(it->value()))
+        if (!fa.present() || !fa.template is<T>())
             return {};
 
         if constexpr (sizeof...(SubItems) == 0) {
@@ -63,7 +37,7 @@ struct IfType {
             MaybeError result{};
             std::apply(
                 [&](auto const&... item) {
-                    ((result = callIfProcessor(item, val, key), result.has_value()) && ...);
+                    ((result = callIfProcessor(item, fa), result.has_value()) && ...);
                 },
                 subItems
             );

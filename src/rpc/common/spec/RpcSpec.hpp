@@ -4,8 +4,6 @@
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
-#include <boost/json/value.hpp>
-
 #include <tuple>
 
 namespace rpc::spec {
@@ -21,25 +19,27 @@ struct RpcSpec {
     {
     }
 
+    template <typename JsonObject>
     [[nodiscard]] MaybeError
-    process(boost::json::value& val) const
+    process(JsonObject& obj) const
     {
         MaybeError result{};
         std::apply(
-            [&](auto const&... f) { ((result = f.process(val), result.has_value()) && ...); },
+            [&](auto const&... f) { ((result = f.process(obj), result.has_value()) && ...); },
             fields
         );
         return result;
     }
 
+    template <typename JsonObject>
     [[nodiscard]] Warnings
-    check(boost::json::value const& val) const
+    check(JsonObject const& obj) const
     {
         Warnings out;
         std::apply(
             [&](auto const&... f) {
                 auto collect = [&](auto const& fieldSpec) {
-                    auto fw = fieldSpec.check(val);
+                    auto fw = fieldSpec.check(obj);
                     out.insert(out.end(), fw.begin(), fw.end());
                 };
                 (collect(f), ...);

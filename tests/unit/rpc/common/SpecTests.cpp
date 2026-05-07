@@ -1,13 +1,18 @@
 #include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Types.hpp"
 
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <map>
 #include <string>
+#include <string_view>
+#include <variant>
 
 using namespace rpc::spec;
 
@@ -39,7 +44,7 @@ TEST(RpcSpecDSL, MissingRequiredFieldFails)
 
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), "account: required field missing");
+    EXPECT_EQ(result.error().message, "account: required field missing");
 }
 
 TEST(RpcSpecDSL, WrongTypeFails)
@@ -56,7 +61,7 @@ TEST(RpcSpecDSL, WrongTypeFails)
 
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), "limit: expected integer");
+    EXPECT_EQ(result.error().message, "limit: expected integer");
 }
 
 TEST(RpcSpecDSL, WrongBoolTypeFails)
@@ -235,7 +240,7 @@ TEST(RpcSpecDSL_IfType, RunsSubValidatorsOnTypeMatch)
     auto bad = boost::json::parse(R"JSON({ "value": 0 })JSON");
     auto const result = kSPEC.process(bad);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), "value: value below minimum");
+    EXPECT_EQ(result.error().message, "value: value below minimum");
 
     auto good = boost::json::parse(R"JSON({ "value": 5 })JSON");
     EXPECT_TRUE(kSPEC.process(good).has_value());
@@ -300,7 +305,7 @@ TEST(RpcSpecDSL_IfType, StopsAtFirstSubValidatorError)
     auto request = boost::json::parse(R"JSON({ "value": 3 })JSON");
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), "value: value below minimum");
+    EXPECT_EQ(result.error().message, "value: value below minimum");
 }
 
 TEST(RpcSpecDSL_IfType, UnionTypeLedgerIndex)
@@ -353,7 +358,7 @@ TEST(RpcSpecDSL_IfType, CombinedWithOtherValidators)
     auto noLimit = boost::json::parse(R"JSON({ "account": "rXXX" })JSON");
     auto const result = kSPEC.process(noLimit);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), "limit: required field missing");
+    EXPECT_EQ(result.error().message, "limit: required field missing");
 
     auto strLimit = boost::json::parse(R"JSON({ "account": "rXXX", "limit": "max" })JSON");
     EXPECT_TRUE(kSPEC.process(strLimit).has_value());
@@ -365,4 +370,230 @@ TEST(RpcSpecDSL_IfType, CombinedWithOtherValidators)
     auto low = boost::json::parse(R"JSON({ "account": "rXXX", "limit": 2 })JSON");
     ASSERT_TRUE(kSPEC.process(low).has_value());
     EXPECT_EQ(low.as_object().at("limit").as_int64(), 10);
+}
+
+// ============================================================================
+// Mock backend — proves the abstraction works with a non-boost::json type.
+//
+// MockObject is a plain std::map<string, variant>. MockFieldAccess satisfies
+// SomeFieldAccess. makeFieldAccess is found via ADL on MockObject (same namespace).
+// ============================================================================
+
+namespace rpc::spec {
+
+using MockValue = std::variant<int64_t, bool, std::string, double>;
+
+struct MockObject {
+    std::map<std::string, MockValue> fields;
+};
+
+class MockFieldAccess {
+    MockValue const* readValue_;
+    MockValue* writeValue_;
+    std::string_view key_;
+
+public:
+    MockFieldAccess(MockValue* v, std::string_view k) noexcept
+        : readValue_{v}, writeValue_{v}, key_{k}
+    {
+    }
+
+    MockFieldAccess(MockValue const* v, std::string_view k) noexcept
+        : readValue_{v}, writeValue_{nullptr}, key_{k}
+    {
+    }
+
+    [[nodiscard]] std::string_view
+    key() const noexcept
+    {
+        return key_;
+    }
+    [[nodiscard]] bool
+    present() const noexcept
+    {
+        return readValue_ != nullptr;
+    }
+
+    [[nodiscard]] bool
+    isInt64() const noexcept
+    {
+        return readValue_ != nullptr && std::holds_alternative<int64_t>(*readValue_);
+    }
+    [[nodiscard]] int64_t
+    asInt64() const
+    {
+        return std::get<int64_t>(*readValue_);
+    }
+
+    [[nodiscard]] bool
+    isBool() const noexcept
+    {
+        return readValue_ != nullptr && std::holds_alternative<bool>(*readValue_);
+    }
+    [[nodiscard]] bool
+    asBool() const
+    {
+        return std::get<bool>(*readValue_);
+    }
+
+    [[nodiscard]] bool
+    isString() const noexcept
+    {
+        return readValue_ != nullptr && std::holds_alternative<std::string>(*readValue_);
+    }
+    [[nodiscard]] std::string_view
+    asString() const
+    {
+        return std::get<std::string>(*readValue_);
+    }
+
+    [[nodiscard]] bool
+    isDouble() const noexcept
+    {
+        return readValue_ != nullptr && std::holds_alternative<double>(*readValue_);
+    }
+    [[nodiscard]] double
+    asDouble() const
+    {
+        return std::get<double>(*readValue_);
+    }
+
+    template <typename T>
+    [[nodiscard]] bool
+    is() const noexcept
+    {
+        return readValue_ != nullptr && std::holds_alternative<T>(*readValue_);
+    }
+
+    void
+    set(int64_t v)
+    {
+        *writeValue_ = v;
+    }
+    void
+    set(std::string_view v)
+    {
+        *writeValue_ = std::string{v};
+    }
+    void
+    set(bool v)
+    {
+        *writeValue_ = v;
+    }
+    void
+    set(double v)
+    {
+        *writeValue_ = v;
+    }
+};
+
+static_assert(SomeFieldAccess<MockFieldAccess>);
+
+[[nodiscard]] inline MockFieldAccess
+makeFieldAccess(MockObject& obj, std::string_view key)
+{
+    auto it = obj.fields.find(std::string{key});
+    return it != obj.fields.end() ? MockFieldAccess{&it->second, key}
+                                  : MockFieldAccess{static_cast<MockValue*>(nullptr), key};
+}
+
+[[nodiscard]] inline MockFieldAccess
+makeFieldAccess(MockObject const& obj, std::string_view key)
+{
+    auto it = obj.fields.find(std::string{key});
+    return it != obj.fields.end() ? MockFieldAccess{&it->second, key}
+                                  : MockFieldAccess{static_cast<MockValue const*>(nullptr), key};
+}
+
+}  // namespace rpc::spec
+
+TEST(RpcSpecDSL_MockBackend, ValidRequestPasses)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required, account),
+        field("limit", type<int64_t>, min(int64_t{1})),
+    };
+
+    MockObject obj{.fields = {{"account", std::string{"rXXX"}}, {"limit", int64_t{10}}}};
+    EXPECT_TRUE(kSPEC.process(obj).has_value());
+}
+
+TEST(RpcSpecDSL_MockBackend, MissingRequiredFieldFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required),
+    };
+
+    MockObject obj{};
+    auto const result = kSPEC.process(obj);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "account: required field missing");
+}
+
+TEST(RpcSpecDSL_MockBackend, WrongTypeFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("limit", type<int64_t>),
+    };
+
+    MockObject obj{.fields = {{"limit", std::string{"not-a-number"}}}};
+    auto const result = kSPEC.process(obj);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "limit: expected integer");
+}
+
+TEST(RpcSpecDSL_MockBackend, ClampMutatesValueInPlace)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("limit", type<int64_t>, clamp(int64_t{10}, int64_t{400})),
+    };
+
+    MockObject tooLow{.fields = {{"limit", int64_t{2}}}};
+    ASSERT_TRUE(kSPEC.process(tooLow).has_value());
+    EXPECT_EQ(std::get<int64_t>(tooLow.fields.at("limit")), 10);
+
+    MockObject tooHigh{.fields = {{"limit", int64_t{9999}}}};
+    ASSERT_TRUE(kSPEC.process(tooHigh).has_value());
+    EXPECT_EQ(std::get<int64_t>(tooHigh.fields.at("limit")), 400);
+}
+
+TEST(RpcSpecDSL_MockBackend, IfTypeSkipsOnMismatch)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("value", ifType<int64_t>(min(int64_t{1}))),
+    };
+
+    // string value — int64 branch must not fire
+    MockObject obj{.fields = {{"value", std::string{"hello"}}}};
+    EXPECT_TRUE(kSPEC.process(obj).has_value());
+}
+
+TEST(RpcSpecDSL_MockBackend, IfTypeRunsOnMatch)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("value", ifType<int64_t>(min(int64_t{1}))),
+    };
+
+    MockObject bad{.fields = {{"value", int64_t{0}}}};
+    auto const result = kSPEC.process(bad);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "value: value below minimum");
+
+    MockObject good{.fields = {{"value", int64_t{5}}}};
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+}
+
+TEST(RpcSpecDSL_MockBackend, DeprecatedFieldProducesWarning)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required),
+        field("ident", deprecated),
+    };
+
+    MockObject const obj{
+        .fields = {{"account", std::string{"rXXX"}}, {"ident", std::string{"old"}}}
+    };
+    auto const warnings = kSPEC.check(obj);
+    ASSERT_EQ(warnings.size(), 1u);
+    EXPECT_EQ(warnings[0].field, "ident");
 }

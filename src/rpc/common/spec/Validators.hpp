@@ -1,25 +1,25 @@
 /** @file */
 #pragma once
 
+#include "rpc/Errors.hpp"
+#include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/Types.hpp"
-
-#include <boost/json/value.hpp>
 
 #include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <type_traits>
 
 namespace rpc::spec {
 
 struct Required {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
-    verify(boost::json::value const& val, std::string_view key)
+    verify(FA const& f)
     {
-        if (!val.is_object() || !val.as_object().contains(key))
-            return std::unexpected{std::string{key} + ": required field missing"};
+        if (!f.present())
+            return std::unexpected{rpc::Status{std::string{f.key()} + ": required field missing"}};
         return {};
     }
 };
@@ -29,48 +29,42 @@ struct Type;
 
 template <>
 struct Type<int64_t> {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
-    verify(boost::json::value const& val, std::string_view key)
+    verify(FA const& f)
     {
-        if (!val.is_object())
+        if (!f.present())
             return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
-            return {};
-        if (!it->value().is_int64() && !it->value().is_uint64())
-            return std::unexpected{std::string{key} + ": expected integer"};
+        if (!f.isInt64())
+            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected integer"}};
         return {};
     }
 };
 
 template <>
 struct Type<bool> {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
-    verify(boost::json::value const& val, std::string_view key)
+    verify(FA const& f)
     {
-        if (!val.is_object())
+        if (!f.present())
             return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
-            return {};
-        if (!it->value().is_bool())
-            return std::unexpected{std::string{key} + ": expected bool"};
+        if (!f.isBool())
+            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected bool"}};
         return {};
     }
 };
 
 template <>
 struct Type<std::string> {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
-    verify(boost::json::value const& val, std::string_view key)
+    verify(FA const& f)
     {
-        if (!val.is_object())
+        if (!f.present())
             return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
-            return {};
-        if (!it->value().is_string())
-            return std::unexpected{std::string{key} + ": expected string"};
+        if (!f.isString())
+            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected string"}};
         return {};
     }
 };
@@ -82,22 +76,18 @@ struct Min {
     {
     }
 
+    template <SomeFieldAccess FA>
     [[nodiscard]] MaybeError
-    verify(boost::json::value const& val, std::string_view key) const
+    verify(FA const& f) const
     {
-        if (!val.is_object())
-            return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
+        if (!f.present())
             return {};
         if constexpr (std::is_same_v<T, int64_t>) {
-            if (!it->value().is_int64() && !it->value().is_uint64())
+            if (!f.isInt64())
                 return {};
-            int64_t const v = it->value().is_int64()
-                ? it->value().as_int64()
-                : static_cast<int64_t>(it->value().as_uint64());
-            if (v < bound)
-                return std::unexpected{std::string{key} + ": value below minimum"};
+            if (f.asInt64() < bound) {
+                return std::unexpected{rpc::Status{std::string{f.key()} + ": value below minimum"}};
+            }
         }
         return {};
     }
@@ -113,21 +103,16 @@ struct Clamp {
     {
     }
 
+    template <SomeFieldAccess FA>
     [[nodiscard]] MaybeError
-    modify(boost::json::value& val, std::string_view key) const
+    modify(FA& f) const
     {
-        if (!val.is_object())
-            return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
+        if (!f.present())
             return {};
         if constexpr (std::is_same_v<T, int64_t>) {
-            if (!it->value().is_int64() && !it->value().is_uint64())
+            if (!f.isInt64())
                 return {};
-            int64_t const v = it->value().is_int64()
-                ? it->value().as_int64()
-                : static_cast<int64_t>(it->value().as_uint64());
-            it->value() = std::clamp(v, lo, hi);
+            f.set(std::clamp(f.asInt64(), lo, hi));
         }
         return {};
     }
@@ -137,30 +122,32 @@ template <typename T>
 Clamp(T, T) -> Clamp<T>;
 
 struct Deprecated {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static std::optional<Warning>
-    check(boost::json::value const& val, std::string_view key)
+    check(FA const& f)
     {
-        if (val.is_object() && val.as_object().contains(key))
-            return Warning{.field = std::string{key}, .message = "field is deprecated"};
+        if (f.present())
+            return Warning{.field = std::string{f.key()}, .message = "field is deprecated"};
         return std::nullopt;
     }
 };
 
 struct AccountFormat {
+    template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
-    verify(boost::json::value const& val, std::string_view key)
+    verify(FA const& f)
     {
-        if (!val.is_object())
+        if (!f.present())
             return {};
-        auto it = val.as_object().find(key);
-        if (it == val.as_object().end())
-            return {};
-        if (!it->value().is_string())
-            return std::unexpected{std::string{key} + ": expected string for account"};
-        auto const sv = it->value().as_string();
+        if (!f.isString()) {
+            return std::unexpected{
+                rpc::Status{std::string{f.key()} + ": expected string for account"}
+            };
+        }
+        auto const sv = f.asString();
         if (sv.empty() || sv.front() != 'r') {
             return std::unexpected{
-                std::string{key} + ": not a valid account (must start with 'r')"
+                rpc::Status{std::string{f.key()} + ": not a valid account (must start with 'r')"}
             };
         }
         return {};
