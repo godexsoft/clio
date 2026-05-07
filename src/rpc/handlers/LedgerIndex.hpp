@@ -1,20 +1,16 @@
 #pragma once
 #include "data/BackendInterface.hpp"
-#include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/Aliases.hpp"
-#include "rpc/common/spec/FieldSpec.hpp"
-#include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace rpc {
 
@@ -62,17 +58,7 @@ public:
      * @return The spec for the given apiVersion
      */
     static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        using namespace spec;
-
-        static constexpr auto kRPC_SPEC = spec::RpcSpec{
-            field(JS(date))      //
-            | type<std::string>  //
-            | timeFormat(kDATE_FORMAT)
-        };
-        return kRPC_SPEC;
-    }
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the LedgerIndex command

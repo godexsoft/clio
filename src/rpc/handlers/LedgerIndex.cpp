@@ -3,6 +3,10 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/TimeUtils.hpp"
 
@@ -19,6 +23,19 @@
 #include <string>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+LedgerIndexHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(date))      //
+        | type<std::string>  //
+        | timeFormat(kDATE_FORMAT)
+    };
+    return kRPC_SPEC;
+}
 
 LedgerIndexHandler::Result
 LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context const& ctx) const
