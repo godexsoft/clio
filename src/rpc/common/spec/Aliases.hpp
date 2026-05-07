@@ -1,9 +1,13 @@
 /** @file */
 #pragma once
 
+#include "rpc/Errors.hpp"
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/IfType.hpp"
 #include "rpc/common/spec/Validators.hpp"
+#include "rpc/common/spec/WithCustomError.hpp"
+
+#include <string_view>
 
 namespace rpc::spec {
 
@@ -40,6 +44,31 @@ consteval auto
 ifType(SubItems... items)
 {
     return IfType<T, SubItems...>{items...};
+}
+
+/**
+ * @brief Factory for WithCustomError — wraps a requirement or modifier with a custom error.
+ *
+ * Examples:
+ *   spec::withCustomError(spec::required, rpc::RippledError::rpcINVALID_PARAMS)
+ *   spec::withCustomError(spec::required, rpc::RippledError::rpcINVALID_PARAMS, "missing marker")
+ */
+template <typename Wrapped>
+consteval auto
+withCustomError(Wrapped w, rpc::CombinedError code, std::string_view message = {})
+{
+    return WithCustomError<Wrapped>{w, code, message};
+}
+
+/**
+ * @brief Factory for TimeFormatValidator.
+ *
+ * Example: spec::timeFormat("%Y-%m-%dT%TZ")
+ */
+consteval auto
+timeFormat(std::string_view format)
+{
+    return TimeFormatValidator{format};
 }
 
 }  // namespace rpc::spec

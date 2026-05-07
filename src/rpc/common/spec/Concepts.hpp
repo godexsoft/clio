@@ -21,6 +21,8 @@ concept SomeFieldAccess = requires(T f, T const cf) {
     { cf.present() } -> std::convertible_to<bool>;
     { cf.isInt64() } -> std::convertible_to<bool>;
     { cf.asInt64() } -> std::convertible_to<int64_t>;
+    { cf.isUint32() } -> std::convertible_to<bool>;
+    { cf.asUint32() } -> std::convertible_to<uint32_t>;
     { cf.isBool() } -> std::convertible_to<bool>;
     { cf.asBool() } -> std::convertible_to<bool>;
     { cf.isString() } -> std::convertible_to<bool>;
@@ -28,10 +30,12 @@ concept SomeFieldAccess = requires(T f, T const cf) {
     { cf.isDouble() } -> std::convertible_to<bool>;
     { cf.asDouble() } -> std::convertible_to<double>;
     { cf.template is<int64_t>() } -> std::convertible_to<bool>;
+    { cf.template is<uint32_t>() } -> std::convertible_to<bool>;
     { cf.template is<bool>() } -> std::convertible_to<bool>;
     { cf.template is<std::string>() } -> std::convertible_to<bool>;
     { cf.template is<double>() } -> std::convertible_to<bool>;
     { f.set(int64_t{}) };
+    { f.set(uint32_t{}) };
     { f.set(std::string_view{}) };
     { f.set(bool{}) };
     { f.set(double{}) };
@@ -54,6 +58,10 @@ struct FieldAccessArchetype {
     [[nodiscard]] int64_t
     asInt64() const;
     [[nodiscard]] bool
+    isUint32() const noexcept;
+    [[nodiscard]] uint32_t
+    asUint32() const;
+    [[nodiscard]] bool
     isBool() const noexcept;
     [[nodiscard]] bool
     asBool() const;
@@ -70,6 +78,8 @@ struct FieldAccessArchetype {
     is() const noexcept;
     void
     set(int64_t);
+    void
+    set(uint32_t);
     void set(std::string_view);
     void
     set(bool);

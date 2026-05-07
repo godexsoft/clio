@@ -2,13 +2,16 @@
 #pragma once
 
 #include "rpc/Errors.hpp"
+#include "rpc/RPCHelpers.hpp"
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/Types.hpp"
+#include "util/TimeUtils.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace rpc::spec {
@@ -19,7 +22,10 @@ struct Required {
     verify(FA const& f)
     {
         if (!f.present())
-            return std::unexpected{rpc::Status{std::string{f.key()} + ": required field missing"}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS,
+                "Required field '" + std::string{f.key()} + "' missing"
+            }};
         return {};
     }
 };
@@ -36,7 +42,7 @@ struct Type<int64_t> {
         if (!f.present())
             return {};
         if (!f.isInt64())
-            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected integer"}};
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         return {};
     }
 };
@@ -50,7 +56,7 @@ struct Type<bool> {
         if (!f.present())
             return {};
         if (!f.isBool())
-            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected bool"}};
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         return {};
     }
 };
@@ -64,7 +70,7 @@ struct Type<std::string> {
         if (!f.present())
             return {};
         if (!f.isString())
-            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected string"}};
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         return {};
     }
 };
@@ -78,13 +84,27 @@ struct Type<double> {
         if (!f.present())
             return {};
         if (!f.isDouble())
-            return std::unexpected{rpc::Status{std::string{f.key()} + ": expected double"}};
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        return {};
+    }
+};
+
+template <>
+struct Type<uint32_t> {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isUint32())
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         return {};
     }
 };
 
 template <typename T>
-    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, double>)
+    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
 struct Min {
     T bound;
     consteval explicit Min(T v) : bound{v}
@@ -101,13 +121,19 @@ struct Min {
             if (!f.isInt64())
                 return {};
             if (f.asInt64() < bound) {
-                return std::unexpected{rpc::Status{std::string{f.key()} + ": value below minimum"}};
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            }
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+            if (!f.isUint32())
+                return {};
+            if (f.asUint32() < bound) {
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
             }
         } else if constexpr (std::is_same_v<T, double>) {
             if (!f.isDouble())
                 return {};
             if (f.asDouble() < bound) {
-                return std::unexpected{rpc::Status{std::string{f.key()} + ": value below minimum"}};
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
             }
         }
         return {};
@@ -118,7 +144,7 @@ template <typename T>
 Min(T) -> Min<T>;
 
 template <typename T>
-    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, double>)
+    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
 struct Clamp {
     T lo, hi;
     consteval Clamp(T l, T h) : lo{l}, hi{h}
@@ -135,6 +161,10 @@ struct Clamp {
             if (!f.isInt64())
                 return {};
             f.set(std::clamp(f.asInt64(), lo, hi));
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+            if (!f.isUint32())
+                return {};
+            f.set(static_cast<uint32_t>(std::clamp(f.asUint32(), lo, hi)));
         } else if constexpr (std::is_same_v<T, double>) {
             if (!f.isDouble())
                 return {};
@@ -165,17 +195,36 @@ struct AccountFormat {
     {
         if (!f.present())
             return {};
-        if (!f.isString()) {
+        if (!f.isString())
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotString"
+            }};
+        if (!rpc::accountFromStringStrict(std::string{f.asString()}))
             return std::unexpected{
-                rpc::Status{std::string{f.key()} + ": expected string for account"}
+                rpc::Status{rpc::RippledError::rpcACT_MALFORMED, std::string{f.key()} + "Malformed"}
             };
-        }
-        auto const sv = f.asString();
-        if (sv.empty() || sv.front() != 'r') {
-            return std::unexpected{
-                rpc::Status{std::string{f.key()} + ": not a valid account (must start with 'r')"}
-            };
-        }
+        return {};
+    }
+};
+
+class TimeFormatValidator final {
+    std::string_view format_;
+
+public:
+    consteval explicit TimeFormatValidator(std::string_view format) noexcept : format_{format}
+    {
+    }
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    verify(FA const& f) const
+    {
+        if (!f.present())
+            return {};
+        if (!f.isString())
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        if (!util::systemTpFromUtcStr(std::string{f.asString()}, std::string{format_}))
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         return {};
     }
 };

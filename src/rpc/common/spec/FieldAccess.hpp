@@ -73,6 +73,27 @@ public:
     }
 
     [[nodiscard]] bool
+    isUint32() const noexcept
+    {
+        if (readValue_ == nullptr)
+            return false;
+        if (readValue_->is_uint64())
+            return readValue_->as_uint64() <= std::numeric_limits<uint32_t>::max();
+        if (readValue_->is_int64()) {
+            auto const v = readValue_->as_int64();
+            return v >= 0 && v <= static_cast<int64_t>(std::numeric_limits<uint32_t>::max());
+        }
+        return false;
+    }
+
+    [[nodiscard]] uint32_t
+    asUint32() const
+    {
+        return readValue_->is_uint64() ? static_cast<uint32_t>(readValue_->as_uint64())
+                                       : static_cast<uint32_t>(readValue_->as_int64());
+    }
+
+    [[nodiscard]] bool
     isBool() const noexcept
     {
         return readValue_ != nullptr && readValue_->is_bool();
@@ -114,6 +135,8 @@ public:
     {
         if constexpr (std::is_same_v<T, int64_t>) {
             return isInt64();
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+            return isUint32();
         } else if constexpr (std::is_same_v<T, bool>) {
             return isBool();
         } else if constexpr (std::is_same_v<T, std::string>) {
@@ -129,6 +152,12 @@ public:
     set(int64_t v)
     {
         *writeValue_ = v;
+    }
+
+    void
+    set(uint32_t v)
+    {
+        *writeValue_ = static_cast<uint64_t>(v);  // boost::json stores unsigned as uint64
     }
 
     void
