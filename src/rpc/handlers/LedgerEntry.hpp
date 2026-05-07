@@ -121,11 +121,13 @@ public:
     static rpc::spec::RpcSpecConstRef
     spec([[maybe_unused]] uint32_t apiVersion)
     {
+        using namespace spec;
+
         // Validator only works in this handler
         // The accounts array must have two different elements
         // Each element must be a valid address
         static constexpr auto kRIPPLE_STATE_ACCOUNTS_VALIDATOR =
-            spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
+            CustomValidator{[](auto const& f) -> rpc::MaybeError {
                 if (!f.isArray() || f.arraySize() != 2) {
                     return std::unexpected{
                         rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "malformedAccounts"}
@@ -152,463 +154,306 @@ public:
             }};
 
         static constexpr auto kMALFORMED_REQUEST_HEX_STRING_VALIDATOR =
-            spec::withCustomError(spec::uint256Hex, rpc::ClioError::RpcMalformedRequest);
+            withCustomError(uint256Hex, rpc::ClioError::RpcMalformedRequest);
 
         static constexpr auto kMALFORMED_REQUEST_INT_VALIDATOR =
-            spec::withCustomError(spec::type<uint32_t>, rpc::ClioError::RpcMalformedRequest);
+            withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest);
 
-        static constexpr auto kBRIDGE_JSON_VALIDATOR = spec::withCustomError(
-            spec::ifObject(
-                spec::section(
-                    spec::field("LockingChainDoor", spec::required, spec::accountBase58),
-                    spec::field("IssuingChainDoor", spec::required, spec::accountBase58),
-                    spec::field("LockingChainIssue", spec::required, spec::currencyIssue),
-                    spec::field("IssuingChainIssue", spec::required, spec::currencyIssue)
-                )
-            ),
+        static constexpr auto kBRIDGE_JSON_VALIDATOR = withCustomError(
+            ifObject(section(
+                field("LockingChainDoor", required, accountBase58),
+                field("IssuingChainDoor", required, accountBase58),
+                field("LockingChainIssue", required, currencyIssue),
+                field("IssuingChainIssue", required, currencyIssue)
+            )),
             rpc::ClioError::RpcMalformedRequest
         );
 
         static constexpr auto kRPC_SPEC = spec::RpcSpec{
-            spec::field(JS(binary), spec::type<bool>),
-            spec::field(JS(ledger_hash), spec::uint256Hex),
-            spec::field(JS(ledger_index), spec::ledgerIndex),
-            spec::field(JS(index), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(account_root), spec::accountBase58),
-            spec::field(JS(did), spec::accountBase58),
-            spec::field(JS(check), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(
+            field(JS(binary), type<bool>),
+            field(JS(ledger_hash), uint256Hex),
+            field(JS(ledger_index), ledgerIndex),
+            field(JS(index), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(account_root), accountBase58),
+            field(JS(did), accountBase58),
+            field(JS(check), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(
                 JS(deposit_preauth),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(owner),
-                            spec::required,
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedOwner
-                            )
-                        ),
-                        spec::field(JS(authorized), spec::accountBase58),
-                        spec::field(JS(authorized_credentials), spec::authorizeCredential)
-                    )
-                )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(owner),
+                        required,
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedOwner)
+                    ),
+                    field(JS(authorized), accountBase58),
+                    field(JS(authorized_credentials), authorizeCredential)
+                ))
             ),
-            spec::field(
+            field(
                 JS(directory),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(JS(owner), spec::accountBase58),
-                        spec::field(JS(dir_root), spec::uint256Hex),
-                        spec::field(JS(sub_index), kMALFORMED_REQUEST_INT_VALIDATOR)
-                    )
-                )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(JS(owner), accountBase58),
+                    field(JS(dir_root), uint256Hex),
+                    field(JS(sub_index), kMALFORMED_REQUEST_INT_VALIDATOR)
+                ))
             ),
-            spec::field(
+            field(
                 JS(escrow),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(owner),
-                            spec::required,
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedOwner
-                            )
-                        ),
-                        spec::field(JS(seq), spec::required, kMALFORMED_REQUEST_INT_VALIDATOR)
-                    )
-                )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(owner),
+                        required,
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedOwner)
+                    ),
+                    field(JS(seq), required, kMALFORMED_REQUEST_INT_VALIDATOR)
+                ))
             ),
-            spec::field(
+            field(
                 JS(offer),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(JS(account), spec::required, spec::accountBase58),
-                        spec::field(JS(seq), spec::required, kMALFORMED_REQUEST_INT_VALIDATOR)
-                    )
-                )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(JS(account), required, accountBase58),
+                    field(JS(seq), required, kMALFORMED_REQUEST_INT_VALIDATOR)
+                ))
             ),
-            spec::field(JS(payment_channel), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(
+            field(JS(payment_channel), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(
                 JS(ripple_state),
-                spec::type<spec::JsonObject>,
-                spec::section(
-                    spec::field(JS(accounts), spec::required, kRIPPLE_STATE_ACCOUNTS_VALIDATOR),
-                    spec::field(JS(currency), spec::required, spec::currency)
+                type<JsonObject>,
+                section(
+                    field(JS(accounts), required, kRIPPLE_STATE_ACCOUNTS_VALIDATOR),
+                    field(JS(currency), required, currency)
                 )
             ),
-            spec::field(
+            field(
                 JS(ticket),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(JS(account), spec::required, spec::accountBase58),
-                        spec::field(
-                            JS(ticket_seq), spec::required, kMALFORMED_REQUEST_INT_VALIDATOR
-                        )
-                    )
-                )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(JS(account), required, accountBase58),
+                    field(JS(ticket_seq), required, kMALFORMED_REQUEST_INT_VALIDATOR)
+                ))
             ),
-            spec::field(JS(nft_page), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(
+            field(JS(nft_page), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(
                 JS(amm),
-                spec::anyType<std::string, spec::JsonObject>(),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(asset),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<spec::JsonObject>, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::currencyIssue
-                        ),
-                        spec::field(
-                            JS(asset2),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<spec::JsonObject>, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::currencyIssue
-                        )
+                type<std::string, JsonObject>,
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(asset),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                        currencyIssue
+                    ),
+                    field(
+                        JS(asset2),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                        currencyIssue
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(bridge),
-                spec::withCustomError(
-                    spec::type<spec::JsonObject>, rpc::ClioError::RpcMalformedRequest
-                ),
+                withCustomError(type<JsonObject>, rpc::ClioError::RpcMalformedRequest),
                 kBRIDGE_JSON_VALIDATOR
             ),
-            spec::field(
+            field(
                 JS(bridge_account),
-                spec::withCustomError(spec::accountBase58, rpc::ClioError::RpcMalformedRequest)
+                withCustomError(accountBase58, rpc::ClioError::RpcMalformedRequest)
             ),
-            spec::field(
+            field(
                 JS(xchain_owned_claim_id),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
                 kBRIDGE_JSON_VALIDATOR,
-                spec::withCustomError(
-                    spec::ifObject(
-                        spec::section(
-                            spec::field(
-                                JS(xchain_owned_claim_id), spec::required, spec::type<uint32_t>
-                            )
-                        )
-                    ),
+                withCustomError(
+                    ifObject(section(field(JS(xchain_owned_claim_id), required, type<uint32_t>))),
                     rpc::ClioError::RpcMalformedRequest
                 )
             ),
-            spec::field(
+            field(
                 JS(xchain_owned_create_account_claim_id),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
                 kBRIDGE_JSON_VALIDATOR,
-                spec::withCustomError(
-                    spec::ifObject(
-                        spec::section(
-                            spec::field(
-                                JS(xchain_owned_create_account_claim_id),
-                                spec::required,
-                                spec::type<uint32_t>
-                            )
-                        )
-                    ),
+                withCustomError(
+                    ifObject(section(
+                        field(JS(xchain_owned_create_account_claim_id), required, type<uint32_t>)
+                    )),
                     rpc::ClioError::RpcMalformedRequest
                 )
             ),
-            spec::field(
+            field(
                 JS(oracle),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(spec::withCustomError(
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(withCustomError(
                     kMALFORMED_REQUEST_HEX_STRING_VALIDATOR, rpc::ClioError::RpcMalformedAddress
                 )),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(account),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
+                ifObject(section(
+                    field(
+                        JS(account),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
+                    ),
+                    // note: Unlike `rippled`, Clio only supports UInt as input, no string, no
+                    // `null`, etc.:
+                    field(
+                        JS(oracle_document_id),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(
+                            type<uint32_t, std::string>,
+                            rpc::ClioError::RpcMalformedOracleDocumentId
                         ),
-                        // note: Unlike `rippled`, Clio only supports UInt as input, no string, no
-                        // `null`, etc.:
-                        spec::field(
-                            JS(oracle_document_id),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::anyType<uint32_t, std::string>(),
-                                rpc::ClioError::RpcMalformedOracleDocumentId
-                            ),
-                            spec::withCustomError(
-                                spec::toNumber, rpc::ClioError::RpcMalformedOracleDocumentId
-                            )
-                        )
+                        withCustomError(toNumber, rpc::ClioError::RpcMalformedOracleDocumentId)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(credential),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(spec::withCustomError(
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(withCustomError(
                     kMALFORMED_REQUEST_HEX_STRING_VALIDATOR, rpc::ClioError::RpcMalformedAddress
                 )),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(subject),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        ),
-                        spec::field(
-                            JS(issuer),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        ),
-                        spec::field(
-                            JS(credential_type),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<std::string>, rpc::ClioError::RpcMalformedRequest
-                            )
-                        )
+                ifObject(section(
+                    field(
+                        JS(subject),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
+                    ),
+                    field(
+                        JS(issuer),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
+                    ),
+                    field(
+                        JS(credential_type),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<std::string>, rpc::ClioError::RpcMalformedRequest)
                     )
-                )
+                ))
             ),
-            spec::field(
-                JS(mpt_issuance),
-                spec::withCustomError(spec::uint192Hex, rpc::ClioError::RpcMalformedRequest)
+            field(
+                JS(mpt_issuance), withCustomError(uint192Hex, rpc::ClioError::RpcMalformedRequest)
             ),
-            spec::field(
+            field(
                 JS(mptoken),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(account),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        ),
-                        spec::field(
-                            JS(mpt_issuance_id),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::uint192Hex, rpc::ClioError::RpcMalformedRequest
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(account),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
+                    ),
+                    field(
+                        JS(mpt_issuance_id),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(uint192Hex, rpc::ClioError::RpcMalformedRequest)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(permissioned_domain),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(seq),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<uint32_t>, rpc::ClioError::RpcMalformedRequest
-                            )
-                        ),
-                        spec::field(
-                            JS(account),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(seq),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)
+                    ),
+                    field(
+                        JS(account),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(vault),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(seq),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<uint32_t>, rpc::ClioError::RpcMalformedRequest
-                            )
-                        ),
-                        spec::field(
-                            JS(owner),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedOwner
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(seq),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)
+                    ),
+                    field(
+                        JS(owner),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedOwner)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(loan_broker),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(seq),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<uint32_t>, rpc::ClioError::RpcMalformedRequest
-                            )
-                        ),
-                        spec::field(
-                            JS(owner),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedOwner
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(seq),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)
+                    ),
+                    field(
+                        JS(owner),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedOwner)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(loan),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(loan_seq),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::type<uint32_t>, rpc::ClioError::RpcMalformedRequest
-                            )
-                        ),
-                        spec::field(
-                            JS(loan_broker_id),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::uint256Hex, rpc::ClioError::RpcMalformedRequest
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(loan_seq),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)
+                    ),
+                    field(
+                        JS(loan_broker_id),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(uint256Hex, rpc::ClioError::RpcMalformedRequest)
                     )
-                )
+                ))
             ),
-            spec::field(
+            field(
                 JS(delegate),
-                spec::withCustomError(
-                    spec::anyType<std::string, spec::JsonObject>(),
-                    rpc::ClioError::RpcMalformedRequest
-                ),
-                spec::ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-                spec::ifObject(
-                    spec::section(
-                        spec::field(
-                            JS(account),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        ),
-                        spec::field(
-                            JS(authorize),
-                            spec::withCustomError(
-                                spec::required, rpc::ClioError::RpcMalformedRequest
-                            ),
-                            spec::withCustomError(
-                                spec::accountBase58, rpc::ClioError::RpcMalformedAddress
-                            )
-                        )
+                withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
+                ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+                ifObject(section(
+                    field(
+                        JS(account),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
+                    ),
+                    field(
+                        JS(authorize),
+                        withCustomError(required, rpc::ClioError::RpcMalformedRequest),
+                        withCustomError(accountBase58, rpc::ClioError::RpcMalformedAddress)
                     )
-                )
+                ))
             ),
-            spec::field(JS(amendments), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(fee), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(hashes), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(nft_offer), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(nunl), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(signer_list), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            spec::field(JS(ledger), spec::deprecated),
-            spec::field("include_deleted", spec::type<bool>),
+            field(JS(amendments), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(fee), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(hashes), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(nft_offer), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(nunl), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(signer_list), kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
+            field(JS(ledger), deprecated),
+            field("include_deleted", spec::type<bool>),
         };
 
         return rpc::spec::RpcSpecView{kRPC_SPEC};

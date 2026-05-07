@@ -6,16 +6,20 @@
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/Types.hpp"
 #include "util/AccountUtils.hpp"
+#include "util/LedgerUtils.hpp"
 #include "util/TimeUtils.hpp"
 
 #include <fmt/format.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
@@ -640,5 +644,229 @@ struct CustomValidator {
 
 template <typename Fn>
 CustomValidator(Fn) -> CustomValidator<Fn>;
+
+// Wraps a callable Fn that takes FA& and returns MaybeError — analogous to CustomValidator
+// but participates in the modifier (modify) phase instead of the requirement (verify) phase.
+template <typename Fn>
+struct CustomModifier {
+    Fn fn;
+
+    consteval explicit CustomModifier(Fn f) : fn{f}
+    {
+    }
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    modify(FA& f) const
+    {
+        if (!f.present())
+            return {};
+        return fn(f);
+    }
+};
+
+template <typename Fn>
+CustomModifier(Fn) -> CustomModifier<Fn>;
+
+// Rejects the field with rpcNOT_SUPPORTED if it is present.
+struct NotSupported {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (f.present()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcNOT_SUPPORTED}};
+        }
+        return {};
+    }
+};
+
+// Validates that a string field equals one of a fixed set of allowed values.
+// Returns rpcINVALID_PARAMS if the field is not a string or not in the set.
+template <std::size_t N>
+struct OneOfValidator {
+    std::array<std::string_view, N> values;
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    verify(FA const& f) const
+    {
+        if (!f.present())
+            return {};
+        if (!f.isString()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        auto const sv = f.asString();
+        for (auto const& v : values) {
+            if (sv == v)
+                return {};
+        }
+        return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+    }
+};
+
+// Converts a string field to lowercase in-place. No-op when field is absent or non-string.
+struct ToLowerModifier {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    modify(FA& f)
+    {
+        if (!f.present() || !f.isString())
+            return {};
+        auto const sv = f.asString();
+        std::string lower{sv};
+        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+        });
+        f.set(std::string_view{lower});
+        return {};
+    }
+};
+
+// Validates that a numeric field value is in the inclusive range [lo, hi].
+// Returns rpcINVALID_PARAMS if the value is outside the range.
+template <typename T>
+    requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
+struct Between {
+    T lo, hi;
+    consteval Between(T l, T h) : lo{l}, hi{h}
+    {
+    }
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    verify(FA const& f) const
+    {
+        if (!f.present())
+            return {};
+        if constexpr (std::is_same_v<T, int64_t>) {
+            if (!f.isInt64())
+                return {};
+            if (f.asInt64() < lo || f.asInt64() > hi) {
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            }
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+            if (!f.isUint32())
+                return {};
+            if (f.asUint32() < lo || f.asUint32() > hi) {
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            }
+        } else if constexpr (std::is_same_v<T, double>) {
+            if (!f.isDouble())
+                return {};
+            if (f.asDouble() < lo || f.asDouble() > hi) {
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            }
+        }
+        return {};
+    }
+};
+
+template <typename T>
+Between(T, T) -> Between<T>;
+
+// Validates that each element of an array field is a valid uint256 hex string.
+// Returns rpcINVALID_PARAMS if the field is not an array or any element fails validation.
+struct Hex256ArrayValidator {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isArray()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        for (std::size_t i = 0; i < f.arraySize(); ++i) {
+            auto const elem = f.element(i);
+            if (auto err = Uint256HexStringValidator::verify(elem); !err) {
+                return err;
+            }
+        }
+        return {};
+    }
+};
+
+// Validates a pagination marker string in the format "<hex256>,<uint64>" (e.g. "AABB...,42").
+// Returns rpcINVALID_PARAMS + "Malformed cursor." on any format error.
+struct AccountMarkerValidator {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isString()) {
+            return std::unexpected{
+                rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Malformed cursor."}
+            };
+        }
+        auto const sv = f.asString();
+        auto const commaPos = sv.find(',');
+        if (commaPos == std::string_view::npos) {
+            return std::unexpected{
+                rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Malformed cursor."}
+            };
+        }
+        auto const hexPart = std::string{sv.substr(0, commaPos)};
+        auto const hintPart = sv.substr(commaPos + 1);
+        ripple::uint256 index;
+        if (!index.parseHex(hexPart.c_str())) {
+            return std::unexpected{
+                rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Malformed cursor."}
+            };
+        }
+        uint64_t hint = 0;
+        auto const [ptr, ec] =
+            std::from_chars(hintPart.data(), hintPart.data() + hintPart.size(), hint);
+        if (ec != std::errc() || ptr != hintPart.data() + hintPart.size()) {
+            return std::unexpected{
+                rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Malformed cursor."}
+            };
+        }
+        return {};
+    }
+};
+
+// Validates that a string field names a valid account-owned ledger entry type.
+// Returns rpcINVALID_PARAMS if the type is unrecognized.
+struct AccountTypeValidator {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isString()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        auto const type =
+            util::LedgerTypes::getAccountOwnedLedgerTypeFromStr(std::string{f.asString()});
+        if (type == ripple::ltANY) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        return {};
+    }
+};
+
+// Validates that a string field names any valid ledger entry type.
+// Returns rpcINVALID_PARAMS if the type is unrecognized.
+struct LedgerEntryTypeValidator {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] static MaybeError
+    verify(FA const& f)
+    {
+        if (!f.present())
+            return {};
+        if (!f.isString()) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        auto const type = util::LedgerTypes::getLedgerEntryTypeFromStr(std::string{f.asString()});
+        if (type == ripple::ltANY) {
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+        return {};
+    }
+};
 
 }  // namespace rpc::spec

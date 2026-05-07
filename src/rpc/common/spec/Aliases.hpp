@@ -8,6 +8,8 @@
 #include "rpc/common/spec/Validators.hpp"
 #include "rpc/common/spec/WithCustomError.hpp"
 
+#include <array>
+#include <string>
 #include <string_view>
 
 namespace rpc::spec {
@@ -17,8 +19,8 @@ inline constexpr auto required = Required{};
 inline constexpr auto deprecated = Deprecated{};
 inline constexpr auto account = AccountFormat{};
 
-template <typename T>
-inline constexpr auto type = Type<T>{};
+template <typename... Ts>
+inline constexpr auto type = Type<Ts...>{};
 // NOLINTEND(readability-identifier-naming)
 
 template <typename T>
@@ -112,15 +114,6 @@ ifArray(SubItems... items)
     return IfArray<SubItems...>{items...};
 }
 
-// Factory for multi-type Type check (OR semantics).
-// Example: spec::anyType<std::string, JsonObject>()
-template <typename... Ts>
-consteval auto
-anyType()
-{
-    return Type<Ts...>{};
-}
-
 // NOLINTBEGIN(readability-identifier-naming)
 inline constexpr auto ledgerIndex = LedgerIndexValidator{};
 inline constexpr auto accountBase58 = AccountBase58Validator{};
@@ -133,6 +126,50 @@ inline constexpr auto toNumber = ToNumberModifier{};
 inline constexpr auto uint256Hex = Uint256HexStringValidator{};
 inline constexpr auto uint192Hex = Uint192HexStringValidator{};
 inline constexpr auto uint160Hex = Uint160HexStringValidator{};
+inline constexpr auto notSupported = NotSupported{};
+inline constexpr auto toLower = ToLowerModifier{};
+inline constexpr auto hex256Array = Hex256ArrayValidator{};
+inline constexpr auto accountMarker = AccountMarkerValidator{};
+inline constexpr auto accountType = AccountTypeValidator{};
+inline constexpr auto ledgerType = LedgerEntryTypeValidator{};
 // NOLINTEND(readability-identifier-naming)
+
+/**
+ * @brief Factory for OneOfValidator — validates that a string field is one of the given values.
+ *
+ * Example: spec::oneOf<std::string>("gateway", "user")
+ */
+template <typename T = std::string, typename... Strings>
+consteval auto
+oneOf(Strings... vals)
+{
+    return OneOfValidator<sizeof...(Strings)>{
+        std::array<std::string_view, sizeof...(Strings)>{std::string_view{vals}...}
+    };
+}
+
+/**
+ * @brief Factory for Between — validates a numeric field is in [lo, hi].
+ *
+ * Example: spec::between(uint32_t{1}, uint32_t{25})
+ */
+template <typename T>
+consteval auto
+between(T lo, T hi)
+{
+    return Between{lo, hi};
+}
+
+/**
+ * @brief Factory for CustomModifier — wraps a captureless lambda as a modifier.
+ *
+ * Example: spec::customModifier([](auto& f) -> rpc::MaybeError { ... })
+ */
+template <typename Fn>
+consteval auto
+customModifier(Fn f)
+{
+    return CustomModifier<Fn>{f};
+}
 
 }  // namespace rpc::spec

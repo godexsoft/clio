@@ -64,10 +64,12 @@ public:
     static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
-            rpc::spec::field(JS(date))      //
-            | rpc::spec::type<std::string>  //
-            | rpc::spec::timeFormat(kDATE_FORMAT)
+        using namespace spec;
+
+        static constexpr auto kRPC_SPEC = spec::RpcSpec{
+            field(JS(date))      //
+            | type<std::string>  //
+            | timeFormat(kDATE_FORMAT)
         };
         return kRPC_SPEC;
     }
