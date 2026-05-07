@@ -1,9 +1,11 @@
 #pragma once
 #include "data/BackendInterface.hpp"
 #include "rpc/JS.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -59,13 +61,13 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(date),
-             validation::Type<std::string>{},
-             validation::TimeFormatValidator{kDATE_FORMAT}},
+        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
+            rpc::spec::field(JS(date))      //
+            | rpc::spec::type<std::string>  //
+            | rpc::spec::timeFormat(kDATE_FORMAT)
         };
         return kRPC_SPEC;
     }

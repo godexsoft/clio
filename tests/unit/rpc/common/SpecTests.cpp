@@ -6,6 +6,7 @@
 #include "rpc/common/spec/RpcSpecView.hpp"
 #include "rpc/common/spec/Types.hpp"
 #include "rpc/common/spec/Validators.hpp"
+#include "rpc/common/spec/WarningsToJson.hpp"
 #include "rpc/common/spec/WithCustomError.hpp"
 
 #include <boost/json/parse.hpp>
@@ -129,6 +130,7 @@ TEST(RpcSpecDSL, DeprecatedFieldProducesWarning)
     auto const warnings = kSPEC.check(request);
     ASSERT_EQ(warnings.size(), 1u);
     EXPECT_EQ(warnings[0].field, "ident");
+    EXPECT_EQ(warnings[0].code, rpc::WarningCode::WarnRpcDeprecated);
 }
 
 TEST(RpcSpecDSL, NoWarningWhenDeprecatedFieldAbsent)
@@ -185,7 +187,9 @@ TEST(RpcSpecDSL, WarningsCollectedAcrossAllFields)
     auto const warnings = kSPEC.check(request);
     ASSERT_EQ(warnings.size(), 2u);
     EXPECT_EQ(warnings[0].field, "ident");
+    EXPECT_EQ(warnings[0].code, rpc::WarningCode::WarnRpcDeprecated);
     EXPECT_EQ(warnings[1].field, "ledger");
+    EXPECT_EQ(warnings[1].code, rpc::WarningCode::WarnRpcDeprecated);
 }
 
 TEST(RpcSpecDSL, FullRequestPipeline)
@@ -207,6 +211,7 @@ TEST(RpcSpecDSL, FullRequestPipeline)
     auto const warnings = kSPEC.check(request);
     ASSERT_EQ(warnings.size(), 1u);
     EXPECT_EQ(warnings[0].field, "ident");
+    EXPECT_EQ(warnings[0].code, rpc::WarningCode::WarnRpcDeprecated);
 
     ASSERT_TRUE(kSPEC.process(request).has_value());
     EXPECT_EQ(request.as_object().at("limit").as_int64(), 10);
@@ -655,6 +660,7 @@ TEST(RpcSpecDSL_MockBackend, DeprecatedFieldProducesWarning)
     auto const warnings = kSPEC.check(obj);
     ASSERT_EQ(warnings.size(), 1u);
     EXPECT_EQ(warnings[0].field, "ident");
+    EXPECT_EQ(warnings[0].code, rpc::WarningCode::WarnRpcDeprecated);
 }
 
 // ============================================================================
@@ -1099,4 +1105,69 @@ TEST(RpcSpecDSL_TimeFormat, AbsentFieldAccepted)
 
     auto request = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+// ============================================================================
+// WarningsToJson — verifies that spec::toJsonArray mirrors the old wire-format
+// aggregator: groups by code, appends each extra message with a leading space.
+// ============================================================================
+
+TEST(RpcSpecDSL_WarningsToJson, SingleDeprecatedFieldProducesGroupedWarning)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required, account),
+        field("ident", account, deprecated),
+    };
+
+    auto request = boost::json::parse(R"JSON({
+        "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "ident":   "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
+    })JSON");
+
+    auto const warnings = kSPEC.check(request);
+    auto const arr = rpc::spec::toJsonArray(warnings);
+
+    ASSERT_EQ(arr.size(), 1u);
+    EXPECT_EQ(arr[0].as_object().at("id").as_int64(), 2004);
+
+    auto const msg = std::string{arr[0].as_object().at("message").as_string()};
+    // Standard text must be present as a prefix.
+    EXPECT_NE(msg.find("deprecated"), std::string::npos);
+    // The per-field extra must be appended with a leading space.
+    EXPECT_NE(msg.find(" Field 'ident' is deprecated."), std::string::npos);
+}
+
+TEST(RpcSpecDSL_WarningsToJson, MultipleDeprecatedFieldsGroupIntoOneEntry)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("account", required, account),
+        field("ident", deprecated),
+        field("ledger", deprecated),
+    };
+
+    auto request = boost::json::parse(R"JSON({
+        "account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+        "ident":   "old",
+        "ledger":  "validated"
+    })JSON");
+
+    auto const warnings = kSPEC.check(request);
+    ASSERT_EQ(warnings.size(), 2u);
+
+    auto const arr = rpc::spec::toJsonArray(warnings);
+
+    // Both fields share WarnRpcDeprecated — they must collapse into a single object.
+    ASSERT_EQ(arr.size(), 1u);
+    EXPECT_EQ(arr[0].as_object().at("id").as_int64(), 2004);
+
+    auto const msg = std::string{arr[0].as_object().at("message").as_string()};
+    EXPECT_NE(msg.find(" Field 'ident' is deprecated."), std::string::npos);
+    EXPECT_NE(msg.find(" Field 'ledger' is deprecated."), std::string::npos);
+}
+
+TEST(RpcSpecDSL_WarningsToJson, EmptyWarningsProducesEmptyArray)
+{
+    Warnings const empty{};
+    auto const arr = rpc::spec::toJsonArray(empty);
+    EXPECT_TRUE(arr.empty());
 }

@@ -3,6 +3,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/Checkers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
@@ -64,21 +65,50 @@ concept SomeContextProcessWithoutInput = requires(T a, typename T::Output out, C
 };
 
 /**
- * @brief Specifies what a Handler with Input must provide.
+ * @brief A handler that exposes the OLD runtime @ref rpc::RpcSpec via @c spec(version).
+ *
+ * Independent of whether the handler takes an @c Input — orthogonal to the
+ * input axis. The dispatcher runs validation when this concept is satisfied,
+ * regardless of input shape.
  */
 template <typename T>
-concept SomeHandlerWithInput = requires(T a, uint32_t version) {
+concept SomeHandlerWithOldSpec = requires(T a, uint32_t version) {
     { a.spec(version) } -> std::same_as<RpcSpec const&>;
-} and SomeContextProcessWithInput<T> and boost::json::has_value_to<typename T::Input>::value;
+};
 
 /**
- * @brief Specifies what a Handler without Input must provide.
+ * @brief A handler that exposes the NEW consteval @ref rpc::spec::RpcSpecView via @c spec(version).
+ *
+ * Independent of whether the handler takes an @c Input. Handlers satisfying this
+ * concept are validated through the new consteval-spec path in
+ * @ref rpc::impl::DefaultProcessor.
+ */
+template <typename T>
+concept SomeHandlerWithNewSpec = requires(T a, uint32_t version) {
+    { a.spec(version) } -> std::same_as<rpc::spec::RpcSpecView>;
+};
+
+/**
+ * @brief A handler that consumes a typed @c Input deserialized from the request JSON.
+ */
+template <typename T>
+concept SomeHandlerWithInput =
+    SomeContextProcessWithInput<T> and boost::json::has_value_to<typename T::Input>::value;
+
+/**
+ * @brief A handler that takes no input (only the @ref Context).
  */
 template <typename T>
 concept SomeHandlerWithoutInput = SomeContextProcessWithoutInput<T>;
 
 /**
  * @brief Specifies what a Handler type must provide.
+ *
+ * Handlers are decomposed into two orthogonal axes:
+ *   - input shape: @ref SomeHandlerWithInput vs @ref SomeHandlerWithoutInput
+ *   - spec presence: @ref SomeHandlerWithOldSpec, @ref SomeHandlerWithNewSpec, or neither
+ *
+ * Every combination is valid (e.g. no-input + new-spec, input + no-spec).
  */
 template <typename T>
 concept SomeHandler = (SomeHandlerWithInput<T> or SomeHandlerWithoutInput<T>) and

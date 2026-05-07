@@ -2,8 +2,10 @@
 
 #include "rpc/common/Concepts.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/WarningsToJson.hpp"
 #include "util/UnsupportedType.hpp"
 
+#include <boost/json/array.hpp>
 #include <boost/json/value.hpp>
 
 namespace rpc::impl {
@@ -19,36 +21,38 @@ struct DefaultProcessor final {
     {
         using boost::json::value_from;
         using boost::json::value_to;
-        if constexpr (SomeHandlerWithInput<HandlerType>) {
-            // first we run validation against specified API version
 
+        // Phase 1 — run the spec (if the handler exposes one) and collect any warnings.
+        // The spec axis is independent of the input axis: a handler with no Input may still
+        // declare a spec, and a handler with an Input may opt out of having one.
+        boost::json::array warnings;
+        auto input = value;  // mutable copy; spec.process may modify it before deserialization
+
+        if constexpr (SomeHandlerWithNewSpec<HandlerType>) {
             auto const spec = handler.spec(ctx.apiVersion);
-            auto warnings = spec.check(value);
-            auto input = value;  // copy here, spec require mutable data
-
+            warnings = rpc::spec::toJsonArray(spec.check(value));
             if (auto const ret = spec.process(input); not ret)
-                return ReturnType{Error{ret.error()}, std::move(warnings)};  // forward Status
+                return ReturnType{Error{ret.error()}, std::move(warnings)};
+        } else if constexpr (SomeHandlerWithOldSpec<HandlerType>) {
+            auto const& spec = handler.spec(ctx.apiVersion);
+            warnings = spec.check(value);
+            if (auto const ret = spec.process(input); not ret)
+                return ReturnType{Error{ret.error()}, std::move(warnings)};
+        }
 
+        // Phase 2 — dispatch to the handler.
+        if constexpr (SomeHandlerWithInput<HandlerType>) {
             auto const inData = value_to<typename HandlerType::Input>(input);
             auto ret = handler.process(inData, ctx);
-
-            // real handler is given expected Input, not json
-            if (!ret) {
-                return ReturnType{
-                    Error{std::move(ret).error()}, std::move(warnings)
-                };  // forward Status
-            }
+            if (!ret)
+                return ReturnType{Error{std::move(ret).error()}, std::move(warnings)};
             return ReturnType{value_from(std::move(ret).value()), std::move(warnings)};
         } else if constexpr (SomeHandlerWithoutInput<HandlerType>) {
-            // no input to pass, ignore the value
-            auto const ret = handler.process(ctx);
-            if (not ret) {
-                return ReturnType{Error{ret.error()}};  // forward Status
-            }
-            return ReturnType{value_from(ret.value())};
+            auto ret = handler.process(ctx);
+            if (!ret)
+                return ReturnType{Error{std::move(ret).error()}, std::move(warnings)};
+            return ReturnType{value_from(std::move(ret).value()), std::move(warnings)};
         } else {
-            // when concept SomeHandlerWithInput and SomeHandlerWithoutInput not cover all Handler
-            // case
             static_assert(util::Unsupported<HandlerType>);
         }
     }

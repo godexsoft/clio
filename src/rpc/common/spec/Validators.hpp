@@ -7,6 +7,8 @@
 #include "rpc/common/spec/Types.hpp"
 #include "util/TimeUtils.hpp"
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <optional>
@@ -21,11 +23,12 @@ struct Required {
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
-        if (!f.present())
+        if (!f.present()) {
             return std::unexpected{rpc::Status{
                 rpc::RippledError::rpcINVALID_PARAMS,
                 "Required field '" + std::string{f.key()} + "' missing"
             }};
+        }
         return {};
     }
 };
@@ -182,8 +185,13 @@ struct Deprecated {
     [[nodiscard]] static std::optional<Warning>
     check(FA const& f)
     {
-        if (f.present())
-            return Warning{.field = std::string{f.key()}, .message = "field is deprecated"};
+        if (f.present()) {
+            return Warning{
+                .code = rpc::WarningCode::WarnRpcDeprecated,
+                .field = std::string{f.key()},
+                .message = fmt::format("Field '{}' is deprecated.", f.key())
+            };
+        }
         return std::nullopt;
     }
 };
@@ -195,14 +203,16 @@ struct AccountFormat {
     {
         if (!f.present())
             return {};
-        if (!f.isString())
+        if (!f.isString()) {
             return std::unexpected{rpc::Status{
                 rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotString"
             }};
-        if (!rpc::accountFromStringStrict(std::string{f.asString()}))
+        }
+        if (!rpc::accountFromStringStrict(std::string{f.asString()})) {
             return std::unexpected{
                 rpc::Status{rpc::RippledError::rpcACT_MALFORMED, std::string{f.key()} + "Malformed"}
             };
+        }
         return {};
     }
 };
