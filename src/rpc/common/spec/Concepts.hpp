@@ -32,6 +32,9 @@ concept SomeFieldAccess = requires(T f, T const cf) {
     { cf.asDouble() } -> std::convertible_to<double>;
     { cf.isObject() } -> std::convertible_to<bool>;
     { cf.isArray() } -> std::convertible_to<bool>;
+    { cf.arraySize() } -> std::convertible_to<std::size_t>;
+    { cf.template is<JsonObject>() } -> std::convertible_to<bool>;
+    { cf.template is<JsonArray>() } -> std::convertible_to<bool>;
     { cf.template is<int64_t>() } -> std::convertible_to<bool>;
     { cf.template is<uint32_t>() } -> std::convertible_to<bool>;
     { cf.template is<bool>() } -> std::convertible_to<bool>;
@@ -82,6 +85,8 @@ struct FieldAccessArchetype {
     isObject() const noexcept;
     [[nodiscard]] bool
     isArray() const noexcept;
+    [[nodiscard]] std::size_t
+    arraySize() const noexcept;
     template <typename T>
     [[nodiscard]] bool
     is() const noexcept;

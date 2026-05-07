@@ -25,4 +25,8 @@ struct Warning {
 
 using Warnings = std::vector<Warning>;
 
+// Marker types for use with Type<T> and is<T>() — keeps validators decoupled from boost::json.
+struct JsonObject {};
+struct JsonArray {};
+
 }  // namespace rpc::spec

@@ -112,4 +112,25 @@ ifArray(SubItems... items)
     return IfArray<SubItems...>{items...};
 }
 
+// Factory for multi-type Type check (OR semantics).
+// Example: spec::anyType<std::string, JsonObject>()
+template <typename... Ts>
+consteval auto
+anyType()
+{
+    return Type<Ts...>{};
+}
+
+// NOLINTBEGIN(readability-identifier-naming)
+inline constexpr auto ledgerIndex = LedgerIndexValidator{};
+inline constexpr auto accountBase58 = AccountBase58Validator{};
+inline constexpr auto currency = CurrencyValidator{};
+inline constexpr auto issuer = IssuerValidator{};
+inline constexpr auto credentialType = CredentialTypeValidator{};
+inline constexpr auto authorizeCredential = AuthorizeCredentialValidator{};
+inline constexpr auto uint256Hex = Uint256HexStringValidator{};
+inline constexpr auto uint192Hex = Uint192HexStringValidator{};
+inline constexpr auto uint160Hex = Uint160HexStringValidator{};
+// NOLINTEND(readability-identifier-naming)
+
 }  // namespace rpc::spec

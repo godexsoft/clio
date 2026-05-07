@@ -1,6 +1,8 @@
 /** @file */
 #pragma once
 
+#include "rpc/common/spec/Types.hpp"
+
 #include <boost/json/string.hpp>
 #include <boost/json/value.hpp>
 
@@ -142,6 +144,14 @@ public:
         return readValue_ != nullptr && readValue_->is_array();
     }
 
+    [[nodiscard]] std::size_t
+    arraySize() const noexcept
+    {
+        if (readValue_ == nullptr || !readValue_->is_array())
+            return 0;
+        return readValue_->as_array().size();
+    }
+
     // Returns a FieldAccess for a named sub-field within this field (must be an object).
     // If this field is absent, not an object, or the child key is not found, returns an absent FA.
     [[nodiscard]] BoostJsonFieldAccess
@@ -197,6 +207,10 @@ public:
             return isString();
         } else if constexpr (std::is_same_v<T, double>) {
             return isDouble();
+        } else if constexpr (std::is_same_v<T, JsonObject>) {
+            return isObject();
+        } else if constexpr (std::is_same_v<T, JsonArray>) {
+            return isArray();
         } else {
             static_assert(false, "unsupported type for is<T>()");
         }
