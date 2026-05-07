@@ -4,6 +4,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/IfType.hpp"
+#include "rpc/common/spec/Section.hpp"
 #include "rpc/common/spec/Validators.hpp"
 #include "rpc/common/spec/WithCustomError.hpp"
 
@@ -69,6 +70,46 @@ consteval auto
 timeFormat(std::string_view format)
 {
     return TimeFormatValidator{format};
+}
+
+/**
+ * @brief Factory for Section — validates named sub-fields within an object field.
+ *
+ * Example:
+ *   spec::field("taker_pays", spec::section(
+ *       spec::field("currency", spec::required),
+ *       spec::field("issuer",   spec::account)
+ *   ))
+ */
+template <typename... SubFields>
+consteval auto
+section(SubFields... sf)
+{
+    return Section<SubFields...>{sf...};
+}
+
+/**
+ * @brief Factory for IfObject — runs sub-processors only when the field is a JSON object.
+ *
+ * Example: spec::field("entry", spec::ifObject(spec::section(...)))
+ */
+template <SomeProcessor... SubItems>
+consteval auto
+ifObject(SubItems... items)
+{
+    return IfObject<SubItems...>{items...};
+}
+
+/**
+ * @brief Factory for IfArray — runs sub-processors only when the field is a JSON array.
+ *
+ * Example: spec::field("ids", spec::ifArray(someArrayValidator))
+ */
+template <SomeProcessor... SubItems>
+consteval auto
+ifArray(SubItems... items)
+{
+    return IfArray<SubItems...>{items...};
 }
 
 }  // namespace rpc::spec

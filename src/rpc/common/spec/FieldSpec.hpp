@@ -77,6 +77,32 @@ struct FieldSpec {
         std::apply([&](auto const&... item) { (callIfChecker(item, fa, out), ...); }, items);
         return out;
     }
+
+    // Used by Section: create a child FA from a parent FA and apply this field's processors.
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    processNested(FA& parentFa) const
+    {
+        auto childFa = parentFa.child(key);
+        MaybeError result{};
+        std::apply(
+            [&](auto const&... item) {
+                (void)((result = callIfProcessor(item, childFa), result.has_value()) && ...);
+            },
+            items
+        );
+        return result;
+    }
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] Warnings
+    checkNested(FA const& parentFa) const
+    {
+        auto const childFa = parentFa.child(key);
+        Warnings out;
+        std::apply([&](auto const&... item) { (callIfChecker(item, childFa, out), ...); }, items);
+        return out;
+    }
 };
 
 template <SomeFieldItem... Is>

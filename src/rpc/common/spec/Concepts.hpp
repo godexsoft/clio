@@ -5,6 +5,7 @@
 #include "rpc/common/spec/Types.hpp"
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -29,11 +30,15 @@ concept SomeFieldAccess = requires(T f, T const cf) {
     { cf.asString() } -> std::convertible_to<std::string_view>;
     { cf.isDouble() } -> std::convertible_to<bool>;
     { cf.asDouble() } -> std::convertible_to<double>;
+    { cf.isObject() } -> std::convertible_to<bool>;
+    { cf.isArray() } -> std::convertible_to<bool>;
     { cf.template is<int64_t>() } -> std::convertible_to<bool>;
     { cf.template is<uint32_t>() } -> std::convertible_to<bool>;
     { cf.template is<bool>() } -> std::convertible_to<bool>;
     { cf.template is<std::string>() } -> std::convertible_to<bool>;
     { cf.template is<double>() } -> std::convertible_to<bool>;
+    { cf.child(std::string_view{}) } -> std::same_as<T>;
+    { cf.element(std::size_t{}) } -> std::same_as<T>;
     { f.set(int64_t{}) };
     { f.set(uint32_t{}) };
     { f.set(std::string_view{}) };
@@ -73,9 +78,16 @@ struct FieldAccessArchetype {
     isDouble() const noexcept;
     [[nodiscard]] double
     asDouble() const;
+    [[nodiscard]] bool
+    isObject() const noexcept;
+    [[nodiscard]] bool
+    isArray() const noexcept;
     template <typename T>
     [[nodiscard]] bool
     is() const noexcept;
+    [[nodiscard]] FieldAccessArchetype child(std::string_view) const noexcept;
+    [[nodiscard]] FieldAccessArchetype
+    element(std::size_t) const noexcept;
     void
     set(int64_t);
     void

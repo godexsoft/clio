@@ -4,6 +4,7 @@
 #include <boost/json/string.hpp>
 #include <boost/json/value.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -127,6 +128,59 @@ public:
     asDouble() const
     {
         return readValue_->as_double();
+    }
+
+    [[nodiscard]] bool
+    isObject() const noexcept
+    {
+        return readValue_ != nullptr && readValue_->is_object();
+    }
+
+    [[nodiscard]] bool
+    isArray() const noexcept
+    {
+        return readValue_ != nullptr && readValue_->is_array();
+    }
+
+    // Returns a FieldAccess for a named sub-field within this field (must be an object).
+    // If this field is absent, not an object, or the child key is not found, returns an absent FA.
+    [[nodiscard]] BoostJsonFieldAccess
+    child(std::string_view childKey) const noexcept
+    {
+        if (writeValue_ != nullptr && writeValue_->is_object()) {
+            auto& obj = writeValue_->as_object();
+            auto it = obj.find(childKey);
+            if (it == obj.end())
+                return {static_cast<boost::json::value*>(nullptr), childKey};
+            return {&it->value(), childKey};
+        }
+        if (readValue_ == nullptr || !readValue_->is_object())
+            return {static_cast<boost::json::value const*>(nullptr), childKey};
+        auto const& obj = readValue_->as_object();
+        auto it = obj.find(childKey);
+        if (it == obj.end())
+            return {static_cast<boost::json::value const*>(nullptr), childKey};
+        return {&it->value(), childKey};
+    }
+
+    // Returns a FieldAccess for an element within this field (must be an array).
+    // If this field is absent, not an array, or idx is out of bounds, returns an absent FA.
+    // The child FA inherits the parent key for error message context.
+    [[nodiscard]] BoostJsonFieldAccess
+    element(std::size_t idx) const noexcept
+    {
+        if (writeValue_ != nullptr && writeValue_->is_array()) {
+            auto& arr = writeValue_->as_array();
+            if (idx >= arr.size())
+                return {static_cast<boost::json::value*>(nullptr), key_};
+            return {&arr[idx], key_};
+        }
+        if (readValue_ == nullptr || !readValue_->is_array())
+            return {static_cast<boost::json::value const*>(nullptr), key_};
+        auto const& arr = readValue_->as_array();
+        if (idx >= arr.size())
+            return {static_cast<boost::json::value const*>(nullptr), key_};
+        return {&arr[idx], key_};
     }
 
     template <typename T>

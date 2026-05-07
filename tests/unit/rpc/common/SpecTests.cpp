@@ -1,9 +1,11 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/spec/Aliases.hpp"
 #include "rpc/common/spec/Concepts.hpp"
+#include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Section.hpp"
 #include "rpc/common/spec/Types.hpp"
 #include "rpc/common/spec/Validators.hpp"
 #include "rpc/common/spec/WarningsToJson.hpp"
@@ -12,6 +14,7 @@
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -507,11 +510,33 @@ public:
         return std::get<double>(*readValue_);
     }
 
+    [[nodiscard]] static bool
+    isObject() noexcept
+    {
+        return false;  // MockObject is flat; nested objects not supported
+    }
+    [[nodiscard]] static bool
+    isArray() noexcept
+    {
+        return false;
+    }
+
     template <typename T>
     [[nodiscard]] bool
     is() const noexcept
     {
         return readValue_ != nullptr && std::holds_alternative<T>(*readValue_);
+    }
+
+    [[nodiscard]] static MockFieldAccess
+    child(std::string_view k) noexcept
+    {
+        return {static_cast<MockValue const*>(nullptr), k};
+    }
+    [[nodiscard]] static MockFieldAccess
+    element(std::size_t) noexcept
+    {
+        return {static_cast<MockValue const*>(nullptr), {}};
     }
 
     void
@@ -992,6 +1017,14 @@ static_assert(rpc::spec::SomeRequirement<rpc::spec::TimeFormatValidator>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::WithCustomError<rpc::spec::Required>>);
 static_assert(rpc::spec::SomeModifier<rpc::spec::WithCustomError<rpc::spec::Clamp<int64_t>>>);
 
+// Section / IfObject / IfArray are SomeModifier
+using SimpleSection = rpc::spec::Section<rpc::spec::FieldSpec<rpc::spec::Required>>;
+static_assert(rpc::spec::SomeModifier<SimpleSection>);
+using SimpleIfObject = rpc::spec::IfObject<SimpleSection>;
+static_assert(rpc::spec::SomeModifier<SimpleIfObject>);
+using SimpleIfArray = rpc::spec::IfArray<SimpleSection>;
+static_assert(rpc::spec::SomeModifier<SimpleIfArray>);
+
 // ============================================================================
 // WithCustomError — code-only override.
 // ============================================================================
@@ -1170,4 +1203,242 @@ TEST(RpcSpecDSL_WarningsToJson, EmptyWarningsProducesEmptyArray)
     Warnings const empty{};
     auto const arr = rpc::spec::toJsonArray(empty);
     EXPECT_TRUE(arr.empty());
+}
+
+// ============================================================================
+// Section — validates named sub-fields within an object field.
+// ============================================================================
+
+TEST(RpcSpecDSL_Section, ValidSubObjectPasses)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field(
+            "taker_pays",
+            section(
+                field("currency", required, type<std::string>), field("value", type<std::string>)
+            )
+        ),
+    };
+
+    auto request =
+        boost::json::parse(R"JSON({ "taker_pays": { "currency": "XRP", "value": "1" } })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_Section, MissingRequiredSubFieldFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("taker_pays", section(field("currency", required))),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "taker_pays": {} })JSON");
+    auto const result = kSPEC.process(request);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error().message, "Required field 'currency' missing");
+}
+
+TEST(RpcSpecDSL_Section, WrongSubFieldTypeFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("taker_pays", section(field("currency", required, type<std::string>))),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "taker_pays": { "currency": 42 } })JSON");
+    auto const result = kSPEC.process(request);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+}
+
+TEST(RpcSpecDSL_Section, AbsentParentFieldSkipsSection)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("taker_pays", section(field("currency", required))),
+    };
+
+    auto request = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_Section, NonObjectParentFieldFails)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("taker_pays", section(field("currency", required))),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "taker_pays": "XRP" })JSON");
+    auto const result = kSPEC.process(request);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+}
+
+TEST(RpcSpecDSL_Section, ModifierMutatesSubField)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("options", section(field("limit", type<int64_t>, clamp(int64_t{10}, int64_t{400})))),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "options": { "limit": 3 } })JSON");
+    ASSERT_TRUE(kSPEC.process(request).has_value());
+    EXPECT_EQ(request.as_object().at("options").as_object().at("limit").as_int64(), 10);
+}
+
+TEST(RpcSpecDSL_Section, PipeStyle)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("payload") |
+            section(
+                field("type", required, type<std::string>), field("value", required, type<int64_t>)
+            ),
+    };
+
+    auto good = boost::json::parse(R"JSON({ "payload": { "type": "foo", "value": 1 } })JSON");
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+
+    auto bad = boost::json::parse(R"JSON({ "payload": { "type": "foo" } })JSON");
+    EXPECT_FALSE(kSPEC.process(bad).has_value());
+}
+
+// ============================================================================
+// IfObject — runs sub-processors only when the field is a JSON object.
+// ============================================================================
+
+TEST(RpcSpecDSL_IfObject, SkipsWhenFieldIsNotObject)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("entry", ifObject(section(field("a", required)))),
+    };
+
+    // string value — object branch must not fire
+    auto request = boost::json::parse(R"JSON({ "entry": "validated" })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_IfObject, RunsSectionWhenFieldIsObject)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("entry", ifObject(section(field("a", required, type<std::string>)))),
+    };
+
+    auto good = boost::json::parse(R"JSON({ "entry": { "a": "hello" } })JSON");
+    EXPECT_TRUE(kSPEC.process(good).has_value());
+
+    auto bad = boost::json::parse(R"JSON({ "entry": {} })JSON");
+    auto const result = kSPEC.process(bad);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error().message, "Required field 'a' missing");
+}
+
+TEST(RpcSpecDSL_IfObject, AbsentFieldSkipped)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("entry", ifObject(section(field("a", required)))),
+    };
+
+    auto request = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+// ============================================================================
+// IfArray — runs sub-processors only when the field is a JSON array.
+// ============================================================================
+
+TEST(RpcSpecDSL_IfArray, SkipsWhenFieldIsNotArray)
+{
+    // A no-op sub-processor just to exercise the type check.
+    static constexpr auto kSPEC = RpcSpec{
+        field("ids", ifArray(ifType<int64_t>())),  // noop, just guards the type
+    };
+
+    // object — not an array, should be skipped
+    auto request = boost::json::parse(R"JSON({ "ids": {} })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_IfArray, RunsSubProcessorsWhenFieldIsArray)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("ids", ifArray(ifType<int64_t>())),
+    };
+
+    auto request = boost::json::parse(R"JSON({ "ids": [1, 2, 3] })JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_IfArray, AbsentFieldSkipped)
+{
+    static constexpr auto kSPEC = RpcSpec{
+        field("ids", ifArray(ifType<int64_t>())),
+    };
+
+    auto request = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC.process(request).has_value());
+}
+
+// ============================================================================
+// FieldAccess navigation — child() and element() on BoostJsonFieldAccess.
+// ============================================================================
+
+TEST(RpcSpecDSL_FieldAccess, ChildReturnsAbsentFaWhenParentAbsent)
+{
+    auto request = boost::json::parse(R"JSON({})JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "foo");
+    EXPECT_FALSE(fa.present());
+    auto child = fa.child("bar");
+    EXPECT_FALSE(child.present());
+}
+
+TEST(RpcSpecDSL_FieldAccess, ChildReturnsAbsentFaWhenParentNotObject)
+{
+    auto request = boost::json::parse(R"JSON({ "foo": 42 })JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "foo");
+    EXPECT_TRUE(fa.present());
+    EXPECT_FALSE(fa.isObject());
+    auto child = fa.child("bar");
+    EXPECT_FALSE(child.present());
+}
+
+TEST(RpcSpecDSL_FieldAccess, ChildNavigatesIntoSubObject)
+{
+    auto request = boost::json::parse(R"JSON({ "foo": { "bar": "hello" } })JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "foo");
+    ASSERT_TRUE(fa.present());
+    ASSERT_TRUE(fa.isObject());
+
+    auto child = fa.child("bar");
+    ASSERT_TRUE(child.present());
+    EXPECT_TRUE(child.isString());
+    EXPECT_EQ(child.asString(), "hello");
+}
+
+TEST(RpcSpecDSL_FieldAccess, ChildMissingKeyReturnsAbsent)
+{
+    auto request = boost::json::parse(R"JSON({ "foo": { "a": 1 } })JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "foo");
+    auto child = fa.child("missing");
+    EXPECT_FALSE(child.present());
+}
+
+TEST(RpcSpecDSL_FieldAccess, ElementNavigatesIntoArray)
+{
+    auto request = boost::json::parse(R"JSON({ "ids": [10, 20, 30] })JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "ids");
+    ASSERT_TRUE(fa.isArray());
+
+    auto elem0 = fa.element(0);
+    ASSERT_TRUE(elem0.present());
+    EXPECT_TRUE(elem0.isInt64());
+    EXPECT_EQ(elem0.asInt64(), 10);
+
+    auto elem2 = fa.element(2);
+    ASSERT_TRUE(elem2.present());
+    EXPECT_EQ(elem2.asInt64(), 30);
+}
+
+TEST(RpcSpecDSL_FieldAccess, ElementOutOfBoundsReturnsAbsent)
+{
+    auto request = boost::json::parse(R"JSON({ "ids": [1, 2] })JSON");
+    auto fa = rpc::spec::makeFieldAccess(request, "ids");
+    EXPECT_FALSE(fa.element(5).present());
 }
