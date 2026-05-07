@@ -1,7 +1,6 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/log/Logger.hpp"

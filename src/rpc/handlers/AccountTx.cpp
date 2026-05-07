@@ -66,8 +66,10 @@ AccountTxHandler::spec(uint32_t apiVersion)
         field(JS(account), required, account),
         field(JS(ledger_hash), uint256Hex),
         field(JS(ledger_index), ledgerIndex),
-        field(JS(ledger_index_min), type<int64_t>),
-        field(JS(ledger_index_max), type<int64_t>),
+        // Mirrors old `Type<int32_t>{}` behaviour: silently coerce overflow into the int32
+        // range so the downstream `tag_invoke` cast (to int32_t) is well-defined.
+        field(JS(ledger_index_min), type<int64_t>, clampAs<int32_t>),
+        field(JS(ledger_index_max), type<int64_t>, clampAs<int32_t>),
         field(JS(ctid), type<std::string>),
         field(
             JS(limit),

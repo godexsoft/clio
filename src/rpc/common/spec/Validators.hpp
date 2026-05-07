@@ -21,8 +21,10 @@
 #include <array>
 #include <cctype>
 #include <charconv>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -235,6 +237,52 @@ struct Clamp {
 
 template <typename T>
 Clamp(T, T) -> Clamp<T>;
+
+// Mirrors the old `checkTypeAndClamp<Target>` behaviour: silently coerces an integer-valued
+// field into the inclusive range of `Target`. No-op for absent/non-integer fields. Negative
+// int64 input for an unsigned target is clamped to 0; values exceeding `Target::max()` are
+// clamped to `Target::max()`. The clamped result is stored back through the field-access API
+// (uint32 for unsigned target, int64 otherwise).
+//
+// Use after `type<int64_t>` or `type<uint32_t>` when downstream deserialisation truncates to a
+// narrower type — e.g. `account_tx.ledger_index_min` being read as `int32_t`.
+template <typename Target>
+    requires std::integral<Target> && (!std::is_same_v<Target, bool>)
+struct ClampAs {
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    modify(FA& f) const
+    {
+        if (!f.present())
+            return {};
+
+        constexpr auto kHI = static_cast<int64_t>(std::numeric_limits<Target>::max());
+        constexpr auto kLO = static_cast<int64_t>(std::numeric_limits<Target>::min());
+
+        if (f.isInt64()) {
+            auto v = std::clamp(f.asInt64(), kLO, kHI);
+            if constexpr (std::is_unsigned_v<Target>) {
+                if (v < 0)
+                    v = 0;
+                f.set(static_cast<uint32_t>(v));
+            } else {
+                f.set(v);
+            }
+            return {};
+        }
+
+        if (f.isUint32()) {
+            if constexpr (std::is_unsigned_v<Target>) {
+                auto const u = f.asUint32();
+                f.set(static_cast<uint32_t>(std::min<int64_t>(static_cast<int64_t>(u), kHI)));
+            } else {
+                auto const v = std::min<int64_t>(static_cast<int64_t>(f.asUint32()), kHI);
+                f.set(v);
+            }
+        }
+        return {};
+    }
+};
 
 struct Deprecated {
     template <SomeFieldAccess FA>
@@ -452,8 +500,9 @@ struct IssuerValidator {
 };
 
 // Validates a {currency, issuer} object as a ripple::Issue.
-// All failures return ClioError::RpcMalformedRequest.
-// Rules: currency is required; XRP must have no issuer; non-XRP must have a valid issuer.
+// Mirrors old `currencyIssueValidator`:
+//   - non-object → rpcINVALID_PARAMS + "<key>NotObject"
+//   - any other parse failure → ClioError::RpcMalformedRequest (no message)
 struct CurrencyIssueValidator {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
@@ -462,7 +511,9 @@ struct CurrencyIssueValidator {
         if (!f.present())
             return {};
         if (!f.isObject()) {
-            return std::unexpected{rpc::Status{rpc::ClioError::RpcMalformedRequest}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotObject"
+            }};
         }
         auto const currFa = f.child("currency");
         if (!currFa.present() || !currFa.isString()) {

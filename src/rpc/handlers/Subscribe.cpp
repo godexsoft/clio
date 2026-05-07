@@ -22,6 +22,7 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
@@ -222,6 +223,12 @@ SubscribeHandler::spec([[maybe_unused]] uint32_t apiVersion)
                     return std::unexpected{rpc::Status{rpc::RippledError::rpcDST_AMT_MALFORMED}};
                 }
 
+                // book-level domain (mirrors parseBook): must be string if present
+                auto const domainFa = book.child("domain");
+                if (domainFa.present() && !domainFa.isString()) {
+                    return std::unexpected{rpc::Status{rpc::RippledError::rpcDOMAIN_MALFORMED}};
+                }
+
                 // taker_pays issuer
                 ripple::AccountID payIssuer;
                 auto const paysIssuerFa = takerPaysFa.child("issuer");
@@ -301,6 +308,14 @@ SubscribeHandler::spec([[maybe_unused]] uint32_t apiVersion)
                     return std::unexpected{
                         rpc::Status{rpc::RippledError::rpcBAD_MARKET, "badMarket"}
                     };
+                }
+
+                // book-level domain (mirrors inner parseBook overload): must parse as hex
+                if (domainFa.present()) {
+                    ripple::uint256 dom;
+                    if (!dom.parseHex(std::string{domainFa.asString()})) {
+                        return std::unexpected{rpc::Status{rpc::RippledError::rpcDOMAIN_MALFORMED}};
+                    }
                 }
             }
             return {};

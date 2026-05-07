@@ -38,6 +38,19 @@ clamp(T lo, T hi)
 }
 
 /**
+ * @brief Coerces an integer-valued field into the inclusive range of `Target`.
+ *
+ * Mirrors the old `validation::Type<Target>{}` silent-clamp behaviour. Pair with `type<int64_t>`
+ * or `type<uint32_t>` when downstream code reads the value as a narrower integer.
+ *
+ * Example: `field(JS(ledger_index_min), type<int64_t>, clampAs<int32_t>)`
+ */
+// NOLINTBEGIN(readability-identifier-naming)
+template <typename Target>
+inline constexpr auto clampAs = ClampAs<Target>{};
+// NOLINTEND(readability-identifier-naming)
+
+/**
  * @brief Factory for IfType — T must be specified explicitly, SubItems are deduced.
  *
  * Example: spec::ifType<int64_t>(spec::min(int64_t{0}), spec::clamp(int64_t{10}, int64_t{400}))

@@ -199,6 +199,31 @@ TEST_F(RPCAccountChannelsHandlerTest, MarkerNotString)
     });
 }
 
+// Regression guard: a non-string `destination_account` must produce the same wire response
+// as the legacy spec system — bare `rpcINVALID_PARAMS` with the default
+// "Invalid parameters." message, NOT the AccountFormat-style "<key>NotString" body.
+TEST_F(RPCAccountChannelsHandlerTest, DestinationAccountNotString)
+{
+    runSpawn([this](auto yield) {
+        auto const handler = AnyHandler{AccountChannelsHandler{backend_}};
+        auto const input = json::parse(
+            fmt::format(
+                R"JSON({{
+                    "account": "{}",
+                    "destination_account": 123
+                }})JSON",
+                kACCOUNT
+            )
+        );
+        auto const output = handler.process(input, Context{yield});
+        ASSERT_FALSE(output);
+
+        auto const err = rpc::makeError(output.result.error());
+        EXPECT_EQ(err.at("error").as_string(), "invalidParams");
+        EXPECT_EQ(err.at("error_message").as_string(), "Invalid parameters.");
+    });
+}
+
 // error case : invalid marker
 // marker format is composed of a comma separated index and start hint. The
 // former will be read as hex, and the latter using boost lexical cast.

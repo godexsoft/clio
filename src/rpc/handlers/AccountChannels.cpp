@@ -41,7 +41,10 @@ AccountChannelsHandler::spec([[maybe_unused]] uint32_t apiVersion)
     using namespace spec;
     static constexpr auto kRPC_SPEC = spec::RpcSpec{
         field(JS(account), required, account),
-        field(JS(destination_account), account),
+        // Old spec chained Type<std::string>{} before accountValidator so that a non-string
+        // destination_account produced a bare rpcINVALID_PARAMS rather than the
+        // "<key>NotString" message that AccountFormat would emit.
+        field(JS(destination_account), type<std::string>, account),
         field(JS(ledger_hash), uint256Hex),
         field(
             JS(limit),

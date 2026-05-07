@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <string>
 #include <string_view>
@@ -1997,6 +1998,61 @@ TEST(RpcSpecDSL_Between, AbsentFieldPasses)
     static constexpr auto kSPEC = RpcSpec{
         field("trim", between(uint32_t{1}, uint32_t{25})),
     };
+    auto absent = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC.process(absent).has_value());
+}
+
+// ============================================================================
+// ClampAs — silently coerce an integer-valued field into the target type's range,
+// mirroring the old `Type<Target>{}` clamp-on-verify behaviour.
+// ============================================================================
+
+TEST(RpcSpecDSL_ClampAs, Int32OverflowClampedToMax)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", type<int64_t>, clampAs<int32_t>)};
+    auto j = boost::json::parse(R"JSON({ "v": 4294967296 })JSON");
+    EXPECT_TRUE(kSPEC.process(j).has_value());
+    EXPECT_EQ(j.as_object().at("v").as_int64(), std::numeric_limits<int32_t>::max());
+}
+
+TEST(RpcSpecDSL_ClampAs, Int32UnderflowClampedToMin)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", type<int64_t>, clampAs<int32_t>)};
+    auto j = boost::json::parse(R"JSON({ "v": -4294967296 })JSON");
+    EXPECT_TRUE(kSPEC.process(j).has_value());
+    EXPECT_EQ(j.as_object().at("v").as_int64(), std::numeric_limits<int32_t>::min());
+}
+
+TEST(RpcSpecDSL_ClampAs, Int32InRangeUnchanged)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", type<int64_t>, clampAs<int32_t>)};
+    auto j = boost::json::parse(R"JSON({ "v": 12345 })JSON");
+    EXPECT_TRUE(kSPEC.process(j).has_value());
+    EXPECT_EQ(j.as_object().at("v").as_int64(), 12345);
+}
+
+TEST(RpcSpecDSL_ClampAs, Uint32OverflowClampedToMax)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", type<int64_t>, clampAs<uint32_t>)};
+    auto j = boost::json::parse(R"JSON({ "v": 8589934592 })JSON");
+    EXPECT_TRUE(kSPEC.process(j).has_value());
+    EXPECT_EQ(
+        j.as_object().at("v").as_uint64(),
+        static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())
+    );
+}
+
+TEST(RpcSpecDSL_ClampAs, Uint32NegativeClampedToZero)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", type<int64_t>, clampAs<uint32_t>)};
+    auto j = boost::json::parse(R"JSON({ "v": -5 })JSON");
+    EXPECT_TRUE(kSPEC.process(j).has_value());
+    EXPECT_EQ(j.as_object().at("v").as_uint64(), 0u);
+}
+
+TEST(RpcSpecDSL_ClampAs, AbsentFieldPasses)
+{
+    static constexpr auto kSPEC = RpcSpec{field("v", clampAs<int32_t>)};
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }

@@ -2,7 +2,6 @@
 
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
-#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
 

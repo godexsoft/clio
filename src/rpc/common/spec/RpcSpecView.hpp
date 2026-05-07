@@ -48,6 +48,7 @@ public:
     {
     }
 
+    // TODO: use abstract json stuff
     [[nodiscard]] MaybeError
     process(boost::json::value& v) const
     {

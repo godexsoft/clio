@@ -554,6 +554,46 @@ generateTestValuesForParametersTest()
             .expectedError = "badIssuer",
             .expectedErrorMessage = "Issuer account malformed."
         },
+        // Regression guard for the .cpp-spec migration: parseBook used to validate `domain`
+        // both as string and as parseable hex. The inline book validator must keep doing that.
+        SubscribeParamTestCaseBundle{
+            .testName = "BooksItemDomainNotString",
+            .testJson = R"JSON({
+                "books": [
+                    {
+                        "taker_pays": {
+                            "currency": "XRP"
+                        },
+                        "taker_gets": {
+                            "currency": "USD",
+                            "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
+                        },
+                        "domain": 0
+                    }
+                ]
+            })JSON",
+            .expectedError = "domainMalformed",
+            .expectedErrorMessage = "Domain is malformed."
+        },
+        SubscribeParamTestCaseBundle{
+            .testName = "BooksItemDomainBadHex",
+            .testJson = R"JSON({
+                "books": [
+                    {
+                        "taker_pays": {
+                            "currency": "XRP"
+                        },
+                        "taker_gets": {
+                            "currency": "USD",
+                            "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
+                        },
+                        "domain": "ZZZ"
+                    }
+                ]
+            })JSON",
+            .expectedError = "domainMalformed",
+            .expectedErrorMessage = "Domain is malformed."
+        },
     };
 }
 
