@@ -4,8 +4,8 @@
 #include "data/BackendInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "feed/Types.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -15,7 +15,6 @@
 #include <boost/json/value_to.hpp>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -97,7 +96,7 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion);
 
     /**

@@ -2,6 +2,7 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/WarningsToJson.hpp"
 #include "rpc/handlers/Unsubscribe.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockSubscriptionManager.hpp"
@@ -684,7 +685,7 @@ TEST(RPCUnsubscribeSpecTest, DeprecatedFields)
         {"rt_transactions", {"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"}},
     };
     auto const spec = UnsubscribeHandler::spec(2);
-    auto const warnings = spec.check(json);
+    auto const warnings = rpc::spec::toJsonArray(spec.check(json));
     ASSERT_EQ(warnings.size(), 1);
     ASSERT_TRUE(warnings[0].is_object());
     auto const& warning = warnings[0].as_object();

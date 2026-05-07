@@ -6,9 +6,16 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Types.hpp"
+#include "rpc/common/spec/Validators.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/Profiler.hpp"
+#include "util/TxUtils.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/conversion.hpp>
@@ -29,6 +36,63 @@
 #include <utility>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+AccountTxHandler::spec(uint32_t apiVersion)
+{
+    using namespace spec;
+
+    // Validates tx_type against the runtime-generated set of known transaction type names
+    // (lowercase). Because the set comes from ripple::TxFormats at runtime, we use a
+    // CustomValidator lambda rather than the consteval spec::oneOf factory.
+    // Returns the same error shape as the old validation::OneOf: "Invalid field '<key>'."
+    static constexpr auto kTX_TYPE_VALIDATOR =
+        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
+            if (!f.isString()) {
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            }
+            auto const& validTypes = util::getTxTypesInLowercase();
+            auto const sv = f.asString();
+            if (!validTypes.contains(std::string{sv})) {
+                return std::unexpected{rpc::Status{
+                    rpc::RippledError::rpcINVALID_PARAMS,
+                    "Invalid field '" + std::string{f.key()} + "'."
+                }};
+            }
+            return {};
+        }};
+
+    static constexpr auto kSPEC_V1 = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(JS(ledger_index_min), type<int64_t>),
+        field(JS(ledger_index_max), type<int64_t>),
+        field(JS(ctid), type<std::string>),
+        field(
+            JS(limit),
+            type<uint32_t>,
+            min(uint32_t{kLIMIT_MIN}),
+            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+        ),
+        field(
+            JS(marker),
+            withCustomError(
+                type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
+            ),
+            ifObject(section(
+                field(JS(ledger), required, type<uint32_t>),
+                field(JS(seq), required, type<uint32_t>)
+            ))
+        ),
+        field("tx_type", type<std::string>, toLower, kTX_TYPE_VALIDATOR),
+    };
+
+    static constexpr auto kSPEC_V2 =
+        spec::extend(kSPEC_V1, field(JS(binary), type<bool>), field(JS(forward), type<bool>));
+
+    return apiVersion == 1 ? RpcSpecView{kSPEC_V1} : RpcSpecView{kSPEC_V2};
+}
 
 // TODO: this is currently very similar to nft_history but its own copy for time
 // being. we should aim to reuse common logic in some way in the future.

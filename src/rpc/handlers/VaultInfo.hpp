@@ -1,24 +1,18 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/Errors.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
-
 namespace rpc {
 
 /**
@@ -62,29 +56,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(vault_id),
-             meta::WithCustomError{
-                 validation::CustomValidators::uint256HexStringValidator,
-                 Status(ClioError::RpcMalformedRequest)
-             }},
-            {JS(owner),
-             meta::WithCustomError{
-                 validation::CustomValidators::accountBase58Validator,
-                 Status(ClioError::RpcMalformedRequest, "OwnerNotHexString")
-             }},
-            {JS(seq),
-             meta::WithCustomError{
-                 validation::Type<uint32_t>{}, Status(ClioError::RpcMalformedRequest)
-             }},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the VaultInfo command

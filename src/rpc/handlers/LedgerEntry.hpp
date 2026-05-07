@@ -103,7 +103,7 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static rpc::spec::RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec(uint32_t apiVersion);
 
     /**

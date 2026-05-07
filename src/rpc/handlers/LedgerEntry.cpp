@@ -46,7 +46,7 @@
 
 namespace rpc {
 
-rpc::spec::RpcSpecConstRef
+rpc::spec::RpcSpecView
 LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
     using namespace spec;
@@ -379,7 +379,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
         field("include_deleted", spec::type<bool>),
     };
 
-    return rpc::spec::RpcSpecView{kRPC_SPEC};
+    return kRPC_SPEC;
 }
 
 LedgerEntryHandler::Result

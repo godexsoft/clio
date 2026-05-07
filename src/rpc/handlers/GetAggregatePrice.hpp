@@ -2,12 +2,8 @@
 
 #include "data/BackendInterface.hpp"
 #include "rpc/Errors.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Modifiers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -16,14 +12,14 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace rpc {
@@ -97,76 +93,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kORACLES_MAX = 200;
-
-        static auto const kORACLES_VALIDATOR = modifiers::CustomModifier{
-            [](boost::json::value& value, std::string_view) -> MaybeError {
-                if (!value.is_array() or value.as_array().empty() or
-                    value.as_array().size() > kORACLES_MAX)
-                    return Error{Status{RippledError::rpcORACLE_MALFORMED}};
-
-                for (auto& oracle : value.as_array()) {
-                    if (!oracle.is_object() or
-                        !oracle.as_object().contains(JS(oracle_document_id)) or
-                        !oracle.as_object().contains(JS(account)))
-                        return Error{Status{RippledError::rpcORACLE_MALFORMED}};
-
-                    auto maybeError = validation::Type<std::uint32_t, std::string>{}.verify(
-                        oracle, JS(oracle_document_id)
-                    );
-                    if (!maybeError)
-                        return maybeError;
-
-                    maybeError = modifiers::ToNumber::modify(oracle, JS(oracle_document_id));
-                    if (!maybeError)
-                        return maybeError;
-
-                    maybeError = validation::CustomValidators::accountBase58Validator.verify(
-                        oracle.as_object(), JS(account)
-                    );
-                    if (!maybeError)
-                        return Error{Status{RippledError::rpcINVALID_PARAMS}};
-                };
-
-                return MaybeError{};
-            }
-        };
-
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            // validate quoteAsset and base_asset in accordance to the currency code found in XRPL
-            // doc:
-            // https://xrpl.org/docs/references/protocol/data-types/currency-formats#currency-codes
-            // usually Clio returns rpcMALFORMED_CURRENCY , return InvalidParam here just to mimic
-            // rippled
-            {JS(base_asset),
-             validation::Required{},
-             meta::WithCustomError{
-                 validation::CustomValidators::currencyValidator,
-                 Status(RippledError::rpcINVALID_PARAMS)
-             }},
-            {JS(quote_asset),
-             validation::Required{},
-             meta::WithCustomError{
-                 validation::CustomValidators::currencyValidator,
-                 Status(RippledError::rpcINVALID_PARAMS)
-             }},
-            {JS(oracles), validation::Required{}, kORACLES_VALIDATOR},
-            // note: Unlike `rippled`, Clio only supports UInt as input, no string, no `null`, etc.
-            {JS(time_threshold), validation::Type<std::uint32_t>{}},
-            {
-                JS(trim),
-                validation::Type<std::uint8_t>{},
-                validation::Between<std::uint8_t>{1, 25},
-            }
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the GetAggregatePrice command

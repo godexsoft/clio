@@ -1,21 +1,18 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/Checkers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 
 namespace rpc {
 
@@ -69,19 +66,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {"account_index", check::Deprecated{}},
-            {JS(strict), check::Deprecated{}}
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the AccountCurrencies command

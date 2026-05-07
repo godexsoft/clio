@@ -4,6 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/LedgerUtils.hpp"
@@ -30,6 +34,27 @@
 #include <vector>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+AccountObjectsHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(
+            JS(limit),
+            type<uint32_t>,
+            min(uint32_t{1}),
+            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+        ),
+        field(JS(type), accountType),
+        field(JS(marker), accountMarker),
+        field(JS(deletion_blockers_only), type<bool>),
+    };
+    return kRPC_SPEC;
+}
 
 AccountObjectsHandler::Result
 AccountObjectsHandler::process(AccountObjectsHandler::Input const& input, Context const& ctx) const

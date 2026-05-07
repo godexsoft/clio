@@ -5,6 +5,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -24,11 +28,26 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+DepositAuthorizedHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(source_account), required, account),
+        field(JS(destination_account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(JS(credentials), hex256Array),
+    };
+    return kRPC_SPEC;
+}
 
 DepositAuthorizedHandler::Result
 DepositAuthorizedHandler::process(

@@ -4,10 +4,11 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -99,21 +100,23 @@ FeatureHandler::process(FeatureHandler::Input const& input, Context const& ctx) 
     };
 }
 
-RpcSpecConstRef
+rpc::spec::RpcSpecView
 FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    static RpcSpec const kRPC_SPEC = {
-        {JS(feature), validation::Type<std::string>{}},
-        {JS(vetoed),
-         meta::WithCustomError{
-             validation::NotSupported{},
-             Status(
-                 RippledError::rpcNO_PERMISSION,
-                 "The admin portion of feature API is not available through Clio."
-             )
-         }},
-        {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-        {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
+    using namespace spec;
+
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(feature), type<std::string>),
+        field(
+            JS(vetoed),
+            withCustomError(
+                notSupported,
+                rpc::RippledError::rpcNO_PERMISSION,
+                "The admin portion of feature API is not available through Clio."
+            )
+        ),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
     };
     return kRPC_SPEC;
 }

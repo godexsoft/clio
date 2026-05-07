@@ -668,18 +668,54 @@ struct CustomModifier {
 template <typename Fn>
 CustomModifier(Fn) -> CustomModifier<Fn>;
 
-// Rejects the field with rpcNOT_SUPPORTED if it is present.
+// Rejects the field with rpcNOT_SUPPORTED + "Not supported field '<key>'" if it is present.
 struct NotSupported {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
         if (f.present()) {
-            return std::unexpected{rpc::Status{rpc::RippledError::rpcNOT_SUPPORTED}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcNOT_SUPPORTED,
+                "Not supported field '" + std::string{f.key()} + "'"
+            }};
         }
         return {};
     }
 };
+
+// Rejects the field with rpcNOT_SUPPORTED only when its value equals the configured value.
+// Currently supports bool. Error message:
+// "Not supported field '<key>'s value '<value>'"
+template <typename T>
+    requires(std::is_same_v<T, bool>)
+struct NotSupportedIfEqual {
+    T value;
+    consteval explicit NotSupportedIfEqual(T v) : value{v}
+    {
+    }
+
+    template <SomeFieldAccess FA>
+    [[nodiscard]] MaybeError
+    verify(FA const& f) const
+    {
+        if (!f.present())
+            return {};
+        if constexpr (std::is_same_v<T, bool>) {
+            if (!f.isBool())
+                return {};
+            if (f.asBool() != value)
+                return {};
+        }
+        return std::unexpected{rpc::Status{
+            rpc::RippledError::rpcNOT_SUPPORTED,
+            fmt::format("Not supported field '{}'s value '{}'", f.key(), value)
+        }};
+    }
+};
+
+template <typename T>
+NotSupportedIfEqual(T) -> NotSupportedIfEqual<T>;
 
 // Validates that a string field equals one of a fixed set of allowed values.
 // Returns rpcINVALID_PARAMS if the field is not a string or not in the set.
@@ -766,7 +802,8 @@ template <typename T>
 Between(T, T) -> Between<T>;
 
 // Validates that each element of an array field is a valid uint256 hex string.
-// Returns rpcINVALID_PARAMS if the field is not an array or any element fails validation.
+// Returns rpcINVALID_PARAMS + "Item is not a valid uint256 type." for any non-string or
+// non-hex element.
 struct Hex256ArrayValidator {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
@@ -775,12 +812,22 @@ struct Hex256ArrayValidator {
         if (!f.present())
             return {};
         if (!f.isArray()) {
+            // Mirrors old behaviour: a non-array credentials field is rejected by the leading
+            // Type<array> check which produces a plain rpcINVALID_PARAMS ("Invalid parameters.").
             return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
         }
         for (std::size_t i = 0; i < f.arraySize(); ++i) {
             auto const elem = f.element(i);
-            if (auto err = Uint256HexStringValidator::verify(elem); !err) {
-                return err;
+            if (!elem.isString()) {
+                return std::unexpected{rpc::Status{
+                    rpc::RippledError::rpcINVALID_PARAMS, "Item is not a valid uint256 type."
+                }};
+            }
+            ripple::uint256 parsed;
+            if (!parsed.parseHex(std::string{elem.asString()}.c_str())) {
+                return std::unexpected{rpc::Status{
+                    rpc::RippledError::rpcINVALID_PARAMS, "Item is not a valid uint256 type."
+                }};
             }
         }
         return {};
@@ -788,7 +835,8 @@ struct Hex256ArrayValidator {
 };
 
 // Validates a pagination marker string in the format "<hex256>,<uint64>" (e.g. "AABB...,42").
-// Returns rpcINVALID_PARAMS + "Malformed cursor." on any format error.
+// Returns rpcINVALID_PARAMS + "<key>NotString" if not a string, or
+// rpcINVALID_PARAMS + "Malformed cursor." if the format is invalid.
 struct AccountMarkerValidator {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
@@ -797,9 +845,9 @@ struct AccountMarkerValidator {
         if (!f.present())
             return {};
         if (!f.isString()) {
-            return std::unexpected{
-                rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Malformed cursor."}
-            };
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotString"
+            }};
         }
         auto const sv = f.asString();
         auto const commaPos = sv.find(',');
@@ -829,7 +877,8 @@ struct AccountMarkerValidator {
 };
 
 // Validates that a string field names a valid account-owned ledger entry type.
-// Returns rpcINVALID_PARAMS if the type is unrecognized.
+// Not a string -> rpcINVALID_PARAMS + "Invalid field '<key>', not string."
+// Unknown type -> rpcINVALID_PARAMS + "Invalid field '<key>'."
 struct AccountTypeValidator {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
@@ -838,19 +887,25 @@ struct AccountTypeValidator {
         if (!f.present())
             return {};
         if (!f.isString()) {
-            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS,
+                fmt::format("Invalid field '{}', not string.", f.key())
+            }};
         }
         auto const type =
             util::LedgerTypes::getAccountOwnedLedgerTypeFromStr(std::string{f.asString()});
         if (type == ripple::ltANY) {
-            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS, fmt::format("Invalid field '{}'.", f.key())
+            }};
         }
         return {};
     }
 };
 
 // Validates that a string field names any valid ledger entry type.
-// Returns rpcINVALID_PARAMS if the type is unrecognized.
+// Not a string -> rpcINVALID_PARAMS + "Invalid field '<key>', not string."
+// Unknown type -> rpcINVALID_PARAMS + "Invalid field '<key>'."
 struct LedgerEntryTypeValidator {
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
@@ -859,11 +914,16 @@ struct LedgerEntryTypeValidator {
         if (!f.present())
             return {};
         if (!f.isString()) {
-            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS,
+                fmt::format("Invalid field '{}', not string.", f.key())
+            }};
         }
         auto const type = util::LedgerTypes::getLedgerEntryTypeFromStr(std::string{f.asString()});
         if (type == ripple::ltANY) {
-            return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+            return std::unexpected{rpc::Status{
+                rpc::RippledError::rpcINVALID_PARAMS, fmt::format("Invalid field '{}'.", f.key())
+            }};
         }
         return {};
     }

@@ -2078,7 +2078,7 @@ TEST(RpcSpecDSL_AccountMarker, NotStringFails)
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcINVALID_PARAMS);
-    EXPECT_EQ(r.error().message, "Malformed cursor.");
+    EXPECT_EQ(r.error().message, "markerNotString");
 }
 
 TEST(RpcSpecDSL_AccountMarker, NoCommaFails)

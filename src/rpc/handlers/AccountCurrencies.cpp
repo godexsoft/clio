@@ -4,6 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -24,6 +28,21 @@
 #include <string>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+AccountCurrenciesHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field("account_index", deprecated),
+        field(JS(strict), deprecated),
+    };
+    return rpc::spec::RpcSpecView{kRPC_SPEC};
+}
+
 AccountCurrenciesHandler::Result
 AccountCurrenciesHandler::process(
     AccountCurrenciesHandler::Input const& input,

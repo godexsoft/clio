@@ -7,9 +7,11 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -101,20 +103,21 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec(uint32_t apiVersion)
     {
-        static RpcSpec const kRPC_SPEC_FOR_V1 = {
-            {JS(transaction), validation::CustomValidators::uint256HexStringValidator},
-            {JS(min_ledger), validation::Type<uint32_t>{}},
-            {JS(max_ledger), validation::Type<uint32_t>{}},
-            {JS(ctid), validation::Type<std::string>{}},
+        using namespace rpc::spec;
+
+        static constexpr auto kSPEC_V1 = spec::RpcSpec{
+            field(JS(transaction)) | uint256Hex,
+            field(JS(min_ledger)) | type<uint32_t>,
+            field(JS(max_ledger)) | type<uint32_t>,
+            field(JS(ctid)) | type<std::string>,
         };
 
-        static auto const kRPC_SPEC =
-            RpcSpec{kRPC_SPEC_FOR_V1, {{JS(binary), validation::Type<bool>{}}}};
+        static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(binary)) | type<bool>);
 
-        return apiVersion == 1 ? kRPC_SPEC_FOR_V1 : kRPC_SPEC;
+        return apiVersion == 1 ? RpcSpecView{kSPEC_V1} : RpcSpecView{kSPEC_V2};
     }
 
     /**

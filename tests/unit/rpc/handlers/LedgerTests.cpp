@@ -2,8 +2,9 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/AnyHandler.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/WarningsToJson.hpp"
 #include "rpc/handlers/Ledger.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockAmendmentCenter.hpp"
@@ -1393,7 +1394,7 @@ struct RPCLedgerHandlerSpecCheckTestBundle {
 
 struct RPCLedgerHandlerSpecCheckTest
     : ::testing::TestWithParam<RPCLedgerHandlerSpecCheckTestBundle> {
-    RpcSpec spec = LedgerHandler::spec(2);
+    rpc::spec::RpcSpecView spec = LedgerHandler::spec(2);
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -1439,7 +1440,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(RPCLedgerHandlerSpecCheckTest, CheckSpec)
 {
-    auto const warnings = spec.check(GetParam().json);
+    auto const warnings = rpc::spec::toJsonArray(spec.check(GetParam().json));
     ASSERT_EQ(warnings.size(), GetParam().expectedWarning.size());
     for (auto const& warn : warnings) {
         ASSERT_TRUE(warn.is_object());

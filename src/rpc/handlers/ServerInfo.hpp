@@ -7,8 +7,9 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/build/Build.hpp"
 
@@ -31,6 +32,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace rpc {
 class Counters;
@@ -153,10 +155,10 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static RpcSpec const kRPC_SPEC = {};
+        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{};
         return kRPC_SPEC;
     }
 

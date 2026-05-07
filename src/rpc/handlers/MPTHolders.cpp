@@ -4,6 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -27,6 +31,25 @@
 using namespace ripple;
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+MPTHoldersHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(mpt_issuance_id), required, uint192Hex),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(
+            JS(limit),
+            type<uint32_t>,
+            min(uint32_t{MPTHoldersHandler::kLIMIT_MIN}),
+            clamp(uint32_t{MPTHoldersHandler::kLIMIT_MIN}, uint32_t{MPTHoldersHandler::kLIMIT_MAX})
+        ),
+        field(JS(marker), uint160Hex),
+    };
+    return kRPC_SPEC;
+}
 
 MPTHoldersHandler::Result
 MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const& ctx) const

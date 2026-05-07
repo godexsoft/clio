@@ -3,26 +3,21 @@
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
 #include "rpc/Errors.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Modifiers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace rpc {
 
@@ -92,67 +87,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(taker_gets),
-             validation::Required{},
-             validation::Type<boost::json::object>{},
-             meta::Section{
-                 {JS(currency),
-                  validation::Required{},
-                  meta::WithCustomError{
-                      validation::CustomValidators::currencyValidator,
-                      Status(RippledError::rpcDST_AMT_MALFORMED)
-                  }},
-                 {JS(issuer),
-                  meta::WithCustomError{
-                      validation::CustomValidators::issuerValidator,
-                      Status(RippledError::rpcDST_ISR_MALFORMED)
-                  }}
-             }},
-            {JS(taker_pays),
-             validation::Required{},
-             validation::Type<boost::json::object>{},
-             meta::Section{
-                 {JS(currency),
-                  validation::Required{},
-                  meta::WithCustomError{
-                      validation::CustomValidators::currencyValidator,
-                      Status(RippledError::rpcSRC_CUR_MALFORMED)
-                  }},
-                 {JS(issuer),
-                  meta::WithCustomError{
-                      validation::CustomValidators::issuerValidator,
-                      Status(RippledError::rpcSRC_ISR_MALFORMED)
-                  }}
-             }},
-            // return INVALID_PARAMS if account format is wrong for "taker"
-            {JS(taker),
-             meta::WithCustomError{
-                 validation::CustomValidators::accountValidator,
-                 Status(RippledError::rpcINVALID_PARAMS, "Invalid field 'taker'.")
-             }},
-            {JS(domain),
-             meta::WithCustomError{
-                 validation::Type<std::string>{},
-                 Status(RippledError::rpcDOMAIN_MALFORMED, "Unable to parse domain.")
-             },
-             meta::WithCustomError{
-                 validation::CustomValidators::uint256HexStringValidator,
-                 Status(RippledError::rpcDOMAIN_MALFORMED, "Unable to parse domain.")
-             }},
-            {JS(limit),
-             validation::Type<uint32_t>{},
-             validation::Min(1u),
-             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the BookOffers command

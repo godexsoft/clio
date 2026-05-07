@@ -3,6 +3,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/WarningsToJson.hpp"
 #include "rpc/handlers/AccountInfo.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockAmendmentCenter.hpp"
@@ -878,7 +879,7 @@ TEST(RPCAccountInfoHandlerSpecTest, DeprecatedFields)
         {"strict", true}
     };
     auto const spec = AccountInfoHandler::spec(2);
-    auto const warnings = spec.check(json);
+    auto const warnings = rpc::spec::toJsonArray(spec.check(json));
     ASSERT_EQ(warnings.size(), 1);
     auto const& warning = warnings[0];
     ASSERT_TRUE(warning.is_object());

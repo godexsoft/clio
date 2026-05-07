@@ -6,6 +6,10 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -25,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -33,6 +38,26 @@
 #include <vector>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+AccountInfoHandler::spec(uint32_t apiVersion)
+{
+    using namespace spec;
+
+    static constexpr auto kSPEC_V1 = spec::RpcSpec{
+        field(JS(account)) | account,
+        field(JS(ident)) | account | deprecated,
+        field(JS(ledger_hash)) | uint256Hex,
+        field(JS(ledger_index)) | ledgerIndex,
+        field(JS(ledger)) | deprecated,
+        field(JS(strict)) | deprecated,
+    };
+
+    static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(signer_lists)) | type<bool>);
+
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+}
+
 AccountInfoHandler::Result
 AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context const& ctx) const
 {

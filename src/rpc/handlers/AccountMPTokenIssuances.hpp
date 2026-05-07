@@ -1,26 +1,19 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/Errors.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/Checkers.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Modifiers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace rpc {
@@ -115,28 +108,8 @@ public:
      * @param apiVersion The API version to return the spec for.
      * @return The spec for the given API version.
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(account),
-             validation::Required{},
-             meta::WithCustomError{
-                 validation::CustomValidators::accountValidator,
-                 Status(RippledError::rpcACT_MALFORMED)
-             }},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(limit),
-             validation::Type<uint32_t>{},
-             validation::Min(1u),
-             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(marker), validation::CustomValidators::accountMarkerValidator},
-            {JS(ledger), check::Deprecated{}},
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec([[maybe_unused]] uint32_t apiVersion);
 
     /**
      * @brief Process the AccountMPTokenIssuances command.

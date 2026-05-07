@@ -4,6 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -18,11 +22,24 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 
+#include <cstdint>
 #include <string>
 
 using namespace ripple;
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+NFTInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(nft_id)) | required | uint256Hex,
+        field(JS(ledger_hash)) | uint256Hex,
+        field(JS(ledger_index)) | ledgerIndex,
+    };
+    return rpc::spec::RpcSpecView{kRPC_SPEC};
+}
 
 NFTInfoHandler::Result
 NFTInfoHandler::process(NFTInfoHandler::Input const& input, Context const& ctx) const

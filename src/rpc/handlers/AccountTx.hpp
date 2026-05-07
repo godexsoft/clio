@@ -3,29 +3,21 @@
 #include "data/BackendInterface.hpp"
 #include "etl/ETLServiceInterface.hpp"
 #include "rpc/Errors.hpp"
-#include "rpc/JS.hpp"
 #include "rpc/common/JsonBool.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Modifiers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
-#include "util/TxUtils.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_set>
+#include <utility>
 
 namespace rpc {
 
@@ -109,50 +101,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        auto const& typesKeysInLowercase = util::getTxTypesInLowercase();
-        static auto const kRPC_SPEC_FOR_V1 = RpcSpec{
-            {JS(account), validation::Required{}, validation::CustomValidators::accountValidator},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(ledger_index_min), validation::Type<int32_t>{}},
-            {JS(ledger_index_max), validation::Type<int32_t>{}},
-            {JS(ctid), validation::Type<std::string>{}},
-            {JS(limit),
-             validation::Type<uint32_t>{},
-             validation::Min(1u),
-             modifiers::Clamp<int32_t>{kLIMIT_MIN, kLIMIT_MAX}},
-            {JS(marker),
-             meta::WithCustomError{
-                 validation::Type<boost::json::object>{},
-                 Status{RippledError::rpcINVALID_PARAMS, "invalidMarker"},
-             },
-             meta::Section{
-                 {JS(ledger), validation::Required{}, validation::Type<uint32_t>{}},
-                 {JS(seq), validation::Required{}, validation::Type<uint32_t>{}},
-             }},
-            {
-                "tx_type",
-                validation::Type<std::string>{},
-                modifiers::ToLower{},
-                validation::OneOf<std::string>(
-                    typesKeysInLowercase.cbegin(), typesKeysInLowercase.cend()
-                ),
-            },
-        };
-
-        static auto const kRPC_SPEC = RpcSpec{
-            kRPC_SPEC_FOR_V1,
-            {
-                {JS(binary), validation::Type<bool>{}},
-                {JS(forward), validation::Type<bool>{}},
-            }
-        };
-
-        return apiVersion == 1 ? kRPC_SPEC_FOR_V1 : kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the AccountTx command

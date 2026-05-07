@@ -4,6 +4,12 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Validators.hpp"
+#include "util/AccountUtils.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -18,13 +24,16 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -35,6 +44,102 @@
 #include <vector>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+GatewayBalancesHandler::spec(uint32_t apiVersion)
+{
+    using namespace spec;
+
+    static constexpr auto kHOT_WALLET_V1 =
+        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
+            if (!f.isString() && !f.isArray()) {
+                return std::unexpected{rpc::Status{
+                    rpc::RippledError::rpcINVALID_HOTWALLET,
+                    std::string{f.key()} + "NotStringOrArray"
+                }};
+            }
+            auto const getAccountID = [](auto const& elem) -> bool {
+                if (!elem.isString())
+                    return false;
+                auto const str = std::string{elem.asString()};
+                auto const pk = util::parseBase58Wrapper<ripple::PublicKey>(
+                    ripple::TokenType::AccountPublic, str
+                );
+                if (pk)
+                    return true;
+                return util::parseBase58Wrapper<ripple::AccountID>(str).has_value();
+            };
+            if (f.isArray()) {
+                for (std::size_t i = 0; i < f.arraySize(); ++i) {
+                    if (!getAccountID(f.element(i))) {
+                        return std::unexpected{rpc::Status{
+                            rpc::RippledError::rpcINVALID_HOTWALLET,
+                            std::string{f.key()} + "Malformed"
+                        }};
+                    }
+                }
+            } else {
+                if (!getAccountID(f)) {
+                    return std::unexpected{rpc::Status{
+                        rpc::RippledError::rpcINVALID_HOTWALLET, std::string{f.key()} + "Malformed"
+                    }};
+                }
+            }
+            return {};
+        }};
+
+    static constexpr auto kHOT_WALLET_V2 =
+        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
+            if (!f.isString() && !f.isArray()) {
+                return std::unexpected{rpc::Status{
+                    rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotStringOrArray"
+                }};
+            }
+            auto const getAccountID = [](auto const& elem) -> bool {
+                if (!elem.isString())
+                    return false;
+                auto const str = std::string{elem.asString()};
+                auto const pk = util::parseBase58Wrapper<ripple::PublicKey>(
+                    ripple::TokenType::AccountPublic, str
+                );
+                if (pk)
+                    return true;
+                return util::parseBase58Wrapper<ripple::AccountID>(str).has_value();
+            };
+            if (f.isArray()) {
+                for (std::size_t i = 0; i < f.arraySize(); ++i) {
+                    if (!getAccountID(f.element(i))) {
+                        return std::unexpected{rpc::Status{
+                            rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "Malformed"
+                        }};
+                    }
+                }
+            } else {
+                if (!getAccountID(f)) {
+                    return std::unexpected{rpc::Status{
+                        rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "Malformed"
+                    }};
+                }
+            }
+            return {};
+        }};
+
+    static constexpr auto kSPEC_V1 = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(JS(hotwallet), kHOT_WALLET_V1),
+    };
+
+    static constexpr auto kSPEC_V2 = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(JS(hotwallet), kHOT_WALLET_V2),
+    };
+
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+}
 
 GatewayBalancesHandler::Result
 GatewayBalancesHandler::process(

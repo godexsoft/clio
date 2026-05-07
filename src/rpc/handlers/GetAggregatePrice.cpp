@@ -4,6 +4,11 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Validators.hpp"
 #include "util/AccountUtils.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
@@ -30,6 +35,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iterator>
@@ -38,6 +44,71 @@
 #include <string>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+GetAggregatePriceHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+
+    static constexpr auto kORACLES_MAX = 200;
+
+    // Validates and normalises the "oracles" array field.
+    // Each element must be an object containing both "account" (base58) and
+    // "oracle_document_id" (uint32 or string).  String document IDs are
+    // converted to integers in-place via ToNumber.
+    static constexpr auto kORACLES_VALIDATOR = spec::CustomModifier{[](auto& f) -> rpc::MaybeError {
+        if (!f.isArray() || f.arraySize() == 0 || f.arraySize() > kORACLES_MAX)
+            return std::unexpected{rpc::Status{rpc::RippledError::rpcORACLE_MALFORMED}};
+
+        for (std::size_t i = 0; i < f.arraySize(); ++i) {
+            auto elem = f.element(i);
+            if (!elem.isObject())
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcORACLE_MALFORMED}};
+
+            auto docIdFa = elem.child(JS(oracle_document_id));
+            auto accountFa = elem.child(JS(account));
+
+            if (!docIdFa.present() || !accountFa.present())
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcORACLE_MALFORMED}};
+
+            // oracle_document_id must be uint32 or convertible string
+            if (auto err = Type<uint32_t, std::string>::verify(docIdFa); !err)
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcORACLE_MALFORMED}};
+
+            // convert string oracle_document_id to integer in-place;
+            // propagate the error directly (mirrors the old behaviour: returns rpcINVALID_PARAMS
+            // when the string is not a valid integer, e.g. "a")
+            if (auto err = ToNumberModifier::modify(docIdFa); !err)
+                return err;
+
+            // account must be a valid base58 account ID
+            if (auto err = AccountBase58Validator::verify(accountFa); !err)
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+        }
+
+        return {};
+    }};
+
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        // validate quoteAsset and base_asset in accordance to the currency code found in XRPL
+        // doc:
+        // https://xrpl.org/docs/references/protocol/data-types/currency-formats#currency-codes
+        // usually Clio returns rpcMALFORMED_CURRENCY , return InvalidParam here just to mimic
+        // rippled
+        field(JS(base_asset), required, withCustomError(currency, RippledError::rpcINVALID_PARAMS)),
+        field(
+            JS(quote_asset), required, withCustomError(currency, RippledError::rpcINVALID_PARAMS)
+        ),
+        field(JS(oracles), required, kORACLES_VALIDATOR),
+        // note: Unlike `rippled`, Clio only supports UInt as input, no string, no `null`, etc.
+        field(JS(time_threshold), type<uint32_t>),
+        field(JS(trim), type<uint32_t>, between(uint32_t{1}, uint32_t{25})),
+    };
+
+    return RpcSpecView{kRPC_SPEC};
+}
 
 GetAggregatePriceHandler::Result
 GetAggregatePriceHandler::process(

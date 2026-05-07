@@ -5,10 +5,13 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Types.hpp"
+#include "rpc/common/spec/Validators.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -21,6 +24,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -37,7 +41,6 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <utility>
 
 namespace {
@@ -227,62 +230,40 @@ AMMInfoHandler::process(AMMInfoHandler::Input const& input, Context const& ctx) 
     return response;
 }
 
-RpcSpecConstRef
+rpc::spec::RpcSpecView
 AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    static auto const kSTRING_ISSUE_VALIDATOR = validation::CustomValidator{
-        [](boost::json::value const& value, std::string_view key) -> MaybeError {
-            if (not value.is_string()) {
-                return Error{
-                    Status{RippledError::rpcINVALID_PARAMS, std::string(key) + "NotString"}
-                };
-            }
+    using namespace spec;
 
+    static constexpr auto kSTRING_ISSUE_VALIDATOR =
+        CustomValidator{[](auto const& f) -> rpc::MaybeError {
+            // field is already confirmed to be a string (inside ifType<std::string>)
             try {
-                ripple::issueFromJson(boost::json::value_to<std::string>(value));
+                Json::Value const jv{std::string{f.asString()}};
+                ripple::issueFromJson(jv);
             } catch (std::runtime_error const&) {
-                return Error{Status{RippledError::rpcISSUE_MALFORMED}};
+                return std::unexpected{rpc::Status{rpc::RippledError::rpcISSUE_MALFORMED}};
             }
+            return {};
+        }};
 
-            return MaybeError{};
-        }
-    };
-
-    static auto const kRPC_SPEC = RpcSpec{
-        {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-        {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-        {JS(asset),
-         meta::WithCustomError{
-             validation::Type<std::string, boost::json::object>{},
-             Status(RippledError::rpcISSUE_MALFORMED)
-         },
-         meta::IfType<std::string>{kSTRING_ISSUE_VALIDATOR},
-         meta::IfType<boost::json::object>{
-             meta::WithCustomError{
-                 validation::CustomValidators::currencyIssueValidator,
-                 Status(RippledError::rpcISSUE_MALFORMED)
-             },
-         }},
-        {JS(asset2),
-         meta::WithCustomError{
-             validation::Type<std::string, boost::json::object>{},
-             Status(RippledError::rpcISSUE_MALFORMED)
-         },
-         meta::IfType<std::string>{kSTRING_ISSUE_VALIDATOR},
-         meta::IfType<boost::json::object>{
-             meta::WithCustomError{
-                 validation::CustomValidators::currencyIssueValidator,
-                 Status(RippledError::rpcISSUE_MALFORMED)
-             },
-         }},
-        {JS(amm_account),
-         meta::WithCustomError{
-             validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)
-         }},
-        {JS(account),
-         meta::WithCustomError{
-             validation::CustomValidators::accountValidator, Status(RippledError::rpcACT_MALFORMED)
-         }},
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(
+            JS(asset),
+            withCustomError(type<std::string, JsonObject>, rpc::RippledError::rpcISSUE_MALFORMED),
+            ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
+            ifObject(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
+        ),
+        field(
+            JS(asset2),
+            withCustomError(type<std::string, JsonObject>, rpc::RippledError::rpcISSUE_MALFORMED),
+            ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
+            ifObject(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
+        ),
+        field(JS(amm_account), withCustomError(account, rpc::RippledError::rpcACT_MALFORMED)),
+        field(JS(account), withCustomError(account, rpc::RippledError::rpcACT_MALFORMED)),
     };
 
     return kRPC_SPEC;

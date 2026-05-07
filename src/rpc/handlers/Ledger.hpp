@@ -2,16 +2,12 @@
 
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/Checkers.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <memory>
@@ -90,28 +86,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(full), validation::Type<bool>{}, validation::NotSupported{true}},
-            {JS(full), check::Deprecated{}},
-            {JS(accounts), validation::Type<bool>{}, validation::NotSupported{true}},
-            {JS(accounts), check::Deprecated{}},
-            {JS(owner_funds), validation::Type<bool>{}},
-            {JS(queue), validation::Type<bool>{}, validation::NotSupported{true}},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(transactions), validation::Type<bool>{}},
-            {JS(expand), validation::Type<bool>{}},
-            {JS(binary), validation::Type<bool>{}},
-            {"diff", validation::Type<bool>{}},
-            {JS(ledger), check::Deprecated{}},
-            {JS(type), check::Deprecated{}},
-        };
-
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the Ledger command

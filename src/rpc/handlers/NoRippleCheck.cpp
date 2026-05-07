@@ -5,6 +5,10 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -35,6 +39,39 @@
 #include <utility>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+NoRippleCheckHandler::spec(uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kSPEC_V1 = spec::RpcSpec{
+        field(JS(account), required, account),
+        field(
+            JS(role),
+            required,
+            withCustomError(
+                oneOf<std::string>("gateway", "user"),
+                rpc::RippledError::rpcINVALID_PARAMS,
+                "role field is invalid"
+            )
+        ),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+        field(
+            JS(limit),
+            type<uint32_t>,
+            min(uint32_t{NoRippleCheckHandler::kLIMIT_MIN}),
+            clamp(
+                uint32_t{NoRippleCheckHandler::kLIMIT_MIN},
+                uint32_t{NoRippleCheckHandler::kLIMIT_MAX}
+            )
+        ),
+    };
+
+    static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(transactions), type<bool>));
+
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+}
 
 NoRippleCheckHandler::Result
 NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context const& ctx) const

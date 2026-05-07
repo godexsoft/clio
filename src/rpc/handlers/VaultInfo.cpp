@@ -5,6 +5,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -51,6 +55,22 @@ validate(VaultInfoHandler::Input const& input)
 }
 
 }  // namespace
+
+rpc::spec::RpcSpecView
+VaultInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(JS(vault_id), withCustomError(uint256Hex, rpc::ClioError::RpcMalformedRequest)),
+        field(
+            JS(owner),
+            withCustomError(accountBase58, rpc::ClioError::RpcMalformedRequest, "OwnerNotHexString")
+        ),
+        field(JS(seq), withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)),
+        field(JS(ledger_index), ledgerIndex),
+    };
+    return kRPC_SPEC;
+}
 
 VaultInfoHandler::VaultInfoHandler(std::shared_ptr<BackendInterface> sharedPtrBackend)
     : sharedPtrBackend_{std::move(sharedPtrBackend)}

@@ -1,8 +1,15 @@
 #include "rpc/handlers/BookOffers.hpp"
 
+#include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/Types.hpp"
+#include "rpc/common/spec/Validators.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -23,6 +30,65 @@
 #include <string>
 
 namespace rpc {
+
+rpc::spec::RpcSpecView
+BookOffersHandler::spec([[maybe_unused]] uint32_t apiVersion)
+{
+    using namespace spec;
+
+    static constexpr auto kRPC_SPEC = spec::RpcSpec{
+        field(
+            JS(taker_gets),
+            required,
+            type<JsonObject>,
+            section(
+                field(
+                    JS(currency),
+                    required,
+                    withCustomError(currency, RippledError::rpcDST_AMT_MALFORMED)
+                ),
+                field(JS(issuer), withCustomError(issuer, RippledError::rpcDST_ISR_MALFORMED))
+            )
+        ),
+        field(
+            JS(taker_pays),
+            required,
+            type<JsonObject>,
+            section(
+                field(
+                    JS(currency),
+                    required,
+                    withCustomError(currency, RippledError::rpcSRC_CUR_MALFORMED)
+                ),
+                field(JS(issuer), withCustomError(issuer, RippledError::rpcSRC_ISR_MALFORMED))
+            )
+        ),
+        // return INVALID_PARAMS if account format is wrong for "taker"
+        field(
+            JS(taker),
+            withCustomError(account, RippledError::rpcINVALID_PARAMS, "Invalid field 'taker'.")
+        ),
+        field(
+            JS(domain),
+            withCustomError(
+                type<std::string>, RippledError::rpcDOMAIN_MALFORMED, "Unable to parse domain."
+            ),
+            withCustomError(
+                uint256Hex, RippledError::rpcDOMAIN_MALFORMED, "Unable to parse domain."
+            )
+        ),
+        field(
+            JS(limit),
+            type<uint32_t>,
+            min(uint32_t{kLIMIT_MIN}),
+            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+        ),
+        field(JS(ledger_hash), uint256Hex),
+        field(JS(ledger_index), ledgerIndex),
+    };
+
+    return RpcSpecView{kRPC_SPEC};
+}
 
 BookOffersHandler::Result
 BookOffersHandler::process(Input const& input, Context const& ctx) const

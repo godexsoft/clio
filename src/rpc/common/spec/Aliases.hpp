@@ -127,6 +127,19 @@ inline constexpr auto uint256Hex = Uint256HexStringValidator{};
 inline constexpr auto uint192Hex = Uint192HexStringValidator{};
 inline constexpr auto uint160Hex = Uint160HexStringValidator{};
 inline constexpr auto notSupported = NotSupported{};
+
+/**
+ * @brief Factory for `NotSupportedIfEqual` — rejects a field only when its value matches.
+ *
+ * Example: `spec::notSupportedIf(true)` rejects `field: true` but accepts `field: false`.
+ */
+template <typename T>
+consteval auto
+notSupportedIf(T value)
+{
+    return NotSupportedIfEqual{value};
+}
+
 inline constexpr auto toLower = ToLowerModifier{};
 inline constexpr auto hex256Array = Hex256ArrayValidator{};
 inline constexpr auto accountMarker = AccountMarkerValidator{};

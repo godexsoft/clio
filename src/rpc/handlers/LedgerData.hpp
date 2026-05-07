@@ -1,12 +1,8 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/JS.hpp"
-#include "rpc/common/Checkers.hpp"
-#include "rpc/common/MetaProcessors.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/array.hpp>
@@ -14,13 +10,13 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace rpc {
 
@@ -89,23 +85,8 @@ public:
      * @param apiVersion The api version to return the spec for
      * @return The spec for the given apiVersion
      */
-    static RpcSpecConstRef
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static auto const kRPC_SPEC = RpcSpec{
-            {JS(binary), validation::Type<bool>{}},
-            {"out_of_order", validation::Type<bool>{}},
-            {JS(ledger_hash), validation::CustomValidators::uint256HexStringValidator},
-            {JS(ledger_index), validation::CustomValidators::ledgerIndexValidator},
-            {JS(limit), validation::Type<uint32_t>{}, validation::Min(1u)},
-            {JS(marker),
-             validation::Type<uint32_t, std::string>{},
-             meta::IfType<std::string>{validation::CustomValidators::uint256HexStringValidator}},
-            {JS(type), validation::CustomValidators::ledgerTypeValidator},
-            {JS(ledger), check::Deprecated{}},
-        };
-        return kRPC_SPEC;
-    }
+    static rpc::spec::RpcSpecView
+    spec(uint32_t apiVersion);
 
     /**
      * @brief Process the LedgerData command
