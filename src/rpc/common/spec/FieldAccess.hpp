@@ -1,6 +1,7 @@
 /** @file */
 #pragma once
 
+#include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/Types.hpp"
 
 #include <boost/json/string.hpp>
@@ -19,14 +20,12 @@ namespace rpc::spec {
  * @brief Non-owning view of a single resolved field, usable by validators and modifiers.
  *
  * Backends provide a concrete type satisfying SomeFieldAccess (defined in Concepts.hpp)
- * and a makeFieldAccess(JsonObject[const]&, std::string_view) factory. The factory must
- * be findable from inside namespace rpc::spec — either declare it directly in rpc::spec,
- * or in the namespace of JsonObject so ADL can find it. FieldSpec constructs the access
- * object once per field; validators never see the raw JSON type.
+ * and a SomeRootAccess type whose child() method returns it. FieldSpec obtains the FA via
+ * the root's child(key); validators never see the raw JSON type.
  *
  * Two constructors carry const-correctness through:
- *   - mutable ctor (from JsonObject&):       both readValue_ and writeValue_ are set
- *   - const ctor   (from JsonObject const&): only readValue_ is set; set() is unreachable
+ *   - mutable ctor (from value&):       both readValue_ and writeValue_ are set
+ *   - const ctor   (from value const&): only readValue_ is set; set() is unreachable
  *     during check() since callIfChecker passes FA const& which prevents non-const calls.
  */
 class BoostJsonFieldAccess {
@@ -247,24 +246,70 @@ public:
     }
 };
 
-[[nodiscard]] inline BoostJsonFieldAccess
-makeFieldAccess(boost::json::value& obj, std::string_view key)
-{
-    if (obj.is_object()) {
-        if (auto it = obj.as_object().find(key); it != obj.as_object().end())
-            return BoostJsonFieldAccess{&it->value(), key};
-    }
-    return BoostJsonFieldAccess{static_cast<boost::json::value*>(nullptr), key};
-}
+static_assert(SomeFieldAccess<BoostJsonFieldAccess>);
 
-[[nodiscard]] inline BoostJsonFieldAccess
-makeFieldAccess(boost::json::value const& obj, std::string_view key)
-{
-    if (obj.is_object()) {
-        if (auto it = obj.as_object().find(key); it != obj.as_object().end())
-            return BoostJsonFieldAccess{&it->value(), key};
+/**
+ * @brief Non-owning access object for the document root.
+ *
+ * Distinct from BoostJsonFieldAccess: the root has no name, is always present, and is
+ * only used by RpcSpec/FieldSpec to navigate into named fields via child(). Keeping the
+ * type separate prevents passing a keyless FA into validators.
+ */
+class BoostJsonRootAccess {
+    boost::json::value const* readValue_;
+    boost::json::value* writeValue_;
+
+public:
+    explicit BoostJsonRootAccess(boost::json::value& v) noexcept : readValue_{&v}, writeValue_{&v}
+    {
     }
-    return BoostJsonFieldAccess{static_cast<boost::json::value const*>(nullptr), key};
-}
+
+    explicit BoostJsonRootAccess(boost::json::value const& v) noexcept
+        : readValue_{&v}, writeValue_{nullptr}
+    {
+    }
+
+    [[nodiscard]] bool
+    isObject() const noexcept
+    {
+        return readValue_->is_object();
+    }
+
+    [[nodiscard]] bool
+    isArray() const noexcept
+    {
+        return readValue_->is_array();
+    }
+
+    [[nodiscard]] BoostJsonFieldAccess
+    child(std::string_view key) noexcept
+    {
+        if (writeValue_ != nullptr && writeValue_->is_object()) {
+            auto& obj = writeValue_->as_object();
+            if (auto it = obj.find(key); it != obj.end())
+                return BoostJsonFieldAccess{&it->value(), key};
+        }
+        return BoostJsonFieldAccess{static_cast<boost::json::value*>(nullptr), key};
+    }
+
+    [[nodiscard]] BoostJsonFieldAccess
+    child(std::string_view key) const noexcept
+    {
+        if (readValue_->is_object()) {
+            auto const& obj = readValue_->as_object();
+            if (auto it = obj.find(key); it != obj.end())
+                return BoostJsonFieldAccess{&it->value(), key};
+        }
+        return BoostJsonFieldAccess{static_cast<boost::json::value const*>(nullptr), key};
+    }
+};
+
+static_assert(SomeRootAccess<BoostJsonRootAccess>);
+
+// Backend-selection aliases. Change these to swap JSON libraries — the spec system
+// (RpcSpec, FieldSpec, Validators, Section) is templated on the concepts above and
+// is otherwise independent of any concrete JSON type.
+using FieldAccess = BoostJsonFieldAccess;
+using RootAccess = BoostJsonRootAccess;
 
 }  // namespace rpc::spec

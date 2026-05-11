@@ -1,7 +1,6 @@
 /** @file */
 #pragma once
 
-#include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/Types.hpp"
 
 #include <concepts>
@@ -14,7 +13,7 @@
 namespace rpc::spec {
 
 /**
- * @brief Interface contract for field access objects produced by makeFieldAccess backends.
+ * @brief Interface contract for field access objects produced by a backend.
  */
 template <typename T>
 concept SomeFieldAccess = requires(T f, T const cf) {
@@ -48,8 +47,6 @@ concept SomeFieldAccess = requires(T f, T const cf) {
     { f.set(bool{}) };
     { f.set(double{}) };
 };
-
-static_assert(SomeFieldAccess<BoostJsonFieldAccess>);
 
 namespace detail {
 
@@ -107,6 +104,38 @@ struct FieldAccessArchetype {
 }  // namespace detail
 
 static_assert(SomeFieldAccess<detail::FieldAccessArchetype>);
+
+/**
+ * @brief Interface contract for the document-root access object.
+ *
+ * Distinct from SomeFieldAccess: the root has no name, is always present, cannot
+ * be set, and is only used by RpcSpec/FieldSpec to navigate into named fields via
+ * child(). Keeping the type distinct avoids passing a keyless FA into validators.
+ */
+template <typename T>
+concept SomeRootAccess = requires(T const cr, T& mr) {
+    { cr.isObject() } -> std::convertible_to<bool>;
+    { cr.isArray() } -> std::convertible_to<bool>;
+    { mr.child(std::string_view{}) } -> SomeFieldAccess;
+    { cr.child(std::string_view{}) } -> SomeFieldAccess;
+};
+
+namespace detail {
+
+// Archetype satisfying SomeRootAccess. Used as the witness type for spec-level
+// concepts so they aren't coupled to any backend. Never instantiated.
+struct RootAccessArchetype {
+    [[nodiscard]] bool
+    isObject() const noexcept;
+    [[nodiscard]] bool
+    isArray() const noexcept;
+    [[nodiscard]] FieldAccessArchetype child(std::string_view) noexcept;
+    [[nodiscard]] FieldAccessArchetype child(std::string_view) const noexcept;
+};
+
+}  // namespace detail
+
+static_assert(SomeRootAccess<detail::RootAccessArchetype>);
 
 // Validator concepts use detail::FieldAccessArchetype as the witness type so they
 // are decoupled from any concrete backend. Validators written as templates over

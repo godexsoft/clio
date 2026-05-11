@@ -53,11 +53,11 @@ struct FieldSpec {
         );
     }
 
-    template <typename JsonObject>
+    template <SomeRootAccess Root>
     [[nodiscard]] MaybeError
-    process(JsonObject& obj) const
+    process(Root& root) const
     {
-        auto fa = makeFieldAccess(obj, key);
+        auto fa = root.child(key);
         MaybeError result{};
         std::apply(
             [&](auto const&... item) {
@@ -68,11 +68,11 @@ struct FieldSpec {
         return result;
     }
 
-    template <typename JsonObject>
+    template <SomeRootAccess Root>
     [[nodiscard]] Warnings
-    check(JsonObject const& obj) const
+    check(Root const& root) const
     {
-        auto fa = makeFieldAccess(obj, key);
+        auto fa = root.child(key);
         Warnings out;
         std::apply([&](auto const&... item) { (callIfChecker(item, fa, out), ...); }, items);
         return out;

@@ -97,7 +97,11 @@ target_sources(
         rpc/ErrorTests.cpp
         rpc/ForwardingProxyTests.cpp
         rpc/common/CheckersTests.cpp
-        rpc/common/SpecTests.cpp
+        rpc/common/SpecCoreTests.cpp
+        rpc/common/SpecFieldAccessTests.cpp
+        rpc/common/SpecMockBackendTests.cpp
+        rpc/common/SpecModifierTests.cpp
+        rpc/common/SpecValidatorTests.cpp
         rpc/common/SpecsTests.cpp
         rpc/common/TypesTests.cpp
         rpc/common/impl/HandlerProviderTests.cpp

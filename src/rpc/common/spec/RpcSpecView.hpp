@@ -1,10 +1,11 @@
 /** @file */
 #pragma once
 
+#include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
-#include <boost/json/value.hpp>
+#include <concepts>
 
 namespace rpc::spec {
 
@@ -31,34 +32,52 @@ namespace rpc::spec {
  */
 class RpcSpecView {
     void const* self_;
-    MaybeError (*processImpl_)(void const*, boost::json::value&);
-    Warnings (*checkImpl_)(void const*, boost::json::value const&);
+    MaybeError (*processImpl_)(void const*, RootAccess&);
+    Warnings (*checkImpl_)(void const*, RootAccess const&);
 
 public:
     template <typename... Fields>
     // NOLINTNEXTLINE(google-explicit-constructor)
     constexpr RpcSpecView(RpcSpec<Fields...> const& spec) noexcept
         : self_{&spec}
-        , processImpl_{[](void const* s, boost::json::value& v) {
-            return static_cast<RpcSpec<Fields...> const*>(s)->process(v);
+        , processImpl_{[](void const* s, RootAccess& r) {
+            return static_cast<RpcSpec<Fields...> const*>(s)->process(r);
         }}
-        , checkImpl_{[](void const* s, boost::json::value const& v) {
-            return static_cast<RpcSpec<Fields...> const*>(s)->check(v);
+        , checkImpl_{[](void const* s, RootAccess const& r) {
+            return static_cast<RpcSpec<Fields...> const*>(s)->check(r);
         }}
     {
     }
 
-    // TODO: use abstract json stuff
     [[nodiscard]] MaybeError
-    process(boost::json::value& v) const
+    process(RootAccess& root) const
     {
-        return processImpl_(self_, v);
+        return processImpl_(self_, root);
     }
 
     [[nodiscard]] Warnings
-    check(boost::json::value const& v) const
+    check(RootAccess const& root) const
     {
-        return checkImpl_(self_, v);
+        return checkImpl_(self_, root);
+    }
+
+    // Convenience overloads: accept any value the backend's RootAccess can wrap.
+    template <typename V>
+        requires(!std::same_as<V, RootAccess>) && std::constructible_from<RootAccess, V&>
+    [[nodiscard]] MaybeError
+    process(V& v) const
+    {
+        RootAccess root{v};
+        return processImpl_(self_, root);
+    }
+
+    template <typename V>
+        requires(!std::same_as<V, RootAccess>) && std::constructible_from<RootAccess, V const&>
+    [[nodiscard]] Warnings
+    check(V const& v) const
+    {
+        RootAccess const root{v};
+        return checkImpl_(self_, root);
     }
 };
 

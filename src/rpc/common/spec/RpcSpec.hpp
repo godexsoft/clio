@@ -1,9 +1,12 @@
 /** @file */
 #pragma once
 
+#include "rpc/common/spec/Concepts.hpp"
+#include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
+#include <concepts>
 #include <tuple>
 
 namespace rpc::spec {
@@ -16,27 +19,29 @@ struct RpcSpec {
     {
     }
 
-    template <typename JsonObject>
+    template <SomeRootAccess Root>
     [[nodiscard]] MaybeError
-    process(JsonObject& obj) const
+    process(Root& root) const
     {
         MaybeError result{};
         std::apply(
-            [&](auto const&... f) { (void)((result = f.process(obj), result.has_value()) && ...); },
+            [&](auto const&... f) {
+                (void)((result = f.process(root), result.has_value()) && ...);
+            },
             fields
         );
         return result;
     }
 
-    template <typename JsonObject>
+    template <SomeRootAccess Root>
     [[nodiscard]] Warnings
-    check(JsonObject const& obj) const
+    check(Root const& root) const
     {
         Warnings out;
         std::apply(
             [&](auto const&... f) {
                 auto collect = [&](auto const& fieldSpec) {
-                    auto fw = fieldSpec.check(obj);
+                    auto fw = fieldSpec.check(root);
                     out.insert(out.end(), fw.begin(), fw.end());
                 };
                 (collect(f), ...);
@@ -44,6 +49,27 @@ struct RpcSpec {
             fields
         );
         return out;
+    }
+
+    // Convenience overloads accepting any value the configured backend's RootAccess
+    // alias can wrap. The primary SomeRootAccess overloads above are the contract;
+    // these forwarders just save callers from constructing the wrapper by hand.
+    template <typename V>
+        requires(!SomeRootAccess<V>) && std::constructible_from<RootAccess, V&>
+    [[nodiscard]] MaybeError
+    process(V& v) const
+    {
+        RootAccess root{v};
+        return process(root);
+    }
+
+    template <typename V>
+        requires(!SomeRootAccess<V>) && std::constructible_from<RootAccess, V const&>
+    [[nodiscard]] Warnings
+    check(V const& v) const
+    {
+        RootAccess const root{v};
+        return check(root);
     }
 };
 
