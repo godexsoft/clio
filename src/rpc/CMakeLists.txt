@@ -16,9 +16,6 @@ target_sources(
         CredentialHelpers.cpp
         Counters.cpp
         WorkQueue.cpp
-        common/Specs.cpp
-        common/Validators.cpp
-        common/MetaProcessors.cpp
         common/impl/APIVersionParser.cpp
         common/impl/HandlerProvider.cpp
         handlers/AccountChannels.cpp

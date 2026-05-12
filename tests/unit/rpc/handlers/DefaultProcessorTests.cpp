@@ -1,9 +1,8 @@
 #include "rpc/Errors.hpp"
 #include "rpc/FakesAndMocks.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
 #include "rpc/common/impl/Processors.hpp"
+#include "rpc/common/spec/Aliases.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
@@ -25,7 +24,6 @@ using namespace testing;
 using namespace std;
 
 using namespace rpc;
-using namespace rpc::validation;
 using namespace tests::common;
 
 namespace json = boost::json;
@@ -139,9 +137,10 @@ TEST_F(RPCDefaultProcessorTest, ValidInput)
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
         auto const input = json::parse(R"JSON({ "something": "works" })JSON");
-        auto const spec = RpcSpec{{"something", Required{}}};
+        static constexpr auto kSPEC =
+            rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
         auto const data = InOutFake{"works"};
-        EXPECT_CALL(handler, spec(_)).WillOnce(ReturnRef(spec));
+        EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
         EXPECT_CALL(handler, process(Eq(data), _)).WillOnce(Return(data));
 
         auto const ret = processor(handler, input, Context{yield});
@@ -173,8 +172,9 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
         auto const input = json::parse(R"JSON({ "other": "nope" })JSON");
-        auto const spec = RpcSpec{{"something", Required{}}};
-        EXPECT_CALL(handler, spec(_)).WillOnce(ReturnRef(spec));
+        static constexpr auto kSPEC =
+            rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
+        EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
 
         auto const ret = processor(handler, input, Context{yield});
         ASSERT_FALSE(ret);  // returns error

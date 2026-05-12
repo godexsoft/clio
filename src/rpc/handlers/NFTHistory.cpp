@@ -48,22 +48,18 @@ NFTHistoryHandler::spec([[maybe_unused]] uint32_t apiVersion)
         field(JS(ledger_index_max), type<int64_t>),
         field(JS(binary), type<bool>),
         field(JS(forward), type<bool>),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{kLIMIT_MIN}),
-            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
-        ),
-        field(
-            JS(marker),
-            withCustomError(
-                type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
-            ),
-            ifObject(section(
-                field(JS(ledger), required, type<uint32_t>),
-                field(JS(seq), required, type<uint32_t>)
-            ))
-        ),
+        field(JS(limit))                 //
+            | type<uint32_t>             //
+            | min(uint32_t{kLIMIT_MIN})  //
+            | clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX}),
+        field(JS(marker))  //
+            | withCustomError(
+                  type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
+              )  //
+            | ifObject(section(
+                  field(JS(ledger), required, type<uint32_t>),
+                  field(JS(seq), required, type<uint32_t>)
+              )),
     };
 
     return RpcSpecView{kSPEC};

@@ -9,7 +9,6 @@
 
 using namespace std;
 using namespace rpc;
-using namespace rpc::validation;
 using namespace tests::common;
 
 namespace json = boost::json;

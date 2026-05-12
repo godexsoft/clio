@@ -1,9 +1,11 @@
 #pragma once
 
 #include "rpc/Errors.hpp"
-#include "rpc/common/Specs.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/Validators.hpp"
+#include "rpc/common/spec/Aliases.hpp"
+#include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -55,16 +57,20 @@ public:
     using Output = TestOutput;
     using Result = rpc::HandlerReturnType<Output>;
 
-    static rpc::RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        using namespace rpc::validation;
-
-        static auto const kRPC_SPEC = rpc::RpcSpec{
-            {"hello", Required{}, Type<std::string>{}, EqualTo{"world"}},
-            {"limit", Type<uint32_t>{}, Between<uint32_t>{0, 100}},  // optional field
+        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
+            rpc::spec::field(
+                "hello",
+                rpc::spec::required,
+                rpc::spec::type<std::string>,
+                rpc::spec::oneOf("world")
+            ),
+            rpc::spec::field(
+                "limit", rpc::spec::type<uint32_t>, rpc::spec::between(uint32_t{0}, uint32_t{100})
+            ),
         };
-
         return kRPC_SPEC;
     }
 
@@ -94,16 +100,20 @@ public:
     using Output = TestOutput;
     using Result = rpc::HandlerReturnType<Output>;
 
-    static rpc::RpcSpecConstRef
+    static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        using namespace rpc::validation;
-
-        static auto const kRPC_SPEC = rpc::RpcSpec{
-            {"hello", Required{}, Type<std::string>{}, EqualTo{"world"}},
-            {"limit", Type<uint32_t>{}, Between<uint32_t>{0u, 100u}},  // optional field
+        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
+            rpc::spec::field(
+                "hello",
+                rpc::spec::required,
+                rpc::spec::type<std::string>,
+                rpc::spec::oneOf("world")
+            ),
+            rpc::spec::field(
+                "limit", rpc::spec::type<uint32_t>, rpc::spec::between(uint32_t{0}, uint32_t{100})
+            ),
         };
-
         return kRPC_SPEC;
     }
 
@@ -142,7 +152,7 @@ struct HandlerMock {
     using Output = InOutFake;
     using Result = rpc::HandlerReturnType<Output>;
 
-    MOCK_METHOD(rpc::RpcSpecConstRef, spec, (uint32_t), (const));
+    MOCK_METHOD(rpc::spec::RpcSpecView, spec, (uint32_t), (const));
     MOCK_METHOD(Result, process, (Input, rpc::Context const&), (const));
 };
 

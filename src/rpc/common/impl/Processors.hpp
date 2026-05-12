@@ -8,6 +8,8 @@
 #include <boost/json/array.hpp>
 #include <boost/json/value.hpp>
 
+#include <utility>
+
 namespace rpc::impl {
 
 template <SomeHandler HandlerType>
@@ -31,11 +33,6 @@ struct DefaultProcessor final {
         if constexpr (SomeHandlerWithNewSpec<HandlerType>) {
             auto const spec = handler.spec(ctx.apiVersion);
             warnings = rpc::spec::toJsonArray(spec.check(value));
-            if (auto const ret = spec.process(input); not ret)
-                return ReturnType{Error{ret.error()}, std::move(warnings)};
-        } else if constexpr (SomeHandlerWithOldSpec<HandlerType>) {
-            auto const& spec = handler.spec(ctx.apiVersion);
-            warnings = spec.check(value);
             if (auto const ret = spec.process(input); not ret)
                 return ReturnType{Error{ret.error()}, std::move(warnings)};
         }
