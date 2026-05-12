@@ -11,7 +11,7 @@
 
 namespace etl::impl {
 
-AmendmentBlockHandler::ActionType const AmendmentBlockHandler::kDEFAULT_AMENDMENT_BLOCK_ACTION =
+AmendmentBlockHandler::ActionType const AmendmentBlockHandler::kDefaultAmendmentBlockAction =
     []() {
         static util::Logger const log{"ETL"};  // NOLINT(readability-identifier-naming)
         LOG(
