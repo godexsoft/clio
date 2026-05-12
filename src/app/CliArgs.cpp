@@ -11,6 +11,7 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -33,6 +34,8 @@ CliArgs::parse(int argc, char const* argv[])
         ("migrate", po::value<std::string>(), "Start migration helper")
         ("verify", "Checks the validity of config values")
         ("config-description,d", po::value<std::string>(), "Generate config description markdown file")
+        ("dump-spec", po::value<uint32_t>()->implicit_value(1u),
+         "Dump RPC handler input specs to stdout and exit. Optional value selects the API version (default 1).")
     ;
     // clang-format on
     po::positional_options_description positional;
@@ -79,6 +82,10 @@ CliArgs::parse(int argc, char const* argv[])
 
         std::cerr << res.error().error << std::endl;
         return Action{Action::Exit{EXIT_FAILURE}};
+    }
+
+    if (parsed.contains("dump-spec")) {
+        return Action{Action::DumpSpec{.apiVersion = parsed["dump-spec"].as<uint32_t>()}};
     }
 
     auto configPath = parsed["conf"].as<std::string>();

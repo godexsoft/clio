@@ -7,6 +7,8 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "rpc/Counters.hpp"
 #include "rpc/common/AnyHandler.hpp"
+#include "rpc/common/spec/RpcSpecView.hpp"
+#include "rpc/common/spec/SpecDumpWriter.hpp"
 #include "rpc/handlers/AMMInfo.hpp"
 #include "rpc/handlers/AccountChannels.hpp"
 #include "rpc/handlers/AccountCurrencies.hpp"
@@ -47,9 +49,14 @@
 #include "rpc/handlers/VersionHandler.hpp"
 #include "util/config/ConfigDefinition.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 
 namespace rpc::impl {
@@ -142,6 +149,77 @@ ProductionHandlerProvider::handlerNames() const
     for (auto const& [name, handler] : handlerMap_)
         result.insert(name);
     return result;
+}
+
+void
+dumpAllRpcSpecs(std::ostream& os, uint32_t apiVersion)
+{
+    using SpecFn = rpc::spec::RpcSpecView (*)(uint32_t);
+
+    struct Entry {
+        std::string_view name;
+        SpecFn specFn;  // nullptr -> no-input handler; emits "(no inputs)".
+    };
+
+    // Mirrors ProductionHandlerProvider's handler list. Keep in sync.
+    // Handlers with no input spec (ping, random, ledger_range, version) use nullptr.
+    constexpr auto kHANDLERS = std::to_array<Entry>({
+        {.name = "account_channels", .specFn = &AccountChannelsHandler::spec},
+        {.name = "account_currencies", .specFn = &AccountCurrenciesHandler::spec},
+        {.name = "account_info", .specFn = &AccountInfoHandler::spec},
+        {.name = "account_lines", .specFn = &AccountLinesHandler::spec},
+        {.name = "account_mptoken_issuances", .specFn = &AccountMPTokenIssuancesHandler::spec},
+        {.name = "account_mptokens", .specFn = &AccountMPTokensHandler::spec},
+        {.name = "account_nfts", .specFn = &AccountNFTsHandler::spec},
+        {.name = "account_objects", .specFn = &AccountObjectsHandler::spec},
+        {.name = "account_offers", .specFn = &AccountOffersHandler::spec},
+        {.name = "account_tx", .specFn = &AccountTxHandler::spec},
+        {.name = "amm_info", .specFn = &AMMInfoHandler::spec},
+        {.name = "book_changes", .specFn = &BookChangesHandler::spec},
+        {.name = "book_offers", .specFn = &BookOffersHandler::spec},
+        {.name = "deposit_authorized", .specFn = &DepositAuthorizedHandler::spec},
+        {.name = "feature", .specFn = &FeatureHandler::spec},
+        {.name = "gateway_balances", .specFn = &GatewayBalancesHandler::spec},
+        {.name = "get_aggregate_price", .specFn = &GetAggregatePriceHandler::spec},
+        {.name = "ledger", .specFn = &LedgerHandler::spec},
+        {.name = "ledger_data", .specFn = &LedgerDataHandler::spec},
+        {.name = "ledger_entry", .specFn = &LedgerEntryHandler::spec},
+        {.name = "ledger_index", .specFn = &LedgerIndexHandler::spec},
+        {.name = "ledger_range", .specFn = nullptr},
+        {.name = "mpt_holders", .specFn = &MPTHoldersHandler::spec},
+        {.name = "nfts_by_issuer", .specFn = &NFTsByIssuerHandler::spec},
+        {.name = "nft_history", .specFn = &NFTHistoryHandler::spec},
+        {.name = "nft_buy_offers", .specFn = &NFTBuyOffersHandler::spec},
+        {.name = "nft_info", .specFn = &NFTInfoHandler::spec},
+        {.name = "nft_sell_offers", .specFn = &NFTSellOffersHandler::spec},
+        {.name = "noripple_check", .specFn = &NoRippleCheckHandler::spec},
+        {.name = "ping", .specFn = nullptr},
+        {.name = "random", .specFn = nullptr},
+        {.name = "server_info", .specFn = &ServerInfoHandler::spec},
+        {.name = "transaction_entry", .specFn = &TransactionEntryHandler::spec},
+        {.name = "tx", .specFn = &TxHandler::spec},
+        {.name = "subscribe", .specFn = &SubscribeHandler::spec},
+        {.name = "unsubscribe", .specFn = &UnsubscribeHandler::spec},
+        {.name = "vault_info", .specFn = &VaultInfoHandler::spec},
+        {.name = "version", .specFn = nullptr},
+    });
+
+    auto sorted = kHANDLERS;
+    std::ranges::sort(sorted, [](auto const& a, auto const& b) { return a.name < b.name; });
+
+    rpc::spec::SpecDumpWriter writer{os};
+    os << "apiVersion: " << apiVersion << "\nhandlers:\n";
+    writer.push();
+    for (auto const& entry : sorted) {
+        writer.bulletGroup(entry.name, [&] {
+            if (entry.specFn != nullptr) {
+                entry.specFn(apiVersion).dump(writer);
+            } else {
+                writer.line("(no inputs)");
+            }
+        });
+    }
+    writer.pop();
 }
 
 }  // namespace rpc::impl

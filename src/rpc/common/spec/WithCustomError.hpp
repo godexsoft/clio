@@ -28,6 +28,8 @@ class WithCustomError {
     std::string_view message_;  // empty -> use Status{code} only
 
 public:
+    static constexpr std::string_view kNAME = "withCustomError";
+
     /**
      * @brief Constructs a WithCustomError wrapper.
      *
@@ -39,6 +41,20 @@ public:
     consteval WithCustomError(Wrapped w, rpc::CombinedError code, std::string_view message = {})
         : wrapped_{std::move(w)}, code_{code}, message_{message}
     {
+    }
+
+    /// Read-only access used by the spec dumper.
+    [[nodiscard]] Wrapped const&
+    wrapped() const noexcept
+    {
+        return wrapped_;
+    }
+
+    /// The wire-format error message attached to the failure (empty if none).
+    [[nodiscard]] std::string_view
+    message() const noexcept
+    {
+        return message_;
     }
 
     /**

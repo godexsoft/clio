@@ -6,6 +6,7 @@
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
+#include <string_view>
 #include <tuple>
 
 namespace rpc::spec {
@@ -27,6 +28,8 @@ namespace rpc::spec {
  */
 template <typename... SubFields>
 struct Section {
+    static constexpr std::string_view kNAME = "section";
+
     std::tuple<SubFields...> subFields;
 
     consteval explicit Section(SubFields... sf) : subFields{sf...}
@@ -67,6 +70,8 @@ Section(Fs...) -> Section<Fs...>;
  */
 template <SomeProcessor... SubItems>
 struct IfObject {
+    static constexpr std::string_view kNAME = "ifObject";
+
     std::tuple<SubItems...> subItems;
 
     consteval explicit IfObject(SubItems... s) : subItems{s...}
@@ -105,6 +110,8 @@ IfObject(Ss...) -> IfObject<Ss...>;
  */
 template <SomeProcessor... SubItems>
 struct IfArray {
+    static constexpr std::string_view kNAME = "ifArray";
+
     std::tuple<SubItems...> subItems;
 
     consteval explicit IfArray(SubItems... s) : subItems{s...}

@@ -10,8 +10,10 @@
 #include "rpc/common/Types.hpp"
 #include "util/log/Logger.hpp"
 
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -53,5 +55,19 @@ public:
     [[nodiscard]] std::unordered_set<std::string>
     handlerNames() const;
 };
+
+/**
+ * @brief Dump every handler's input spec to @p os in YAML-ish indented form.
+ *
+ * Standalone helper that does not require building a @ref ProductionHandlerProvider —
+ * handler `spec()` methods are static, so no backend / ETL / counters are needed.
+ * Used by the `--dump-spec` CLI mode. The handler list mirrored here must stay in
+ * sync with @ref ProductionHandlerProvider's constructor in HandlerProvider.cpp.
+ *
+ * @param os         Output stream.
+ * @param apiVersion API version to dump (typically 1 or 2).
+ */
+void
+dumpAllRpcSpecs(std::ostream& os, uint32_t apiVersion);
 
 }  // namespace rpc::impl

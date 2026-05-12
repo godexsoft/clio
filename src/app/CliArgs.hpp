@@ -3,6 +3,7 @@
 #include "migration/MigrationApplication.hpp"
 #include "util/OverloadSet.hpp"
 
+#include <cstdint>
 #include <string>
 #include <variant>
 
@@ -45,6 +46,11 @@ public:
             std::string configPath;
         };
 
+        /** @brief Dump the RPC handler input specs to stdout. */
+        struct DumpSpec {
+            uint32_t apiVersion;
+        };
+
         /**
          * @brief Construct an action from a Run.
          *
@@ -52,7 +58,8 @@ public:
          */
         template <typename ActionType>
             requires std::is_same_v<ActionType, Run> or std::is_same_v<ActionType, Exit> or
-            std::is_same_v<ActionType, Migrate> or std::is_same_v<ActionType, VerifyConfig>
+            std::is_same_v<ActionType, Migrate> or std::is_same_v<ActionType, VerifyConfig> or
+            std::is_same_v<ActionType, DumpSpec>
         explicit Action(ActionType&& action) : action_(std::forward<ActionType>(action))
         {
         }
@@ -73,7 +80,7 @@ public:
         }
 
     private:
-        std::variant<Run, Exit, Migrate, VerifyConfig> action_;
+        std::variant<Run, Exit, Migrate, VerifyConfig, DumpSpec> action_;
     };
 
     /**

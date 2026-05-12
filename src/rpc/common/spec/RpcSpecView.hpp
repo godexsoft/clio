@@ -3,6 +3,8 @@
 
 #include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
+#include "rpc/common/spec/SpecDump.hpp"
+#include "rpc/common/spec/SpecDumpWriter.hpp"
 #include "rpc/common/spec/Types.hpp"
 
 #include <concepts>
@@ -34,6 +36,7 @@ class RpcSpecView {
     void const* self_;
     MaybeError (*processImpl_)(void const*, RootAccess&);
     Warnings (*checkImpl_)(void const*, RootAccess const&);
+    void (*dumpImpl_)(void const*, SpecDumpWriter&);
 
 public:
     template <typename... Fields>
@@ -45,6 +48,9 @@ public:
         }}
         , checkImpl_{[](void const* s, RootAccess const& r) {
             return static_cast<RpcSpec<Fields...> const*>(s)->check(r);
+        }}
+        , dumpImpl_{[](void const* s, SpecDumpWriter& w) {
+            dumpRpcSpec(w, *static_cast<RpcSpec<Fields...> const*>(s));
         }}
     {
     }
@@ -59,6 +65,13 @@ public:
     check(RootAccess const& root) const
     {
         return checkImpl_(self_, root);
+    }
+
+    /// Walk the spec tree and emit a human-readable description via @p w.
+    void
+    dump(SpecDumpWriter& w) const
+    {
+        dumpImpl_(self_, w);
     }
 
     // Convenience overloads: accept any value the backend's RootAccess can wrap.

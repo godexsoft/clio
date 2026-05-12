@@ -21,6 +21,7 @@ struct CliArgsTests : testing::Test {
     testing::StrictMock<testing::MockFunction<int(CliArgs::Action::Exit)>> onExitMock;
     testing::StrictMock<testing::MockFunction<int(CliArgs::Action::Migrate)>> onMigrateMock;
     testing::StrictMock<testing::MockFunction<int(CliArgs::Action::VerifyConfig)>> onVerifyMock;
+    testing::StrictMock<testing::MockFunction<int(CliArgs::Action::DumpSpec)>> onDumpSpecMock;
 };
 
 TEST_F(CliArgsTests, Parse_NoArgs)
@@ -39,7 +40,8 @@ TEST_F(CliArgsTests, Parse_NoArgs)
             onRunMock.AsStdFunction(),
             onExitMock.AsStdFunction(),
             onMigrateMock.AsStdFunction(),
-            onVerifyMock.AsStdFunction()
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
         ),
         returnCode
     );
@@ -62,7 +64,8 @@ TEST_F(CliArgsTests, Parse_NgWebServer)
                 onRunMock.AsStdFunction(),
                 onExitMock.AsStdFunction(),
                 onMigrateMock.AsStdFunction(),
-                onVerifyMock.AsStdFunction()
+                onVerifyMock.AsStdFunction(),
+                onDumpSpecMock.AsStdFunction()
             ),
             returnCode
         );
@@ -86,7 +89,8 @@ TEST_F(CliArgsTests, Parse_VersionHelp)
                 onRunMock.AsStdFunction(),
                 onExitMock.AsStdFunction(),
                 onMigrateMock.AsStdFunction(),
-                onVerifyMock.AsStdFunction()
+                onVerifyMock.AsStdFunction(),
+                onDumpSpecMock.AsStdFunction()
             ),
             EXIT_SUCCESS
         );
@@ -113,7 +117,8 @@ TEST_F(CliArgsTests, Parse_Config)
             onRunMock.AsStdFunction(),
             onExitMock.AsStdFunction(),
             onMigrateMock.AsStdFunction(),
-            onVerifyMock.AsStdFunction()
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
         ),
         returnCode
     );
@@ -140,7 +145,52 @@ TEST_F(CliArgsTests, Parse_VerifyConfig)
             onRunMock.AsStdFunction(),
             onExitMock.AsStdFunction(),
             onMigrateMock.AsStdFunction(),
-            onVerifyMock.AsStdFunction()
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
+        ),
+        returnCode
+    );
+}
+
+TEST_F(CliArgsTests, Parse_DumpSpec_Default)
+{
+    std::array argv{"clio_server", "--dump-spec"};
+    auto const action = CliArgs::parse(argv.size(), const_cast<char const**>(argv.data()));
+
+    int const returnCode = 7;
+    EXPECT_CALL(onDumpSpecMock, Call).WillOnce([](CliArgs::Action::DumpSpec const& dump) {
+        EXPECT_EQ(dump.apiVersion, 1u);
+        return returnCode;
+    });
+    EXPECT_EQ(
+        action.apply(
+            onRunMock.AsStdFunction(),
+            onExitMock.AsStdFunction(),
+            onMigrateMock.AsStdFunction(),
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
+        ),
+        returnCode
+    );
+}
+
+TEST_F(CliArgsTests, Parse_DumpSpec_ExplicitVersion)
+{
+    std::array argv{"clio_server", "--dump-spec=2"};
+    auto const action = CliArgs::parse(argv.size(), const_cast<char const**>(argv.data()));
+
+    int const returnCode = 7;
+    EXPECT_CALL(onDumpSpecMock, Call).WillOnce([](CliArgs::Action::DumpSpec const& dump) {
+        EXPECT_EQ(dump.apiVersion, 2u);
+        return returnCode;
+    });
+    EXPECT_EQ(
+        action.apply(
+            onRunMock.AsStdFunction(),
+            onExitMock.AsStdFunction(),
+            onMigrateMock.AsStdFunction(),
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
         ),
         returnCode
     );
@@ -160,7 +210,8 @@ TEST_F(CliArgsTests, Parse_ConfigDescriptionInvalidPath)
             onRunMock.AsStdFunction(),
             onExitMock.AsStdFunction(),
             onMigrateMock.AsStdFunction(),
-            onVerifyMock.AsStdFunction()
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
         ),
         EXIT_FAILURE
     );
@@ -186,7 +237,8 @@ TEST_F(CliArgsTestsWithTmpFile, Parse_ConfigDescription)
             onRunMock.AsStdFunction(),
             onExitMock.AsStdFunction(),
             onMigrateMock.AsStdFunction(),
-            onVerifyMock.AsStdFunction()
+            onVerifyMock.AsStdFunction(),
+            onDumpSpecMock.AsStdFunction()
         ),
         EXIT_SUCCESS
     );

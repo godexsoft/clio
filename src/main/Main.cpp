@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <ostream>
 
 using namespace util::config;
 
@@ -52,6 +53,10 @@ runApp(int argc, char const* argv[])
             }
             app::MigratorApplication migrator{getClioConfig(), migrate.subCmd};
             return migrator.run();
+        },
+        [](app::CliArgs::Action::DumpSpec const& dump) {
+            rpc::impl::dumpAllRpcSpecs(std::cout, dump.apiVersion);
+            return EXIT_SUCCESS;
         }
     );
 }

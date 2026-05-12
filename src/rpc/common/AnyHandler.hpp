@@ -3,9 +3,11 @@
 #include "rpc/common/Concepts.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/Processors.hpp"
+#include "rpc/common/spec/SpecDumpWriter.hpp"
 
 #include <boost/json/value.hpp>
 
+#include <cstdint>
 #include <memory>
 
 namespace rpc {
@@ -68,12 +70,27 @@ public:
         return pimpl_->process(value, ctx);
     }
 
+    /**
+     * @brief Dump the input spec for the given API version into @p writer.
+     *
+     * Handlers that do not satisfy @ref SomeHandlerWithNewSpec produce a single
+     * "(no spec)" line. The output shape is determined by @ref rpc::spec::SpecDumpWriter.
+     */
+    void
+    dumpSpec(spec::SpecDumpWriter& writer, uint32_t apiVersion) const
+    {
+        pimpl_->dumpSpec(writer, apiVersion);
+    }
+
 private:
     struct Concept {
         virtual ~Concept() = default;
 
         [[nodiscard]] virtual ReturnType
         process(boost::json::value const& value, Context const& ctx) const = 0;
+
+        virtual void
+        dumpSpec(spec::SpecDumpWriter& writer, uint32_t apiVersion) const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<Concept>
         clone() const = 0;
@@ -92,6 +109,16 @@ private:
         process(boost::json::value const& value, Context const& ctx) const override
         {
             return processor(handler, value, ctx);
+        }
+
+        void
+        dumpSpec(spec::SpecDumpWriter& writer, uint32_t apiVersion) const override
+        {
+            if constexpr (SomeHandlerWithNewSpec<HandlerType>) {
+                handler.spec(apiVersion).dump(writer);
+            } else {
+                writer.line("(no spec)");
+            }
         }
 
         [[nodiscard]] std::unique_ptr<Concept>

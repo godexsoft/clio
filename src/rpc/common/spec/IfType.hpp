@@ -5,6 +5,7 @@
 #include "rpc/common/spec/FieldSpec.hpp"
 #include "rpc/common/spec/Types.hpp"
 
+#include <string_view>
 #include <tuple>
 
 namespace rpc::spec {
@@ -18,10 +19,20 @@ namespace rpc::spec {
  */
 template <typename T, SomeProcessor... SubItems>
 struct IfType {
+    static constexpr std::string_view kNAME = "ifType";
+    static constexpr std::string_view kBRANCH_TYPE = typeNameOf<T>();
+
     std::tuple<SubItems...> subItems;
 
     consteval explicit IfType(SubItems... s) : subItems{s...}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("type", kBRANCH_TYPE);
     }
 
     template <SomeFieldAccess FA>

@@ -4,7 +4,6 @@
 #include "rpc/Errors.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/spec/Concepts.hpp"
-#include "rpc/common/spec/Types.hpp"
 #include "util/AccountUtils.hpp"
 #include "util/LedgerUtils.hpp"
 #include "util/TimeUtils.hpp"
@@ -24,6 +23,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <optional>
 #include <string>
@@ -31,9 +31,13 @@
 #include <system_error>
 #include <type_traits>
 
+#include "rpc/common/spec/Types.hpp>  // typeNameOf<T"() used by describeParams
+
 namespace rpc::spec {
 
 struct Required {
+    static constexpr std::string_view kNAME = "required";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -53,6 +57,15 @@ struct Type;
 
 template <>
 struct Type<int64_t> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<int64_t>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -67,6 +80,15 @@ struct Type<int64_t> {
 
 template <>
 struct Type<bool> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<bool>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -81,6 +103,15 @@ struct Type<bool> {
 
 template <>
 struct Type<std::string> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<std::string>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -95,6 +126,15 @@ struct Type<std::string> {
 
 template <>
 struct Type<double> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<double>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -109,6 +149,15 @@ struct Type<double> {
 
 template <>
 struct Type<uint32_t> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<uint32_t>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -123,6 +172,15 @@ struct Type<uint32_t> {
 
 template <>
 struct Type<JsonObject> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<JsonObject>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -137,6 +195,15 @@ struct Type<JsonObject> {
 
 template <>
 struct Type<JsonArray> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("of", typeNameOf<JsonArray>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -152,6 +219,20 @@ struct Type<JsonArray> {
 // OR-semantics: accepts any of the listed types. Returns rpcINVALID_PARAMS if none match.
 template <typename T1, typename T2, typename... Rest>
 struct Type<T1, T2, Rest...> {
+    static constexpr std::string_view kNAME = "type";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.paramList(
+            "oneOf",
+            std::initializer_list<std::string_view>{
+                typeNameOf<T1>(), typeNameOf<T2>(), typeNameOf<Rest>()...
+            }
+        );
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -167,9 +248,18 @@ struct Type<T1, T2, Rest...> {
 template <typename T>
     requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
 struct Min {
+    static constexpr std::string_view kNAME = "min";
+
     T bound;
     consteval explicit Min(T v) : bound{v}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("bound", bound);
     }
 
     template <SomeFieldAccess FA>
@@ -207,9 +297,19 @@ Min(T) -> Min<T>;
 template <typename T>
     requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
 struct Clamp {
+    static constexpr std::string_view kNAME = "clamp";
+
     T lo, hi;
     consteval Clamp(T l, T h) : lo{l}, hi{h}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("lo", lo);
+        w.param("hi", hi);
     }
 
     template <SomeFieldAccess FA>
@@ -249,6 +349,15 @@ Clamp(T, T) -> Clamp<T>;
 template <typename Target>
     requires std::integral<Target> && (!std::is_same_v<Target, bool>)
 struct ClampAs {
+    static constexpr std::string_view kNAME = "clampAs";
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("target", typeNameOf<Target>());
+    }
+
     template <SomeFieldAccess FA>
     [[nodiscard]] MaybeError
     modify(FA& f) const
@@ -285,6 +394,8 @@ struct ClampAs {
 };
 
 struct Deprecated {
+    static constexpr std::string_view kNAME = "deprecated";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static std::optional<Warning>
     check(FA const& f)
@@ -301,6 +412,8 @@ struct Deprecated {
 };
 
 struct AccountFormat {
+    static constexpr std::string_view kNAME = "account";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -325,8 +438,17 @@ class TimeFormatValidator final {
     std::string_view format_;
 
 public:
+    static constexpr std::string_view kNAME = "timeFormat";
+
     consteval explicit TimeFormatValidator(std::string_view format) noexcept : format_{format}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("format", format_);
     }
 
     template <SomeFieldAccess FA>
@@ -361,6 +483,16 @@ template <typename HexType>
         std::is_same_v<HexType, ripple::uint256>
     )
 struct HexStringValidator {
+    static constexpr std::string_view kNAME = []() {
+        if constexpr (std::is_same_v<HexType, ripple::uint256>) {
+            return std::string_view{"uint256Hex"};
+        } else if constexpr (std::is_same_v<HexType, ripple::uint192>) {
+            return std::string_view{"uint192Hex"};
+        } else {
+            return std::string_view{"uint160Hex"};
+        }
+    }();
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -389,6 +521,8 @@ using Uint160HexStringValidator = HexStringValidator<ripple::uint160>;
 // Accepts a ledger index: any integer, or a string that is "validated" / uint32-numeric.
 // rpcINVALID_PARAMS + "ledgerIndexMalformed" on failure.
 struct LedgerIndexValidator {
+    static constexpr std::string_view kNAME = "ledgerIndex";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -415,6 +549,8 @@ struct LedgerIndexValidator {
 // rpcINVALID_PARAMS + "<key>NotString" if not string.
 // ClioError::RpcMalformedAddress if not a valid base58 account or zero account.
 struct AccountBase58Validator {
+    static constexpr std::string_view kNAME = "accountBase58";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -439,6 +575,8 @@ struct AccountBase58Validator {
 // rpcINVALID_PARAMS + "<key>IsEmpty" if empty string.
 // ClioError::RpcMalformedCurrency + "malformedCurrency" if ripple::to_currency fails.
 struct CurrencyValidator {
+    static constexpr std::string_view kNAME = "currency";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -471,6 +609,8 @@ struct CurrencyValidator {
 // rpcINVALID_PARAMS + "Invalid field '<key>', bad issuer." if ripple::to_issuer fails.
 // rpcINVALID_PARAMS + "Invalid field '<key>', bad issuer account one." if noAccount().
 struct IssuerValidator {
+    static constexpr std::string_view kNAME = "issuer";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -504,6 +644,8 @@ struct IssuerValidator {
 //   - non-object → rpcINVALID_PARAMS + "<key>NotObject"
 //   - any other parse failure → ClioError::RpcMalformedRequest (no message)
 struct CurrencyIssueValidator {
+    static constexpr std::string_view kNAME = "currencyIssue";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -545,6 +687,8 @@ struct CurrencyIssueValidator {
 // No-op when field is absent or already an integer.
 // Returns rpcINVALID_PARAMS if the string looks like a float or is not numeric.
 struct ToNumberModifier {
+    static constexpr std::string_view kNAME = "toNumber";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     modify(FA& f)
@@ -568,6 +712,8 @@ struct ToNumberModifier {
 // Validates a credential_type hex string: must be non-empty and <= maxCredentialTypeLength.
 // All errors use ClioError::RpcMalformedAuthorizedCredentials.
 struct CredentialTypeValidator {
+    static constexpr std::string_view kNAME = "credentialType";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -610,6 +756,8 @@ struct CredentialTypeValidator {
 // - Each element must be an object with "issuer" (required, IssuerValidator) and
 //   "credential_type" (required, CredentialTypeValidator).
 struct AuthorizeCredentialValidator {
+    static constexpr std::string_view kNAME = "authorizeCredential";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -721,6 +869,8 @@ CustomModifier(Fn) -> CustomModifier<Fn>;
 
 // Rejects the field with rpcNOT_SUPPORTED + "Not supported field '<key>'" if it is present.
 struct NotSupported {
+    static constexpr std::string_view kNAME = "notSupported";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -741,9 +891,18 @@ struct NotSupported {
 template <typename T>
     requires(std::is_same_v<T, bool>)
 struct NotSupportedIfEqual {
+    static constexpr std::string_view kNAME = "notSupportedIf";
+
     T value;
     consteval explicit NotSupportedIfEqual(T v) : value{v}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("value", value);
     }
 
     template <SomeFieldAccess FA>
@@ -772,7 +931,16 @@ NotSupportedIfEqual(T) -> NotSupportedIfEqual<T>;
 // Returns rpcINVALID_PARAMS if the field is not a string or not in the set.
 template <std::size_t N>
 struct OneOfValidator {
+    static constexpr std::string_view kNAME = "oneOf";
+
     std::array<std::string_view, N> values;
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.paramList("values", values);
+    }
 
     template <SomeFieldAccess FA>
     [[nodiscard]] MaybeError
@@ -794,6 +962,8 @@ struct OneOfValidator {
 
 // Converts a string field to lowercase in-place. No-op when field is absent or non-string.
 struct ToLowerModifier {
+    static constexpr std::string_view kNAME = "toLower";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     modify(FA& f)
@@ -815,9 +985,19 @@ struct ToLowerModifier {
 template <typename T>
     requires(std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, double>)
 struct Between {
+    static constexpr std::string_view kNAME = "between";
+
     T lo, hi;
     consteval Between(T l, T h) : lo{l}, hi{h}
     {
+    }
+
+    template <typename Writer>
+    void
+    describeParams(Writer& w) const
+    {
+        w.param("lo", lo);
+        w.param("hi", hi);
     }
 
     template <SomeFieldAccess FA>
@@ -856,6 +1036,8 @@ Between(T, T) -> Between<T>;
 // Returns rpcINVALID_PARAMS + "Item is not a valid uint256 type." for any non-string or
 // non-hex element.
 struct Hex256ArrayValidator {
+    static constexpr std::string_view kNAME = "hex256Array";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -889,6 +1071,8 @@ struct Hex256ArrayValidator {
 // Returns rpcINVALID_PARAMS + "<key>NotString" if not a string, or
 // rpcINVALID_PARAMS + "Malformed cursor." if the format is invalid.
 struct AccountMarkerValidator {
+    static constexpr std::string_view kNAME = "accountMarker";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -931,6 +1115,8 @@ struct AccountMarkerValidator {
 // Not a string -> rpcINVALID_PARAMS + "Invalid field '<key>', not string."
 // Unknown type -> rpcINVALID_PARAMS + "Invalid field '<key>'."
 struct AccountTypeValidator {
+    static constexpr std::string_view kNAME = "accountType";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
@@ -958,6 +1144,8 @@ struct AccountTypeValidator {
 // Not a string -> rpcINVALID_PARAMS + "Invalid field '<key>', not string."
 // Unknown type -> rpcINVALID_PARAMS + "Invalid field '<key>'."
 struct LedgerEntryTypeValidator {
+    static constexpr std::string_view kNAME = "ledgerType";
+
     template <SomeFieldAccess FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
