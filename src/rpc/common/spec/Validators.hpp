@@ -4,6 +4,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/spec/Concepts.hpp"
+#include "rpc/common/spec/Types.hpp"
 #include "util/AccountUtils.hpp"
 #include "util/LedgerUtils.hpp"
 #include "util/TimeUtils.hpp"
@@ -30,8 +31,6 @@
 #include <string_view>
 #include <system_error>
 #include <type_traits>
-
-#include "rpc/common/spec/Types.hpp>  // typeNameOf<T"() used by describeParams
 
 namespace rpc::spec {
 

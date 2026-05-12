@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string>
+#include <unordered_set>
 
 namespace rpc {
 
@@ -40,6 +41,14 @@ public:
      */
     [[nodiscard]] virtual bool
     isClioOnly(std::string const& command) const = 0;
+
+    /**
+     * @brief Enumerate the names of all registered handlers.
+     *
+     * @return Unordered set of registered method names.
+     */
+    [[nodiscard]] virtual std::unordered_set<std::string>
+    handlerNames() const = 0;
 };
 
 }  // namespace rpc

@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <unordered_set>
 
 struct MockHandlerProvider : public rpc::HandlerProvider {
 public:
@@ -18,4 +19,5 @@ public:
         (const, override)
     );
     MOCK_METHOD(bool, isClioOnly, (std::string const&), (const, override));
+    MOCK_METHOD(std::unordered_set<std::string>, handlerNames, (), (const, override));
 };

@@ -2,7 +2,7 @@
 #include "app/ClioApplication.hpp"
 #include "app/VerifyConfig.hpp"
 #include "migration/MigrationApplication.hpp"
-#include "rpc/common/impl/HandlerProvider.hpp"
+#include "rpc/common/RpcSpecDumper.hpp"
 #include "util/ScopeGuard.hpp"
 #include "util/TerminationHandler.hpp"
 #include "util/config/ConfigDefinition.hpp"
@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
-#include <ostream>
 
 using namespace util::config;
 
@@ -55,7 +54,7 @@ runApp(int argc, char const* argv[])
             return migrator.run();
         },
         [](app::CliArgs::Action::DumpSpec const& dump) {
-            rpc::impl::dumpAllRpcSpecs(std::cout, dump.apiVersion);
+            rpc::dumpAllRpcSpecs(std::cout, dump.apiVersion);
             return EXIT_SUCCESS;
         }
     );

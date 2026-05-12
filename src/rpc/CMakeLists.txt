@@ -18,6 +18,8 @@ target_sources(
         WorkQueue.cpp
         common/impl/APIVersionParser.cpp
         common/impl/HandlerProvider.cpp
+        common/impl/HandlerRegistry.cpp
+        common/RpcSpecDumper.cpp
         handlers/AccountChannels.cpp
         handlers/AccountCurrencies.cpp
         handlers/AccountInfo.cpp
