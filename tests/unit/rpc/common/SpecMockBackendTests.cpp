@@ -20,8 +20,8 @@ using namespace rpc::spec;
 
 // Mock backend — proves the spec abstraction works with a non-boost::json type.
 //
-// MockObject is a plain std::map<string, variant>. MockFieldAccess satisfies
-// SomeFieldAccess; MockRootAccess satisfies SomeRootAccess. The spec system itself
+// MockObject is a plain std::map<string, variant>. MockFieldView satisfies
+// SomeFieldView; MockObjectView satisfies SomeObjectView. The spec system itself
 // is templated on those concepts, so swapping the backend changes nothing in the
 // validators, modifiers, or RpcSpec/FieldSpec orchestration.
 
@@ -33,18 +33,18 @@ struct MockObject {
     std::map<std::string, MockValue> fields;
 };
 
-class MockFieldAccess {
+class MockFieldView {
     MockValue const* readValue_;
     MockValue* writeValue_;
     std::string_view key_;
 
 public:
-    MockFieldAccess(MockValue* v, std::string_view k) noexcept
+    MockFieldView(MockValue* v, std::string_view k) noexcept
         : readValue_{v}, writeValue_{v}, key_{k}
     {
     }
 
-    MockFieldAccess(MockValue const* v, std::string_view k) noexcept
+    MockFieldView(MockValue const* v, std::string_view k) noexcept
         : readValue_{v}, writeValue_{nullptr}, key_{k}
     {
     }
@@ -144,12 +144,12 @@ public:
         }
     }
 
-    [[nodiscard]] static MockFieldAccess
+    [[nodiscard]] static MockFieldView
     child(std::string_view k) noexcept
     {
         return {static_cast<MockValue const*>(nullptr), k};
     }
-    [[nodiscard]] static MockFieldAccess
+    [[nodiscard]] static MockFieldView
     element(std::size_t) noexcept
     {
         return {static_cast<MockValue const*>(nullptr), {}};
@@ -182,17 +182,17 @@ public:
     }
 };
 
-static_assert(SomeFieldAccess<MockFieldAccess>);
+static_assert(SomeFieldView<MockFieldView>);
 
-class MockRootAccess {
+class MockObjectView {
     MockObject const* readObj_;
     MockObject* writeObj_;
 
 public:
-    explicit MockRootAccess(MockObject& obj) noexcept : readObj_{&obj}, writeObj_{&obj}
+    explicit MockObjectView(MockObject& obj) noexcept : readObj_{&obj}, writeObj_{&obj}
     {
     }
-    explicit MockRootAccess(MockObject const& obj) noexcept : readObj_{&obj}, writeObj_{nullptr}
+    explicit MockObjectView(MockObject const& obj) noexcept : readObj_{&obj}, writeObj_{nullptr}
     {
     }
 
@@ -207,32 +207,32 @@ public:
         return false;
     }
 
-    [[nodiscard]] MockFieldAccess
+    [[nodiscard]] MockFieldView
     child(std::string_view key) noexcept
     {
         if (writeObj_ != nullptr) {
             auto it = writeObj_->fields.find(std::string{key});
             return it != writeObj_->fields.end()
-                ? MockFieldAccess{&it->second, key}
-                : MockFieldAccess{static_cast<MockValue*>(nullptr), key};
+                ? MockFieldView{&it->second, key}
+                : MockFieldView{static_cast<MockValue*>(nullptr), key};
         }
         auto it = readObj_->fields.find(std::string{key});
         return it != readObj_->fields.end()
-            ? MockFieldAccess{&it->second, key}
-            : MockFieldAccess{static_cast<MockValue const*>(nullptr), key};
+            ? MockFieldView{&it->second, key}
+            : MockFieldView{static_cast<MockValue const*>(nullptr), key};
     }
 
-    [[nodiscard]] MockFieldAccess
+    [[nodiscard]] MockFieldView
     child(std::string_view key) const noexcept
     {
         auto it = readObj_->fields.find(std::string{key});
         return it != readObj_->fields.end()
-            ? MockFieldAccess{&it->second, key}
-            : MockFieldAccess{static_cast<MockValue const*>(nullptr), key};
+            ? MockFieldView{&it->second, key}
+            : MockFieldView{static_cast<MockValue const*>(nullptr), key};
     }
 };
 
-static_assert(SomeRootAccess<MockRootAccess>);
+static_assert(SomeObjectView<MockObjectView>);
 
 }  // namespace rpc::spec
 
@@ -248,7 +248,7 @@ TEST(RpcSpecDSL_MockBackend, ValidRequestPasses)
             {"account", std::string{"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"}}, {"limit", int64_t{10}}
         }
     };
-    MockRootAccess root{obj};
+    MockObjectView root{obj};
     EXPECT_TRUE(kSPEC.process(root).has_value());
 }
 
@@ -259,7 +259,7 @@ TEST(RpcSpecDSL_MockBackend, MissingRequiredFieldFails)
     };
 
     MockObject obj{};
-    MockRootAccess root{obj};
+    MockObjectView root{obj};
     auto const result = kSPEC.process(root);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
@@ -273,7 +273,7 @@ TEST(RpcSpecDSL_MockBackend, WrongTypeFails)
     };
 
     MockObject obj{.fields = {{"limit", std::string{"not-a-number"}}}};
-    MockRootAccess root{obj};
+    MockObjectView root{obj};
     auto const result = kSPEC.process(root);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
@@ -287,12 +287,12 @@ TEST(RpcSpecDSL_MockBackend, ClampMutatesValueInPlace)
     };
 
     MockObject tooLow{.fields = {{"limit", int64_t{2}}}};
-    MockRootAccess lowRoot{tooLow};
+    MockObjectView lowRoot{tooLow};
     ASSERT_TRUE(kSPEC.process(lowRoot).has_value());
     EXPECT_EQ(std::get<int64_t>(tooLow.fields.at("limit")), 10);
 
     MockObject tooHigh{.fields = {{"limit", int64_t{9999}}}};
-    MockRootAccess highRoot{tooHigh};
+    MockObjectView highRoot{tooHigh};
     ASSERT_TRUE(kSPEC.process(highRoot).has_value());
     EXPECT_EQ(std::get<int64_t>(tooHigh.fields.at("limit")), 400);
 }
@@ -305,7 +305,7 @@ TEST(RpcSpecDSL_MockBackend, IfTypeSkipsOnMismatch)
 
     // string value — int64 branch must not fire
     MockObject obj{.fields = {{"value", std::string{"hello"}}}};
-    MockRootAccess root{obj};
+    MockObjectView root{obj};
     EXPECT_TRUE(kSPEC.process(root).has_value());
 }
 
@@ -316,14 +316,14 @@ TEST(RpcSpecDSL_MockBackend, IfTypeRunsOnMatch)
     };
 
     MockObject bad{.fields = {{"value", int64_t{0}}}};
-    MockRootAccess badRoot{bad};
+    MockObjectView badRoot{bad};
     auto const result = kSPEC.process(badRoot);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
     EXPECT_TRUE(result.error().message.empty());
 
     MockObject good{.fields = {{"value", int64_t{5}}}};
-    MockRootAccess goodRoot{good};
+    MockObjectView goodRoot{good};
     EXPECT_TRUE(kSPEC.process(goodRoot).has_value());
 }
 
@@ -340,7 +340,7 @@ TEST(RpcSpecDSL_MockBackend, DeprecatedFieldProducesWarning)
             {"ident", std::string{"old"}}
         }
     };
-    MockRootAccess const root{obj};
+    MockObjectView const root{obj};
     auto const warnings = kSPEC.check(root);
     ASSERT_EQ(warnings.size(), 1u);
     EXPECT_EQ(warnings[0].field, "ident");

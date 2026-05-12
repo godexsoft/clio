@@ -366,7 +366,7 @@ TEST(RpcSpecDSL, SpecIsConstantEvaluable)
 // ============================================================================
 // Concept satisfaction — every shipped validator is recognised by the
 // SomeRequirement / SomeModifier / SomeCheck concepts. The concepts witness
-// against a private archetype (not BoostJsonFieldAccess), so satisfaction
+// against a private archetype (not BoostJsonFieldView), so satisfaction
 // proves the validators are genuinely backend-agnostic.
 // ============================================================================
 

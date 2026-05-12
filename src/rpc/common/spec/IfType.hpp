@@ -13,7 +13,7 @@ namespace rpc::spec {
 /**
  * @brief Runs sub-processors only when the field's runtime type matches T.
  *
- * Satisfies SomeModifier so it receives a mutable field access, enabling both
+ * Satisfies SomeModifier so it receives a mutable field view, enabling both
  * requirement and modifier sub-items. Checkers are excluded from sub-items;
  * hang them directly on the FieldSpec if conditional warning emission is needed.
  */
@@ -35,7 +35,7 @@ struct IfType {
         w.param("type", kBRANCH_TYPE);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& fa) const
     {

@@ -60,10 +60,10 @@ public:
     /**
      * @brief Runs the wrapped requirement and returns the custom error if it fails.
      *
-     * @param fa Field access object for the field under validation.
+     * @param fa Field view for the field under validation.
      * @return Empty on success; the custom @ref rpc::Status on failure.
      */
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& fa) const
         requires SomeRequirement<Wrapped>
@@ -76,10 +76,10 @@ public:
     /**
      * @brief Runs the wrapped modifier and returns the custom error if it fails.
      *
-     * @param fa Mutable field access object for the field under modification.
+     * @param fa Mutable field view for the field under modification.
      * @return Empty on success; the custom @ref rpc::Status on failure.
      */
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& fa) const
         requires SomeModifier<Wrapped>

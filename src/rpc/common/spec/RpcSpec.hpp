@@ -2,8 +2,8 @@
 #pragma once
 
 #include "rpc/common/spec/Concepts.hpp"
-#include "rpc/common/spec/FieldAccess.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/FieldView.hpp"
 #include "rpc/common/spec/Types.hpp"
 
 #include <concepts>
@@ -19,7 +19,7 @@ struct RpcSpec {
     {
     }
 
-    template <SomeRootAccess Root>
+    template <SomeObjectView Root>
     [[nodiscard]] MaybeError
     process(Root& root) const
     {
@@ -33,7 +33,7 @@ struct RpcSpec {
         return result;
     }
 
-    template <SomeRootAccess Root>
+    template <SomeObjectView Root>
     [[nodiscard]] Warnings
     check(Root const& root) const
     {
@@ -51,24 +51,24 @@ struct RpcSpec {
         return out;
     }
 
-    // Convenience overloads accepting any value the configured backend's RootAccess
-    // alias can wrap. The primary SomeRootAccess overloads above are the contract;
+    // Convenience overloads accepting any value the configured backend's ObjectView
+    // alias can wrap. The primary SomeObjectView overloads above are the contract;
     // these forwarders just save callers from constructing the wrapper by hand.
     template <typename V>
-        requires(!SomeRootAccess<V>) && std::constructible_from<RootAccess, V&>
+        requires(!SomeObjectView<V>) && std::constructible_from<ObjectView, V&>
     [[nodiscard]] MaybeError
     process(V& v) const
     {
-        RootAccess root{v};
+        ObjectView root{v};
         return process(root);
     }
 
     template <typename V>
-        requires(!SomeRootAccess<V>) && std::constructible_from<RootAccess, V const&>
+        requires(!SomeObjectView<V>) && std::constructible_from<ObjectView, V const&>
     [[nodiscard]] Warnings
     check(V const& v) const
     {
-        RootAccess const root{v};
+        ObjectView const root{v};
         return check(root);
     }
 };

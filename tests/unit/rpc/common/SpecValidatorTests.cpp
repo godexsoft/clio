@@ -255,7 +255,7 @@ TEST(RpcSpecDSL_Between, AbsentFieldPasses)
 }
 
 // ============================================================================
-// uint64 boundary — BoostJsonFieldAccess::isInt64() guards against overflow.
+// uint64 boundary — BoostJsonFieldView::isInt64() guards against overflow.
 // ============================================================================
 
 TEST(RpcSpecDSL_Int64Boundary, Uint64AboveInt64MaxFailsTypeInt64)

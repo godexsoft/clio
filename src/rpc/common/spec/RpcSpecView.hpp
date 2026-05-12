@@ -1,7 +1,7 @@
 /** @file */
 #pragma once
 
-#include "rpc/common/spec/FieldAccess.hpp"
+#include "rpc/common/spec/FieldView.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/SpecDump.hpp"
 #include "rpc/common/spec/SpecDumpWriter.hpp"
@@ -34,8 +34,8 @@ namespace rpc::spec {
  */
 class RpcSpecView {
     void const* self_;
-    MaybeError (*processImpl_)(void const*, RootAccess&);
-    Warnings (*checkImpl_)(void const*, RootAccess const&);
+    MaybeError (*processImpl_)(void const*, ObjectView&);
+    Warnings (*checkImpl_)(void const*, ObjectView const&);
     void (*dumpImpl_)(void const*, SpecDumpWriter&);
 
 public:
@@ -43,10 +43,10 @@ public:
     // NOLINTNEXTLINE(google-explicit-constructor)
     constexpr RpcSpecView(RpcSpec<Fields...> const& spec) noexcept
         : self_{&spec}
-        , processImpl_{[](void const* s, RootAccess& r) {
+        , processImpl_{[](void const* s, ObjectView& r) {
             return static_cast<RpcSpec<Fields...> const*>(s)->process(r);
         }}
-        , checkImpl_{[](void const* s, RootAccess const& r) {
+        , checkImpl_{[](void const* s, ObjectView const& r) {
             return static_cast<RpcSpec<Fields...> const*>(s)->check(r);
         }}
         , dumpImpl_{[](void const* s, SpecDumpWriter& w) {
@@ -56,13 +56,13 @@ public:
     }
 
     [[nodiscard]] MaybeError
-    process(RootAccess& root) const
+    process(ObjectView& root) const
     {
         return processImpl_(self_, root);
     }
 
     [[nodiscard]] Warnings
-    check(RootAccess const& root) const
+    check(ObjectView const& root) const
     {
         return checkImpl_(self_, root);
     }
@@ -74,22 +74,22 @@ public:
         dumpImpl_(self_, w);
     }
 
-    // Convenience overloads: accept any value the backend's RootAccess can wrap.
+    // Convenience overloads: accept any value the backend's ObjectView can wrap.
     template <typename V>
-        requires(!std::same_as<V, RootAccess>) && std::constructible_from<RootAccess, V&>
+        requires(!std::same_as<V, ObjectView>) && std::constructible_from<ObjectView, V&>
     [[nodiscard]] MaybeError
     process(V& v) const
     {
-        RootAccess root{v};
+        ObjectView root{v};
         return processImpl_(self_, root);
     }
 
     template <typename V>
-        requires(!std::same_as<V, RootAccess>) && std::constructible_from<RootAccess, V const&>
+        requires(!std::same_as<V, ObjectView>) && std::constructible_from<ObjectView, V const&>
     [[nodiscard]] Warnings
     check(V const& v) const
     {
-        RootAccess const root{v};
+        ObjectView const root{v};
         return checkImpl_(self_, root);
     }
 };

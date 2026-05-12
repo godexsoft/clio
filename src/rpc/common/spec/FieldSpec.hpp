@@ -53,7 +53,7 @@ struct FieldSpec {
         );
     }
 
-    template <SomeRootAccess Root>
+    template <SomeObjectView Root>
     [[nodiscard]] MaybeError
     process(Root& root) const
     {
@@ -68,7 +68,7 @@ struct FieldSpec {
         return result;
     }
 
-    template <SomeRootAccess Root>
+    template <SomeObjectView Root>
     [[nodiscard]] Warnings
     check(Root const& root) const
     {
@@ -79,7 +79,7 @@ struct FieldSpec {
     }
 
     // Used by Section: create a child FA from a parent FA and apply this field's processors.
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     processNested(FA& parentFa) const
     {
@@ -94,7 +94,7 @@ struct FieldSpec {
         return result;
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] Warnings
     checkNested(FA const& parentFa) const
     {

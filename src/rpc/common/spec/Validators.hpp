@@ -38,7 +38,7 @@ namespace rpc::spec {
 struct Required {
     static constexpr std::string_view kNAME = "required";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -66,7 +66,7 @@ struct Type<int64_t> {
         w.param("of", typeNameOf<int64_t>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -89,7 +89,7 @@ struct Type<bool> {
         w.param("of", typeNameOf<bool>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -112,7 +112,7 @@ struct Type<std::string> {
         w.param("of", typeNameOf<std::string>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -135,7 +135,7 @@ struct Type<double> {
         w.param("of", typeNameOf<double>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -158,7 +158,7 @@ struct Type<uint32_t> {
         w.param("of", typeNameOf<uint32_t>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -181,7 +181,7 @@ struct Type<JsonObject> {
         w.param("of", typeNameOf<JsonObject>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -204,7 +204,7 @@ struct Type<JsonArray> {
         w.param("of", typeNameOf<JsonArray>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -233,7 +233,7 @@ struct Type<T1, T2, Rest...> {
         );
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -262,7 +262,7 @@ struct Min {
         w.param("bound", bound);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -312,7 +312,7 @@ struct Clamp {
         w.param("hi", hi);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& f) const
     {
@@ -341,7 +341,7 @@ Clamp(T, T) -> Clamp<T>;
 // Mirrors the old `checkTypeAndClamp<Target>` behaviour: silently coerces an integer-valued
 // field into the inclusive range of `Target`. No-op for absent/non-integer fields. Negative
 // int64 input for an unsigned target is clamped to 0; values exceeding `Target::max()` are
-// clamped to `Target::max()`. The clamped result is stored back through the field-access API
+// clamped to `Target::max()`. The clamped result is stored back through the field-view API
 // (uint32 for unsigned target, int64 otherwise).
 //
 // Use after `type<int64_t>` or `type<uint32_t>` when downstream deserialisation truncates to a
@@ -358,7 +358,7 @@ struct ClampAs {
         w.param("target", typeNameOf<Target>());
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& f) const
     {
@@ -396,7 +396,7 @@ struct ClampAs {
 struct Deprecated {
     static constexpr std::string_view kNAME = "deprecated";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static std::optional<Warning>
     check(FA const& f)
     {
@@ -414,7 +414,7 @@ struct Deprecated {
 struct AccountFormat {
     static constexpr std::string_view kNAME = "account";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -451,7 +451,7 @@ public:
         w.param("format", format_);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -493,7 +493,7 @@ struct HexStringValidator {
         }
     }();
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -523,7 +523,7 @@ using Uint160HexStringValidator = HexStringValidator<ripple::uint160>;
 struct LedgerIndexValidator {
     static constexpr std::string_view kNAME = "ledgerIndex";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -551,7 +551,7 @@ struct LedgerIndexValidator {
 struct AccountBase58Validator {
     static constexpr std::string_view kNAME = "accountBase58";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -577,7 +577,7 @@ struct AccountBase58Validator {
 struct CurrencyValidator {
     static constexpr std::string_view kNAME = "currency";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -611,7 +611,7 @@ struct CurrencyValidator {
 struct IssuerValidator {
     static constexpr std::string_view kNAME = "issuer";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -646,7 +646,7 @@ struct IssuerValidator {
 struct CurrencyIssueValidator {
     static constexpr std::string_view kNAME = "currencyIssue";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -689,7 +689,7 @@ struct CurrencyIssueValidator {
 struct ToNumberModifier {
     static constexpr std::string_view kNAME = "toNumber";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     modify(FA& f)
     {
@@ -714,7 +714,7 @@ struct ToNumberModifier {
 struct CredentialTypeValidator {
     static constexpr std::string_view kNAME = "credentialType";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -758,7 +758,7 @@ struct CredentialTypeValidator {
 struct AuthorizeCredentialValidator {
     static constexpr std::string_view kNAME = "authorizeCredential";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -831,7 +831,7 @@ struct CustomValidator {
     {
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -854,7 +854,7 @@ struct CustomModifier {
     {
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& f) const
     {
@@ -871,7 +871,7 @@ CustomModifier(Fn) -> CustomModifier<Fn>;
 struct NotSupported {
     static constexpr std::string_view kNAME = "notSupported";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -905,7 +905,7 @@ struct NotSupportedIfEqual {
         w.param("value", value);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -942,7 +942,7 @@ struct OneOfValidator {
         w.paramList("values", values);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -964,7 +964,7 @@ struct OneOfValidator {
 struct ToLowerModifier {
     static constexpr std::string_view kNAME = "toLower";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     modify(FA& f)
     {
@@ -1000,7 +1000,7 @@ struct Between {
         w.param("hi", hi);
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     verify(FA const& f) const
     {
@@ -1038,7 +1038,7 @@ Between(T, T) -> Between<T>;
 struct Hex256ArrayValidator {
     static constexpr std::string_view kNAME = "hex256Array";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -1073,7 +1073,7 @@ struct Hex256ArrayValidator {
 struct AccountMarkerValidator {
     static constexpr std::string_view kNAME = "accountMarker";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -1117,7 +1117,7 @@ struct AccountMarkerValidator {
 struct AccountTypeValidator {
     static constexpr std::string_view kNAME = "accountType";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {
@@ -1146,7 +1146,7 @@ struct AccountTypeValidator {
 struct LedgerEntryTypeValidator {
     static constexpr std::string_view kNAME = "ledgerType";
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] static MaybeError
     verify(FA const& f)
     {

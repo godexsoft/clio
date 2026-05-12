@@ -13,10 +13,14 @@
 namespace rpc::spec {
 
 /**
- * @brief Interface contract for field access objects produced by a backend.
+ * @brief Non-owning view of a single resolved field within a JSON document.
+ *
+ * Implemented by a backend type (e.g. the boost::json adapter). Validators and
+ * modifiers receive instances of any such type through a template parameter,
+ * so they never depend on a concrete JSON library.
  */
 template <typename T>
-concept SomeFieldAccess = requires(T f, T const cf) {
+concept SomeFieldView = requires(T f, T const cf) {
     { cf.key() } -> std::convertible_to<std::string_view>;
     { cf.present() } -> std::convertible_to<bool>;
     { cf.isInt64() } -> std::convertible_to<bool>;
@@ -50,10 +54,10 @@ concept SomeFieldAccess = requires(T f, T const cf) {
 
 namespace detail {
 
-// Archetype satisfying SomeFieldAccess. Used as the witness type for
+// Archetype satisfying SomeFieldView. Used as the witness type for
 // validator/modifier/checker concepts so they aren't coupled to any backend.
 // Never instantiated; declarations only.
-struct FieldAccessArchetype {
+struct FieldViewArchetype {
     [[nodiscard]] std::string_view
     key() const noexcept;
     [[nodiscard]] bool
@@ -87,8 +91,8 @@ struct FieldAccessArchetype {
     template <typename T>
     [[nodiscard]] bool
     is() const noexcept;
-    [[nodiscard]] FieldAccessArchetype child(std::string_view) const noexcept;
-    [[nodiscard]] FieldAccessArchetype
+    [[nodiscard]] FieldViewArchetype child(std::string_view) const noexcept;
+    [[nodiscard]] FieldViewArchetype
     element(std::size_t) const noexcept;
     void
     set(int64_t);
@@ -103,56 +107,57 @@ struct FieldAccessArchetype {
 
 }  // namespace detail
 
-static_assert(SomeFieldAccess<detail::FieldAccessArchetype>);
+static_assert(SomeFieldView<detail::FieldViewArchetype>);
 
 /**
- * @brief Interface contract for the document-root access object.
+ * @brief Non-owning view of the document root, which is always an object/dict.
  *
- * Distinct from SomeFieldAccess: the root has no name, is always present, cannot
+ * Distinct from SomeFieldView: the root has no name, is always present, cannot
  * be set, and is only used by RpcSpec/FieldSpec to navigate into named fields via
- * child(). Keeping the type distinct avoids passing a keyless FA into validators.
+ * child(). Keeping the type distinct prevents passing a keyless field view into
+ * validators.
  */
 template <typename T>
-concept SomeRootAccess = requires(T const cr, T& mr) {
+concept SomeObjectView = requires(T const cr, T& mr) {
     { cr.isObject() } -> std::convertible_to<bool>;
     { cr.isArray() } -> std::convertible_to<bool>;
-    { mr.child(std::string_view{}) } -> SomeFieldAccess;
-    { cr.child(std::string_view{}) } -> SomeFieldAccess;
+    { mr.child(std::string_view{}) } -> SomeFieldView;
+    { cr.child(std::string_view{}) } -> SomeFieldView;
 };
 
 namespace detail {
 
-// Archetype satisfying SomeRootAccess. Used as the witness type for spec-level
+// Archetype satisfying SomeObjectView. Used as the witness type for spec-level
 // concepts so they aren't coupled to any backend. Never instantiated.
-struct RootAccessArchetype {
+struct ObjectViewArchetype {
     [[nodiscard]] bool
     isObject() const noexcept;
     [[nodiscard]] bool
     isArray() const noexcept;
-    [[nodiscard]] FieldAccessArchetype child(std::string_view) noexcept;
-    [[nodiscard]] FieldAccessArchetype child(std::string_view) const noexcept;
+    [[nodiscard]] FieldViewArchetype child(std::string_view) noexcept;
+    [[nodiscard]] FieldViewArchetype child(std::string_view) const noexcept;
 };
 
 }  // namespace detail
 
-static_assert(SomeRootAccess<detail::RootAccessArchetype>);
+static_assert(SomeObjectView<detail::ObjectViewArchetype>);
 
-// Validator concepts use detail::FieldAccessArchetype as the witness type so they
+// Validator concepts use detail::FieldViewArchetype as the witness type so they
 // are decoupled from any concrete backend. Validators written as templates over
-// SomeFieldAccess satisfy these concepts automatically.
+// SomeFieldView satisfy these concepts automatically.
 
 template <typename T>
-concept SomeRequirement = requires(T const a, detail::FieldAccessArchetype const& f) {
+concept SomeRequirement = requires(T const a, detail::FieldViewArchetype const& f) {
     { a.verify(f) } -> std::same_as<MaybeError>;
 };
 
 template <typename T>
-concept SomeModifier = requires(T const a, detail::FieldAccessArchetype& f) {
+concept SomeModifier = requires(T const a, detail::FieldViewArchetype& f) {
     { a.modify(f) } -> std::same_as<MaybeError>;
 };
 
 template <typename T>
-concept SomeCheck = requires(T const a, detail::FieldAccessArchetype const& f) {
+concept SomeCheck = requires(T const a, detail::FieldViewArchetype const& f) {
     { a.check(f) } -> std::same_as<std::optional<Warning>>;
 };
 

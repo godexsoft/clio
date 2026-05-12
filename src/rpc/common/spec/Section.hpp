@@ -36,7 +36,7 @@ struct Section {
     {
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& fa) const
     {
@@ -78,7 +78,7 @@ struct IfObject {
     {
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& fa) const
     {
@@ -118,7 +118,7 @@ struct IfArray {
     {
     }
 
-    template <SomeFieldAccess FA>
+    template <SomeFieldView FA>
     [[nodiscard]] MaybeError
     modify(FA& fa) const
     {
