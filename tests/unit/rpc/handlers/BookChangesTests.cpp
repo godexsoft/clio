@@ -196,8 +196,7 @@ TEST_F(RPCBookChangesHandlerTest, NormalPath)
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
-    EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kMaxSeq, _))
-        .WillOnce(Return(transactions));
+    EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kMaxSeq, _)).WillOnce(Return(transactions));
 
     auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {
@@ -244,8 +243,7 @@ TEST_F(RPCBookChangesHandlerTest, NormalPathWithDomain)
     trans1.metadata = metaObj.getSerializer().peekData();
     transactions.push_back(trans1);
 
-    EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kMaxSeq, _))
-        .WillOnce(Return(transactions));
+    EXPECT_CALL(*backend_, fetchAllTransactionsInLedger(kMaxSeq, _)).WillOnce(Return(transactions));
 
     auto const handler = AnyHandler{BookChangesHandler{backend_}};
     runSpawn([&](auto yield) {

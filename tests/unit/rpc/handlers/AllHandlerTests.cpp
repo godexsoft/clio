@@ -62,8 +62,7 @@ static constexpr auto kAmmAccount = "rLcS7XL6nxRAi7JcbJcn1Na179oF3vdfbh";
 static constexpr auto kAccount = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
 static constexpr auto kNftId = "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004";
 static constexpr auto kCurrency = "0158415500000000C1F76FF6ECB0BAC600000000";
-static constexpr auto kVaultId =
-    "61B03A6F8CEBD3AF9D8F696C3D0A9A9F0493B34BF6B5D93CF0BC009E6BA75303";
+static constexpr auto kVaultId = "61B03A6F8CEBD3AF9D8F696C3D0A9A9F0493B34BF6B5D93CF0BC009E6BA75303";
 
 using AnyHandlerType = Types<
     AccountChannelsHandler,

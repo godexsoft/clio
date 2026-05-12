@@ -137,8 +137,7 @@ getDeliveredAmount(
         // 446000000 is in Feb 2014, well after DeliveredAmount went live
         static constexpr std::uint32_t kFirstLedgerWithDeliveredAmount = 4594095;
         static constexpr std::uint32_t kDeliveredAmountLiveDate = 446000000;
-        if (ledgerSequence >= kFirstLedgerWithDeliveredAmount ||
-            date > kDeliveredAmountLiveDate) {
+        if (ledgerSequence >= kFirstLedgerWithDeliveredAmount || date > kDeliveredAmountLiveDate) {
             return txn->getFieldAmount(ripple::sfAmount);
         }
     }

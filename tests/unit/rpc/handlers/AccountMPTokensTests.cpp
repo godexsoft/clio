@@ -507,8 +507,7 @@ TEST_F(RPCAccountMPTokensHandlerTest, MarkerOutput)
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = ripple::keylet::account(account).key;
     auto const ownerDirKk = ripple::keylet::ownerDir(account).key;
-    auto const ownerDir2Kk =
-        ripple::keylet::page(ripple::keylet::ownerDir(account), kNextPage).key;
+    auto const ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), kNextPage).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 

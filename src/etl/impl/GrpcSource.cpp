@@ -61,8 +61,7 @@ GrpcSource::GrpcSource(
         chArgs.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, kKeepalivePingIntervalMs);
         chArgs.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, kKeepaliveTimeoutMs);
         chArgs.SetInt(
-            GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS,
-            static_cast<int>(kKeepalivePermitWithoutCalls)
+            GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, static_cast<int>(kKeepalivePermitWithoutCalls)
         );
         chArgs.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, kMaxPingsWithoutData);
 

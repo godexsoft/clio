@@ -710,9 +710,7 @@ TEST_F(BackendCassandraTest, Basic)
                         );
                     } else {
                         backend_->writeSuccessor(
-                            std::string{objs[i].first},
-                            lgrInfo.seq,
-                            uint256ToString(data::kLastKey)
+                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::kLastKey)
                         );
                     }
                 }
@@ -1247,9 +1245,7 @@ TEST_F(BackendCassandraTest, CacheIntegration)
                         );
                     } else {
                         backend_->writeSuccessor(
-                            std::string{objs[i].first},
-                            lgrInfo.seq,
-                            uint256ToString(data::kLastKey)
+                            std::string{objs[i].first}, lgrInfo.seq, uint256ToString(data::kLastKey)
                         );
                     }
                 }

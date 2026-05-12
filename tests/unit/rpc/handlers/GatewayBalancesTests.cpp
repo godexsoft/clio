@@ -431,9 +431,8 @@ generateNormalPathTestBundles()
     );
     frozenState.setFieldU32(ripple::sfFlags, ripple::lsfLowFreeze);
 
-    auto overflowState = createRippleStateLedgerObject(
-        "JPY", kIssuer, 50, kAccount, 10, kAccount3, 20, kTxnId, 123
-    );
+    auto overflowState =
+        createRippleStateLedgerObject("JPY", kIssuer, 50, kAccount, 10, kAccount3, 20, kTxnId, 123);
     int64_t const min64 = -9922966390934554;
     overflowState.setFieldAmount(
         ripple::sfBalance, ripple::STAmount(getIssue("JPY", kIssuer), min64, 80)

@@ -104,8 +104,7 @@ TEST_F(CursorFromDiffProviderTests, NotEnoughDiffs)
     auto const removed = 2;   // lost 2 objects because it is removed.
     auto const repeated = 1;  // repeated 1 object
     ASSERT_EQ(
-        cursors.size(),
-        kDiffsForSeq.size() + kDiffsForSeqMinuS1.size() - removed - repeated + 1
+        cursors.size(), kDiffsForSeq.size() + kDiffsForSeqMinuS1.size() - removed - repeated + 1
     );
 
     EXPECT_EQ(cursors.front().start, kFirstKey);

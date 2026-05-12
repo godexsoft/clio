@@ -615,9 +615,8 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathNonXRPNoTrustlines)
         ripple::keylet::line(account1, account2, ripple::to_currency("JPY")).key;
 
     auto accountRoot = createAccountRootObject(kAmmAccount, 0, 2, 200, 2, kIndex1, 2);
-    auto ammObj = createAmmObject(
-        kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency
-    );
+    auto ammObj =
+        createAmmObject(kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency);
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
@@ -702,9 +701,8 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozen)
         ripple::keylet::line(account1, account2, ripple::to_currency("JPY")).key;
 
     auto accountRoot = createAccountRootObject(kAmmAccount, 0, 2, 200, 2, kIndex1, 2);
-    auto ammObj = createAmmObject(
-        kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency
-    );
+    auto ammObj =
+        createAmmObject(kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency);
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
@@ -819,9 +817,8 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathFrozenIssuer)
     // asset1 will be frozen because flag set here
     auto accountRoot =
         createAccountRootObject(kAmmAccount, ripple::lsfGlobalFreeze, 2, 200, 2, kIndex1, 2);
-    auto ammObj = createAmmObject(
-        kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency
-    );
+    auto ammObj =
+        createAmmObject(kAmmAccount, "USD", kAmmAccount, "JPY", kAmmAccounT2, kLpIssueCurrency);
     accountRoot.setFieldH256(ripple::sfAMMID, ammKey);
     auto const feesObj = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
 
@@ -1231,9 +1228,8 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsMatchingInputOrder)
     auto const ammKeylet = ripple::keylet::amm(issue1, issue2);
 
     auto accountRoot = createAccountRootObject(kAmmAccount, 0, 2, 200, 2, kIndex1, 2);
-    auto ammObj = createAmmObject(
-        kAmmAccount, "JPY", kAmmAccount, "USD", kAmmAccounT2, kLpIssueCurrency
-    );
+    auto ammObj =
+        createAmmObject(kAmmAccount, "JPY", kAmmAccount, "USD", kAmmAccounT2, kLpIssueCurrency);
     auto const auctionIssue = ripple::Issue{ripple::Currency{kLpIssueCurrency}, account1};
     ammSetAuctionSlot(
         ammObj,
@@ -1351,9 +1347,8 @@ TEST_F(RPCAMMInfoHandlerTest, HappyPathWithAssetsPreservesInputOrder)
     auto const ammKeylet = ripple::keylet::amm(issue1, issue2);
 
     // Note: order in the AMM object is different from the input
-    auto ammObj = createAmmObject(
-        kAmmAccount, "JPY", kAmmAccount, "USD", kAmmAccounT2, kLpIssueCurrency
-    );
+    auto ammObj =
+        createAmmObject(kAmmAccount, "JPY", kAmmAccount, "USD", kAmmAccounT2, kLpIssueCurrency);
     auto accountRoot = createAccountRootObject(kAmmAccount, 0, 2, 200, 2, kIndex1, 2);
     auto const auctionIssue = ripple::Issue{ripple::Currency{kLpIssueCurrency}, account1};
     ammSetAuctionSlot(

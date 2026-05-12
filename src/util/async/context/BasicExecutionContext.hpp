@@ -120,8 +120,7 @@ class BasicExecutionContext : public ExecutionContextTag {
 
 public:
     /** @brief Whether operations on this execution context are noexcept */
-    static constexpr bool kIsNoexcept =
-        noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; })) and
+    static constexpr bool kIsNoexcept = noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; })) and
         noexcept(ErrorHandlerType::catchAndAssert([] { throw 0; }));
 
     using ContextHolderType = ContextType;

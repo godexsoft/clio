@@ -299,9 +299,7 @@ TEST_F(RPCForwardingProxyTest, ForwardCallsBalancerWithCorrectParams)
 
     EXPECT_CALL(
         *rawBalancerPtr,
-        forwardToRippled(
-            forwarded.as_object(), std::make_optional<std::string>(kClientIp), true, _
-        )
+        forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(kClientIp), true, _)
     )
         .WillOnce(Return(json::object{}));
 
@@ -339,9 +337,7 @@ TEST_F(RPCForwardingProxyTest, ForwardingFailYieldsErrorStatus)
 
     EXPECT_CALL(
         *rawBalancerPtr,
-        forwardToRippled(
-            forwarded.as_object(), std::make_optional<std::string>(kClientIp), true, _
-        )
+        forwardToRippled(forwarded.as_object(), std::make_optional<std::string>(kClientIp), true, _)
     )
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
 

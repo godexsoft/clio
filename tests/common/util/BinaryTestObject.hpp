@@ -127,10 +127,7 @@ static constexpr auto kDefaultObjKey =
     "B00AA769C00726371689ED66A7CF57C2502F1BF4BDFF2ACADF67A2A7B5E8960D";
 
 [[maybe_unused, nodiscard]] std::pair<std::string, std::string>
-createTxAndMetaBlobs(
-    std::string metaStr = kDefaultTxnMeta,
-    std::string txnStr = kDefaultTxnHex
-);
+createTxAndMetaBlobs(std::string metaStr = kDefaultTxnMeta, std::string txnStr = kDefaultTxnHex);
 
 [[maybe_unused, nodiscard]] std::pair<ripple::STTx, ripple::TxMeta>
 createTxAndMeta(

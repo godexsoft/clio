@@ -250,9 +250,7 @@ public:
 
         if (req_.method() == http::verb::get and req_.target() == "/cache_state") {
             if (cache_.get().isFull()) {
-                return sender_(
-                    httpResponse(http::status::ok, "text/html", kCacheCheckLoadedHtml)
-                );
+                return sender_(httpResponse(http::status::ok, "text/html", kCacheCheckLoadedHtml));
             }
 
             return sender_(httpResponse(

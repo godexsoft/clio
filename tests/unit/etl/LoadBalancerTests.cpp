@@ -684,9 +684,7 @@ TEST_F(LoadBalancerForwardToRippledTests, forward)
     auto loadBalancer = makeLoadBalancer();
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -701,9 +699,7 @@ TEST_F(LoadBalancerForwardToRippledTests, forwardWithXUserHeader)
     auto loadBalancer = makeLoadBalancer();
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -718,16 +714,12 @@ TEST_F(LoadBalancerForwardToRippledTests, source0Fails)
     auto loadBalancer = makeLoadBalancer();
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlConnectionError}));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -758,9 +750,7 @@ TEST_F(LoadBalancerForwardToRippledPrometheusTests, forwardingCacheEnabled)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -791,16 +781,12 @@ TEST_F(LoadBalancerForwardToRippledPrometheusTests, source0Fails)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(std::unexpected{rpc::ClioError::EtlConnectionError}));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -826,9 +812,7 @@ TEST_F(LoadBalancerForwardToRippledPrometheusTests, adminRequestAlwaysCacheMiss)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_)
     )
         .Times(2)
         .WillRepeatedly(Return(response_));
@@ -894,16 +878,12 @@ TEST_P(LoadBalancerForwardToRippledErrorTests, bothSourcesFail)
     auto loadBalancer = makeLoadBalancer();
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(std::unexpected{GetParam().firstSourceError}));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
-        forwardToRippled(
-            request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(std::unexpected{GetParam().secondSourceError}));
 
@@ -924,9 +904,7 @@ TEST_F(LoadBalancerForwardToRippledTests, forwardingCacheEnabled)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -946,9 +924,7 @@ TEST_F(LoadBalancerForwardToRippledTests, adminRequestBypassesForwardingCache)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_)
     )
         .Times(2)
         .WillRepeatedly(Return(response_));
@@ -969,16 +945,12 @@ TEST_F(LoadBalancerForwardToRippledTests, adminResponseNotCachedForSubsequentUse
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kAdminForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
 
@@ -1008,16 +980,12 @@ TEST_F(LoadBalancerForwardToRippledTests, onLedgerClosedHookInvalidatesCache)
 
     EXPECT_CALL(
         sourceFactory_.sourceAt(0),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(response_));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
-        forwardToRippled(
-            request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_
-        )
+        forwardToRippled(request, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
         .WillOnce(Return(boost::json::object{}));
 

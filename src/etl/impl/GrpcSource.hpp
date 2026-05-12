@@ -27,7 +27,7 @@ class GrpcSource {
     static constexpr auto kKeepalivePingIntervalMs = 10000;
     static constexpr auto kKeepaliveTimeoutMs = 5000;
     static constexpr auto kKeepalivePermitWithoutCalls =
-        true;                                           // Allow keepalive pings when no calls
+        true;                                        // Allow keepalive pings when no calls
     static constexpr auto kMaxPingsWithoutData = 0;  // No limit
     static constexpr auto kDeadline = std::chrono::seconds(30);
 

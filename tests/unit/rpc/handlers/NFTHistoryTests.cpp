@@ -1144,8 +1144,6 @@ TEST_F(RPCNFTHistoryHandlerTest, LimitMoreThanMax)
             json::parse(R"JSON({"ledger": 12, "seq": 34})JSON")
         );
         EXPECT_EQ(output.result->at("transactions").as_array().size(), 2);
-        EXPECT_EQ(
-            output.result->as_object().at("limit").as_uint64(), NFTHistoryHandler::kLimitMax
-        );
+        EXPECT_EQ(output.result->as_object().at("limit").as_uint64(), NFTHistoryHandler::kLimitMax);
     });
 }

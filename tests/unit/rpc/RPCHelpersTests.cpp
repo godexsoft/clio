@@ -849,16 +849,7 @@ TEST_F(RPCHelpersTest, AccountHolds_TrustLineButFrozen)
     auto const trustLineKey = ripple::keylet::line(account, issuer, currency).key;
 
     auto const trustLine = createRippleStateLedgerObject(
-        kCurrency,
-        kAccount2,
-        500,
-        kAccount,
-        1000,
-        kAccount2,
-        1000,
-        kTxnId,
-        1,
-        ripple::lsfHighFreeze
+        kCurrency, kAccount2, 500, kAccount, 1000, kAccount2, 1000, kTxnId, 1, ripple::lsfHighFreeze
     );
 
     ON_CALL(*backend_, doFetchLedgerObject(trustLineKey, kLedgerSeqObject, _))
@@ -1003,9 +994,8 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenAsset1Frozen)
         .Times(2)
         .WillRepeatedly(Return(ammAccountRoot.getSerializer().peekData()));
 
-    auto const amm = createAmmObject(
-        kAmmAccount, "USD", kIssuer, "XRP", ripple::toBase58(ripple::xrpAccount())
-    );
+    auto const amm =
+        createAmmObject(kAmmAccount, "USD", kIssuer, "XRP", ripple::toBase58(ripple::xrpAccount()));
     EXPECT_CALL(
         *backend_, doFetchLedgerObject(ripple::keylet::amm(ammID).key, testing::_, testing::_)
     )
@@ -1067,9 +1057,8 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenAsset2Frozen)
         .Times(2)
         .WillRepeatedly(Return(ammAccountRoot.getSerializer().peekData()));
 
-    auto const amm = createAmmObject(
-        kAmmAccount, "XRP", ripple::toBase58(ripple::xrpAccount()), "USD", kIssuer
-    );
+    auto const amm =
+        createAmmObject(kAmmAccount, "XRP", ripple::toBase58(ripple::xrpAccount()), "USD", kIssuer);
     EXPECT_CALL(
         *backend_, doFetchLedgerObject(ripple::keylet::amm(ammID).key, testing::_, testing::_)
     )
@@ -1130,9 +1119,8 @@ TEST_F(RPCHelpersTest, AccountHoldsLPTokenUnfrozen)
         .Times(2)
         .WillRepeatedly(Return(ammAccountRoot.getSerializer().peekData()));
 
-    auto const amm = createAmmObject(
-        kAmmAccount, "XRP", ripple::toBase58(ripple::xrpAccount()), "USD", kIssuer
-    );
+    auto const amm =
+        createAmmObject(kAmmAccount, "XRP", ripple::toBase58(ripple::xrpAccount()), "USD", kIssuer);
     EXPECT_CALL(
         *backend_, doFetchLedgerObject(ripple::keylet::amm(ammID).key, testing::_, testing::_)
     )

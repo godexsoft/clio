@@ -679,8 +679,7 @@ TEST_F(RPCLedgerHandlerTest, TwoRequestInARowTransactionsExpandNotBinaryV2)
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kRangeMax, _)).WillOnce(Return(ledgerHeader));
 
     auto const ledgerHeader2 = createLedgerHeader(kLedgerHash, kRangeMax - 1, 10);
-    EXPECT_CALL(*backend_, fetchLedgerBySequence(kRangeMax - 1, _))
-        .WillOnce(Return(ledgerHeader2));
+    EXPECT_CALL(*backend_, fetchLedgerBySequence(kRangeMax - 1, _)).WillOnce(Return(ledgerHeader2));
 
     TransactionAndMetadata t1;
     t1.transaction = createPaymentTransactionObject(kAccount, kAccount2, 100, 3, kRangeMax)

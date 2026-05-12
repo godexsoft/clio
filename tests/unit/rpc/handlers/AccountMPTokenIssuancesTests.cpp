@@ -36,10 +36,8 @@ namespace {
 
 constexpr auto kLedgerHash = "4BC50C9B0D8515D3EAAE1E74B29A95804346C491EE1A95BF25E4AAB854A6A652";
 constexpr auto kAccount = "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn";
-constexpr auto kIssuanceIndeX1 =
-    "A6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
-constexpr auto kIssuanceIndeX2 =
-    "B6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
+constexpr auto kIssuanceIndeX1 = "A6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC321";
+constexpr auto kIssuanceIndeX2 = "B6DBAFC99223B42257915A63DFC6B0C032D4070F9A574B255AD97466726FC322";
 
 // unique values for issuance1
 constexpr uint64_t kIssuancE1MaxAmount = 10000;
@@ -550,8 +548,7 @@ TEST_F(RPCAccountMPTokenIssuancesHandlerTest, MarkerOutput)
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = ripple::keylet::account(account).key;
     auto const ownerDirKk = ripple::keylet::ownerDir(account).key;
-    auto const ownerDir2Kk =
-        ripple::keylet::page(ripple::keylet::ownerDir(account), kNextPage).key;
+    auto const ownerDir2Kk = ripple::keylet::page(ripple::keylet::ownerDir(account), kNextPage).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(3);

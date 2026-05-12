@@ -196,13 +196,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn([]() {
         std::vector<LedgerEntryTypeParam> v;
         v.insert(v.end(), std::begin(kChainTestCases), std::end(kChainTestCases));
+        v.insert(v.end(), std::begin(kAccountOwnedTestCases), std::end(kAccountOwnedTestCases));
         v.insert(
-            v.end(), std::begin(kAccountOwnedTestCases), std::end(kAccountOwnedTestCases)
-        );
-        v.insert(
-            v.end(),
-            std::begin(kCaseInsensitiveTestCases),
-            std::end(kCaseInsensitiveTestCases)
+            v.end(), std::begin(kCaseInsensitiveTestCases), std::end(kCaseInsensitiveTestCases)
         );
         v.insert(v.end(), std::begin(kInvalidTestCases), std::end(kInvalidTestCases));
         return v;
@@ -223,13 +219,9 @@ INSTANTIATE_TEST_SUITE_P(
     AccountOwnedLedgerTypeFromStrTest,
     ::testing::ValuesIn([]() {
         std::vector<LedgerEntryTypeParam> v;
+        v.insert(v.end(), std::begin(kAccountOwnedTestCases), std::end(kAccountOwnedTestCases));
         v.insert(
-            v.end(), std::begin(kAccountOwnedTestCases), std::end(kAccountOwnedTestCases)
-        );
-        v.insert(
-            v.end(),
-            std::begin(kCaseInsensitiveTestCases),
-            std::end(kCaseInsensitiveTestCases)
+            v.end(), std::begin(kCaseInsensitiveTestCases), std::end(kCaseInsensitiveTestCases)
         );
         v.insert(v.end(), std::begin(kInvalidTestCases), std::end(kInvalidTestCases));
         v.push_back({"amendments", ripple::ltANY});  // chain type should return ltANY

@@ -482,7 +482,7 @@ TEST_F(CacheLoaderFromFileTest, FileSequenceBehindBackendFetchesMissingLedgersFr
         .WillOnce(Return(kFileSeq))      // iteration 1: seqToLoad + 1 = kFileSeq + 1
         .WillOnce(Return(kFileSeq + 1))  // iteration 2: condition (true)
         .WillOnce(Return(kFileSeq + 1))  // iteration 2: seqToLoad + 1 = kFileSeq + 2
-        .WillOnce(Return(kSeq));          // exit condition (false)
+        .WillOnce(Return(kSeq));         // exit condition (false)
 
     EXPECT_CALL(*backend_, fetchLedgerDiff(kFileSeq + 1, _)).WillOnce(Return(diffs));
     EXPECT_CALL(*backend_, fetchLedgerDiff(kFileSeq + 2, _)).WillOnce(Return(diffs));

@@ -3273,8 +3273,7 @@ generateTestValuesForNormalPathTest()
             ),
             .expectedIndex =
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kAccount), kRangeMax)
-                .key,
+            ripple::keylet::vault(*ripple::parseBase58<ripple::AccountID>(kAccount), kRangeMax).key,
             .mockedEntity = createVault(
                 kAccount,
                 kAccount,

@@ -447,12 +447,10 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndNoSuccessor
         });
 
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
+        *backend_, writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
     );
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
+        *backend_, writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
     );
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -496,12 +494,10 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsButNotBookDirAndSuccessorsF
         });
 
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
+        *backend_, writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
     );
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
+        *backend_, writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
     );
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -549,12 +545,10 @@ TEST_F(SuccessorExtTests, OnInitialDataWithSuccessorsAndBookDirAndSuccessorsForE
         });
 
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
+        *backend_, writeSuccessor(uint256ToString(data::kFirstKey), kSeq, uint256ToString(firstKey))
     );
     EXPECT_CALL(
-        *backend_,
-        writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
+        *backend_, writeSuccessor(uint256ToString(secondKey), kSeq, uint256ToString(data::kLastKey))
     );
 
     EXPECT_CALL(cache_, get(bookBase, kSeq)).WillRepeatedly(testing::Return(std::nullopt));

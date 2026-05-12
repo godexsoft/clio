@@ -698,8 +698,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsXRPPaysUSDBook, ripple::uint256{kPayS20UsdGetS10XrpBookDir}},
-                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -765,8 +764,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsXRPPaysUSDBook, ripple::uint256{kPayS20UsdGetS10XrpBookDir}},
-                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -838,8 +836,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsXRPPaysUSDBook, ripple::uint256{kPayS20UsdGetS10XrpBookDir}},
-                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -903,10 +900,8 @@ generateNormalPathBookOffersTestBundles()
             // prepare offer dir index
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
-                    {getsXRPPaysUSDBookWithDomain,
-                     ripple::uint256{kPayS20UsdGetS10XrpBookDir}},
-                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {getsXRPPaysUSDBookWithDomain, ripple::uint256{kPayS20UsdGetS10XrpBookDir}},
+                    {ripple::uint256{kPayS20UsdGetS10XrpBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -972,8 +967,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1039,8 +1033,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1108,8 +1101,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1208,8 +1200,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1267,8 +1258,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1335,8 +1325,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1348,14 +1337,7 @@ generateNormalPathBookOffersTestBundles()
                     // gets issuer account object, is deep frozen so unfunded
                     {ripple::keylet::account(account).key,
                      createAccountRootObject(
-                         kAccount,
-                         ripple::lsfLowDeepFreeze,
-                         2,
-                         200,
-                         2,
-                         kIndex1,
-                         2,
-                         kTransferRateX2
+                         kAccount, ripple::lsfLowDeepFreeze, 2, 200, 2, kIndex1, 2, kTransferRateX2
                      )
                          .getSerializer()
                          .peekData()},
@@ -1409,8 +1391,7 @@ generateNormalPathBookOffersTestBundles()
             .mockedSuccessors =
                 std::map<ripple::uint256, std::optional<ripple::uint256>>{
                     {getsUSDPaysXRPBook, ripple::uint256{kPayS20XrpGetS10UsdBookDir}},
-                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir},
-                     std::optional<ripple::uint256>{}}
+                    {ripple::uint256{kPayS20XrpGetS10UsdBookDir}, std::optional<ripple::uint256>{}}
                 },
             .mockedLedgerObjects =
                 std::map<ripple::uint256, ripple::Blob>{
@@ -1422,14 +1403,7 @@ generateNormalPathBookOffersTestBundles()
                     // gets issuer account object, is deep frozen so unfunded
                     {ripple::keylet::account(account).key,
                      createAccountRootObject(
-                         kAccount,
-                         ripple::lsfLowDeepFreeze,
-                         2,
-                         200,
-                         2,
-                         kIndex1,
-                         2,
-                         kTransferRateX2
+                         kAccount, ripple::lsfLowDeepFreeze, 2, 200, 2, kIndex1, 2, kTransferRateX2
                      )
                          .getSerializer()
                          .peekData()},
@@ -1616,9 +1590,7 @@ TEST_F(RPCBookOffersHandlerTest, Limit)
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(5);
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{kIndex2});
 
-    ON_CALL(
-        *backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, seq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, seq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes, kIndex1).getSerializer().peekData())
         );
@@ -1708,9 +1680,7 @@ TEST_F(RPCBookOffersHandlerTest, LimitMoreThanMax)
     auto const indexes =
         std::vector<ripple::uint256>(BookOffersHandler::kLimitMax + 1, ripple::uint256{kIndex2});
 
-    ON_CALL(
-        *backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, seq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, seq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes, kIndex1).getSerializer().peekData())
         );

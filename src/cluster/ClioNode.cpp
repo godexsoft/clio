@@ -26,8 +26,7 @@ struct JsonFields {
     static constexpr std::string_view const kDbRole = "db_role";
     static constexpr std::string_view const kEtlStarted = "etl_started";
     static constexpr std::string_view const kCacheIsFull = "cache_is_full";
-    static constexpr std::string_view const kCacheIsCurrentlyLoading =
-        "cache_is_currently_loading";
+    static constexpr std::string_view const kCacheIsCurrentlyLoading = "cache_is_currently_loading";
 };
 
 }  // namespace
@@ -97,9 +96,8 @@ tag_invoke(boost::json::value_to_tag<ClioNode>, boost::json::value const& jv)
 
     auto const etlStarted =
         obj.contains(JsonFields::kEtlStarted) ? obj.at(JsonFields::kEtlStarted).as_bool() : true;
-    auto const cacheIsFull = obj.contains(JsonFields::kCacheIsFull)
-        ? obj.at(JsonFields::kCacheIsFull).as_bool()
-        : true;
+    auto const cacheIsFull =
+        obj.contains(JsonFields::kCacheIsFull) ? obj.at(JsonFields::kCacheIsFull).as_bool() : true;
     auto const cacheIsCurrentlyLoading = obj.contains(JsonFields::kCacheIsCurrentlyLoading)
         ? obj.at(JsonFields::kCacheIsCurrentlyLoading).as_bool()
         : false;

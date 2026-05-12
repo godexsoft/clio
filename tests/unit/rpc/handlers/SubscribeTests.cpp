@@ -830,10 +830,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
     ON_CALL(*backend_, doFetchSuccessorKey(getsXRPPaysUSDBook, kMaxSeq, _))
         .WillByDefault(Return(ripple::uint256{kPayS20UsdGetS10XrpBookDir}));
 
-    ON_CALL(
-        *backend_,
-        doFetchSuccessorKey(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _))
         .WillByDefault(Return(std::nullopt));
 
     ON_CALL(*backend_, doFetchSuccessorKey(reversedBook, kMaxSeq, _))
@@ -845,20 +842,14 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(8);
 
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{kIndex2});
-    ON_CALL(
-        *backend_,
-        doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes, kIndex1).getSerializer().peekData())
         );
 
     // for reverse
     auto const indexes2 = std::vector<ripple::uint256>(10, ripple::uint256{kIndex1});
-    ON_CALL(
-        *backend_,
-        doFetchLedgerObject(ripple::uint256{kPayS20XrpGetS10UsdBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20XrpGetS10UsdBookDir}, kMaxSeq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes2, kIndex2).getSerializer().peekData())
         );
@@ -1044,10 +1035,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
     ON_CALL(*backend_, doFetchSuccessorKey(getsXRPPaysUSDBook, kMaxSeq, _))
         .WillByDefault(Return(ripple::uint256{kPayS20UsdGetS10XrpBookDir}));
 
-    ON_CALL(
-        *backend_,
-        doFetchSuccessorKey(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _))
         .WillByDefault(Return(std::nullopt));
 
     ON_CALL(*backend_, doFetchSuccessorKey(reversedBook, kMaxSeq, _))
@@ -1058,20 +1046,14 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(5);
 
     auto const indexes = std::vector<ripple::uint256>(10, ripple::uint256{kIndex2});
-    ON_CALL(
-        *backend_,
-        doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20UsdGetS10XrpBookDir}, kMaxSeq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes, kIndex1).getSerializer().peekData())
         );
 
     // for reverse
     auto const indexes2 = std::vector<ripple::uint256>(10, ripple::uint256{kIndex1});
-    ON_CALL(
-        *backend_,
-        doFetchLedgerObject(ripple::uint256{kPayS20XrpGetS10UsdBookDir}, kMaxSeq, _)
-    )
+    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kPayS20XrpGetS10UsdBookDir}, kMaxSeq, _))
         .WillByDefault(
             Return(createOwnerDirLedgerObject(indexes2, kIndex2).getSerializer().peekData())
         );
