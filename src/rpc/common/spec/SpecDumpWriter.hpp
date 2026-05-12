@@ -14,17 +14,10 @@ namespace rpc::spec {
 /**
  * @brief Indented YAML-ish writer used by the spec dumper.
  *
- * The writer is intentionally narrow: it knows how to emit list items, parameter
- * key/value lines, and to push/pop indentation. Validators interact with it only
- * through `param()` / `paramList()` so they can be templated and avoid a hard
- * dependency on this header — Validators.hpp does not include SpecDumpWriter.hpp.
- *
- * Output shape (example):
+ * Output shape example:
  *
  *   - account:
  *       - account
- *   - ledger_index:
- *       - ledgerIndex
  *   - signer_lists:
  *       - type
  *           of: bool
@@ -73,9 +66,6 @@ public:
 
     /**
      * @brief Emit a list bullet "- name" line, then run @p body indented under it.
-     *
-     * Used both for fields ("- account:") and for items under a field ("- required").
-     * @p body may be omitted by passing an empty lambda.
      */
     template <typename Fn>
         requires std::invocable<Fn&>

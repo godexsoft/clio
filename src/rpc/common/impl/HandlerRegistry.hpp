@@ -32,8 +32,6 @@ namespace rpc::impl {
 
 /**
  * @brief Bundle of all runtime dependencies a handler factory may consume.
- *
- * Each factory in @ref kHANDLERS picks the fields it needs and ignores the rest.
  */
 struct HandlerDeps {
     util::config::ClioConfigDefinition const& config;
@@ -46,12 +44,10 @@ struct HandlerDeps {
 };
 
 /**
- * @brief One row of the handler registry: static metadata + a runtime factory.
+ * @brief One row of the handler registry: static metadata plus a runtime factory.
  *
- * `factory` and `specFn` are captureless lambdas that decay to function pointers,
- * keeping the surrounding table `constexpr`. `specFn` is `nullptr` for handlers
- * that take no input (ping, random, ledger_range, version) — the dumper renders
- * those as `(no inputs)`.
+ * @c specFn is @c nullptr for handlers that take no input; the dumper renders
+ * those as @c (no inputs).
  */
 struct HandlerEntry {
     std::string_view name;
@@ -62,10 +58,6 @@ struct HandlerEntry {
 
 /**
  * @brief The full set of registered RPC handlers.
- *
- * Single source of truth. Both @ref ProductionHandlerProvider (which builds
- * runtime instances) and @ref rpc::dumpAllRpcSpecs (which only needs the static
- * metadata) iterate this span.
  */
 [[nodiscard]] std::span<HandlerEntry const>
 handlerRegistry() noexcept;

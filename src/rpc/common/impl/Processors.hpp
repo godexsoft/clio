@@ -30,7 +30,7 @@ struct DefaultProcessor final {
         boost::json::array warnings;
         auto input = value;  // mutable copy; spec.process may modify it before deserialization
 
-        if constexpr (SomeHandlerWithNewSpec<HandlerType>) {
+        if constexpr (SomeHandlerWithSpec<HandlerType>) {
             auto const spec = handler.spec(ctx.apiVersion);
             warnings = rpc::spec::toJsonArray(spec.check(value));
             if (auto const ret = spec.process(input); not ret)

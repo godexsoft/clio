@@ -73,7 +73,7 @@ public:
     /**
      * @brief Dump the input spec for the given API version into @p writer.
      *
-     * Handlers that do not satisfy @ref SomeHandlerWithNewSpec produce a single
+     * Handlers that do not satisfy @ref SomeHandlerWithSpec produce a single
      * "(no spec)" line. The output shape is determined by @ref rpc::spec::SpecDumpWriter.
      */
     void
@@ -114,7 +114,7 @@ private:
         void
         dumpSpec(spec::SpecDumpWriter& writer, uint32_t apiVersion) const override
         {
-            if constexpr (SomeHandlerWithNewSpec<HandlerType>) {
+            if constexpr (SomeHandlerWithSpec<HandlerType>) {
                 handler.spec(apiVersion).dump(writer);
             } else {
                 writer.line("(no spec)");

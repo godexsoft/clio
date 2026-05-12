@@ -19,10 +19,6 @@
 
 using namespace rpc::spec;
 
-// ============================================================================
-// Core DSL — RpcSpec, FieldSpec, and RpcSpecView mechanics.
-// ============================================================================
-
 TEST(RpcSpecDSL, ValidRequestPasses)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -216,10 +212,6 @@ TEST(RpcSpecDSL, PipeStyleFieldDefinition)
     EXPECT_FALSE(kSPEC.process(missingAccount).has_value());
 }
 
-// ============================================================================
-// check() must never mutate — even when the spec contains modifiers.
-// ============================================================================
-
 TEST(RpcSpecDSL, CheckDoesNotInvokeModifiers)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -229,17 +221,13 @@ TEST(RpcSpecDSL, CheckDoesNotInvokeModifiers)
     auto request = boost::json::parse(R"JSON({ "limit": 2 })JSON");
     auto const warnings = kSPEC.check(request);
     EXPECT_TRUE(warnings.empty());
-    EXPECT_EQ(request.as_object().at("limit").as_int64(), 2);  // unchanged
+    EXPECT_EQ(request.as_object().at("limit").as_int64(), 2);
 }
-
-// ============================================================================
-// Non-object root: every field appears absent; required fields fire.
-// ============================================================================
 
 TEST(RpcSpecDSL, NonObjectRootTreatsAllFieldsAsAbsent)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("limit", type<int64_t>),  // optional — absent is fine
+        field("limit", type<int64_t>),
     };
 
     auto arr = boost::json::parse(R"JSON([1, 2, 3])JSON");
@@ -262,10 +250,6 @@ TEST(RpcSpecDSL, NonObjectRootWithRequiredFieldFails)
     EXPECT_EQ(result.error().message, "Required field 'account' missing");
 }
 
-// ============================================================================
-// Boundary cases: empty spec, empty field.
-// ============================================================================
-
 TEST(RpcSpecDSL, EmptySpecAcceptsEverything)
 {
     static constexpr auto kSPEC = RpcSpec{};
@@ -278,18 +262,12 @@ TEST(RpcSpecDSL, EmptySpecAcceptsEverything)
 TEST(RpcSpecDSL, FieldWithNoItemsIsNoOp)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("anything") | required,  // pipe-style starts from zero-item field
+        field("anything") | required,
     };
 
     auto request = boost::json::parse(R"JSON({ "anything": 42 })JSON");
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
-
-// ============================================================================
-// Processing order — short-circuit on first failure, both within a field's items
-// and across the field list. Ported from the parametric ordering tests in the
-// pre-consteval SpecsTests (FirstError / SecondError patterns).
-// ============================================================================
 
 TEST(RpcSpecDSL_Ordering, StopsAtFirstFieldFailure)
 {
@@ -347,10 +325,6 @@ TEST(RpcSpecDSL_Ordering, LaterItemRunsWhenEarlierPasses)
     EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
 }
 
-// ============================================================================
-// Consteval smoke test — proves the spec is genuinely constant-evaluable.
-// ============================================================================
-
 TEST(RpcSpecDSL, SpecIsConstantEvaluable)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -362,13 +336,6 @@ TEST(RpcSpecDSL, SpecIsConstantEvaluable)
     static_assert(kFIELD_COUNT == 3);
     EXPECT_EQ(kFIELD_COUNT, 3u);
 }
-
-// ============================================================================
-// Concept satisfaction — every shipped validator is recognised by the
-// SomeRequirement / SomeModifier / SomeCheck concepts. The concepts witness
-// against a private archetype (not BoostJsonFieldView), so satisfaction
-// proves the validators are genuinely backend-agnostic.
-// ============================================================================
 
 static_assert(rpc::spec::SomeRequirement<rpc::spec::Required>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::Type<int64_t>>);
@@ -420,11 +387,6 @@ static_assert(rpc::spec::SomeRequirement<rpc::spec::Hex256ArrayValidator>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::AccountMarkerValidator>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::AccountTypeValidator>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::LedgerEntryTypeValidator>);
-
-// ============================================================================
-// WarningsToJson — verifies that spec::toJsonArray mirrors the old wire-format
-// aggregator: groups by code, appends each extra message with a leading space.
-// ============================================================================
 
 TEST(RpcSpecDSL_WarningsToJson, SingleDeprecatedFieldProducesGroupedWarning)
 {

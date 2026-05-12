@@ -14,7 +14,7 @@ namespace rpc::spec {
 /**
  * @brief Non-owning, type-erased view over any @ref RpcSpec instantiation.
  *
- * Stores a raw pointer to the underlying spec together with two stateless
+ * Stores a raw pointer to the underlying spec together with stateless
  * function pointers; no heap allocation takes place and the constructor is
  * genuinely @c noexcept.
  *
@@ -74,7 +74,6 @@ public:
         dumpImpl_(self_, w);
     }
 
-    // Convenience overloads: accept any value the backend's ObjectView can wrap.
     template <typename V>
         requires(!std::same_as<V, ObjectView>) && std::constructible_from<ObjectView, V&>
     [[nodiscard]] MaybeError

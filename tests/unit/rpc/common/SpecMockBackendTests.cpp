@@ -118,7 +118,7 @@ public:
     [[nodiscard]] static bool
     isObject() noexcept
     {
-        return false;  // MockObject is flat; nested objects not supported
+        return false;
     }
     [[nodiscard]] static bool
     isArray() noexcept
@@ -128,7 +128,7 @@ public:
     [[nodiscard]] static std::size_t
     arraySize() noexcept
     {
-        return 0;  // MockObject is flat; no arrays
+        return 0;
     }
 
     template <typename T>
@@ -138,7 +138,7 @@ public:
         if constexpr (
             std::is_same_v<T, rpc::spec::JsonObject> || std::is_same_v<T, rpc::spec::JsonArray>
         ) {
-            return false;  // MockObject is flat
+            return false;
         } else {
             return readValue_ != nullptr && std::holds_alternative<T>(*readValue_);
         }

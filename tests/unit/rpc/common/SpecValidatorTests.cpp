@@ -13,10 +13,6 @@
 
 using namespace rpc::spec;
 
-// ============================================================================
-// Type<T> — single-type validators
-// ============================================================================
-
 TEST(RpcSpecDSL_Type, StringDirect)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -110,10 +106,6 @@ TEST(RpcSpecDSL_TypeArray, AcceptsArrayRejectsOthers)
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
 
-// ============================================================================
-// Type<T1, T2, ...> — OR semantics
-// ============================================================================
-
 TEST(RpcSpecDSL_MultiType, AcceptsFirstType)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -166,10 +158,6 @@ TEST(RpcSpecDSL_MultiType, AbsentFieldSkipped)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// Min / Between — numeric bound validators
-// ============================================================================
 
 TEST(RpcSpecDSL_Min, Double)
 {
@@ -254,10 +242,6 @@ TEST(RpcSpecDSL_Between, AbsentFieldPasses)
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
 
-// ============================================================================
-// uint64 boundary — BoostJsonFieldView::isInt64() guards against overflow.
-// ============================================================================
-
 TEST(RpcSpecDSL_Int64Boundary, Uint64AboveInt64MaxFailsTypeInt64)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -282,10 +266,6 @@ TEST(RpcSpecDSL_Int64Boundary, Uint64WithinInt64RangePassesTypeInt64)
     auto request = boost::json::parse(R"JSON({ "n": 9223372036854775807 })JSON");
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
-
-// ============================================================================
-// AccountFormat — real validator from rpc::accountFromStringStrict.
-// ============================================================================
 
 TEST(RpcSpecDSL_AccountFormat, RejectsInvalidString)
 {
@@ -322,10 +302,6 @@ TEST(RpcSpecDSL_AccountFormat, AbsentFieldAccepted)
     auto request = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
-
-// ============================================================================
-// TimeFormatValidator — port of validation::TimeFormatValidator.
-// ============================================================================
 
 TEST(RpcSpecDSL_TimeFormat, ValidIsoStringAccepted)
 {
@@ -371,10 +347,6 @@ TEST(RpcSpecDSL_TimeFormat, AbsentFieldAccepted)
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
 
-// ============================================================================
-// Uint256/192/160 hex string validators.
-// ============================================================================
-
 TEST(RpcSpecDSL_HexString, Uint256AcceptsValidHex)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -418,10 +390,6 @@ TEST(RpcSpecDSL_HexString, AbsentFieldSkipped)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// Hex256Array — every element of an array must be a valid uint256 hex.
-// ============================================================================
 
 TEST(RpcSpecDSL_Hex256Array, ValidArrayPasses)
 {
@@ -468,10 +436,6 @@ TEST(RpcSpecDSL_Hex256Array, AbsentFieldPasses)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// LedgerIndexValidator
-// ============================================================================
 
 TEST(RpcSpecDSL_LedgerIndex, AcceptsPositiveInt)
 {
@@ -527,10 +491,6 @@ TEST(RpcSpecDSL_LedgerIndex, AbsentFieldSkipped)
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
 
-// ============================================================================
-// AccountBase58Validator
-// ============================================================================
-
 TEST(RpcSpecDSL_AccountBase58, AcceptsValidBase58Account)
 {
     static constexpr auto kSPEC = RpcSpec{field("account", accountBase58)};
@@ -563,10 +523,6 @@ TEST(RpcSpecDSL_AccountBase58, AbsentFieldSkipped)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// CurrencyValidator
-// ============================================================================
 
 TEST(RpcSpecDSL_Currency, AcceptsXRP)
 {
@@ -619,10 +575,6 @@ TEST(RpcSpecDSL_Currency, AbsentFieldSkipped)
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
 
-// ============================================================================
-// NotSupported — rejects any present value with rpcNOT_SUPPORTED.
-// ============================================================================
-
 TEST(RpcSpecDSL_NotSupported, AbsentFieldPasses)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -642,10 +594,6 @@ TEST(RpcSpecDSL_NotSupported, PresentFieldFails)
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcNOT_SUPPORTED);
 }
-
-// ============================================================================
-// OneOfValidator — string field must equal one of a fixed set.
-// ============================================================================
 
 TEST(RpcSpecDSL_OneOf, AcceptsValidValue)
 {
@@ -689,10 +637,6 @@ TEST(RpcSpecDSL_OneOf, AbsentFieldPasses)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// AccountMarkerValidator — validates "<hex256>,<uint64>" cursor format.
-// ============================================================================
 
 TEST(RpcSpecDSL_AccountMarker, ValidMarkerPasses)
 {
@@ -749,10 +693,6 @@ TEST(RpcSpecDSL_AccountMarker, BadHintPartFails)
     EXPECT_EQ(r.error().message, "Malformed cursor.");
 }
 
-// ============================================================================
-// AccountTypeValidator — string must be a valid account-owned ledger entry type.
-// ============================================================================
-
 TEST(RpcSpecDSL_AccountType, ValidTypeStringPasses)
 {
     static constexpr auto kSPEC = RpcSpec{field("type", accountType)};
@@ -783,10 +723,6 @@ TEST(RpcSpecDSL_AccountType, AbsentFieldPasses)
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
 
-// ============================================================================
-// LedgerEntryTypeValidator — string must be any valid ledger entry type.
-// ============================================================================
-
 TEST(RpcSpecDSL_LedgerEntryType, ValidTypeStringPasses)
 {
     static constexpr auto kSPEC = RpcSpec{field("type", ledgerType)};
@@ -809,10 +745,6 @@ TEST(RpcSpecDSL_LedgerEntryType, AbsentFieldPasses)
     auto absent = boost::json::parse(R"JSON({})JSON");
     EXPECT_TRUE(kSPEC.process(absent).has_value());
 }
-
-// ============================================================================
-// Integration: Section + new validators — mimics ripple_state / AMM patterns.
-// ============================================================================
 
 TEST(RpcSpecDSL_Integration, RippleStatePattern)
 {

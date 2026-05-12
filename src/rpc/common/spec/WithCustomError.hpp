@@ -43,14 +43,12 @@ public:
     {
     }
 
-    /// Read-only access used by the spec dumper.
     [[nodiscard]] Wrapped const&
     wrapped() const noexcept
     {
         return wrapped_;
     }
 
-    /// The wire-format error message attached to the failure (empty if none).
     [[nodiscard]] std::string_view
     message() const noexcept
     {

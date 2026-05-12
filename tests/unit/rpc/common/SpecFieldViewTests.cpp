@@ -76,8 +76,6 @@ TEST(RpcSpecDSL_FieldView, ElementOutOfBoundsReturnsAbsent)
     EXPECT_FALSE(fa.element(5).present());
 }
 
-// Root-level navigation on a non-object input — root.isObject() reports false and
-// child() returns absent FAs without crashing.
 TEST(RpcSpecDSL_FieldView, RootOverNonObjectReportsIsObjectFalse)
 {
     auto arr = boost::json::parse(R"JSON([1, 2, 3])JSON");
@@ -88,8 +86,6 @@ TEST(RpcSpecDSL_FieldView, RootOverNonObjectReportsIsObjectFalse)
     EXPECT_FALSE(fa.present());
 }
 
-// Const-constructed ObjectView preserves read-only navigation; the FA it yields
-// cannot be written through.
 TEST(RpcSpecDSL_FieldView, ConstRootYieldsReadOnlyChild)
 {
     auto const request = boost::json::parse(R"JSON({ "foo": 1 })JSON");

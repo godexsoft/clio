@@ -12,14 +12,14 @@
 namespace rpc {
 
 /**
- * @brief A handler that exposes the NEW consteval @ref rpc::spec::RpcSpecView via @c spec(version).
+ * @brief A handler that exposes a consteval @ref rpc::spec::RpcSpecView via @c spec(version).
  *
  * Independent of whether the handler takes an @c Input. Handlers satisfying this
- * concept are validated through the new consteval-spec path in
+ * concept are validated through the consteval-spec path in
  * @ref rpc::impl::DefaultProcessor.
  */
 template <typename T>
-concept SomeHandlerWithNewSpec = requires(T a, uint32_t version) {
+concept SomeHandlerWithSpec = requires(T a, uint32_t version) {
     { a.spec(version) } -> std::same_as<rpc::spec::RpcSpecView>;
 };
 
@@ -58,7 +58,7 @@ concept SomeHandlerWithoutInput = SomeContextProcessWithoutInput<T>;
  *
  * Handlers are decomposed into two orthogonal axes:
  *   - input shape: @ref SomeHandlerWithInput vs @ref SomeHandlerWithoutInput
- *   - spec presence: @ref SomeHandlerWithNewSpec or neither
+ *   - spec presence: @ref SomeHandlerWithSpec or neither
  *
  * Every combination is valid (e.g. no-input + new-spec, input + no-spec).
  */

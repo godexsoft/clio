@@ -28,11 +28,6 @@ using namespace tests::common;
 
 namespace json = boost::json;
 
-// ---------------------------------------------------------------------------
-// Minimal in-test handler satisfying SomeHandlerWithNewSpec.
-// Input: a JSON object with a required "token" string field.
-// Output: the same "token" value echoed back.
-// ---------------------------------------------------------------------------
 namespace newspec_fakes {
 
 struct NewSpecInput {
@@ -76,7 +71,6 @@ struct NewSpecHandlerFake {
     }
 };
 
-// Handler whose spec marks "ident" as deprecated — used for warning round-trip tests.
 struct DeprecatedFieldHandlerFake {
     using Input = NewSpecInput;
     using Output = NewSpecOutput;
@@ -99,9 +93,6 @@ struct DeprecatedFieldHandlerFake {
     }
 };
 
-// No-input + new-spec handler. Validates request via the new spec but
-// process() takes only the Context.  Pins the orthogonal-dispatch behavior
-// — the spec must run even though the handler has no Input.
 struct NoInputNewSpecHandlerFake {
     using Output = NewSpecOutput;
     using Result = rpc::HandlerReturnType<Output>;
@@ -144,7 +135,7 @@ TEST_F(RPCDefaultProcessorTest, ValidInput)
         EXPECT_CALL(handler, process(Eq(data), _)).WillOnce(Return(data));
 
         auto const ret = processor(handler, input, Context{yield});
-        ASSERT_TRUE(ret);  // no error
+        ASSERT_TRUE(ret);
         EXPECT_TRUE(ret.warnings.empty());
     });
 }
@@ -160,7 +151,7 @@ TEST_F(RPCDefaultProcessorTest, NoInputValidCall)
         EXPECT_CALL(handler, process(_)).WillOnce(Return(data));
 
         auto const ret = processor(handler, input, Context{yield});
-        ASSERT_TRUE(ret);  // no error
+        ASSERT_TRUE(ret);
         EXPECT_TRUE(ret.warnings.empty());
     });
 }
@@ -177,17 +168,11 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
         EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
 
         auto const ret = processor(handler, input, Context{yield});
-        ASSERT_FALSE(ret);  // returns error
+        ASSERT_FALSE(ret);
         EXPECT_TRUE(ret.warnings.empty());
     });
 }
 
-// ---------------------------------------------------------------------------
-// Tests for the new SomeHandlerWithNewSpec dispatch branch
-// ---------------------------------------------------------------------------
-
-// Happy path: a new-style handler with a required field receives the field —
-// the dispatcher decodes Input, calls process(), and returns the JSON output.
 TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HappyPath)
 {
     runSpawn([](auto yield) {
@@ -204,8 +189,6 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HappyPath)
     });
 }
 
-// Missing required field: the new-spec path returns an error whose Status has
-// rpcINVALID_PARAMS and a message containing the field name.
 TEST_F(RPCDefaultProcessorTest, NewSpecHandler_MissingRequiredField_ReturnsError)
 {
     runSpawn([](auto yield) {
@@ -226,10 +209,6 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_MissingRequiredField_ReturnsError
     });
 }
 
-// Deprecated field present: the new-spec path forwards warnings produced by
-// spec.check() through toJsonArray().  The returned warnings array must
-// contain exactly one object whose "id" equals WarnRpcDeprecated (2004) and
-// whose "message" contains the field name reported by the Deprecated checker.
 TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded)
 {
     runSpawn([](auto yield) {
@@ -240,7 +219,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded
         auto const input = json::parse(R"JSON({ "token": "abc", "ident": "old" })JSON");
         auto const ret = processor(handler, input, Context{yield});
 
-        ASSERT_TRUE(ret);  // still succeeds — deprecation is a warning, not an error
+        ASSERT_TRUE(ret);
         ASSERT_EQ(ret.warnings.size(), 1u);
 
         auto const& w = ret.warnings.at(0).as_object();
@@ -249,7 +228,6 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded
     });
 }
 
-// Deprecated field absent: no warnings emitted, output is clean.
 TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedFieldAbsent_NoWarnings)
 {
     runSpawn([](auto yield) {
@@ -264,8 +242,6 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedFieldAbsent_NoWarnings)
     });
 }
 
-// Pins the orthogonal-dispatch contract: a handler with no Input but with
-// a new-style spec must still have the spec executed against the request.
 TEST_F(RPCDefaultProcessorTest, NoInputNewSpecHandler_SpecRunsEvenWithoutInput)
 {
     runSpawn([](auto yield) {

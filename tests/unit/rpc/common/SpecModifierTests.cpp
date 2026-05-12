@@ -15,10 +15,6 @@
 
 using namespace rpc::spec;
 
-// ============================================================================
-// Clamp — numeric coercion modifier (in-place mutation across all integer/float types).
-// ============================================================================
-
 TEST(RpcSpecDSL_Clamp, Int64MutatesJsonValueInPlace)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -67,10 +63,6 @@ TEST(RpcSpecDSL_Clamp, Uint32Clamp)
     ASSERT_TRUE(kSPEC.process(tooHigh).has_value());
     EXPECT_EQ(tooHigh.as_object().at("n").as_uint64(), 400u);
 }
-
-// ============================================================================
-// IfType — runs sub-processors only when the field matches the configured type.
-// ============================================================================
 
 TEST(RpcSpecDSL_IfType, SkipsSubValidatorsOnTypeMismatch)
 {
@@ -259,10 +251,6 @@ TEST(RpcSpecDSL_IfType, PipeStyleWithSubItems)
     EXPECT_FALSE(kSPEC.process(bad).has_value());
 }
 
-// ============================================================================
-// Section — validates named sub-fields within an object field.
-// ============================================================================
-
 TEST(RpcSpecDSL_Section, ValidSubObjectPasses)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -353,10 +341,6 @@ TEST(RpcSpecDSL_Section, PipeStyle)
     EXPECT_FALSE(kSPEC.process(bad).has_value());
 }
 
-// ============================================================================
-// IfObject — runs sub-processors only when the field is a JSON object.
-// ============================================================================
-
 TEST(RpcSpecDSL_IfObject, SkipsWhenFieldIsNotObject)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -394,15 +378,11 @@ TEST(RpcSpecDSL_IfObject, AbsentFieldSkipped)
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
 
-// ============================================================================
-// IfArray — runs sub-processors only when the field is a JSON array.
-// ============================================================================
-
 TEST(RpcSpecDSL_IfArray, SkipsWhenFieldIsNotArray)
 {
     // A no-op sub-processor just to exercise the type check.
     static constexpr auto kSPEC = RpcSpec{
-        field("ids", ifArray(ifType<int64_t>())),  // noop, just guards the type
+        field("ids", ifArray(ifType<int64_t>())),
     };
 
     // object — not an array, should be skipped
@@ -430,11 +410,6 @@ TEST(RpcSpecDSL_IfArray, AbsentFieldSkipped)
     EXPECT_TRUE(kSPEC.process(request).has_value());
 }
 
-// ============================================================================
-// WithCustomError — override error code (and optionally message) on a wrapped
-// requirement or modifier.
-// ============================================================================
-
 TEST(RpcSpecDSL_WithCustomError, OverridesCodeOnRequirementFailure)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -445,7 +420,7 @@ TEST(RpcSpecDSL_WithCustomError, OverridesCodeOnRequirementFailure)
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), rpc::RippledError::rpcACT_MALFORMED);
-    EXPECT_TRUE(result.error().message.empty());  // no message override given
+    EXPECT_TRUE(result.error().message.empty());
 }
 
 TEST(RpcSpecDSL_WithCustomError, PassesThroughWhenWrappedSucceeds)
@@ -498,10 +473,6 @@ TEST(RpcSpecDSL_WithCustomError, ModifierPathOverridesCode)
     EXPECT_TRUE(kSPEC.process(skipped).has_value());
 }
 
-// ============================================================================
-// CustomModifier — wraps a captureless lambda as a modifier.
-// ============================================================================
-
 TEST(RpcSpecDSL_CustomModifier, LambdaInvokedWhenPresent)
 {
     static constexpr auto kSPEC = RpcSpec{
@@ -539,10 +510,6 @@ TEST(RpcSpecDSL_CustomModifier, LambdaCanReturnError)
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcINVALID_PARAMS);
 }
-
-// ============================================================================
-// ToLowerModifier — converts string field to lowercase in-place.
-// ============================================================================
 
 TEST(RpcSpecDSL_ToLower, ConvertsToLowercase)
 {
@@ -582,11 +549,6 @@ TEST(RpcSpecDSL_ToLower, NonStringNoOp)
     ASSERT_TRUE(kSPEC.process(num).has_value());
     EXPECT_TRUE(num.as_object().at("tx_type").is_int64());
 }
-
-// ============================================================================
-// ClampAs — silently coerce an integer-valued field into the target type's range,
-// mirroring the old `Type<Target>{}` clamp-on-verify behaviour.
-// ============================================================================
 
 TEST(RpcSpecDSL_ClampAs, Int32OverflowClampedToMax)
 {
