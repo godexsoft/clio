@@ -149,6 +149,131 @@ TEST(RpcSpecDSL, VersionedSpecViaRpcSpecView)
     EXPECT_TRUE(spec(2).process(valid).has_value());
 }
 
+TEST(RpcSpecDSL_Override, ExtendingASpecCanOverrideAnExistingField)
+{
+    // V1 requires the field to be a bool; V2 overrides the same key to require a string.
+    // The override must fully replace V1's items for that key.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", type<bool>),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | type<std::string>);
+
+    auto withBool = boost::json::parse(R"JSON({ "x": true })JSON");
+    EXPECT_TRUE(kSPEC_V1.process(withBool).has_value());
+    EXPECT_FALSE(kSPEC_V2.process(withBool).has_value());
+
+    auto withString = boost::json::parse(R"JSON({ "x": "ok" })JSON");
+    EXPECT_FALSE(kSPEC_V1.process(withString).has_value());
+    EXPECT_TRUE(kSPEC_V2.process(withString).has_value());
+}
+
+TEST(RpcSpecDSL_Override, OverrideDropsDeprecationFromOlderVersion)
+{
+    // V1 marks "x" deprecated. V2 redefines "x" without deprecation — no warning should fire.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", type<std::string>, deprecated),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | type<std::string>);
+
+    auto request = boost::json::parse(R"JSON({ "x": "hi" })JSON");
+
+    auto const v1Warnings = kSPEC_V1.check(request);
+    ASSERT_EQ(v1Warnings.size(), 1u);
+    EXPECT_EQ(v1Warnings[0].field, "x");
+
+    auto const v2Warnings = kSPEC_V2.check(request);
+    EXPECT_TRUE(v2Warnings.empty());
+}
+
+TEST(RpcSpecDSL_Override, OverrideCanRemoveRequired)
+{
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", required, type<std::string>),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | type<std::string>);
+
+    auto request = boost::json::parse(R"JSON({})JSON");
+    EXPECT_FALSE(kSPEC_V1.process(request).has_value());
+    EXPECT_TRUE(kSPEC_V2.process(request).has_value());
+}
+
+TEST(RpcSpecDSL_Override, OverrideCanAddRequired)
+{
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", type<std::string>),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | required | type<std::string>);
+
+    auto request = boost::json::parse(R"JSON({})JSON");
+    EXPECT_TRUE(kSPEC_V1.process(request).has_value());
+
+    auto const result = kSPEC_V2.process(request);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().message, "Required field 'x' missing");
+}
+
+TEST(RpcSpecDSL_Override, OverridePreservesPositionOfFirstOccurrence)
+{
+    // V1 declares "a" then "b". V2 overrides "a". When both would fail, the error for "a"
+    // must surface first — proving the override runs in "a"'s original slot, not appended.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("a", required),
+        field("b", required),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("a") | required | type<std::string>);
+
+    auto missingBoth = boost::json::parse(R"JSON({})JSON");
+    auto const r = kSPEC_V2.process(missingBoth);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().message, "Required field 'a' missing");
+}
+
+TEST(RpcSpecDSL_Override, OnlyLastOverrideWinsAcrossThreeVersions)
+{
+    // V3 overrides "x" again. V3's behavior must win over V2's, which won over V1's.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", type<bool>),
+    };
+    static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | type<std::string>);
+    static constexpr auto kSPEC_V3 = kSPEC_V2 + (field("x") | type<int64_t>);
+
+    auto withInt = boost::json::parse(R"JSON({ "x": 42 })JSON");
+    EXPECT_FALSE(kSPEC_V1.process(withInt).has_value());
+    EXPECT_FALSE(kSPEC_V2.process(withInt).has_value());
+    EXPECT_TRUE(kSPEC_V3.process(withInt).has_value());
+}
+
+TEST(RpcSpecDSL_Override, ExtendingDoesNotMutateBaseSpec)
+{
+    // Building V2 must not change V1's behavior — V1 should still accept bool.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", type<bool>),
+    };
+    [[maybe_unused]] static constexpr auto kSPEC_V2 = kSPEC_V1 + (field("x") | type<std::string>);
+
+    auto withBool = boost::json::parse(R"JSON({ "x": true })JSON");
+    EXPECT_TRUE(kSPEC_V1.process(withBool).has_value());
+}
+
+TEST(RpcSpecDSL_Override, OverrideAppliesToCheckOnlyItems)
+{
+    // V1 emits a deprecation warning for "x"; V2 redefines "x" *and* adds a new deprecation
+    // for "y". V2's check output must contain only "y" — V1's "x" warning is fully overridden.
+    static constexpr auto kSPEC_V1 = RpcSpec{
+        field("x", deprecated),
+        field("y", type<std::string>),
+    };
+    static constexpr auto kSPEC_V2 = extend(
+        kSPEC_V1, field("x") | type<std::string>, field("y") | type<std::string> | deprecated
+    );
+
+    auto request = boost::json::parse(R"JSON({ "x": "a", "y": "b" })JSON");
+
+    auto const warnings = kSPEC_V2.check(request);
+    ASSERT_EQ(warnings.size(), 1u);
+    EXPECT_EQ(warnings[0].field, "y");
+}
+
 TEST(RpcSpecDSL, WarningsCollectedAcrossAllFields)
 {
     static constexpr auto kSPEC = RpcSpec{

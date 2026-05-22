@@ -5,7 +5,11 @@
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/SpecDumpWriter.hpp"
 
+#include <array>
+#include <cstddef>
+#include <string_view>
 #include <tuple>
+#include <utility>
 
 namespace rpc::spec {
 
@@ -81,11 +85,40 @@ dumpFieldSpec(SpecDumpWriter& w, FieldSpec<Items...> const& f)
     });
 }
 
+namespace impl {
+
+template <typename... Fields, std::size_t... Is>
+void
+dumpRpcSpec(SpecDumpWriter& w, RpcSpec<Fields...> const& spec, std::index_sequence<Is...>)
+{
+    if constexpr (sizeof...(Is) == 0) {
+        return;
+    } else {
+        using FieldsTuple = typename RpcSpec<Fields...>::FieldsTuple;
+        constexpr auto kN = sizeof...(Is);
+        std::array<std::string_view, kN> const keys{std::get<Is>(spec.fields).key...};
+        auto const plan = buildOverridePlan(keys);
+
+        using DumpFn = void (*)(SpecDumpWriter&, FieldsTuple const&);
+        static constexpr std::array<DumpFn, kN> kDISPATCH{
+            +[](SpecDumpWriter& wr, FieldsTuple const& t) { dumpFieldSpec(wr, std::get<Is>(t)); }...
+        };
+
+        for (std::size_t i = 0; i < kN; ++i) {
+            if (!plan.shouldRun[i])
+                continue;
+            kDISPATCH[plan.effectiveIdx[i]](w, spec.fields);
+        }
+    }
+}
+
+}  // namespace impl
+
 template <typename... Fields>
 void
 dumpRpcSpec(SpecDumpWriter& w, RpcSpec<Fields...> const& spec)
 {
-    std::apply([&](auto const&... f) { (dumpFieldSpec(w, f), ...); }, spec.fields);
+    impl::dumpRpcSpec(w, spec, std::index_sequence_for<Fields...>{});
 }
 
 }  // namespace rpc::spec

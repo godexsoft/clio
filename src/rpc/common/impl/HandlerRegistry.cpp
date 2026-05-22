@@ -1,6 +1,5 @@
 #include "rpc/common/impl/HandlerRegistry.hpp"
 
-#include "rpc/Counters.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/handlers/AMMInfo.hpp"
 #include "rpc/handlers/AccountChannels.hpp"
