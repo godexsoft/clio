@@ -174,7 +174,7 @@ jobs:
           }
           push_image ${{ needs.repo.outputs.GHCR_REPO }}/clio-gcc
           if [[ ${{ github.repository_owner }} == 'XRPLF' ]]; then
-            push_image rippleci/clio_clang
+            push_image rippleci/clio_gcc
           fi
 
   clang:
