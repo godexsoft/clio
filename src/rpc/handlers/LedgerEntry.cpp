@@ -87,7 +87,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
         withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest);
 
     static constexpr auto kBRIDGE_JSON_VALIDATOR = withCustomError(
-        ifObject(section(
+        ifType<JsonObject>(section(
             field("LockingChainDoor", required, accountBase58),
             field("IssuingChainDoor", required, accountBase58),
             field("LockingChainIssue", required, currencyIssue),
@@ -108,7 +108,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(deposit_preauth),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(owner),
                     required,
@@ -122,7 +122,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(directory),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(JS(owner), accountBase58),
                 field(JS(dir_root), uint256Hex),
                 field(JS(sub_index), kMALFORMED_REQUEST_INT_VALIDATOR)
@@ -132,7 +132,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(escrow),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(owner),
                     required,
@@ -145,7 +145,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(offer),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(JS(account), required, accountBase58),
                 field(JS(seq), required, kMALFORMED_REQUEST_INT_VALIDATOR)
             ))
@@ -163,7 +163,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(ticket),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(JS(account), required, accountBase58),
                 field(JS(ticket_seq), required, kMALFORMED_REQUEST_INT_VALIDATOR)
             ))
@@ -173,7 +173,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(amm),
             type<std::string, JsonObject>,
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(asset),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -202,7 +202,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
             kBRIDGE_JSON_VALIDATOR,
             withCustomError(
-                ifObject(section(field(JS(xchain_owned_claim_id), required, type<uint32_t>))),
+                ifType<JsonObject>(section(field(JS(xchain_owned_claim_id), required, type<uint32_t>))),
                 rpc::ClioError::RpcMalformedRequest
             )
         ),
@@ -212,7 +212,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
             kBRIDGE_JSON_VALIDATOR,
             withCustomError(
-                ifObject(section(
+                ifType<JsonObject>(section(
                     field(JS(xchain_owned_create_account_claim_id), required, type<uint32_t>)
                 )),
                 rpc::ClioError::RpcMalformedRequest
@@ -224,7 +224,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             ifType<std::string>(withCustomError(
                 kMALFORMED_REQUEST_HEX_STRING_VALIDATOR, rpc::ClioError::RpcMalformedAddress
             )),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(account),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -248,7 +248,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             ifType<std::string>(withCustomError(
                 kMALFORMED_REQUEST_HEX_STRING_VALIDATOR, rpc::ClioError::RpcMalformedAddress
             )),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(subject),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -271,7 +271,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(mptoken),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(account),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -288,7 +288,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(permissioned_domain),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(seq),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -305,7 +305,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(vault),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(seq),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -322,7 +322,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(loan_broker),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(seq),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -339,7 +339,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(loan),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(loan_seq),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),
@@ -356,7 +356,7 @@ LedgerEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(delegate),
             withCustomError(type<std::string, JsonObject>, rpc::ClioError::RpcMalformedRequest),
             ifType<std::string>(kMALFORMED_REQUEST_HEX_STRING_VALIDATOR),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(
                     JS(account),
                     withCustomError(required, rpc::ClioError::RpcMalformedRequest),

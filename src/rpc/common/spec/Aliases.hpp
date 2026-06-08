@@ -103,30 +103,6 @@ section(SubFields... sf)
     return Section<SubFields...>{sf...};
 }
 
-/**
- * @brief Factory for IfObject — runs sub-processors only when the field is a JSON object.
- *
- * Example: spec::field("entry", spec::ifObject(spec::section(...)))
- */
-template <SomeProcessor... SubItems>
-consteval auto
-ifObject(SubItems... items)
-{
-    return IfObject<SubItems...>{items...};
-}
-
-/**
- * @brief Factory for IfArray — runs sub-processors only when the field is a JSON array.
- *
- * Example: spec::field("ids", spec::ifArray(someArrayValidator))
- */
-template <SomeProcessor... SubItems>
-consteval auto
-ifArray(SubItems... items)
-{
-    return IfArray<SubItems...>{items...};
-}
-
 // NOLINTBEGIN(readability-identifier-naming)
 inline constexpr auto ledgerIndex = LedgerIndexValidator{};
 inline constexpr auto accountBase58 = AccountBase58Validator{};

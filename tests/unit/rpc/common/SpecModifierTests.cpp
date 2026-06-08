@@ -344,7 +344,7 @@ TEST(RpcSpecDSL_Section, PipeStyle)
 TEST(RpcSpecDSL_IfObject, SkipsWhenFieldIsNotObject)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("entry", ifObject(section(field("a", required)))),
+        field("entry", ifType<JsonObject>(section(field("a", required)))),
     };
 
     // string value — object branch must not fire
@@ -355,7 +355,7 @@ TEST(RpcSpecDSL_IfObject, SkipsWhenFieldIsNotObject)
 TEST(RpcSpecDSL_IfObject, RunsSectionWhenFieldIsObject)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("entry", ifObject(section(field("a", required, type<std::string>)))),
+        field("entry", ifType<JsonObject>(section(field("a", required, type<std::string>)))),
     };
 
     auto good = boost::json::parse(R"JSON({ "entry": { "a": "hello" } })JSON");
@@ -371,7 +371,7 @@ TEST(RpcSpecDSL_IfObject, RunsSectionWhenFieldIsObject)
 TEST(RpcSpecDSL_IfObject, AbsentFieldSkipped)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("entry", ifObject(section(field("a", required)))),
+        field("entry", ifType<JsonObject>(section(field("a", required)))),
     };
 
     auto request = boost::json::parse(R"JSON({})JSON");
@@ -382,7 +382,7 @@ TEST(RpcSpecDSL_IfArray, SkipsWhenFieldIsNotArray)
 {
     // A no-op sub-processor just to exercise the type check.
     static constexpr auto kSPEC = RpcSpec{
-        field("ids", ifArray(ifType<int64_t>())),
+        field("ids", ifType<JsonArray>(ifType<int64_t>())),
     };
 
     // object — not an array, should be skipped
@@ -393,7 +393,7 @@ TEST(RpcSpecDSL_IfArray, SkipsWhenFieldIsNotArray)
 TEST(RpcSpecDSL_IfArray, RunsSubProcessorsWhenFieldIsArray)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("ids", ifArray(ifType<int64_t>())),
+        field("ids", ifType<JsonArray>(ifType<int64_t>())),
     };
 
     auto request = boost::json::parse(R"JSON({ "ids": [1, 2, 3] })JSON");
@@ -403,7 +403,7 @@ TEST(RpcSpecDSL_IfArray, RunsSubProcessorsWhenFieldIsArray)
 TEST(RpcSpecDSL_IfArray, AbsentFieldSkipped)
 {
     static constexpr auto kSPEC = RpcSpec{
-        field("ids", ifArray(ifType<int64_t>())),
+        field("ids", ifType<JsonArray>(ifType<int64_t>())),
     };
 
     auto request = boost::json::parse(R"JSON({})JSON");

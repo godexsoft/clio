@@ -2,6 +2,7 @@
 #include "rpc/common/spec/Aliases.hpp"
 #include "rpc/common/spec/Concepts.hpp"
 #include "rpc/common/spec/FieldSpec.hpp"
+#include "rpc/common/spec/IfType.hpp"
 #include "rpc/common/spec/RpcSpec.hpp"
 #include "rpc/common/spec/RpcSpecView.hpp"
 #include "rpc/common/spec/Section.hpp"
@@ -480,12 +481,14 @@ static_assert(rpc::spec::SomeRequirement<rpc::spec::TimeFormatValidator>);
 static_assert(rpc::spec::SomeRequirement<rpc::spec::WithCustomError<rpc::spec::Required>>);
 static_assert(rpc::spec::SomeModifier<rpc::spec::WithCustomError<rpc::spec::Clamp<int64_t>>>);
 
-// Section / IfObject / IfArray are SomeModifier
+// Section is SomeModifier
 using SimpleSection = rpc::spec::Section<rpc::spec::FieldSpec<rpc::spec::Required>>;
 static_assert(rpc::spec::SomeModifier<SimpleSection>);
-using SimpleIfObject = rpc::spec::IfObject<SimpleSection>;
+
+// IfType for object/array branches is SomeModifier (replaces the old IfObject/IfArray)
+using SimpleIfObject = rpc::spec::IfType<rpc::spec::JsonObject, SimpleSection>;
 static_assert(rpc::spec::SomeModifier<SimpleIfObject>);
-using SimpleIfArray = rpc::spec::IfArray<SimpleSection>;
+using SimpleIfArray = rpc::spec::IfType<rpc::spec::JsonArray, SimpleSection>;
 static_assert(rpc::spec::SomeModifier<SimpleIfArray>);
 
 // New validators

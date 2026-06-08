@@ -254,13 +254,13 @@ AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(asset),
             withCustomError(type<std::string, JsonObject>, rpc::RippledError::rpcISSUE_MALFORMED),
             ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
-            ifObject(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
+            ifType<JsonObject>(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
         ),
         field(
             JS(asset2),
             withCustomError(type<std::string, JsonObject>, rpc::RippledError::rpcISSUE_MALFORMED),
             ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
-            ifObject(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
+            ifType<JsonObject>(withCustomError(currencyIssue, rpc::RippledError::rpcISSUE_MALFORMED))
         ),
         field(JS(amm_account), withCustomError(account, rpc::RippledError::rpcACT_MALFORMED)),
         field(JS(account), withCustomError(account, rpc::RippledError::rpcACT_MALFORMED)),

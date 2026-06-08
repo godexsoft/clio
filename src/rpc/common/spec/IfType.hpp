@@ -13,6 +13,9 @@ namespace rpc::spec {
 /**
  * @brief Runs sub-processors only when the field's runtime type matches T.
  *
+ * T may be any type accepted by FieldView::is<T>(), including the JsonObject and
+ * JsonArray markers.
+ *
  * Satisfies SomeModifier so it receives a mutable field view, enabling both
  * requirement and modifier sub-items. Checkers are excluded from sub-items;
  * hang them directly on the FieldSpec if conditional warning emission is needed.

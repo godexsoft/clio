@@ -779,7 +779,7 @@ TEST(RpcSpecDSL_Integration, StringOrObjectPattern)
             "offer",
             type<std::string, JsonObject>,
             ifType<std::string>(uint256Hex),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field("account", required, accountBase58), field("seq", required, type<uint32_t>)
             ))
         ),

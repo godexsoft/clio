@@ -82,7 +82,7 @@ AccountTxHandler::spec(uint32_t apiVersion)
             withCustomError(
                 type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
             ),
-            ifObject(section(
+            ifType<JsonObject>(section(
                 field(JS(ledger), required, type<uint32_t>),
                 field(JS(seq), required, type<uint32_t>)
             ))
