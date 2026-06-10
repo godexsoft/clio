@@ -1,7 +1,7 @@
 #include "rpc/common/RpcSpecDumper.hpp"
 
 #include "rpc/common/impl/HandlerRegistry.hpp"
-#include "rpc/common/spec/SpecDumpWriter.hpp"
+#include <rpcspec/SpecDumpWriter.hpp>
 
 #include <algorithm>
 #include <cstdint>

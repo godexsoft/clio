@@ -3,8 +3,8 @@
 #include "rpc/JS.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
-#include "rpc/common/spec/WarningsToJson.hpp"
+#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/WarningsToJson.hpp>
 #include "rpc/handlers/Ledger.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockAmendmentCenter.hpp"

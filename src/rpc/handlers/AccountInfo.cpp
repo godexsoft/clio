@@ -6,10 +6,10 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/Aliases.hpp"
-#include "rpc/common/spec/FieldSpec.hpp"
-#include "rpc/common/spec/RpcSpec.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/Aliases.hpp>
+#include <rpcspec/FieldSpec.hpp>
+#include <rpcspec/RpcSpec.hpp>
+#include <rpcspec/RpcSpecView.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 

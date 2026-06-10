@@ -3,7 +3,7 @@
 #include "rpc/common/Concepts.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/Processors.hpp"
-#include "rpc/common/spec/SpecDumpWriter.hpp"
+#include <rpcspec/SpecDumpWriter.hpp>
 
 #include <boost/json/value.hpp>
 

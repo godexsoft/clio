@@ -178,7 +178,7 @@ TEST_F(RPCServerInfoHandlerTest, DefaultOutputIsPresent)
     EXPECT_CALL(
         *rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(kCLIENT_IP), false, testing::_)
     )
-        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
+        .WillOnce(Return(std::unexpected{rpc::EtlError::InvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
@@ -221,7 +221,7 @@ TEST_F(RPCServerInfoHandlerTest, AmendmentBlockedIsPresentIfSet)
     EXPECT_CALL(
         *rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(kCLIENT_IP), false, testing::_)
     )
-        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
+        .WillOnce(Return(std::unexpected{rpc::EtlError::InvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
@@ -262,7 +262,7 @@ TEST_F(RPCServerInfoHandlerTest, CorruptionDetectedIsPresentIfSet)
     EXPECT_CALL(
         *rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(kCLIENT_IP), false, testing::_)
     )
-        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
+        .WillOnce(Return(std::unexpected{rpc::EtlError::InvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime).WillOnce(Return(std::chrono::seconds{1234}));
 
@@ -303,7 +303,7 @@ TEST_F(RPCServerInfoHandlerTest, CacheReportsEnabledFlagCorrectly)
         *rawBalancerPtr, forwardToRippled(testing::_, testing::Eq(kCLIENT_IP), false, testing::_)
     )
         .Times(2)
-        .WillRepeatedly(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
+        .WillRepeatedly(Return(std::unexpected{rpc::EtlError::InvalidResponse}));
 
     EXPECT_CALL(*rawCountersPtr, uptime)
         .Times(2)

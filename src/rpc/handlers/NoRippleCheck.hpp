@@ -3,7 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/RpcSpecView.hpp>
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>

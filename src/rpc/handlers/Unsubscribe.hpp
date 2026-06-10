@@ -3,7 +3,7 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "feed/Types.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/RpcSpecView.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>

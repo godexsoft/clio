@@ -1,15 +1,15 @@
 #include "rpc/Errors.hpp"
-#include "rpc/common/spec/Aliases.hpp"
-#include "rpc/common/spec/Concepts.hpp"
-#include "rpc/common/spec/FieldSpec.hpp"
-#include "rpc/common/spec/IfType.hpp"
-#include "rpc/common/spec/RpcSpec.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
-#include "rpc/common/spec/Section.hpp"
-#include "rpc/common/spec/Types.hpp"
-#include "rpc/common/spec/Validators.hpp"
-#include "rpc/common/spec/WarningsToJson.hpp"
-#include "rpc/common/spec/WithCustomError.hpp"
+#include <rpcspec/Aliases.hpp>
+#include <rpcspec/Concepts.hpp>
+#include <rpcspec/FieldSpec.hpp>
+#include <rpcspec/IfType.hpp>
+#include <rpcspec/RpcSpec.hpp>
+#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Section.hpp>
+#include <rpcspec/Types.hpp>
+#include <rpcspec/Validators.hpp>
+#include <rpcspec/WarningsToJson.hpp>
+#include <rpcspec/WithCustomError.hpp>
 
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>

@@ -5,7 +5,7 @@
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "feed/Types.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/RpcSpecView.hpp>
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>

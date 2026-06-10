@@ -2,7 +2,7 @@
 #pragma once
 
 #include "rpc/common/AnyHandler.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/RpcSpecView.hpp>
 
 #include <cstdint>
 #include <memory>

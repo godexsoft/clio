@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
+#include <rpcspec/RpcSpecView.hpp>
 
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>

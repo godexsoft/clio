@@ -2,11 +2,11 @@
 #include "rpc/FakesAndMocks.hpp"
 #include "rpc/common/Types.hpp"
 #include "rpc/common/impl/Processors.hpp"
-#include "rpc/common/spec/Aliases.hpp"
-#include "rpc/common/spec/FieldSpec.hpp"
-#include "rpc/common/spec/RpcSpec.hpp"
-#include "rpc/common/spec/RpcSpecView.hpp"
-#include "rpc/common/spec/Validators.hpp"
+#include <rpcspec/Aliases.hpp>
+#include <rpcspec/FieldSpec.hpp>
+#include <rpcspec/RpcSpec.hpp>
+#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Validators.hpp>
 #include "util/HandlerBaseTestFixture.hpp"
 
 #include <boost/json/conversion.hpp>

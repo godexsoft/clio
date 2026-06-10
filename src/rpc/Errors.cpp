@@ -46,6 +46,16 @@ operator<<(std::ostream& stream, Status const& status)
                 } else {
                     stream << ", Message: " << getErrorInfo(err).message;
                 }
+            },
+            [&stream, &status](EtlError err) {
+                stream << "Code: " << static_cast<std::underlying_type_t<EtlError>>(err);
+                if (!status.error.empty())
+                    stream << ", Error: " << status.error;
+                if (!status.message.empty()) {
+                    stream << ", Message: " << status.message;
+                } else {
+                    stream << ", Message: " << getEtlErrorInfo(err).message;
+                }
             }
         },
         status.code
@@ -57,37 +67,25 @@ operator<<(std::ostream& stream, Status const& status)
     return stream;
 }
 
-WarningInfo const&
-getWarningInfo(WarningCode code)
+EtlErrorInfo const&
+getEtlErrorInfo(EtlError code)
 {
-    static constexpr WarningInfo kINFOS[]{
-        {WarningCode::WarnUnknown, "Unknown warning"},
-        {WarningCode::WarnRpcClio,
-         "This is a clio server. clio only serves validated data. If you want to talk to rippled, "
-         "include "
-         "'ledger_index':'current' in your request"},
-        {WarningCode::WarnRpcOutdated, "This server may be out of date"},
-        {WarningCode::WarnRpcRateLimit, "You are about to be rate limited"},
-        {WarningCode::WarnRpcDeprecated,
-         "Some fields from your request are deprecated. Please check the documentation at "
-         "https://xrpl.org/docs/references/http-websocket-apis/ and update your request."}
+    // clang-format off
+    static constexpr EtlErrorInfo kINFOS[]{
+        {.code = EtlError::ConnectionError, .error = "connectionError",  .message = "Couldn't connect to rippled."},
+        {.code = EtlError::RequestError,    .error = "requestError",     .message = "Error sending request to rippled."},
+        {.code = EtlError::RequestTimeout,  .error = "timeout",          .message = "Request to rippled timed out."},
+        {.code = EtlError::InvalidResponse, .error = "invalidResponse",  .message = "Rippled returned an invalid response."},
     };
+    // clang-format on
 
-    auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = ranges::find_if(kINFOS, matchByCode); it != end(kINFOS))
-        return *it;
-
-    throw(out_of_range("Invalid WarningCode"));
-}
-
-boost::json::object
-makeWarning(WarningCode code)
-{
-    auto json = boost::json::object{};
-    auto const& info = getWarningInfo(code);
-    json["id"] = static_cast<int>(code);
-    json["message"] = info.message;
-    return json;
+    switch (code) {
+        case EtlError::ConnectionError: return kINFOS[0];
+        case EtlError::RequestError:    return kINFOS[1];
+        case EtlError::RequestTimeout:  return kINFOS[2];
+        case EtlError::InvalidResponse: return kINFOS[3];
+    }
+    throw(out_of_range("Invalid EtlError code"));
 }
 
 ClioErrorInfo const&
@@ -134,19 +132,6 @@ getErrorInfo(ClioError code)
         {.code = ClioError::RpcParamsUnparsable,
          .error = "paramsUnparsable",
          .message = "Params must be an array holding exactly one object."},
-        // etl related errors
-        {.code = ClioError::EtlConnectionError,
-         .error = "connectionError",
-         .message = "Couldn't connect to rippled."},
-        {.code = ClioError::EtlRequestError,
-         .error = "requestError",
-         .message = "Error sending request to rippled."},
-        {.code = ClioError::EtlRequestTimeout,
-         .error = "timeout",
-         .message = "Request to rippled timed out."},
-        {.code = ClioError::EtlInvalidResponse,
-         .error = "invalidResponse",
-         .message = "Rippled returned an invalid response."}
     };
 
     auto matchByCode = [code](auto const& info) { return info.code == code; };
@@ -214,6 +199,16 @@ makeError(Status const& status)
             },
             [&status, &wrapOptional](ClioError err) {
                 return makeError(err, wrapOptional(status.error), wrapOptional(status.message));
+            },
+            [](EtlError err) {
+                auto const& info = getEtlErrorInfo(err);
+                return boost::json::object{
+                    {"error", info.error},
+                    {"error_code", static_cast<uint32_t>(err)},
+                    {"error_message", info.message},
+                    {"status", "error"},
+                    {"type", "response"}
+                };
             },
         },
         status.code

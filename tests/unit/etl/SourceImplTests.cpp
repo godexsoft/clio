@@ -2,6 +2,7 @@
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Models.hpp"
 #include "etl/impl/SourceImpl.hpp"
+#include "etl/Errors.hpp"
 #include "rpc/Errors.hpp"
 #include "util/Spawn.hpp"
 
@@ -62,7 +63,7 @@ struct ForwardingSourceMock {
         (std::string const&, std::string const&, std::chrono::steady_clock::duration)
     );
 
-    using ForwardToRippledReturnType = std::expected<boost::json::object, rpc::ClioError>;
+    using ForwardToRippledReturnType = std::expected<boost::json::object, etl::EtlError>;
     using ClientIpOpt = std::optional<std::string>;
     MOCK_METHOD(
         ForwardToRippledReturnType,

@@ -2,7 +2,7 @@
 
 #include "rpc/common/Concepts.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/WarningsToJson.hpp"
+#include <rpcspec/WarningsToJson.hpp>
 #include "util/UnsupportedType.hpp"
 
 #include <boost/json/array.hpp>

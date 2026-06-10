@@ -4,7 +4,7 @@
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
-#include "rpc/Errors.hpp"
+#include "etl/Errors.hpp"
 #include "util/config/ObjectView.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -129,7 +129,7 @@ public:
      * @param yield The coroutine context
      * @return Response on success or error on failure
      */
-    [[nodiscard]] virtual std::expected<boost::json::object, rpc::ClioError>
+    [[nodiscard]] virtual std::expected<boost::json::object, etl::EtlError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

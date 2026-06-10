@@ -234,7 +234,7 @@ INSTANTIATE_TEST_SUITE_P(
         },
         StatusStreamTestBundle{
             .testName = "StatusWithCodeAndExtraInfo",
-            .status = Status{ClioError::EtlConnectionError, boost::json::object{}},
+            .status = Status{EtlError::ConnectionError, boost::json::object{}},
             .expectedOutput = "Code: 7000, Message: Couldn't connect to rippled., Extra Info: {}"
         },
         StatusStreamTestBundle{
@@ -256,7 +256,7 @@ INSTANTIATE_TEST_SUITE_P(
             .testName = "StatusWithCodeErrorMessage",
             .status =
                 Status{
-                    ClioError::EtlInvalidResponse,
+                    EtlError::InvalidResponse,
                     "invalidResponse",
                     "Rippled returned an invalid response."
                 },

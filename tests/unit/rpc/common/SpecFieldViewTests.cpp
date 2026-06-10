@@ -1,4 +1,4 @@
-#include "rpc/common/spec/FieldView.hpp"
+#include <rpcspec/FieldView.hpp>
 
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>

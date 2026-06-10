@@ -3,7 +3,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/common/Types.hpp"
-#include "rpc/common/spec/WarningsToJson.hpp"
+#include <rpcspec/WarningsToJson.hpp>
 #include "rpc/handlers/AccountInfo.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockAmendmentCenter.hpp"

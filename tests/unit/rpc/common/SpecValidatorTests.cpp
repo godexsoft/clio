@@ -1,9 +1,9 @@
 #include "rpc/Errors.hpp"
-#include "rpc/common/spec/Aliases.hpp"
-#include "rpc/common/spec/FieldSpec.hpp"
-#include "rpc/common/spec/RpcSpec.hpp"
-#include "rpc/common/spec/Types.hpp"
-#include "rpc/common/spec/Validators.hpp"
+#include <rpcspec/Aliases.hpp>
+#include <rpcspec/FieldSpec.hpp>
+#include <rpcspec/RpcSpec.hpp>
+#include <rpcspec/Types.hpp>
+#include <rpcspec/Validators.hpp>
 
 #include <boost/json/parse.hpp>
 #include <gtest/gtest.h>

@@ -19,6 +19,7 @@ class ClioConan(ConanFile):
         "openssl/1.1.1w",
         "protobuf/3.21.12",
         "spdlog/1.17.0",
+        "xrpl-rpc-spec/0.1.0",
         "xrpl/3.1.0",
         "zlib/1.3.1",
     ]
