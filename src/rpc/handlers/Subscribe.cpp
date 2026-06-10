@@ -422,7 +422,7 @@ SubscribeHandler::subscribeToBooks(
     Output& output
 ) const
 {
-    static constexpr auto kFETCH_LIMIT = 200;
+    static constexpr auto kFetchLimit = 200;
 
     std::optional<data::LedgerRange> rng;
 
@@ -436,7 +436,7 @@ SubscribeHandler::subscribeToBooks(
             auto const getOrderBook = [&](auto const& book, auto& snapshots) {
                 auto const bookBase = getBookBase(book);
                 auto const [offers, _] = sharedPtrBackend_->fetchBookOffers(
-                    bookBase, rng->maxSequence, kFETCH_LIMIT, yield
+                    bookBase, rng->maxSequence, kFetchLimit, yield
                 );
 
                 // the taker is not really used, same issue with

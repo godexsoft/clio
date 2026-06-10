@@ -90,7 +90,7 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
@@ -149,7 +149,7 @@ jobs:
         if: ${{ inputs.analyze_build_time }}
         run: |
           ClangBuildAnalyzer --all build/ build_time_report.bin
-          ClangBuildAnalyzer --analyze build_time_report.bin > build_time_report.txt
+          ClangBuildAnalyzer --analyze build_time_report.bin >build_time_report.txt
           cat build_time_report.txt
 
       - name: Upload build time analyze report
@@ -227,13 +227,13 @@ jobs:
           set -e
           EXPECTED_VERSION="clio-${INPUT_VERSION}"
           if [[ "${BUILD_TYPE}" == "Debug" ]]; then
-            EXPECTED_VERSION="${EXPECTED_VERSION}+DEBUG"
+              EXPECTED_VERSION="${EXPECTED_VERSION}+DEBUG"
           fi
 
           actual_version=$(./build/clio_server --version | head -n 1)
           if [[ "${actual_version}" != "${EXPECTED_VERSION}" ]]; then
-            echo "Expected version '${EXPECTED_VERSION}', but got '${actual_version}'"
-            exit 1
+              echo "Expected version '${EXPECTED_VERSION}', but got '${actual_version}'"
+              exit 1
           fi
 
   # `codecov/codecov-action` will rerun `gcov` if it's available and build directory is present

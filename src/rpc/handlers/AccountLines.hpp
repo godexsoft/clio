@@ -29,9 +29,9 @@ class AccountLinesHandler {
     std::shared_ptr<BackendInterface> const sharedPtrBackend_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 10;
-    static constexpr auto kLIMIT_MAX = 400;
-    static constexpr auto kLIMIT_DEFAULT = 200;
+    static constexpr auto kLimitMin = 10;
+    static constexpr auto kLimitMax = 400;
+    static constexpr auto kLimitDefault = 200;
 
     /**
      * @brief A struct to hold data for one line response
@@ -77,7 +77,7 @@ public:
         std::optional<std::string> peer;
         bool ignoreDefault = false;  // TODO: document
                                      // https://github.com/XRPLF/xrpl-dev-portal/issues/1839
-        uint32_t limit = kLIMIT_DEFAULT;
+        uint32_t limit = kLimitDefault;
         std::optional<std::string> marker;
     };
 

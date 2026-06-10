@@ -27,9 +27,9 @@ class NFTOffersHandlerBase {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 50;
-    static constexpr auto kLIMIT_MAX = 500;
-    static constexpr auto kLIMIT_DEFAULT = 250;
+    static constexpr auto kLimitMin = 50;
+    static constexpr auto kLimitMax = 500;
+    static constexpr auto kLimitDefault = 250;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -51,7 +51,7 @@ public:
         std::string nftID;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLIMIT_DEFAULT;
+        uint32_t limit = kLimitDefault;
         std::optional<std::string> marker;
     };
 

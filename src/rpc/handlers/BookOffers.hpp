@@ -31,9 +31,9 @@ class BookOffersHandler {
     std::shared_ptr<data::AmendmentCenterInterface const> amendmentCenter_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 1;
-    static constexpr auto kLIMIT_MAX = 100;
-    static constexpr auto kLIMIT_DEFAULT = 60;
+    static constexpr auto kLimitMin = 1;
+    static constexpr auto kLimitMax = 100;
+    static constexpr auto kLimitDefault = 60;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -54,7 +54,7 @@ public:
     struct Input {
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLIMIT_DEFAULT;
+        uint32_t limit = kLimitDefault;
         std::optional<ripple::AccountID> taker;
         ripple::Currency paysCurrency;
         ripple::Currency getsCurrency;

@@ -32,9 +32,9 @@ class AccountTxHandler {
     std::shared_ptr<etl::ETLServiceInterface const> etl_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 1;
-    static constexpr auto kLIMIT_MAX = 1000;
-    static constexpr auto kLIMIT_DEFAULT = 200;
+    static constexpr auto kLimitMin = 1;
+    static constexpr auto kLimitMax = 1000;
+    static constexpr auto kLimitDefault = 200;
 
     /**
      * @brief A struct to hold the marker data

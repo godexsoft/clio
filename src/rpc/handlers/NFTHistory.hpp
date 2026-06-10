@@ -29,9 +29,9 @@ class NFTHistoryHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 1;
-    static constexpr auto kLIMIT_MAX = 100;
-    static constexpr auto kLIMIT_DEFAULT = 50;
+    static constexpr auto kLimitMin = 1;
+    static constexpr auto kLimitMax = 100;
+    static constexpr auto kLimitDefault = 50;
 
     /**
      * @brief A struct to hold the marker data

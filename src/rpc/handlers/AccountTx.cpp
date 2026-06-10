@@ -74,8 +74,8 @@ AccountTxHandler::spec(uint32_t apiVersion)
         field(
             JS(limit),
             type<uint32_t>,
-            min(uint32_t{kLIMIT_MIN}),
-            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+            min(uint32_t{kLimitMin}),
+            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
         ),
         field(
             JS(marker),
@@ -179,7 +179,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
         }
     }
 
-    auto const limit = input.limit.value_or(kLIMIT_DEFAULT);
+    auto const limit = input.limit.value_or(kLimitDefault);
     auto const accountID = accountFromStringStrict(input.account);
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {
         return sharedPtrBackend_->fetchAccountTransactions(

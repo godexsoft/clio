@@ -47,7 +47,7 @@ AccountLinesHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(limit),
             type<uint32_t>,
             min(uint32_t{1}),
-            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
         ),
         field(JS(ledger_index), ledgerIndex),
         field(JS(marker), accountMarker),

@@ -33,8 +33,8 @@ class LedgerDataHandler {
 
 public:
     // constants
-    static constexpr uint32_t kLIMIT_BINARY = 2048;
-    static constexpr uint32_t kLIMIT_JSON = 256;
+    static constexpr uint32_t kLimitBinary = 2048;
+    static constexpr uint32_t kLimitJson = 256;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -60,7 +60,7 @@ public:
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
         bool binary = false;
-        uint32_t limit = LedgerDataHandler::kLIMIT_JSON;  // max 256 for json ; 2048 for binary
+        uint32_t limit = LedgerDataHandler::kLimitJson;  // max 256 for json ; 2048 for binary
         std::optional<ripple::uint256> marker;
         std::optional<uint32_t> diffMarker;
         bool outOfOrder = false;

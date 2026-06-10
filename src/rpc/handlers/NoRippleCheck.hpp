@@ -30,9 +30,9 @@ class NoRippleCheckHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 1;
-    static constexpr auto kLIMIT_MAX = 500;
-    static constexpr auto kLIMIT_DEFAULT = 300;
+    static constexpr auto kLimitMin = 1;
+    static constexpr auto kLimitMax = 500;
+    static constexpr auto kLimitDefault = 300;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -54,7 +54,7 @@ public:
         bool roleGateway = false;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLIMIT_DEFAULT;
+        uint32_t limit = kLimitDefault;
         JsonBool transactions{false};
     };
 

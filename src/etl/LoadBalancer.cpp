@@ -290,7 +290,7 @@ LoadBalancer::forwardToRippled(
 
     auto numAttempts = 0u;
 
-    auto xUserValue = isAdmin ? kADMIN_FORWARDING_X_USER_VALUE : kUSER_FORWARDING_X_USER_VALUE;
+    auto xUserValue = isAdmin ? kAdminForwardingXUserValue : kUserForwardingXUserValue;
 
     std::optional<boost::json::object> response;
     etl::EtlError error = etl::EtlError::ConnectionError;

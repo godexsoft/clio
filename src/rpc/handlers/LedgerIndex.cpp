@@ -32,7 +32,7 @@ LedgerIndexHandler::spec([[maybe_unused]] uint32_t apiVersion)
     static constexpr auto kRPC_SPEC = spec::RpcSpec{
         field(JS(date))      //
         | type<std::string>  //
-        | timeFormat(kDATE_FORMAT)
+        | timeFormat(kDateFormat)
     };
     return kRPC_SPEC;
 }
@@ -59,7 +59,7 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context cons
         return fillOutputByIndex(maxIndex);
 
     auto const convertISOTimeStrToTicks = [](std::string const& isoTimeStr) {
-        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, kDATE_FORMAT);
+        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, kDateFormat);
         // systemTime must be valid after validation passed
         return systemTime->time_since_epoch().count();
     };

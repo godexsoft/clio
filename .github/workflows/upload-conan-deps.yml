@@ -52,11 +52,11 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Calculate conan matrix
         id: set-matrix
-        run: .github/scripts/conan/generate_matrix.py >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/conan/generate_matrix.py >>"${GITHUB_OUTPUT}"
 
   upload-conan-deps:
     name: Build ${{ matrix.compiler }}${{ matrix.sanitizer_ext }} ${{ matrix.build_type }}
@@ -75,7 +75,7 @@ jobs:
       CONAN_PROFILE: ${{ matrix.compiler }}${{ matrix.sanitizer_ext }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
@@ -101,12 +101,12 @@ jobs:
           force_conan_source_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
           build_type: ${{ matrix.build_type }}
 
-      - name: Login to Conan
-        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
+      - name: Log into Conan remote
+        if: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
         run: conan remote login -p ${{ secrets.CONAN_PASSWORD }} xrplf ${{ secrets.CONAN_USERNAME }}
 
       - name: Upload Conan packages
-        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+        if: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
         run: conan upload "*" -r=xrplf --confirm ${FORCE_OPTION}

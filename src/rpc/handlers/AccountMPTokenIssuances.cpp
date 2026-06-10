@@ -44,7 +44,7 @@ AccountMPTokenIssuancesHandler::spec([[maybe_unused]] uint32_t apiVersion)
             JS(limit),
             type<uint32_t>,
             min(uint32_t{1}),
-            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
         ),
         field(JS(ledger_index), ledgerIndex),
         field(JS(marker), accountMarker),
@@ -62,7 +62,7 @@ AccountMPTokenIssuancesHandler::addMPTokenIssuance(
 {
     MPTokenIssuanceResponse issuance;
 
-    issuance.MPTokenIssuanceID = ripple::strHex(sle.key());
+    issuance.mpTokenIssuanceId = ripple::strHex(sle.key());
     issuance.issuer = ripple::to_string(account);
     issuance.sequence = sle.getFieldU32(ripple::sfSequence);
     auto const flags = sle.getFieldU32(ripple::sfFlags);
@@ -250,7 +250,7 @@ tag_invoke(
 )
 {
     auto obj = boost::json::object{
-        {JS(mpt_issuance_id), issuance.MPTokenIssuanceID},
+        {JS(mpt_issuance_id), issuance.mpTokenIssuanceId},
         {JS(issuer), issuance.issuer},
         {JS(sequence), issuance.sequence},
     };

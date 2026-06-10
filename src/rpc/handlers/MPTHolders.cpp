@@ -43,8 +43,8 @@ MPTHoldersHandler::spec([[maybe_unused]] uint32_t apiVersion)
         field(
             JS(limit),
             type<uint32_t>,
-            min(uint32_t{MPTHoldersHandler::kLIMIT_MIN}),
-            clamp(uint32_t{MPTHoldersHandler::kLIMIT_MIN}, uint32_t{MPTHoldersHandler::kLIMIT_MAX})
+            min(uint32_t{MPTHoldersHandler::kLimitMin}),
+            clamp(uint32_t{MPTHoldersHandler::kLimitMin}, uint32_t{MPTHoldersHandler::kLimitMax})
         ),
         field(JS(marker), uint160Hex),
     };
@@ -68,7 +68,7 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const limit = input.limit.value_or(MPTHoldersHandler::kLIMIT_DEFAULT);
+    auto const limit = input.limit.value_or(MPTHoldersHandler::kLimitDefault);
     auto const mptID = ripple::uint192{input.mptID.c_str()};
 
     auto const issuanceLedgerObject = sharedPtrBackend_->fetchLedgerObject(

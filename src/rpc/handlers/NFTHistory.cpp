@@ -50,8 +50,8 @@ NFTHistoryHandler::spec([[maybe_unused]] uint32_t apiVersion)
         field(JS(forward), type<bool>),
         field(JS(limit))                 //
             | type<uint32_t>             //
-            | min(uint32_t{kLIMIT_MIN})  //
-            | clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX}),
+            | min(uint32_t{kLimitMin})  //
+            | clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax}),
         field(JS(marker))  //
             | withCustomError(
                   type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
@@ -131,7 +131,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
         }
     }
 
-    auto const limit = input.limit.value_or(kLIMIT_DEFAULT);
+    auto const limit = input.limit.value_or(kLimitDefault);
     auto const tokenID = ripple::uint256{input.nftID.c_str()};
 
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {

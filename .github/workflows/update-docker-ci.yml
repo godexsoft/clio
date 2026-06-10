@@ -48,7 +48,7 @@ jobs:
       - name: Set GHCR_REPO
         id: set-ghcr-repo
         run: |
-          echo "GHCR_REPO=$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> ${GITHUB_OUTPUT}
+          echo "GHCR_REPO=$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >>${GITHUB_OUTPUT}
 
   gcc-amd64:
     name: Build and push GCC docker image (amd64)
@@ -56,7 +56,7 @@ jobs:
     needs: repo
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -74,7 +74,7 @@ jobs:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-gcc
             ${{ github.repository_owner == 'XRPLF' && 'rippleci/clio_gcc' || '' }}
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/compilers/gcc
           tags: |
             type=raw,value=amd64-latest
@@ -94,7 +94,7 @@ jobs:
     needs: repo
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -112,7 +112,7 @@ jobs:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-gcc
             ${{ github.repository_owner == 'XRPLF' && 'rippleci/clio_gcc' || '' }}
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/compilers/gcc
           tags: |
             type=raw,value=arm64-latest
@@ -132,7 +132,7 @@ jobs:
     needs: [repo, gcc-amd64, gcc-arm64]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -141,19 +141,19 @@ jobs:
           files: "docker/compilers/gcc/**"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Login to GitHub Container Registry
         if: ${{ github.event_name != 'pull_request' }}
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to DockerHub
-        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        if: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PW }}
@@ -162,19 +162,19 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && steps.changed-files.outputs.any_changed == 'true' }}
         run: |
           push_image() {
-            image=$1
+              image=$1
 
-            docker buildx imagetools create \
-                -t $image:latest \
-                -t $image:${{ env.GCC_MAJOR_VERSION }} \
-                -t $image:${{ env.GCC_VERSION }} \
-                -t $image:${{ github.sha }} \
-                $image:arm64-latest \
-                $image:amd64-latest
+              docker buildx imagetools create \
+                  -t $image:latest \
+                  -t $image:${{ env.GCC_MAJOR_VERSION }} \
+                  -t $image:${{ env.GCC_VERSION }} \
+                  -t $image:${{ github.sha }} \
+                  $image:arm64-latest \
+                  $image:amd64-latest
           }
           push_image ${{ needs.repo.outputs.GHCR_REPO }}/clio-gcc
-          if [[ ${{ github.repository_owner }} == 'XRPLF' ]]; then
-            push_image rippleci/clio_clang
+          if [[ ${{ github.repository }} == 'XRPLF/clio' ]]; then
+              push_image rippleci/clio_clang
           fi
 
   clang:
@@ -183,7 +183,7 @@ jobs:
     needs: repo
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -201,7 +201,7 @@ jobs:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-clang
             ${{ github.repository_owner == 'XRPLF' && 'rippleci/clio_clang' || '' }}
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/compilers/clang
           tags: |
             type=raw,value=latest
@@ -219,7 +219,7 @@ jobs:
     needs: [repo, gcc-merge]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -234,7 +234,7 @@ jobs:
         with:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-tools
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/tools
           tags: |
             type=raw,value=amd64-latest
@@ -250,7 +250,7 @@ jobs:
     needs: [repo, gcc-merge]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -265,7 +265,7 @@ jobs:
         with:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-tools
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/tools
           tags: |
             type=raw,value=arm64-latest
@@ -281,7 +281,7 @@ jobs:
     needs: [repo, tools-amd64, tools-arm64]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get changed files
         id: changed-files
@@ -290,11 +290,11 @@ jobs:
           files: "docker/tools/**"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Login to GitHub Container Registry
         if: ${{ github.event_name != 'pull_request' }}
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -305,10 +305,10 @@ jobs:
         run: |
           image=${{ needs.repo.outputs.GHCR_REPO }}/clio-tools
           docker buildx imagetools create \
-            -t $image:latest \
-            -t $image:${{ github.sha }} \
-            $image:arm64-latest \
-            $image:amd64-latest
+              -t $image:latest \
+              -t $image:${{ github.sha }} \
+              $image:arm64-latest \
+              $image:amd64-latest
 
   pre-commit:
     name: Build and push pre-commit docker image
@@ -316,14 +316,14 @@ jobs:
     needs: [repo, tools-merge]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/build-docker-image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-pre-commit
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/pre-commit
           tags: |
             type=raw,value=latest
@@ -338,7 +338,7 @@ jobs:
     needs: [repo, gcc-merge, clang, tools-merge]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/build-docker-image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -348,7 +348,7 @@ jobs:
           images: |
             ${{ needs.repo.outputs.GHCR_REPO }}/clio-ci
             ${{ github.repository_owner == 'XRPLF' && 'rippleci/clio_ci' || '' }}
-          push_image: ${{ github.event_name != 'pull_request' }}
+          push_image: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
           directory: docker/ci
           tags: |
             type=raw,value=latest

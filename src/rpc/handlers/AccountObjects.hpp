@@ -30,9 +30,9 @@ class AccountObjectsHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLIMIT_MIN = 10;
-    static constexpr auto kLIMIT_MAX = 400;
-    static constexpr auto kLIMIT_DEFAULT = 200;
+    static constexpr auto kLimitMin = 10;
+    static constexpr auto kLimitMax = 400;
+    static constexpr auto kLimitDefault = 200;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -54,7 +54,7 @@ public:
         std::string account;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLIMIT_DEFAULT;  // [10,400]
+        uint32_t limit = kLimitDefault;  // [10,400]
         std::optional<std::string> marker;
         std::optional<ripple::LedgerEntryType> type;
         bool deletionBlockersOnly = false;

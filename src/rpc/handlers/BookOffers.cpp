@@ -80,8 +80,8 @@ BookOffersHandler::spec([[maybe_unused]] uint32_t apiVersion)
         field(
             JS(limit),
             type<uint32_t>,
-            min(uint32_t{kLIMIT_MIN}),
-            clamp(uint32_t{kLIMIT_MIN}, uint32_t{kLIMIT_MAX})
+            min(uint32_t{kLimitMin}),
+            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
         ),
         field(JS(ledger_hash), uint256Hex),
         field(JS(ledger_index), ledgerIndex),

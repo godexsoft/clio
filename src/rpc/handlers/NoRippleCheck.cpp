@@ -60,10 +60,10 @@ NoRippleCheckHandler::spec(uint32_t apiVersion)
         field(
             JS(limit),
             type<uint32_t>,
-            min(uint32_t{NoRippleCheckHandler::kLIMIT_MIN}),
+            min(uint32_t{NoRippleCheckHandler::kLimitMin}),
             clamp(
-                uint32_t{NoRippleCheckHandler::kLIMIT_MIN},
-                uint32_t{NoRippleCheckHandler::kLIMIT_MAX}
+                uint32_t{NoRippleCheckHandler::kLimitMin},
+                uint32_t{NoRippleCheckHandler::kLimitMax}
             )
         ),
     };
