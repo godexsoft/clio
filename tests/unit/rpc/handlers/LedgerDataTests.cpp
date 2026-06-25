@@ -24,7 +24,6 @@
 
 using namespace rpc;
 using namespace data;
-namespace json = boost::json;
 using namespace testing;
 
 namespace {
@@ -153,7 +152,7 @@ TEST_P(LedgerDataParameterTest, InvalidParams)
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(testBundle.testJson);
+        auto const req = boost::json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{yield});
         ASSERT_FALSE(output);
         auto const err = rpc::makeError(output.result.error());
@@ -169,7 +168,7 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaIntSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "ledger_index": {}
@@ -192,7 +191,7 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "ledger_index": "{}"
@@ -211,12 +210,12 @@ TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaStringSequence)
 TEST_F(RPCLedgerDataHandlerTest, LedgerNotExistViaHash)
 {
     EXPECT_CALL(*backend_, fetchLedgerByHash).Times(1);
-    ON_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLedgerHash}, _))
+    ON_CALL(*backend_, fetchLedgerByHash(xrpl::uint256{kLedgerHash}, _))
         .WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "ledger_hash": "{}"
@@ -239,12 +238,12 @@ TEST_F(RPCLedgerDataHandlerTest, MarkerNotExist)
         .WillByDefault(Return(createLedgerHeader(kLedgerHash, kRangeMax)));
 
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kIndex1}, kRangeMax, _))
+    ON_CALL(*backend_, doFetchLedgerObject(xrpl::uint256{kIndex1}, kRangeMax, _))
         .WillByDefault(Return(std::nullopt));
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "marker": "{}"
@@ -287,7 +286,7 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limitLine--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -305,7 +304,7 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({"limit": 10})JSON");
+        auto const req = boost::json::parse(R"JSON({"limit": 10})JSON");
         auto output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
@@ -313,7 +312,7 @@ TEST_F(RPCLedgerDataHandlerTest, NoMarker)
         // Note: the format of "close_time_human" depends on the platform and might differ per
         // platform. It is however guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLedgerExpected));
+        EXPECT_EQ(output.result->as_object().at("ledger"), boost::json::parse(kLedgerExpected));
         EXPECT_EQ(output.result->as_object().at("marker").as_string(), kIndex2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 10);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLedgerHash);
@@ -348,7 +347,7 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limitLine--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -366,7 +365,7 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({"limit": 10})JSON");
+        auto const req = boost::json::parse(R"JSON({"limit": 10})JSON");
         auto output = handler.process(req, Context{.yield = yield, .apiVersion = kApiVersion});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
@@ -374,7 +373,7 @@ TEST_F(RPCLedgerDataHandlerTest, Version2)
         // Note: the format of "close_time_human" depends on the platform and might differ per
         // platform. It is however guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLedgerExpected));
+        EXPECT_EQ(output.result->as_object().at("ledger"), boost::json::parse(kLedgerExpected));
     });
 }
 
@@ -405,7 +404,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + limitTicket);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limitLine--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -424,7 +423,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({
+        auto const req = boost::json::parse(R"JSON({
             "limit": 10,
             "type": "state"
         })JSON");
@@ -436,7 +435,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilter)
         // Note: the format of "close_time_human" depends on the platform and might differ per
         // platform. It is however guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLedgerExpected));
+        EXPECT_EQ(output.result->as_object().at("ledger"), boost::json::parse(kLedgerExpected));
         EXPECT_EQ(output.result->as_object().at("marker").as_string(), kIndex2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 5);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLedgerHash);
@@ -470,7 +469,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limitLine + 1);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limitLine--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -480,7 +479,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
     }
 
     auto const amm =
-        createAmmObject(kAccount, "XRP", ripple::toBase58(ripple::xrpAccount()), "JPY", kAccount2);
+        createAmmObject(kAccount, "XRP", xrpl::toBase58(xrpl::xrpAccount()), "JPY", kAccount2);
     bbs.push_back(amm.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -488,7 +487,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({
+        auto const req = boost::json::parse(R"JSON({
             "limit": 6,
             "type": "amm"
         })JSON");
@@ -500,7 +499,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterAMM)
         // Note: the format of "close_time_human" depends on the platform and might differ per
         // platform. It is however guaranteed to be consistent on the same platform.
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLedgerExpected));
+        EXPECT_EQ(output.result->as_object().at("ledger"), boost::json::parse(kLedgerExpected));
         EXPECT_EQ(output.result->as_object().at("marker").as_string(), kIndex2);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLedgerHash);
@@ -534,8 +533,8 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(2);
     ON_CALL(*backend_, doFetchSuccessorKey(kFirstKey, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kIndex2}, kRangeMax, _))
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(xrpl::uint256{kIndex2}, kRangeMax, _))
         .WillByDefault(Return(std::nullopt));
 
     auto const line = createRippleStateLedgerObject(
@@ -548,12 +547,12 @@ TEST_F(RPCLedgerDataHandlerTest, OutOfOrder)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({"limit": 10, "out_of_order": true})JSON");
+        auto const req = boost::json::parse(R"JSON({"limit": 10, "out_of_order": true})JSON");
         auto output = handler.process(req, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_TRUE(output.result->as_object().contains("ledger"));
         EXPECT_EQ(output.result->as_object().at("ledger").as_object().erase("close_time_human"), 1);
-        EXPECT_EQ(output.result->as_object().at("ledger"), json::parse(kLedgerExpected));
+        EXPECT_EQ(output.result->as_object().at("ledger"), boost::json::parse(kLedgerExpected));
         EXPECT_EQ(output.result->as_object().at("marker").as_uint64(), kRangeMax);
         EXPECT_EQ(output.result->as_object().at("state").as_array().size(), 1);
         EXPECT_EQ(output.result->as_object().at("ledger_hash").as_string(), kLedgerHash);
@@ -568,7 +567,7 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
         .WillByDefault(Return(createLedgerHeader(kLedgerHash, kRangeMax)));
 
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(1);
-    ON_CALL(*backend_, doFetchLedgerObject(ripple::uint256{kIndex1}, kRangeMax, _))
+    ON_CALL(*backend_, doFetchLedgerObject(xrpl::uint256{kIndex1}, kRangeMax, _))
         .WillByDefault(Return(createRippleStateLedgerObject(
                                   "USD", kAccount2, 10, kAccount, 100, kAccount2, 200, kTxnId, 123
         )
@@ -578,10 +577,10 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
     auto limit = 10;
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limit);
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kIndex1}, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
-    ON_CALL(*backend_, doFetchSuccessorKey(ripple::uint256{kIndex2}, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(xrpl::uint256{kIndex1}, kRangeMax, _))
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
+    ON_CALL(*backend_, doFetchSuccessorKey(xrpl::uint256{kIndex2}, kRangeMax, _))
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limit--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -595,7 +594,7 @@ TEST_F(RPCLedgerDataHandlerTest, Marker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "limit": 10,
@@ -632,7 +631,7 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
         );
         bbs.push_back(line.getSerializer().peekData());
         los.emplace_back(
-            LedgerObject{.key = ripple::uint256{kIndex2}, .blob = Blob{}}
+            LedgerObject{.key = xrpl::uint256{kIndex2}, .blob = Blob{}}
         );  // NOLINT(modernize-use-emplace)
     }
     ON_CALL(*backend_, fetchLedgerDiff(kRangeMax, _)).WillByDefault(Return(los));
@@ -642,7 +641,7 @@ TEST_F(RPCLedgerDataHandlerTest, DiffMarker)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "limit": 10,
@@ -673,7 +672,7 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
 
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(limit);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limit--) != 0) {
         auto const line = createRippleStateLedgerObject(
@@ -687,7 +686,7 @@ TEST_F(RPCLedgerDataHandlerTest, Binary)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             R"JSON({
                 "limit": 10,
                 "binary": true
@@ -715,7 +714,7 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::kLimitBinary);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limit--) != 0u) {
         auto const line = createRippleStateLedgerObject(
@@ -729,7 +728,7 @@ TEST_F(RPCLedgerDataHandlerTest, BinaryLimitMoreThanMax)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "limit": {},
@@ -763,7 +762,7 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(LedgerDataHandler::kLimitJson);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     while ((limit--) != 0u) {
         auto const line = createRippleStateLedgerObject(
@@ -777,7 +776,7 @@ TEST_F(RPCLedgerDataHandlerTest, JsonLimitMoreThanMax)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(
+        auto const req = boost::json::parse(
             fmt::format(
                 R"JSON({{
                     "limit": {},
@@ -807,7 +806,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     auto const issuance = createMptIssuanceObject(kAccount, 2, "metadata");
     bbs.push_back(issuance.getSerializer().peekData());
@@ -817,7 +816,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({
+        auto const req = boost::json::parse(R"JSON({
             "limit": 1,
             "type": "mpt_issuance"
         })JSON");
@@ -836,7 +835,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPTIssuance)
         // make sure mptID is synethetically parsed if object is mptIssuance
         EXPECT_EQ(
             objects.front().at("mpt_issuance_id").as_string(),
-            ripple::to_string(ripple::makeMptID(2, getAccountIdWithString(kAccount)))
+            xrpl::to_string(xrpl::makeMptID(2, getAccountIdWithString(kAccount)))
         );
     });
 }
@@ -850,10 +849,10 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
     std::vector<Blob> bbs;
     EXPECT_CALL(*backend_, doFetchSuccessorKey).Times(1);
     ON_CALL(*backend_, doFetchSuccessorKey(_, kRangeMax, _))
-        .WillByDefault(Return(ripple::uint256{kIndex2}));
+        .WillByDefault(Return(xrpl::uint256{kIndex2}));
 
     auto const mptoken =
-        createMpTokenObject(kAccount, ripple::makeMptID(2, getAccountIdWithString(kAccount)));
+        createMpTokenObject(kAccount, xrpl::makeMptID(2, getAccountIdWithString(kAccount)));
     bbs.push_back(mptoken.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -861,7 +860,7 @@ TEST_F(RPCLedgerDataHandlerTest, TypeFilterMPToken)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{LedgerDataHandler{backend_}};
-        auto const req = json::parse(R"JSON({
+        auto const req = boost::json::parse(R"JSON({
             "limit": 1,
             "type": "mptoken"
         })JSON");

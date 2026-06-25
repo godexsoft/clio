@@ -262,7 +262,7 @@ TEST(RpcSpecDSL_MockBackend, MissingRequiredFieldFails)
     MockObjectView root{obj};
     auto const result = kSPEC.process(root);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_EQ(result.error().message, "Required field 'account' missing");
 }
 
@@ -276,7 +276,7 @@ TEST(RpcSpecDSL_MockBackend, WrongTypeFails)
     MockObjectView root{obj};
     auto const result = kSPEC.process(root);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_TRUE(result.error().message.empty());
 }
 
@@ -319,7 +319,7 @@ TEST(RpcSpecDSL_MockBackend, IfTypeRunsOnMatch)
     MockObjectView badRoot{bad};
     auto const result = kSPEC.process(badRoot);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_TRUE(result.error().message.empty());
 
     MockObject good{.fields = {{"value", int64_t{5}}}};

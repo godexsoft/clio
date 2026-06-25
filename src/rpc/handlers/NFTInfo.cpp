@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 
 namespace rpc {
 
@@ -44,7 +44,7 @@ NFTInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 NFTInfoHandler::Result
 NFTInfoHandler::process(NFTInfoHandler::Input const& input, Context const& ctx) const
 {
-    auto const tokenID = ripple::uint256{input.nftID.c_str()};
+    auto const tokenID = xrpl::uint256{input.nftID.c_str()};
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NFTInfo's ledger range must be available");
 
@@ -63,7 +63,7 @@ NFTInfoHandler::process(NFTInfoHandler::Input const& input, Context const& ctx) 
     auto const maybeNft = sharedPtrBackend_->fetchNFT(tokenID, lgrInfo.seq, ctx.yield);
 
     if (not maybeNft.has_value())
-        return Error{Status{RippledError::rpcOBJECT_NOT_FOUND, "NFT not found"}};
+        return Error{Status{RippledError::RpcObjectNotFound, "NFT not found"}};
 
     // TODO - this formatting is exactly the same and SHOULD REMAIN THE SAME
     // for each element of the `nfts_by_issuer` API. We should factor this out

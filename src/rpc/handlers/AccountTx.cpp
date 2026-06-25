@@ -43,19 +43,19 @@ AccountTxHandler::spec(uint32_t apiVersion)
     using namespace spec;
 
     // Validates tx_type against the runtime-generated set of known transaction type names
-    // (lowercase). Because the set comes from ripple::TxFormats at runtime, we use a
+    // (lowercase). Because the set comes from xrpl::TxFormats at runtime, we use a
     // CustomValidator lambda rather than the consteval spec::oneOf factory.
     // Returns the same error shape as the old validation::OneOf: "Invalid field '<key>'."
     static constexpr auto kTX_TYPE_VALIDATOR =
         spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
             if (!f.isString()) {
-                return std::unexpected{rpc::Status{rpc::RippledError::rpcINVALID_PARAMS}};
+                return std::unexpected{rpc::Status{rpc::RippledError::RpcInvalidParams}};
             }
             auto const& validTypes = util::getTxTypesInLowercase();
             auto const sv = f.asString();
             if (!validTypes.contains(std::string{sv})) {
                 return std::unexpected{rpc::Status{
-                    rpc::RippledError::rpcINVALID_PARAMS,
+                    rpc::RippledError::RpcInvalidParams,
                     "Invalid field '" + std::string{f.key()} + "'."
                 }};
             }
@@ -80,7 +80,7 @@ AccountTxHandler::spec(uint32_t apiVersion)
         field(
             JS(marker),
             withCustomError(
-                type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
+                type<spec::JsonObject>, rpc::RippledError::RpcInvalidParams, "invalidMarker"
             ),
             ifType<JsonObject>(section(
                 field(JS(ledger), required, type<uint32_t>),
@@ -112,7 +112,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                  range->maxSequence ||  // NOLINT(bugprone-unchecked-optional-access)
              input.ledgerIndexMin <
                  range->minSequence)) {  // NOLINT(bugprone-unchecked-optional-access)
-            return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
+            return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMinOutOfRange"}};
         }
 
         if (static_cast<std::uint32_t>(*input.ledgerIndexMin) > minIndex)
@@ -125,7 +125,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                  range->maxSequence ||  // NOLINT(bugprone-unchecked-optional-access)
              input.ledgerIndexMax <
                  range->minSequence)) {  // NOLINT(bugprone-unchecked-optional-access)
-            return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
+            return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMaxOutOfRange"}};
         }
 
         if (static_cast<std::uint32_t>(*input.ledgerIndexMax) < maxIndex)
@@ -134,16 +134,14 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
 
     if (minIndex > maxIndex) {
         if (ctx.apiVersion == 1u)
-            return Error{Status{RippledError::rpcLGR_IDXS_INVALID}};
+            return Error{Status{RippledError::RpcLgrIdxsInvalid}};
 
-        return Error{Status{RippledError::rpcINVALID_LGR_RANGE}};
+        return Error{Status{RippledError::RpcInvalidLgrRange}};
     }
 
     if (input.ledgerHash || input.ledgerIndex || input.usingValidatedLedger) {
         if (ctx.apiVersion > 1u && (input.ledgerIndexMax || input.ledgerIndexMin)) {
-            return Error{
-                Status{RippledError::rpcINVALID_PARAMS, "containsLedgerSpecifierAndRange"}
-            };
+            return Error{Status{RippledError::RpcInvalidParams, "containsLedgerSpecifierAndRange"}};
         }
 
         if (!input.ledgerIndexMax && !input.ledgerIndexMin) {
@@ -254,8 +252,8 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
                             txnPlusMeta.ledgerSequence, ctx.yield
                         );
                         ledgerHeader) {
-                        obj[JS(ledger_hash)] = ripple::strHex(ledgerHeader->hash);
-                        obj[JS(close_time_iso)] = ripple::to_string_iso(ledgerHeader->closeTime);
+                        obj[JS(ledger_hash)] = xrpl::strHex(ledgerHeader->hash);
+                        obj[JS(close_time_iso)] = xrpl::toStringIso(ledgerHeader->closeTime);
                     }
                 }
                 obj[JS(validated)] = true;
@@ -271,7 +269,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
     }
 
     response.limit = input.limit;
-    response.account = ripple::to_string(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
+    response.account = xrpl::to_string(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
     response.ledgerIndexMin = minIndex;
     response.ledgerIndexMax = maxIndex;
 

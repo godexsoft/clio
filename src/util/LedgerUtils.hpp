@@ -55,7 +55,7 @@ public:
 
         constexpr auto kDELETION_BLOCKERS_COUNT =
             std::count_if(std::begin(kTABLE), std::end(kTABLE), kFILTER);
-        std::array<ripple::LedgerEntryType, kDELETION_BLOCKERS_COUNT> res{};
+        std::array<xrpl::LedgerEntryType, kDELETION_BLOCKERS_COUNT> res{};
         auto it = std::begin(res);
         std::ranges::for_each(kTABLE, [&](auto const& e) {
             if (kFILTER(e)) {
@@ -67,53 +67,53 @@ public:
     }
 
     /**
-     * @brief Returns the ripple::LedgerEntryType from the given string.
+     * @brief Returns the xrpl::LedgerEntryType from the given string.
      *
      * @param entryName The name or canonical name (case-insensitive) of the ledger entry type for
      * all categories
-     * @return The ripple::LedgerEntryType of the given string, returns ltANY if not found.
+     * @return The xrpl::LedgerEntryType of the given string, returns ltANY if not found.
      */
-    static ripple::LedgerEntryType
+    static xrpl::LedgerEntryType
     getLedgerEntryTypeFromStr(std::string const& entryName);
 
     /**
-     * @brief Returns the ripple::LedgerEntryType from the given string.
+     * @brief Returns the xrpl::LedgerEntryType from the given string.
      *
      * @param entryName The name or canonical name (case-insensitive) of the ledger entry type for
      * account owned category
-     * @return The ripple::LedgerEntryType of the given string, returns ltANY if not found.
+     * @return The xrpl::LedgerEntryType of the given string, returns ltANY if not found.
      */
-    static ripple::LedgerEntryType
+    static xrpl::LedgerEntryType
     getAccountOwnedLedgerTypeFromStr(std::string const& entryName);
 };
 
 /**
- * @brief Deserializes a ripple::LedgerHeader from ripple::Slice of data.
+ * @brief Deserializes a xrpl::LedgerHeader from xrpl::Slice of data.
  *
  * @param data The slice to deserialize
- * @return The deserialized ripple::LedgerHeader
+ * @return The deserialized xrpl::LedgerHeader
  */
-inline ripple::LedgerHeader
-deserializeHeader(ripple::Slice data)
+inline xrpl::LedgerHeader
+deserializeHeader(xrpl::Slice data)
 {
-    return ripple::deserializeHeader(data, /* hasHash = */ true);
+    return xrpl::deserializeHeader(data, /* hasHash = */ true);
 }
 
 /**
- * @brief A helper function that converts a ripple::LedgerHeader to a string representation.
+ * @brief A helper function that converts a xrpl::LedgerHeader to a string representation.
  *
  * @param info The ledger header
  * @return The string representation of the supplied ledger header
  */
 inline std::string
-toString(ripple::LedgerHeader const& info)
+toString(xrpl::LedgerHeader const& info)
 {
     return fmt::format(
         "LedgerHeader {{Sequence: {}, Hash: {}, TxHash: {}, AccountHash: {}, ParentHash: {}}}",
         info.seq,
-        ripple::strHex(info.hash),
+        xrpl::strHex(info.hash),
         strHex(info.txHash),
-        ripple::strHex(info.accountHash),
+        xrpl::strHex(info.accountHash),
         strHex(info.parentHash)
     );
 }

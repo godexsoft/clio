@@ -43,11 +43,11 @@ public:
         uint32_t ledgerIndex;
         std::string accountID;
         bool overflow = false;
-        std::map<ripple::Currency, ripple::STAmount> sums;
-        std::map<ripple::AccountID, std::vector<ripple::STAmount>> hotBalances;
-        std::map<ripple::AccountID, std::vector<ripple::STAmount>> assets;
-        std::map<ripple::AccountID, std::vector<ripple::STAmount>> frozenBalances;
-        std::map<ripple::Currency, ripple::STAmount> locked;
+        std::map<xrpl::Currency, xrpl::STAmount> sums;
+        std::map<xrpl::AccountID, std::vector<xrpl::STAmount>> hotBalances;
+        std::map<xrpl::AccountID, std::vector<xrpl::STAmount>> assets;
+        std::map<xrpl::AccountID, std::vector<xrpl::STAmount>> frozenBalances;
+        std::map<xrpl::Currency, xrpl::STAmount> locked;
         // validated should be sent via framework
         bool validated = true;
     };
@@ -57,7 +57,7 @@ public:
      */
     struct Input {
         std::string account;
-        std::set<ripple::AccountID> hotWallets;
+        std::set<xrpl::AccountID> hotWallets;
         std::optional<std::string> ledgerHash;
         std::optional<uint32_t> ledgerIndex;
     };

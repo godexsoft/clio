@@ -22,6 +22,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -54,7 +55,7 @@ GatewayBalancesHandler::spec(uint32_t apiVersion)
         spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
             if (!f.isString() && !f.isArray()) {
                 return std::unexpected{rpc::Status{
-                    rpc::RippledError::rpcINVALID_HOTWALLET,
+                    rpc::RippledError::RpcInvalidHotwallet,
                     std::string{f.key()} + "NotStringOrArray"
                 }};
             }
@@ -62,18 +63,18 @@ GatewayBalancesHandler::spec(uint32_t apiVersion)
                 if (!elem.isString())
                     return false;
                 auto const str = std::string{elem.asString()};
-                auto const pk = util::parseBase58Wrapper<ripple::PublicKey>(
-                    ripple::TokenType::AccountPublic, str
+                auto const pk = util::parseBase58Wrapper<xrpl::PublicKey>(
+                    xrpl::TokenType::AccountPublic, str
                 );
                 if (pk)
                     return true;
-                return util::parseBase58Wrapper<ripple::AccountID>(str).has_value();
+                return util::parseBase58Wrapper<xrpl::AccountID>(str).has_value();
             };
             if (f.isArray()) {
                 for (std::size_t i = 0; i < f.arraySize(); ++i) {
                     if (!getAccountID(f.element(i))) {
                         return std::unexpected{rpc::Status{
-                            rpc::RippledError::rpcINVALID_HOTWALLET,
+                            rpc::RippledError::RpcInvalidHotwallet,
                             std::string{f.key()} + "Malformed"
                         }};
                     }
@@ -81,7 +82,7 @@ GatewayBalancesHandler::spec(uint32_t apiVersion)
             } else {
                 if (!getAccountID(f)) {
                     return std::unexpected{rpc::Status{
-                        rpc::RippledError::rpcINVALID_HOTWALLET, std::string{f.key()} + "Malformed"
+                        rpc::RippledError::RpcInvalidHotwallet, std::string{f.key()} + "Malformed"
                     }};
                 }
             }
@@ -92,32 +93,32 @@ GatewayBalancesHandler::spec(uint32_t apiVersion)
         spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
             if (!f.isString() && !f.isArray()) {
                 return std::unexpected{rpc::Status{
-                    rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "NotStringOrArray"
+                    rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "NotStringOrArray"
                 }};
             }
             auto const getAccountID = [](auto const& elem) -> bool {
                 if (!elem.isString())
                     return false;
                 auto const str = std::string{elem.asString()};
-                auto const pk = util::parseBase58Wrapper<ripple::PublicKey>(
-                    ripple::TokenType::AccountPublic, str
+                auto const pk = util::parseBase58Wrapper<xrpl::PublicKey>(
+                    xrpl::TokenType::AccountPublic, str
                 );
                 if (pk)
                     return true;
-                return util::parseBase58Wrapper<ripple::AccountID>(str).has_value();
+                return util::parseBase58Wrapper<xrpl::AccountID>(str).has_value();
             };
             if (f.isArray()) {
                 for (std::size_t i = 0; i < f.arraySize(); ++i) {
                     if (!getAccountID(f.element(i))) {
                         return std::unexpected{rpc::Status{
-                            rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "Malformed"
+                            rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "Malformed"
                         }};
                     }
                 }
             } else {
                 if (!getAccountID(f)) {
                     return std::unexpected{rpc::Status{
-                        rpc::RippledError::rpcINVALID_PARAMS, std::string{f.key()} + "Malformed"
+                        rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "Malformed"
                     }};
                 }
             }
@@ -167,21 +168,21 @@ GatewayBalancesHandler::process(
     auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        ripple::keylet::account(*accountID).key,
+        xrpl::keylet::account(*accountID).key,
         lgrInfo.seq,
         ctx.yield
     );
 
     if (!accountLedgerObject)
-        return Error{Status{RippledError::rpcACT_NOT_FOUND}};
+        return Error{Status{RippledError::RpcActNotFound}};
 
     auto output = GatewayBalancesHandler::Output{};
 
-    auto addEscrow = [&](ripple::SLE const& sle) {
-        if (sle.getType() == ripple::ltESCROW) {
-            auto const& escrow = sle.getFieldAmount(ripple::sfAmount);
-            auto& lockedBalance = output.locked[escrow.getCurrency()];
-            if (lockedBalance == beast::zero) {
+    auto addEscrow = [&](xrpl::SLE const& sle) {
+        if (sle.getType() == xrpl::ltESCROW) {
+            auto const& escrow = sle.getFieldAmount(xrpl::sfAmount);
+            auto& lockedBalance = output.locked[escrow.get<xrpl::Issue>().currency];
+            if (lockedBalance == beast::kZero) {
                 // This is needed to set the currency code correctly
                 lockedBalance = escrow;
             } else {
@@ -192,28 +193,28 @@ GatewayBalancesHandler::process(
                     // On overflow return the largest valid STAmount.
                     // Very large sums of STAmount are approximations
                     // anyway.
-                    lockedBalance = ripple::STAmount(
-                        lockedBalance.issue(),
-                        ripple::STAmount::cMaxValue,
-                        ripple::STAmount::cMaxOffset
+                    lockedBalance = xrpl::STAmount(
+                        lockedBalance.get<xrpl::Issue>(),
+                        xrpl::STAmount::kMaxValue,
+                        xrpl::STAmount::kMaxOffset
                     );
                 }
             }
         }
     };
 
-    auto const addToResponse = [&](ripple::SLE const sle) {
+    auto const addToResponse = [&](xrpl::SLE const sle) {
         addEscrow(sle);
 
-        if (sle.getType() == ripple::ltRIPPLE_STATE) {
-            ripple::STAmount balance = sle.getFieldAmount(ripple::sfBalance);
-            auto const lowLimit = sle.getFieldAmount(ripple::sfLowLimit);
-            auto const highLimit = sle.getFieldAmount(ripple::sfHighLimit);
+        if (sle.getType() == xrpl::ltRIPPLE_STATE) {
+            xrpl::STAmount balance = sle.getFieldAmount(xrpl::sfBalance);
+            auto const lowLimit = sle.getFieldAmount(xrpl::sfLowLimit);
+            auto const highLimit = sle.getFieldAmount(xrpl::sfHighLimit);
             auto const lowID = lowLimit.getIssuer();
             auto const highID = highLimit.getIssuer();
             auto const viewLowest = (lowLimit.getIssuer() == accountID);
-            auto const flags = sle.getFieldU32(ripple::sfFlags);
-            auto const freeze = flags & (viewLowest ? ripple::lsfLowFreeze : ripple::lsfHighFreeze);
+            auto const flags = sle.getFieldU32(xrpl::sfFlags);
+            auto const freeze = flags & (viewLowest ? xrpl::lsfLowFreeze : xrpl::lsfHighFreeze);
 
             if (!viewLowest)
                 balance.negate();
@@ -238,16 +239,18 @@ GatewayBalancesHandler::process(
                 output.frozenBalances[peer].push_back(-balance);
             } else {
                 // normal negative balance, obligation to customer
-                auto& bal = output.sums[balance.getCurrency()];
-                if (bal == beast::zero) {
+                auto& bal = output.sums[balance.get<xrpl::Issue>().currency];
+                if (bal == beast::kZero) {
                     // This is needed to set the currency code correctly
                     bal = -balance;
                 } else {
                     try {
                         bal -= balance;
                     } catch (std::runtime_error const& e) {
-                        bal = ripple::STAmount(
-                            bal.issue(), ripple::STAmount::cMaxValue, ripple::STAmount::cMaxOffset
+                        bal = xrpl::STAmount(
+                            bal.get<xrpl::Issue>(),
+                            xrpl::STAmount::kMaxValue,
+                            xrpl::STAmount::kMaxOffset
                         );
                     }
                 }
@@ -272,7 +275,7 @@ GatewayBalancesHandler::process(
         return Error{ret.error()};
 
     output.accountID = input.account;
-    output.ledgerHash = ripple::strHex(lgrInfo.hash);
+    output.ledgerHash = xrpl::strHex(lgrInfo.hash);
     output.ledgerIndex = lgrInfo.seq;
 
     return output;
@@ -289,31 +292,30 @@ tag_invoke(
     if (!output.sums.empty()) {
         boost::json::object obligations;
         for (auto const& [k, v] : output.sums)
-            obligations[ripple::to_string(k)] = v.getText();
+            obligations[xrpl::to_string(k)] = v.getText();
 
         obj[JS(obligations)] = std::move(obligations);
     }
 
-    auto const toJson =
-        [](std::map<ripple::AccountID, std::vector<ripple::STAmount>> const& balances) {
-            boost::json::object balancesObj;
+    auto const toJson = [](std::map<xrpl::AccountID, std::vector<xrpl::STAmount>> const& balances) {
+        boost::json::object balancesObj;
 
-            if (not balances.empty()) {
-                for (auto const& [accId, accBalances] : balances) {
-                    boost::json::array arr;
-                    for (auto const& balance : accBalances) {
-                        boost::json::object entry;
-                        entry[JS(currency)] = ripple::to_string(balance.issue().currency);
-                        entry[JS(value)] = balance.getText();
-                        arr.push_back(std::move(entry));
-                    }
-
-                    balancesObj[ripple::to_string(accId)] = std::move(arr);
+        if (not balances.empty()) {
+            for (auto const& [accId, accBalances] : balances) {
+                boost::json::array arr;
+                for (auto const& balance : accBalances) {
+                    boost::json::object entry;
+                    entry[JS(currency)] = xrpl::to_string(balance.get<xrpl::Issue>().currency);
+                    entry[JS(value)] = balance.getText();
+                    arr.push_back(std::move(entry));
                 }
-            }
 
-            return balancesObj;
-        };
+                balancesObj[xrpl::to_string(accId)] = std::move(arr);
+            }
+        }
+
+        return balancesObj;
+    };
 
     if (auto balances = toJson(output.hotBalances); !balances.empty())
         obj[JS(balances)] = balances;
@@ -329,7 +331,7 @@ tag_invoke(
     if (!output.locked.empty()) {
         boost::json::object lockedObj;
         for (auto const& [currency, amount] : output.locked) {
-            lockedObj[ripple::to_string(currency)] = amount.getText();
+            lockedObj[xrpl::to_string(currency)] = amount.getText();
         }
         obj[JS(locked)] = std::move(lockedObj);
     }

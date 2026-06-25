@@ -27,7 +27,6 @@
 
 using namespace rpc;
 using namespace data;
-namespace json = boost::json;
 using namespace testing;
 
 namespace {
@@ -138,7 +137,7 @@ TEST_P(AccountInfoParameterTest, InvalidParams)
     auto const testBundle = GetParam();
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountInfoHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = json::parse(testBundle.testJson);
+        auto const req = boost::json::parse(testBundle.testJson);
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 2});
         ASSERT_FALSE(output);
 
@@ -158,7 +157,7 @@ TEST_F(AccountInfoParameterTest, ApiV1SignerListIsNotBool)
 
     runSpawn([&, this](auto yield) {
         auto const handler = AnyHandler{AccountInfoHandler{backend_, mockAmendmentCenterPtr_}};
-        auto const req = json::parse(kReqJson);
+        auto const req = boost::json::parse(kReqJson);
         auto const output = handler.process(req, Context{.yield = yield, .apiVersion = 1});
         ASSERT_FALSE(output);
 
@@ -172,9 +171,9 @@ TEST_F(RPCAccountInfoHandlerTest, LedgerNonExistViaIntSequence)
 {
     // return empty ledgerHeader
     EXPECT_CALL(*backend_, fetchLedgerBySequence(30, _))
-        .WillOnce(Return(std::optional<ripple::LedgerHeader>{}));
+        .WillOnce(Return(std::optional<xrpl::LedgerHeader>{}));
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -198,7 +197,7 @@ TEST_F(RPCAccountInfoHandlerTest, LedgerNonExistViaStringSequence)
     // return empty ledgerHeader
     EXPECT_CALL(*backend_, fetchLedgerBySequence(30, _)).WillOnce(Return(std::nullopt));
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -220,10 +219,10 @@ TEST_F(RPCAccountInfoHandlerTest, LedgerNonExistViaStringSequence)
 TEST_F(RPCAccountInfoHandlerTest, LedgerNonExistViaHash)
 {
     // return empty ledgerHeader
-    EXPECT_CALL(*backend_, fetchLedgerByHash(ripple::uint256{kLedgerHash}, _))
-        .WillOnce(Return(std::optional<ripple::LedgerHeader>{}));
+    EXPECT_CALL(*backend_, fetchLedgerByHash(xrpl::uint256{kLedgerHash}, _))
+        .WillOnce(Return(std::optional<xrpl::LedgerHeader>{}));
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -251,7 +250,7 @@ TEST_F(RPCAccountInfoHandlerTest, AccountNotExist)
     ON_CALL(*backend_, doFetchLedgerObject).WillByDefault(Return(std::optional<Blob>{}));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}"
@@ -279,7 +278,7 @@ TEST_F(RPCAccountInfoHandlerTest, AccountInvalid)
         .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}"
@@ -303,11 +302,11 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsInvalid)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(kAccount, 0, 2, 200, 2, kIndex1, 2);
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, 30, _))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    auto signersKey = ripple::keylet::signers(account).key;
+    auto signersKey = xrpl::keylet::signers(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(signersKey, 30, _))
         .WillByDefault(Return(createLegacyFeeSettingBlob(1, 2, 3, 4, 0)));
     EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(_, Amendments::DisallowIncoming, _))
@@ -318,7 +317,7 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsInvalid)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -405,11 +404,11 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV2)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(kAccount, 0, 2, 200, 2, kIndex1, 2);
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, 30, _))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    auto signersKey = ripple::keylet::signers(account).key;
+    auto signersKey = xrpl::keylet::signers(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(signersKey, 30, _))
         .WillByDefault(
             Return(createSignerLists({{kAccount1, 1}, {kAccount2, 1}}).getSerializer().peekData())
@@ -422,7 +421,7 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV2)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -435,7 +434,7 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV2)
     runSpawn([&](auto yield) {
         auto const output = handler.process(kInput, Context{.yield = yield, .apiVersion = 2});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOutput));
+        EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
     });
 }
 
@@ -507,11 +506,11 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV1)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(kAccount, 0, 2, 200, 2, kIndex1, 2);
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, 30, _))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
-    auto signersKey = ripple::keylet::signers(account).key;
+    auto signersKey = xrpl::keylet::signers(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(signersKey, 30, _))
         .WillByDefault(
             Return(createSignerLists({{kAccount1, 1}, {kAccount2, 1}}).getSerializer().peekData())
@@ -524,7 +523,7 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV1)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -537,7 +536,7 @@ TEST_F(RPCAccountInfoHandlerTest, SignerListsTrueV1)
     runSpawn([&](auto yield) {
         auto const output = handler.process(kInput, Context{.yield = yield, .apiVersion = 1});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOutput));
+        EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
     });
 }
 
@@ -581,12 +580,12 @@ TEST_F(RPCAccountInfoHandlerTest, Flags)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(
         kAccount,
-        ripple::lsfDefaultRipple | ripple::lsfGlobalFreeze | ripple::lsfRequireDestTag |
-            ripple::lsfRequireAuth | ripple::lsfDepositAuth | ripple::lsfDisableMaster |
-            ripple::lsfDisallowXRP | ripple::lsfNoFreeze | ripple::lsfPasswordSpent,
+        xrpl::lsfDefaultRipple | xrpl::lsfGlobalFreeze | xrpl::lsfRequireDestTag |
+            xrpl::lsfRequireAuth | xrpl::lsfDepositAuth | xrpl::lsfDisableMaster |
+            xrpl::lsfDisallowXRP | xrpl::lsfNoFreeze | xrpl::lsfPasswordSpent,
         2,
         200,
         2,
@@ -603,7 +602,7 @@ TEST_F(RPCAccountInfoHandlerTest, Flags)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}"
@@ -615,7 +614,7 @@ TEST_F(RPCAccountInfoHandlerTest, Flags)
     runSpawn([&](auto yield) {
         auto const output = handler.process(kInput, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOutput));
+        EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
     });
 }
 
@@ -625,7 +624,7 @@ TEST_F(RPCAccountInfoHandlerTest, IdentAndSignerListsFalse)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(kAccount, 0, 2, 200, 2, kIndex1, 2);
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, 30, _))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
@@ -637,7 +636,7 @@ TEST_F(RPCAccountInfoHandlerTest, IdentAndSignerListsFalse)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "ident": "{}"
@@ -659,7 +658,7 @@ TEST_F(RPCAccountInfoHandlerTest, EmptySignerLists)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(kAccount, 0, 2, 200, 2, kIndex1, 2);
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, 30, _))
         .WillByDefault(Return(accountRoot.getSerializer().peekData()));
@@ -670,14 +669,14 @@ TEST_F(RPCAccountInfoHandlerTest, EmptySignerLists)
     EXPECT_CALL(*mockAmendmentCenterPtr_, isEnabled(_, Amendments::TokenEscrow, _))
         .WillOnce(Return(false));
 
-    auto signersKey = ripple::keylet::signers(account).key;
+    auto signersKey = xrpl::keylet::signers(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(signersKey, 30, _))
         .WillByDefault(Return(std::optional<Blob>{}));
 
     // Once for signer object, once for keylet
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(2);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}",
@@ -746,14 +745,14 @@ TEST_F(RPCAccountInfoHandlerTest, DisallowIncoming)
     EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(
         kAccount,
-        ripple::lsfDefaultRipple | ripple::lsfGlobalFreeze | ripple::lsfRequireDestTag |
-            ripple::lsfRequireAuth | ripple::lsfDepositAuth | ripple::lsfDisableMaster |
-            ripple::lsfDisallowXRP | ripple::lsfNoFreeze | ripple::lsfPasswordSpent |
-            ripple::lsfDisallowIncomingNFTokenOffer | ripple::lsfDisallowIncomingCheck |
-            ripple::lsfDisallowIncomingPayChan | ripple::lsfDisallowIncomingTrustline,
+        xrpl::lsfDefaultRipple | xrpl::lsfGlobalFreeze | xrpl::lsfRequireDestTag |
+            xrpl::lsfRequireAuth | xrpl::lsfDepositAuth | xrpl::lsfDisableMaster |
+            xrpl::lsfDisallowXRP | xrpl::lsfNoFreeze | xrpl::lsfPasswordSpent |
+            xrpl::lsfDisallowIncomingNFTokenOffer | xrpl::lsfDisallowIncomingCheck |
+            xrpl::lsfDisallowIncomingPayChan | xrpl::lsfDisallowIncomingTrustline,
         2,
         200,
         2,
@@ -770,7 +769,7 @@ TEST_F(RPCAccountInfoHandlerTest, DisallowIncoming)
         .WillOnce(Return(false));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}"
@@ -782,7 +781,7 @@ TEST_F(RPCAccountInfoHandlerTest, DisallowIncoming)
     runSpawn([&](auto yield) {
         auto const output = handler.process(kInput, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOutput));
+        EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
     });
 }
 
@@ -829,13 +828,13 @@ TEST_F(RPCAccountInfoHandlerTest, AmendmentsEnabled)
     ON_CALL(*backend_, fetchLedgerBySequence).WillByDefault(Return(ledgerHeader));
 
     auto const account = getAccountIdWithString(kAccount);
-    auto const accountKk = ripple::keylet::account(account).key;
+    auto const accountKk = xrpl::keylet::account(account).key;
     auto const accountRoot = createAccountRootObject(
         kAccount,
-        ripple::lsfDefaultRipple | ripple::lsfGlobalFreeze | ripple::lsfRequireDestTag |
-            ripple::lsfRequireAuth | ripple::lsfDepositAuth | ripple::lsfDisableMaster |
-            ripple::lsfDisallowXRP | ripple::lsfNoFreeze | ripple::lsfPasswordSpent |
-            ripple::lsfAllowTrustLineClawback | ripple::lsfAllowTrustLineLocking,
+        xrpl::lsfDefaultRipple | xrpl::lsfGlobalFreeze | xrpl::lsfRequireDestTag |
+            xrpl::lsfRequireAuth | xrpl::lsfDepositAuth | xrpl::lsfDisableMaster |
+            xrpl::lsfDisallowXRP | xrpl::lsfNoFreeze | xrpl::lsfPasswordSpent |
+            xrpl::lsfAllowTrustLineClawback | xrpl::lsfAllowTrustLineLocking,
         2,
         200,
         2,
@@ -852,7 +851,7 @@ TEST_F(RPCAccountInfoHandlerTest, AmendmentsEnabled)
         .WillOnce(Return(true));
     EXPECT_CALL(*backend_, doFetchLedgerObject);
 
-    static auto const kInput = json::parse(
+    static auto const kInput = boost::json::parse(
         fmt::format(
             R"JSON({{
                 "account": "{}"
@@ -864,7 +863,7 @@ TEST_F(RPCAccountInfoHandlerTest, AmendmentsEnabled)
     runSpawn([&](auto yield) {
         auto const output = handler.process(kInput, Context{yield});
         ASSERT_TRUE(output);
-        EXPECT_EQ(*output.result, json::parse(expectedOutput));
+        EXPECT_EQ(*output.result, boost::json::parse(expectedOutput));
     });
 }
 

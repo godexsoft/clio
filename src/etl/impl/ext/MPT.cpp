@@ -31,7 +31,7 @@ MPTExt::onLedgerData(model::LedgerData const& data)
 void
 MPTExt::onInitialObject(uint32_t, model::Object const& obj)
 {
-    LOG(log_.trace()) << "got initial object with key: " << ripple::strHex(obj.key);
+    LOG(log_.trace()) << "got initial object with key: " << xrpl::strHex(obj.key);
     if (auto const mptHolder = getMPTHolderFromObj(obj.keyRaw, obj.dataRaw); mptHolder.has_value())
         backend_->writeMPTHolders({*mptHolder});
 }
@@ -49,8 +49,8 @@ MPTExt::writeMPTHoldersFromTransactions(model::LedgerData const& data)
     std::vector<MPTHolderData> holders;
 
     for (auto const& tx : data.transactions) {
-        if (auto const mptHolder = getMPTHolderFromTx(tx.meta, tx.sttx); mptHolder.has_value())
-            holders.push_back(*mptHolder);
+        auto const mptHolders = getMPTHolderFromTx(tx.meta, tx.sttx);
+        holders.append_range(mptHolders);
     }
 
     if (not holders.empty())

@@ -26,7 +26,6 @@ using namespace std;
 using namespace rpc;
 using namespace tests::common;
 
-namespace json = boost::json;
 
 namespace newspec_fakes {
 
@@ -127,7 +126,7 @@ TEST_F(RPCDefaultProcessorTest, ValidInput)
         HandlerMock const handler;
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
-        auto const input = json::parse(R"JSON({ "something": "works" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "something": "works" })JSON");
         static constexpr auto kSPEC =
             rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
         auto const data = InOutFake{"works"};
@@ -147,7 +146,7 @@ TEST_F(RPCDefaultProcessorTest, NoInputValidCall)
         rpc::impl::DefaultProcessor<HandlerWithoutInputMock> const processor;
 
         auto const data = InOutFake{"works"};
-        auto const input = json::parse(R"JSON({})JSON");
+        auto const input = boost::json::parse(R"JSON({})JSON");
         EXPECT_CALL(handler, process(_)).WillOnce(Return(data));
 
         auto const ret = processor(handler, input, Context{yield});
@@ -162,7 +161,7 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
         HandlerMock const handler;
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
-        auto const input = json::parse(R"JSON({ "other": "nope" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "other": "nope" })JSON");
         static constexpr auto kSPEC =
             rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
         EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
@@ -179,7 +178,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HappyPath)
         NewSpecHandlerFake const handler;
         rpc::impl::DefaultProcessor<NewSpecHandlerFake> const processor;
 
-        auto const input = json::parse(R"JSON({ "token": "abc123" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "token": "abc123" })JSON");
         auto const ret = processor(handler, input, Context{yield});
 
         ASSERT_TRUE(ret);
@@ -196,7 +195,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_MissingRequiredField_ReturnsError
         rpc::impl::DefaultProcessor<NewSpecHandlerFake> const processor;
 
         // "token" is required but absent
-        auto const input = json::parse(R"JSON({ "other": "value" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "other": "value" })JSON");
         auto const ret = processor(handler, input, Context{yield});
 
         ASSERT_FALSE(ret);
@@ -204,7 +203,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_MissingRequiredField_ReturnsError
         ASSERT_FALSE(ret.result.has_value());
         auto const& status = ret.result.error();
         ASSERT_TRUE(std::holds_alternative<rpc::RippledError>(status.code));
-        EXPECT_EQ(std::get<rpc::RippledError>(status.code), rpc::RippledError::rpcINVALID_PARAMS);
+        EXPECT_EQ(std::get<rpc::RippledError>(status.code), rpc::RippledError::RpcInvalidParams);
         EXPECT_THAT(status.message, HasSubstr("token"));
     });
 }
@@ -216,7 +215,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded
         rpc::impl::DefaultProcessor<DeprecatedFieldHandlerFake> const processor;
 
         // "ident" is present — triggers the Deprecated checker
-        auto const input = json::parse(R"JSON({ "token": "abc", "ident": "old" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "token": "abc", "ident": "old" })JSON");
         auto const ret = processor(handler, input, Context{yield});
 
         ASSERT_TRUE(ret);
@@ -234,7 +233,7 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedFieldAbsent_NoWarnings)
         DeprecatedFieldHandlerFake const handler;
         rpc::impl::DefaultProcessor<DeprecatedFieldHandlerFake> const processor;
 
-        auto const input = json::parse(R"JSON({ "token": "abc" })JSON");
+        auto const input = boost::json::parse(R"JSON({ "token": "abc" })JSON");
         auto const ret = processor(handler, input, Context{yield});
 
         ASSERT_TRUE(ret);
@@ -249,14 +248,14 @@ TEST_F(RPCDefaultProcessorTest, NoInputNewSpecHandler_SpecRunsEvenWithoutInput)
         rpc::impl::DefaultProcessor<NoInputNewSpecHandlerFake> const processor;
 
         // Missing required field → spec must reject before process() is called.
-        auto const bad = json::parse(R"JSON({})JSON");
+        auto const bad = boost::json::parse(R"JSON({})JSON");
         auto const failed = processor(handler, bad, Context{yield});
         ASSERT_FALSE(failed);
-        EXPECT_EQ(failed.result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+        EXPECT_EQ(failed.result.error(), rpc::RippledError::RpcInvalidParams);
         EXPECT_EQ(failed.result.error().message, "Required field 'token' missing");
 
         // Valid request → process() runs and returns success despite no Input.
-        auto const good = json::parse(R"JSON({ "token": "abc" })JSON");
+        auto const good = boost::json::parse(R"JSON({ "token": "abc" })JSON");
         auto const ok = processor(handler, good, Context{yield});
         ASSERT_TRUE(ok);
         EXPECT_TRUE(ok.warnings.empty());

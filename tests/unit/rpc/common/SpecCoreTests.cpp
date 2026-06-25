@@ -48,7 +48,7 @@ TEST(RpcSpecDSL, MissingRequiredFieldFails)
 
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_EQ(result.error().message, "Required field 'account' missing");
 }
 
@@ -66,7 +66,7 @@ TEST(RpcSpecDSL, WrongTypeFails)
 
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_TRUE(result.error().message.empty());
 }
 
@@ -372,7 +372,7 @@ TEST(RpcSpecDSL, NonObjectRootWithRequiredFieldFails)
     auto arr = boost::json::parse(R"JSON([])JSON");
     auto const result = kSPEC.process(arr);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_EQ(result.error().message, "Required field 'account' missing");
 }
 
@@ -434,7 +434,7 @@ TEST(RpcSpecDSL_Ordering, StopsAtFirstItemFailureWithinAField)
     auto request = boost::json::parse(R"JSON({ "limit": "not-a-number" })JSON");
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
     EXPECT_TRUE(result.error().message.empty());
 }
 
@@ -448,7 +448,7 @@ TEST(RpcSpecDSL_Ordering, LaterItemRunsWhenEarlierPasses)
     auto request = boost::json::parse(R"JSON({ "limit": 5 })JSON");
     auto const result = kSPEC.process(request);
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), rpc::RippledError::rpcINVALID_PARAMS);
+    EXPECT_EQ(result.error(), rpc::RippledError::RpcInvalidParams);
 }
 
 TEST(RpcSpecDSL, SpecIsConstantEvaluable)

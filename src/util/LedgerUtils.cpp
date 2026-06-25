@@ -7,13 +7,13 @@
 
 namespace util {
 
-ripple::LedgerEntryType
+xrpl::LedgerEntryType
 LedgerTypes::getLedgerEntryTypeFromStr(std::string const& entryName)
 {
     return rpc::spec::detail::ledgerEntryTypeFromStr(entryName);
 }
 
-ripple::LedgerEntryType
+xrpl::LedgerEntryType
 LedgerTypes::getAccountOwnedLedgerTypeFromStr(std::string const& entryName)
 {
     return rpc::spec::detail::accountOwnedLedgerTypeFromStr(entryName);

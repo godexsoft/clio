@@ -54,7 +54,7 @@ NFTHistoryHandler::spec([[maybe_unused]] uint32_t apiVersion)
             | clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax}),
         field(JS(marker))  //
             | withCustomError(
-                  type<spec::JsonObject>, rpc::RippledError::rpcINVALID_PARAMS, "invalidMarker"
+                  type<spec::JsonObject>, rpc::RippledError::RpcInvalidParams, "invalidMarker"
               )  //
             | ifType<JsonObject>(section(
                   field(JS(ledger), required, type<uint32_t>),
@@ -78,7 +78,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     if (input.ledgerIndexMin) {
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         if (range->maxSequence < input.ledgerIndexMin || range->minSequence > input.ledgerIndexMin)
-            return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMinOutOfRange"}};
+            return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMinOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
         minIndex = *input.ledgerIndexMin;
@@ -87,21 +87,19 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     if (input.ledgerIndexMax) {
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         if (range->maxSequence < input.ledgerIndexMax || range->minSequence > input.ledgerIndexMax)
-            return Error{Status{RippledError::rpcLGR_IDX_MALFORMED, "ledgerSeqMaxOutOfRange"}};
+            return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMaxOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
         maxIndex = *input.ledgerIndexMax;
     }
 
     if (minIndex > maxIndex)
-        return Error{Status{RippledError::rpcLGR_IDXS_INVALID}};
+        return Error{Status{RippledError::RpcLgrIdxsInvalid}};
 
     if (input.ledgerHash || input.ledgerIndex) {
         // rippled does not have this check
         if (input.ledgerIndexMax || input.ledgerIndexMin) {
-            return Error{
-                Status{RippledError::rpcINVALID_PARAMS, "containsLedgerSpecifierAndRange"}
-            };
+            return Error{Status{RippledError::RpcInvalidParams, "containsLedgerSpecifierAndRange"}};
         }
 
         auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
@@ -132,7 +130,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     }
 
     auto const limit = input.limit.value_or(kLimitDefault);
-    auto const tokenID = ripple::uint256{input.nftID.c_str()};
+    auto const tokenID = xrpl::uint256{input.nftID.c_str()};
 
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {
         return sharedPtrBackend_->fetchNFTTransactions(
@@ -179,8 +177,8 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
                         txnPlusMeta.ledgerSequence, ctx.yield
                     );
                     lgrInfo) {
-                    obj[JS(close_time_iso)] = ripple::to_string_iso(lgrInfo->closeTime);
-                    obj[JS(ledger_hash)] = ripple::strHex(lgrInfo->hash);
+                    obj[JS(close_time_iso)] = xrpl::toStringIso(lgrInfo->closeTime);
+                    obj[JS(ledger_hash)] = xrpl::strHex(lgrInfo->hash);
                 }
             }
         } else {
@@ -194,7 +192,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     }
 
     response.limit = input.limit;
-    response.nftID = ripple::to_string(tokenID);
+    response.nftID = xrpl::to_string(tokenID);
     response.ledgerIndexMin = minIndex;
     response.ledgerIndexMax = maxIndex;
 

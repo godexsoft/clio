@@ -55,7 +55,7 @@ public:
         std::optional<std::string> index;
         // index can be extracted from payment_channel, check, escrow, offer
         // etc, expectedType is used to save the type of index
-        ripple::LedgerEntryType expectedType = ripple::ltANY;
+        xrpl::LedgerEntryType expectedType = xrpl::ltANY;
         // account id to address account root object
         std::optional<std::string> accountRoot;
         // account id to address did object
@@ -75,12 +75,12 @@ public:
         std::optional<boost::json::object> vault;
         std::optional<boost::json::object> loanBroker;
         std::optional<boost::json::object> loan;
-        std::optional<ripple::STXChainBridge> bridge;
+        std::optional<xrpl::STXChainBridge> bridge;
         std::optional<std::string> bridgeAccount;
         std::optional<uint32_t> chainClaimId;
         std::optional<uint32_t> createAccountClaimId;
-        std::optional<ripple::uint256> oracleNode;
-        std::optional<ripple::uint256> credential;
+        std::optional<xrpl::uint256> oracleNode;
+        std::optional<xrpl::uint256> credential;
         std::optional<boost::json::object> delegate;
         bool includeDeleted = false;
     };
@@ -119,7 +119,7 @@ public:
 private:
     // dir_root and owner can not be both empty or filled at the same time
     // This function will return an error if this is the case
-    static std::expected<ripple::uint256, Status>
+    static std::expected<xrpl::uint256, Status>
     composeKeyFromDirectory(boost::json::object const& directory) noexcept;
 
     /**

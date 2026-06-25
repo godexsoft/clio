@@ -100,7 +100,7 @@ public:
     sendInternalError() const
     {
         connection_->send(
-            boost::json::serialize(composeError(rpc::RippledError::rpcINTERNAL)),
+            boost::json::serialize(composeError(rpc::RippledError::RpcInternal)),
             boost::beast::http::status::internal_server_error
         );
     }
@@ -109,7 +109,7 @@ public:
     sendNotReadyError() const
     {
         connection_->send(
-            boost::json::serialize(composeError(rpc::RippledError::rpcNOT_READY)),
+            boost::json::serialize(composeError(rpc::RippledError::RpcNotReady)),
             boost::beast::http::status::ok
         );
     }
@@ -119,12 +119,12 @@ public:
     {
         if (connection_->upgraded) {
             connection_->send(
-                boost::json::serialize(rpc::makeError(rpc::RippledError::rpcTOO_BUSY)),
+                boost::json::serialize(rpc::makeError(rpc::RippledError::RpcTooBusy)),
                 boost::beast::http::status::ok
             );
         } else {
             connection_->send(
-                boost::json::serialize(rpc::makeError(rpc::RippledError::rpcTOO_BUSY)),
+                boost::json::serialize(rpc::makeError(rpc::RippledError::RpcTooBusy)),
                 boost::beast::http::status::service_unavailable
             );
         }
@@ -135,7 +135,7 @@ public:
     {
         if (connection_->upgraded) {
             connection_->send(
-                boost::json::serialize(rpc::makeError(rpc::RippledError::rpcBAD_SYNTAX))
+                boost::json::serialize(rpc::makeError(rpc::RippledError::RpcBadSyntax))
             );
         } else {
             connection_->send(
