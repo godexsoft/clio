@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger_index/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -21,7 +22,7 @@ namespace rpc {
  */
 class LedgerIndexHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
-    static constexpr auto kDateFormat = "%Y-%m-%dT%TZ";
+    static constexpr auto kDateFormat = spec::handlers::ledger_index::kDateFormat;
 
 public:
     /**
@@ -36,9 +37,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::string> date;
-    };
+    using Input = spec::handlers::ledger_index::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -80,15 +79,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::ledger_index {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::ledger_index
 
 }  // namespace rpc

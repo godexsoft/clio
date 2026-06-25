@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/nft_history/Types.hpp>
 #include "util/log/Logger.hpp"
 
 #include <boost/json/array.hpp>
@@ -29,18 +30,14 @@ class NFTHistoryHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLimitMin = 1;
-    static constexpr auto kLimitMax = 100;
-    static constexpr auto kLimitDefault = 50;
+    static constexpr auto kLimitMin = spec::handlers::nft_history::kLimitMin;
+    static constexpr auto kLimitMax = spec::handlers::nft_history::kLimitMax;
+    static constexpr auto kLimitDefault = spec::handlers::nft_history::kLimitDefault;
 
     /**
      * @brief A struct to hold the marker data
      */
-    // TODO: this marker is same as account_tx, reuse in future
-    struct Marker {
-        uint32_t ledger;
-        uint32_t seq;
-    };
+    using Marker = spec::handlers::nft_history::Marker;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -60,19 +57,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::string nftID;
-        // You must use at least one of the following fields in your request:
-        // ledger_index, ledger_hash, ledger_index_min, or ledger_index_max.
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        std::optional<int32_t> ledgerIndexMin;
-        std::optional<int32_t> ledgerIndexMax;
-        bool binary = false;
-        bool forward = false;
-        std::optional<uint32_t> limit;
-        std::optional<Marker> marker;
-    };
+    using Input = spec::handlers::nft_history::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -114,24 +99,18 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-    /**
-     * @brief Convert the Marker to a JSON object
-     *
-     * @param [out] jv The JSON object to convert to
-     * @param marker The marker to convert
-     */
-    friend void
-    tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::nft_history {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+void
+tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker);
+
+}  // namespace spec::handlers::nft_history
 
 }  // namespace rpc

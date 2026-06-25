@@ -4,12 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
-#include <rpcspec/Types.hpp>
-#include <rpcspec/Validators.hpp>
+#include <rpcspec/handlers/book_offers/Spec.hpp>
+#include <rpcspec/handlers/book_offers/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -34,60 +31,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 BookOffersHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(
-            JS(taker_gets),
-            required,
-            type<JsonObject>,
-            section(
-                field(
-                    JS(currency),
-                    required,
-                    withCustomError(currency, RippledError::RpcDstAmtMalformed)
-                ),
-                field(JS(issuer), withCustomError(issuer, RippledError::RpcDstIsrMalformed))
-            )
-        ),
-        field(
-            JS(taker_pays),
-            required,
-            type<JsonObject>,
-            section(
-                field(
-                    JS(currency),
-                    required,
-                    withCustomError(currency, RippledError::RpcSrcCurMalformed)
-                ),
-                field(JS(issuer), withCustomError(issuer, RippledError::RpcSrcIsrMalformed))
-            )
-        ),
-        // return INVALID_PARAMS if account format is wrong for "taker"
-        field(
-            JS(taker),
-            withCustomError(account, RippledError::RpcInvalidParams, "Invalid field 'taker'.")
-        ),
-        field(
-            JS(domain),
-            withCustomError(
-                type<std::string>, RippledError::RpcDomainMalformed, "Unable to parse domain."
-            ),
-            withCustomError(
-                uint256Hex, RippledError::RpcDomainMalformed, "Unable to parse domain."
-            )
-        ),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{kLimitMin}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-    };
-
-    return RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::book_offers::kSpec;
 }
 
 BookOffersHandler::Result
@@ -151,10 +95,16 @@ tag_invoke(
     };
 }
 
-BookOffersHandler::Input
-tag_invoke(boost::json::value_to_tag<BookOffersHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::book_offers {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = BookOffersHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     xrpl::toCurrency(
@@ -201,4 +151,4 @@ tag_invoke(boost::json::value_to_tag<BookOffersHandler::Input>, boost::json::val
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::book_offers

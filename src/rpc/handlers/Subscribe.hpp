@@ -6,6 +6,7 @@
 #include "feed/Types.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/subscribe/Types.hpp>
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -58,22 +59,12 @@ public:
     /**
      * @brief A struct to hold the data for one order book
      */
-    struct OrderBook {
-        xrpl::Book book;
-        std::optional<std::string> taker;
-        bool snapshot = false;
-        bool both = false;
-    };
+    using OrderBook = spec::handlers::subscribe::OrderBook;
 
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::vector<std::string>> accounts;
-        std::optional<std::vector<std::string>> streams;
-        std::optional<std::vector<std::string>> accountsProposed;
-        std::optional<std::vector<OrderBook>> books;
-    };
+    using Input = spec::handlers::subscribe::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -145,15 +136,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert json value to input
-     *
-     * @param jv The json value to convert from
-     * @return The input to convert to
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::subscribe {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::subscribe
 
 }  // namespace rpc

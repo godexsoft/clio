@@ -4,6 +4,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
@@ -39,7 +40,7 @@ public:
     };
 
     /**
-     * @brief A struct to hold the input data for the command
+     * @brief Input data for the command — aliased from the shared xrpl-rpc-spec framework type.
      *
      * Clio does not support:
      * - queue
@@ -53,15 +54,7 @@ public:
      * Clio will throw an error when `queue`, `full` or `accounts` is set to `true`.
      * @see https://github.com/XRPLF/clio/issues/603 and https://github.com/XRPLF/clio/issues/1537
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        bool binary = false;
-        bool expand = false;
-        bool ownerFunds = false;
-        bool transactions = false;
-        bool diff = false;
-    };
+    using Input = spec::handlers::ledger::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -109,13 +102,15 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::ledger {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::ledger
+
 }  // namespace rpc

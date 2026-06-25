@@ -8,8 +8,9 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/server_info/Spec.hpp>
+#include <rpcspec/handlers/server_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/build/Build.hpp"
 
@@ -47,7 +48,8 @@ namespace rpc {
  */
 template <typename CountersType>
 class BaseServerInfoHandler {
-    static constexpr auto kBackendCountersKey = "backend_counters";
+    static constexpr auto kBackendCountersKey =
+        spec::handlers::server_info::kBackendCountersKey;
 
     std::shared_ptr<BackendInterface> backend_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
@@ -59,9 +61,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        bool backendCounters = false;
-    };
+    using Input = spec::handlers::server_info::Input;
 
     /**
      * @brief A struct to hold the admin section of the output
@@ -158,8 +158,7 @@ public:
     static rpc::spec::RpcSpecView
     spec([[maybe_unused]] uint32_t apiVersion)
     {
-        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{};
-        return kRPC_SPEC;
+        return rpc::spec::handlers::server_info::kSpec;
     }
 
     /**
@@ -331,16 +330,6 @@ private:
         };
     }
 
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-    {
-        auto input = BaseServerInfoHandler::Input{};
-        auto const jsonObject = jv.as_object();
-        if (jsonObject.contains(kBackendCountersKey) &&
-            jsonObject.at(kBackendCountersKey).is_bool())
-            input.backendCounters = jv.at(kBackendCountersKey).as_bool();
-        return input;
-    }
 };
 
 /**
@@ -352,3 +341,20 @@ private:
 using ServerInfoHandler = BaseServerInfoHandler<Counters>;
 
 }  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::server_info {
+
+inline Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
+{
+    auto input = Input{};
+    auto const jsonObject = jv.as_object();
+    if (jsonObject.contains(kBackendCountersKey) &&
+        jsonObject.at(kBackendCountersKey).is_bool())
+        input.backendCounters = jv.at(kBackendCountersKey).as_bool();
+    return input;
+}
+
+}  // namespace rpc::spec::handlers::server_info

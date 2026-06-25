@@ -4,6 +4,7 @@
 #include "feed/Types.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/unsubscribe/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -34,20 +35,12 @@ public:
     /**
      * @brief A struct to hold one order book
      */
-    struct OrderBook {
-        xrpl::Book book;
-        bool both = false;
-    };
+    using OrderBook = spec::handlers::unsubscribe::OrderBook;
 
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::vector<std::string>> accounts;
-        std::optional<std::vector<std::string>> streams;
-        std::optional<std::vector<std::string>> accountsProposed;
-        std::optional<std::vector<OrderBook>> books;
-    };
+    using Input = spec::handlers::unsubscribe::Input;
 
     using Output = VoidOutput;
     using Result = HandlerReturnType<Output>;
@@ -103,14 +96,15 @@ private:
         feed::SubscriberSharedPtr const& session
     ) const;
 
-    /**
-     * @brief Convert a JSON object to an Input
-     *
-     * @param jv The JSON object to convert
-     * @return The Input object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::unsubscribe {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::unsubscribe
 
 }  // namespace rpc

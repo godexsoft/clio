@@ -4,11 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
-#include <rpcspec/Validators.hpp>
+#include <rpcspec/handlers/get_aggregate_price/Spec.hpp>
+#include <rpcspec/handlers/get_aggregate_price/Types.hpp>
 #include "util/AccountUtils.hpp"
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
@@ -48,66 +46,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 GetAggregatePriceHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kORACLES_MAX = 200;
-
-    // Validates and normalises the "oracles" array field.
-    // Each element must be an object containing both "account" (base58) and
-    // "oracle_document_id" (uint32 or string).  String document IDs are
-    // converted to integers in-place via ToNumber.
-    static constexpr auto kORACLES_VALIDATOR = spec::CustomModifier{[](auto& f) -> rpc::MaybeError {
-        if (!f.isArray() || f.arraySize() == 0 || f.arraySize() > kORACLES_MAX)
-            return std::unexpected{rpc::Status{rpc::RippledError::RpcOracleMalformed}};
-
-        for (std::size_t i = 0; i < f.arraySize(); ++i) {
-            auto elem = f.element(i);
-            if (!elem.isObject())
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcOracleMalformed}};
-
-            auto docIdFa = elem.child(JS(oracle_document_id));
-            auto accountFa = elem.child(JS(account));
-
-            if (!docIdFa.present() || !accountFa.present())
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcOracleMalformed}};
-
-            // oracle_document_id must be uint32 or convertible string
-            if (auto err = Type<uint32_t, std::string>::verify(docIdFa); !err)
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcOracleMalformed}};
-
-            // convert string oracle_document_id to integer in-place;
-            // propagate the error directly (mirrors the old behaviour: returns RpcInvalidParams
-            // when the string is not a valid integer, e.g. "a")
-            if (auto err = ToNumberModifier::modify(docIdFa); !err)
-                return err;
-
-            // account must be a valid base58 account ID
-            if (auto err = AccountBase58Validator::verify(accountFa); !err)
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcInvalidParams}};
-        }
-
-        return {};
-    }};
-
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        // validate quoteAsset and base_asset in accordance to the currency code found in XRPL
-        // doc:
-        // https://xrpl.org/docs/references/protocol/data-types/currency-formats#currency-codes
-        // usually Clio returns RpcMalformedCurrency , return InvalidParam here just to mimic
-        // rippled
-        field(JS(base_asset), required, withCustomError(currency, RippledError::RpcInvalidParams)),
-        field(
-            JS(quote_asset), required, withCustomError(currency, RippledError::RpcInvalidParams)
-        ),
-        field(JS(oracles), required, kORACLES_VALIDATOR),
-        // note: Unlike `rippled`, Clio only supports UInt as input, no string, no `null`, etc.
-        field(JS(time_threshold), type<uint32_t>),
-        field(JS(trim), type<uint32_t>, between(uint32_t{1}, uint32_t{25})),
-    };
-
-    return RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::get_aggregate_price::kSpec;
 }
 
 GetAggregatePriceHandler::Result
@@ -321,10 +260,14 @@ GetAggregatePriceHandler::tracebackOracleObject(
     }
 }
 
-GetAggregatePriceHandler::Input
-tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::get_aggregate_price {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = GetAggregatePriceHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(ledger_hash)))
@@ -338,7 +281,7 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
 
     for (auto const& oracle : jsonObject.at(JS(oracles)).as_array()) {
         input.oracles.push_back(
-            GetAggregatePriceHandler::Oracle{
+            Oracle{
                 .documentId = boost::json::value_to<std::uint64_t>(
                     oracle.as_object().at(JS(oracle_document_id))
                 ),
@@ -360,6 +303,8 @@ tag_invoke(boost::json::value_to_tag<GetAggregatePriceHandler::Input>, boost::js
 
     return input;
 }
+
+}  // namespace spec::handlers::get_aggregate_price
 
 void
 tag_invoke(

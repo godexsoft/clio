@@ -1,9 +1,9 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
-#include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/noripple_check/Types.hpp>
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>
@@ -30,9 +30,9 @@ class NoRippleCheckHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLimitMin = 1;
-    static constexpr auto kLimitMax = 500;
-    static constexpr auto kLimitDefault = 300;
+    static constexpr auto kLimitMin = spec::handlers::noripple_check::kLimitMin;
+    static constexpr auto kLimitMax = spec::handlers::noripple_check::kLimitMax;
+    static constexpr auto kLimitDefault = spec::handlers::noripple_check::kLimitDefault;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -49,14 +49,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::string account;
-        bool roleGateway = false;
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLimitDefault;
-        JsonBool transactions{false};
-    };
+    using Input = spec::handlers::noripple_check::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -99,13 +92,15 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::noripple_check {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::noripple_check
+
 }  // namespace rpc

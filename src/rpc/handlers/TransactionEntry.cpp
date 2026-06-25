@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/transaction_entry/Spec.hpp>
+#include <rpcspec/handlers/transaction_entry/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -28,17 +27,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 TransactionEntryHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(
-            JS(tx_hash),
-            withCustomError(required, ClioError::RpcFieldNotFoundTransaction),
-            uint256Hex
-        ),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::transaction_entry::kSpec;
 }
 
 TransactionEntryHandler::Result
@@ -119,10 +108,14 @@ tag_invoke(
     }
 }
 
-TransactionEntryHandler::Input
-tag_invoke(boost::json::value_to_tag<TransactionEntryHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::transaction_entry {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = TransactionEntryHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.txHash = boost::json::value_to<std::string>(jv.at(JS(tx_hash)));
@@ -138,5 +131,7 @@ tag_invoke(boost::json::value_to_tag<TransactionEntryHandler::Input>, boost::jso
 
     return input;
 }
+
+}  // namespace spec::handlers::transaction_entry
 
 }  // namespace rpc

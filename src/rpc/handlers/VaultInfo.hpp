@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/vault_info/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
@@ -13,6 +14,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+
 namespace rpc {
 
 /**
@@ -32,12 +34,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::string> vaultID;
-        std::optional<std::string> owner;
-        std::optional<uint32_t> tnxSequence;
-        std::optional<uint32_t> ledgerIndex;
-    };
+    using Input = spec::handlers::vault_info::Input;
 
     /**
      * @brief A struct to hold the output data for the command
@@ -78,15 +75,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::vault_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::vault_info
 
 }  // namespace rpc

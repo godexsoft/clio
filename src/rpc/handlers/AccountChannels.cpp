@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_channels/Spec.hpp>
+#include <rpcspec/handlers/account_channels/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -38,24 +37,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountChannelsHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(account), required, account),
-        // Old spec chained Type<std::string>{} before accountValidator so that a non-string
-        // destination_account produced a bare RpcInvalidParams rather than the
-        // "<key>NotString" message that AccountFormat would emit.
-        field(JS(destination_account), type<std::string>, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{1}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(marker), accountMarker),
-    };
-    return rpc::spec::RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::account_channels::kSpec;
 }
 
 void
@@ -163,10 +145,14 @@ AccountChannelsHandler::process(
     return response;
 }
 
-AccountChannelsHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountChannelsHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::account_channels {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountChannelsHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
@@ -193,6 +179,8 @@ tag_invoke(boost::json::value_to_tag<AccountChannelsHandler::Input>, boost::json
 
     return input;
 }
+
+}  // namespace spec::handlers::account_channels
 
 void
 tag_invoke(

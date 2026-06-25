@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger_data/Types.hpp>
 #include "util/log/Logger.hpp"
 
 #include <boost/json/array.hpp>
@@ -33,8 +34,8 @@ class LedgerDataHandler {
 
 public:
     // constants
-    static constexpr uint32_t kLimitBinary = 2048;
-    static constexpr uint32_t kLimitJson = 256;
+    static constexpr auto kLimitBinary = spec::handlers::ledger_data::kLimitBinary;
+    static constexpr auto kLimitJson = spec::handlers::ledger_data::kLimitJson;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -56,16 +57,7 @@ public:
      * @note `outOfOrder` is only for Clio, there is no document, traverse via seq diff (outOfOrder
      * implementation is copied from old rpc handler)
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        bool binary = false;
-        uint32_t limit = LedgerDataHandler::kLimitJson;  // max 256 for json ; 2048 for binary
-        std::optional<xrpl::uint256> marker;
-        std::optional<uint32_t> diffMarker;
-        bool outOfOrder = false;
-        xrpl::LedgerEntryType type = xrpl::LedgerEntryType::ltANY;
-    };
+    using Input = spec::handlers::ledger_data::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -107,14 +99,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::ledger_data {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::ledger_data
+
 }  // namespace rpc

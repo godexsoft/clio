@@ -8,10 +8,9 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/tx/Spec.hpp>
+#include <rpcspec/handlers/tx/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -73,13 +72,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::string> transaction;
-        std::optional<std::string> ctid;
-        bool binary = false;
-        std::optional<uint32_t> minLedger;
-        std::optional<uint32_t> maxLedger;
-    };
+    using Input = spec::handlers::tx::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -106,18 +99,9 @@ public:
     static rpc::spec::RpcSpecView
     spec(uint32_t apiVersion)
     {
-        using namespace rpc::spec;
-
-        static constexpr auto kSPEC_V1 = spec::RpcSpec{
-            field(JS(transaction)) | uint256Hex,
-            field(JS(min_ledger)) | type<uint32_t>,
-            field(JS(max_ledger)) | type<uint32_t>,
-            field(JS(ctid)) | type<std::string>,
-        };
-
-        static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(binary)) | type<bool>);
-
-        return apiVersion == 1 ? RpcSpecView{kSPEC_V1} : RpcSpecView{kSPEC_V2};
+        return apiVersion == 1
+            ? rpc::spec::RpcSpecView{spec::handlers::tx::kSpecV1}
+            : rpc::spec::RpcSpecView{spec::handlers::tx::kSpecV2};
     }
 
     /**
@@ -316,31 +300,38 @@ private:
         jv = std::move(obj);
     }
 
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-    {
-        auto input = TxHandler::Input{};
-        auto const& jsonObject = jv.as_object();
-
-        if (jsonObject.contains(JS(transaction)))
-            input.transaction = boost::json::value_to<std::string>(jv.at(JS(transaction)));
-
-        if (jsonObject.contains(JS(ctid))) {
-            input.ctid = boost::json::value_to<std::string>(jv.at(JS(ctid)));
-            input.ctid = util::toUpper(*input.ctid);
-        }
-
-        if (jsonObject.contains(JS(binary)))
-            input.binary = boost::json::value_to<JsonBool>(jsonObject.at(JS(binary)));
-
-        if (jsonObject.contains(JS(min_ledger)))
-            input.minLedger = util::integralValueAs<uint32_t>(jv.at(JS(min_ledger)));
-
-        if (jsonObject.contains(JS(max_ledger)))
-            input.maxLedger = util::integralValueAs<uint32_t>(jv.at(JS(max_ledger)));
-
-        return input;
-    }
 };
 
 }  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::tx {
+
+inline Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
+{
+    auto input = Input{};
+    auto const& jsonObject = jv.as_object();
+
+    if (jsonObject.contains(JS(transaction)))
+        input.transaction = boost::json::value_to<std::string>(jv.at(JS(transaction)));
+
+    if (jsonObject.contains(JS(ctid))) {
+        input.ctid = boost::json::value_to<std::string>(jv.at(JS(ctid)));
+        input.ctid = util::toUpper(*input.ctid);
+    }
+
+    if (jsonObject.contains(JS(binary)))
+        input.binary = boost::json::value_to<JsonBool>(jsonObject.at(JS(binary)));
+
+    if (jsonObject.contains(JS(min_ledger)))
+        input.minLedger = util::integralValueAs<uint32_t>(jv.at(JS(min_ledger)));
+
+    if (jsonObject.contains(JS(max_ledger)))
+        input.maxLedger = util::integralValueAs<uint32_t>(jv.at(JS(max_ledger)));
+
+    return input;
+}
+
+}  // namespace rpc::spec::handlers::tx

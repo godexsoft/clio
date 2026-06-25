@@ -5,6 +5,7 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/handlers/ledger/Spec.hpp>
+#include <rpcspec/handlers/ledger/Types.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
@@ -199,10 +200,16 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, LedgerHandler::O
     };
 }
 
-LedgerHandler::Input
-tag_invoke(boost::json::value_to_tag<LedgerHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::ledger {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = LedgerHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(ledger_hash)))
@@ -232,4 +239,4 @@ tag_invoke(boost::json::value_to_tag<LedgerHandler::Input>, boost::json::value c
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::ledger

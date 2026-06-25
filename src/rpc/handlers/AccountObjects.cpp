@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_objects/Spec.hpp>
+#include <rpcspec/handlers/account_objects/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/LedgerUtils.hpp"
@@ -38,22 +37,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountObjectsHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{1}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(JS(type), accountType),
-        field(JS(marker), accountMarker),
-        field(JS(deletion_blockers_only), type<bool>),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::account_objects::kSpec;
 }
 
 AccountObjectsHandler::Result
@@ -167,10 +151,16 @@ tag_invoke(
         jv.as_object()[JS(marker)] = *(output.marker);
 }
 
-AccountObjectsHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountObjectsHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::account_objects {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountObjectsHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
@@ -202,4 +192,4 @@ tag_invoke(boost::json::value_to_tag<AccountObjectsHandler::Input>, boost::json:
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::account_objects

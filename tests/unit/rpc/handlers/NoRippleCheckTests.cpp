@@ -828,7 +828,7 @@ TEST_F(RPCNoRippleCheckTest, LimitMoreThanMax)
 
     std::vector<Blob> bbs;
     bbs.reserve(NoRippleCheckHandler::kLimitMax + 1);
-    for (auto i = 0; i < NoRippleCheckHandler::kLimitMax + 1; i++) {
+    for (auto i = 0u; i < NoRippleCheckHandler::kLimitMax + 1; i++) {
         bbs.push_back(line1.getSerializer().peekData());
     }
 

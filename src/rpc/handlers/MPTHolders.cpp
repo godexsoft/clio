@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/mpt_holders/Spec.hpp>
+#include <rpcspec/handlers/mpt_holders/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -35,20 +34,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 MPTHoldersHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(mpt_issuance_id), required, uint192Hex),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{MPTHoldersHandler::kLimitMin}),
-            clamp(uint32_t{MPTHoldersHandler::kLimitMin}, uint32_t{MPTHoldersHandler::kLimitMax})
-        ),
-        field(JS(marker), uint160Hex),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::mpt_holders::kSpec;
 }
 
 MPTHoldersHandler::Result
@@ -68,7 +54,7 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const limit = input.limit.value_or(MPTHoldersHandler::kLimitDefault);
+    auto const limit = input.limit.value_or(spec::handlers::mpt_holders::kLimitDefault);
     auto const mptID = xrpl::uint192{input.mptID.c_str()};
 
     auto const issuanceLedgerObject = sharedPtrBackend_->fetchLedgerObject(
@@ -133,11 +119,17 @@ tag_invoke(
         jv.as_object()[JS(marker)] = *(output.marker);
 }
 
-MPTHoldersHandler::Input
-tag_invoke(boost::json::value_to_tag<MPTHoldersHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::mpt_holders {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
     auto const& jsonObject = jv.as_object();
-    MPTHoldersHandler::Input input;
+    auto input = Input{};
 
     input.mptID = jsonObject.at(JS(mpt_issuance_id)).as_string().c_str();
 
@@ -158,4 +150,5 @@ tag_invoke(boost::json::value_to_tag<MPTHoldersHandler::Input>, boost::json::val
 
     return input;
 }
-}  // namespace rpc
+
+}  // namespace rpc::spec::handlers::mpt_holders

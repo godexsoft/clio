@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/get_aggregate_price/Types.hpp>
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -54,25 +55,9 @@ public:
     };
 
     /**
-     * @brief A struct to hold the input oracle data
-     */
-    struct Oracle {
-        std::uint32_t documentId{0};
-        xrpl::AccountID account;
-    };
-
-    /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<std::uint32_t> ledgerIndex;
-        std::vector<Oracle> oracles;  // valid range is 1-200
-        std::string baseAsset;
-        std::string quoteAsset;
-        std::optional<std::uint32_t> timeThreshold;
-        std::optional<std::uint8_t> trim;  // valid range is 1-25
-    };
+    using Input = spec::handlers::get_aggregate_price::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -126,15 +111,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::get_aggregate_price {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::get_aggregate_price
 
 }  // namespace rpc

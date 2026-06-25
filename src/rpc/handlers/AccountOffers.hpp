@@ -3,6 +3,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_offers/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -27,9 +28,9 @@ class AccountOffersHandler {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
-    static constexpr auto kLimitMin = 10;
-    static constexpr auto kLimitMax = 400;
-    static constexpr auto kLimitDefault = 200;
+    static constexpr auto kLimitMin = spec::handlers::account_offers::kLimitMin;
+    static constexpr auto kLimitMax = spec::handlers::account_offers::kLimitMax;
+    static constexpr auto kLimitDefault = spec::handlers::account_offers::kLimitDefault;
 
     /**
      * @brief A struct to hold data for one offer response
@@ -59,13 +60,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::string account;
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLimitDefault;
-        std::optional<std::string> marker;
-    };
+    using Input = spec::handlers::account_offers::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -112,15 +107,6 @@ private:
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 
     /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-    /**
      * @brief Convert the Offer to a JSON object
      *
      * @param [out] jv The JSON object to convert to
@@ -129,4 +115,14 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Offer const& offer);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::account_offers {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::account_offers
+
 }  // namespace rpc

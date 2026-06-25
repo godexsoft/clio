@@ -5,10 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/book_changes/Spec.hpp>
+#include <rpcspec/handlers/book_changes/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -30,12 +29,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 BookChangesHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(ledger_hash)) | uint256Hex,
-        field(JS(ledger_index)) | ledgerIndex,
-    };
-    return rpc::spec::RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::book_changes::kSpec;
 }
 
 BookChangesHandler::Result
@@ -87,10 +81,14 @@ tag_invoke(
     };
 }
 
-BookChangesHandler::Input
-tag_invoke(boost::json::value_to_tag<BookChangesHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::book_changes {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = BookChangesHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(ledger_hash)))
@@ -104,6 +102,8 @@ tag_invoke(boost::json::value_to_tag<BookChangesHandler::Input>, boost::json::va
 
     return input;
 }
+
+}  // namespace spec::handlers::book_changes
 
 [[nodiscard]] boost::json::object
 computeBookChanges(

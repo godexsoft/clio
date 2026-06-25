@@ -4,6 +4,7 @@
 #include "rpc/BookChangesHelper.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/book_changes/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -42,10 +43,7 @@ public:
      *
      * @note Clio does not implement `deletion_blockers_only`
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-    };
+    using Input = spec::handlers::book_changes::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -87,15 +85,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::book_changes {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::book_changes
 
 }  // namespace rpc

@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/nft_info/Spec.hpp>
+#include <rpcspec/handlers/nft_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -32,13 +31,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 NFTInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(nft_id)) | required | uint256Hex,
-        field(JS(ledger_hash)) | uint256Hex,
-        field(JS(ledger_index)) | ledgerIndex,
-    };
-    return rpc::spec::RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::nft_info::kSpec;
 }
 
 NFTInfoHandler::Result
@@ -110,11 +103,17 @@ tag_invoke(
     };
 }
 
-NFTInfoHandler::Input
-tag_invoke(boost::json::value_to_tag<NFTInfoHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::nft_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
     auto const& jsonObject = jv.as_object();
-    auto input = NFTInfoHandler::Input{};
+    auto input = Input{};
 
     input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
 
@@ -130,4 +129,4 @@ tag_invoke(boost::json::value_to_tag<NFTInfoHandler::Input>, boost::json::value 
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::nft_info

@@ -4,12 +4,10 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
-#include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_info/Spec.hpp>
+#include <rpcspec/handlers/account_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -42,20 +40,8 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountInfoHandler::spec(uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kSPEC_V1 = spec::RpcSpec{
-        field(JS(account)) | account,
-        field(JS(ident)) | account | deprecated,
-        field(JS(ledger_hash)) | uint256Hex,
-        field(JS(ledger_index)) | ledgerIndex,
-        field(JS(ledger)) | deprecated,
-        field(JS(strict)) | deprecated,
-    };
-
-    static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(signer_lists)) | type<bool>);
-
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+    using namespace rpc::spec::handlers::account_info;
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSpecV1} : rpc::spec::RpcSpecView{kSpecV2};
 }
 
 AccountInfoHandler::Result
@@ -228,10 +214,16 @@ tag_invoke(
     }
 }
 
-AccountInfoHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountInfoHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::account_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountInfoHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(ident)))
@@ -250,9 +242,9 @@ tag_invoke(boost::json::value_to_tag<AccountInfoHandler::Input>, boost::json::va
     }
 
     if (jsonObject.contains(JS(signer_lists)))
-        input.signerLists = boost::json::value_to<JsonBool>(jsonObject.at(JS(signer_lists)));
+        input.signerLists = boost::json::value_to<rpc::spec::JsonBool>(jsonObject.at(JS(signer_lists)));
 
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::account_info

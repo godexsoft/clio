@@ -5,10 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger_data/Spec.hpp>
+#include <rpcspec/handlers/ledger_data/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/LedgerUtils.hpp"
@@ -40,18 +39,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 LedgerDataHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(binary), type<bool>),
-        field("out_of_order", type<bool>),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(limit), type<uint32_t>, min(uint32_t{1})),
-        field(JS(marker), type<uint32_t, std::string>, ifType<std::string>(uint256Hex)),
-        field(JS(type), ledgerType),
-        field(JS(ledger), deprecated),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::ledger_data::kSpec;
 }
 
 LedgerDataHandler::Result
@@ -199,16 +187,22 @@ tag_invoke(
     jv = std::move(obj);
 }
 
-LedgerDataHandler::Input
-tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::ledger_data {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = LedgerDataHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(binary))) {
         input.binary = jsonObject.at(JS(binary)).as_bool();
         input.limit =
-            input.binary ? LedgerDataHandler::kLimitBinary : LedgerDataHandler::kLimitJson;
+            input.binary ? kLimitBinary : kLimitJson;
     }
 
     if (jsonObject.contains(JS(limit)))
@@ -244,4 +238,4 @@ tag_invoke(boost::json::value_to_tag<LedgerDataHandler::Input>, boost::json::val
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::ledger_data

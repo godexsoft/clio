@@ -32,7 +32,6 @@ target_sources(
         Taggable.cpp
         TerminationHandler.cpp
         TimeUtils.cpp
-        TxUtils.cpp
         LedgerUtils.cpp
         config/Array.cpp
         config/ArrayView.cpp

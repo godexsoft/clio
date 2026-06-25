@@ -95,11 +95,6 @@ target_sources(
         rpc/CountersTests.cpp
         rpc/ErrorTests.cpp
         rpc/ForwardingProxyTests.cpp
-        rpc/common/SpecCoreTests.cpp
-        rpc/common/SpecFieldViewTests.cpp
-        rpc/common/SpecMockBackendTests.cpp
-        rpc/common/SpecModifierTests.cpp
-        rpc/common/SpecValidatorTests.cpp
         rpc/common/TypesTests.cpp
         rpc/common/impl/HandlerProviderTests.cpp
         rpc/handlers/AccountChannelsTests.cpp
@@ -194,7 +189,6 @@ target_sources(
         util/SpawnTests.cpp
         util/StopHelperTests.cpp
         util/TimeUtilsTests.cpp
-        util/TxUtilTests.cpp
         util/WithTimeout.cpp
         # Webserver
         web/AdminVerificationTests.cpp

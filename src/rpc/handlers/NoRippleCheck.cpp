@@ -5,10 +5,9 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/noripple_check/Spec.hpp>
+#include <rpcspec/handlers/noripple_check/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -44,34 +43,8 @@ namespace rpc {
 rpc::spec::RpcSpecView
 NoRippleCheckHandler::spec(uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kSPEC_V1 = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(
-            JS(role),
-            required,
-            withCustomError(
-                oneOf<std::string>("gateway", "user"),
-                rpc::RippledError::RpcInvalidParams,
-                "role field is invalid"
-            )
-        ),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{NoRippleCheckHandler::kLimitMin}),
-            clamp(
-                uint32_t{NoRippleCheckHandler::kLimitMin},
-                uint32_t{NoRippleCheckHandler::kLimitMax}
-            )
-        ),
-    };
-
-    static constexpr auto kSPEC_V2 = spec::extend(kSPEC_V1, field(JS(transactions), type<bool>));
-
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+    using namespace rpc::spec::handlers::noripple_check;
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSpecV1} : rpc::spec::RpcSpecView{kSpecV2};
 }
 
 NoRippleCheckHandler::Result
@@ -213,10 +186,16 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
     return output;
 }
 
-NoRippleCheckHandler::Input
-tag_invoke(boost::json::value_to_tag<NoRippleCheckHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::noripple_check {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = NoRippleCheckHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
@@ -226,7 +205,7 @@ tag_invoke(boost::json::value_to_tag<NoRippleCheckHandler::Input>, boost::json::
         input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(transactions)))
-        input.transactions = boost::json::value_to<JsonBool>(jsonObject.at(JS(transactions)));
+        input.transactions = static_cast<bool>(boost::json::value_to<JsonBool>(jsonObject.at(JS(transactions))));
 
     if (jsonObject.contains(JS(ledger_hash)))
         input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
@@ -239,6 +218,10 @@ tag_invoke(boost::json::value_to_tag<NoRippleCheckHandler::Input>, boost::json::
 
     return input;
 }
+
+}  // namespace rpc::spec::handlers::noripple_check
+
+namespace rpc {
 
 void
 tag_invoke(

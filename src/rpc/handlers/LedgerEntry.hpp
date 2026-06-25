@@ -4,6 +4,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger_entry/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
@@ -47,43 +48,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        bool binary = false;
-        // id of this ledger entry: 256 bits hex string
-        std::optional<std::string> index;
-        // index can be extracted from payment_channel, check, escrow, offer
-        // etc, expectedType is used to save the type of index
-        xrpl::LedgerEntryType expectedType = xrpl::ltANY;
-        // account id to address account root object
-        std::optional<std::string> accountRoot;
-        // account id to address did object
-        std::optional<std::string> did;
-        // mpt issuance id to address mptIssuance object
-        std::optional<std::string> mptIssuance;
-        // TODO: extract into custom objects, remove json from Input
-        std::optional<boost::json::object> directory;
-        std::optional<boost::json::object> offer;
-        std::optional<boost::json::object> rippleStateAccount;
-        std::optional<boost::json::object> escrow;
-        std::optional<boost::json::object> depositPreauth;
-        std::optional<boost::json::object> ticket;
-        std::optional<boost::json::object> amm;
-        std::optional<boost::json::object> mptoken;
-        std::optional<boost::json::object> permissionedDomain;
-        std::optional<boost::json::object> vault;
-        std::optional<boost::json::object> loanBroker;
-        std::optional<boost::json::object> loan;
-        std::optional<xrpl::STXChainBridge> bridge;
-        std::optional<std::string> bridgeAccount;
-        std::optional<uint32_t> chainClaimId;
-        std::optional<uint32_t> createAccountClaimId;
-        std::optional<xrpl::uint256> oracleNode;
-        std::optional<xrpl::uint256> credential;
-        std::optional<boost::json::object> delegate;
-        bool includeDeleted = false;
-    };
+    using Input = spec::handlers::ledger_entry::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -130,15 +95,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::ledger_entry {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::ledger_entry
 
 }  // namespace rpc

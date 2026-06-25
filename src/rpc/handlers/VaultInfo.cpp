@@ -5,10 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/vault_info/Spec.hpp>
+#include <rpcspec/handlers/vault_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -59,17 +58,7 @@ validate(VaultInfoHandler::Input const& input)
 rpc::spec::RpcSpecView
 VaultInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(vault_id), withCustomError(uint256Hex, rpc::ClioError::RpcMalformedRequest)),
-        field(
-            JS(owner),
-            withCustomError(accountBase58, rpc::ClioError::RpcMalformedRequest, "OwnerNotHexString")
-        ),
-        field(JS(seq), withCustomError(type<uint32_t>, rpc::ClioError::RpcMalformedRequest)),
-        field(JS(ledger_index), ledgerIndex),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::vault_info::kSpec;
 }
 
 VaultInfoHandler::VaultInfoHandler(std::shared_ptr<BackendInterface> sharedPtrBackend)
@@ -176,10 +165,16 @@ tag_invoke(
     };
 }
 
-VaultInfoHandler::Input
-tag_invoke(boost::json::value_to_tag<VaultInfoHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::vault_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = VaultInfoHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(owner)))
@@ -200,4 +195,4 @@ tag_invoke(boost::json::value_to_tag<VaultInfoHandler::Input>, boost::json::valu
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::vault_info

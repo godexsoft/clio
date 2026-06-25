@@ -2,9 +2,9 @@
 
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
-#include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_info/Types.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -52,13 +52,7 @@ public:
      * `queue` is not available in Reporting mode
      * `ident` is deprecated, keep it for now, in line with rippled
      */
-    struct Input {
-        std::optional<std::string> account;
-        std::optional<std::string> ident;
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        JsonBool signerLists{false};
-    };
+    using Input = spec::handlers::account_info::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -104,15 +98,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::account_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::account_info
 
 }  // namespace rpc

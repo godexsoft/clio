@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_lines/Spec.hpp>
+#include <rpcspec/handlers/account_lines/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -37,24 +36,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountLinesHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(account), required, withCustomError(account, RippledError::RpcActMalformed)),
-        field(JS(peer), withCustomError(account, RippledError::RpcActMalformed)),
-        field(JS(ignore_default), type<bool>),
-        field(JS(ledger_hash), uint256Hex),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{1}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(marker), accountMarker),
-        field(JS(ledger), deprecated),
-        field("peer_index", deprecated),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::account_lines::kSpec;
 }
 
 void
@@ -221,10 +203,14 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
     return response;
 }
 
-AccountLinesHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountLinesHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::account_lines {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountLinesHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
@@ -251,6 +237,8 @@ tag_invoke(boost::json::value_to_tag<AccountLinesHandler::Input>, boost::json::v
 
     return input;
 }
+
+}  // namespace spec::handlers::account_lines
 
 void
 tag_invoke(

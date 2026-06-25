@@ -532,7 +532,7 @@ TEST_F(RPCAccountOffersHandlerTest, LimitLessThanMin)
     offer.setFieldU32(xrpl::sfExpiration, 123);
 
     bbs.reserve(AccountOffersHandler::kLimitMin + 1);
-    for (auto i = 0; i < AccountOffersHandler::kLimitMin + 1; i++)
+    for (auto i = 0u; i < AccountOffersHandler::kLimitMin + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));
@@ -590,7 +590,7 @@ TEST_F(RPCAccountOffersHandlerTest, LimitMoreThanMax)
     );
     offer.setFieldU32(xrpl::sfExpiration, 123);
     bbs.reserve(AccountOffersHandler::kLimitMax + 1);
-    for (auto i = 0; i < AccountOffersHandler::kLimitMax + 1; i++)
+    for (auto i = 0u; i < AccountOffersHandler::kLimitMax + 1; i++)
         bbs.push_back(offer.getSerializer().peekData());
 
     ON_CALL(*backend_, doFetchLedgerObjects).WillByDefault(Return(bbs));

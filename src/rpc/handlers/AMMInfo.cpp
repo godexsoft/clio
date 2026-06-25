@@ -6,12 +6,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
-#include <rpcspec/Types.hpp>
-#include <rpcspec/Validators.hpp>
+#include <rpcspec/handlers/amm_info/Spec.hpp>
+#include <rpcspec/handlers/amm_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -234,39 +231,7 @@ AMMInfoHandler::process(AMMInfoHandler::Input const& input, Context const& ctx) 
 rpc::spec::RpcSpecView
 AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kSTRING_ISSUE_VALIDATOR =
-        CustomValidator{[](auto const& f) -> rpc::MaybeError {
-            // field is already confirmed to be a string (inside ifType<std::string>)
-            try {
-                xrpl::issueFromJson(std::string{f.asString()});
-            } catch (std::runtime_error const&) {
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcIssueMalformed}};
-            }
-            return {};
-        }};
-
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(
-            JS(asset),
-            withCustomError(type<std::string, JsonObject>, rpc::RippledError::RpcIssueMalformed),
-            ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
-            ifType<JsonObject>(withCustomError(currencyIssue, rpc::RippledError::RpcIssueMalformed))
-        ),
-        field(
-            JS(asset2),
-            withCustomError(type<std::string, JsonObject>, rpc::RippledError::RpcIssueMalformed),
-            ifType<std::string>(kSTRING_ISSUE_VALIDATOR),
-            ifType<JsonObject>(withCustomError(currencyIssue, rpc::RippledError::RpcIssueMalformed))
-        ),
-        field(JS(amm_account), withCustomError(account, rpc::RippledError::RpcActMalformed)),
-        field(JS(account), withCustomError(account, rpc::RippledError::RpcActMalformed)),
-    };
-
-    return kRPC_SPEC;
+    return rpc::spec::handlers::amm_info::kSpec;
 }
 
 void
@@ -304,10 +269,16 @@ tag_invoke(
     };
 }
 
-AMMInfoHandler::Input
-tag_invoke(boost::json::value_to_tag<AMMInfoHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::amm_info {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AMMInfoHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(ledger_hash)))
@@ -339,4 +310,4 @@ tag_invoke(boost::json::value_to_tag<AMMInfoHandler::Input>, boost::json::value 
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::amm_info

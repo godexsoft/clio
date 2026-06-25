@@ -6,16 +6,13 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/Types.hpp>
-#include <rpcspec/Validators.hpp>
+#include <rpcspec/handlers/account_tx/Spec.hpp>
+#include <rpcspec/handlers/account_tx/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/Profiler.hpp"
-#include "util/TxUtils.hpp"
 #include "util/log/Logger.hpp"
 
 #include <boost/json/conversion.hpp>
@@ -40,60 +37,9 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountTxHandler::spec(uint32_t apiVersion)
 {
-    using namespace spec;
-
-    // Validates tx_type against the runtime-generated set of known transaction type names
-    // (lowercase). Because the set comes from xrpl::TxFormats at runtime, we use a
-    // CustomValidator lambda rather than the consteval spec::oneOf factory.
-    // Returns the same error shape as the old validation::OneOf: "Invalid field '<key>'."
-    static constexpr auto kTX_TYPE_VALIDATOR =
-        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
-            if (!f.isString()) {
-                return std::unexpected{rpc::Status{rpc::RippledError::RpcInvalidParams}};
-            }
-            auto const& validTypes = util::getTxTypesInLowercase();
-            auto const sv = f.asString();
-            if (!validTypes.contains(std::string{sv})) {
-                return std::unexpected{rpc::Status{
-                    rpc::RippledError::RpcInvalidParams,
-                    "Invalid field '" + std::string{f.key()} + "'."
-                }};
-            }
-            return {};
-        }};
-
-    static constexpr auto kSPEC_V1 = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        // Mirrors old `Type<int32_t>{}` behaviour: silently coerce overflow into the int32
-        // range so the downstream `tag_invoke` cast (to int32_t) is well-defined.
-        field(JS(ledger_index_min), type<int64_t>, clampAs<int32_t>),
-        field(JS(ledger_index_max), type<int64_t>, clampAs<int32_t>),
-        field(JS(ctid), type<std::string>),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{kLimitMin}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(
-            JS(marker),
-            withCustomError(
-                type<spec::JsonObject>, rpc::RippledError::RpcInvalidParams, "invalidMarker"
-            ),
-            ifType<JsonObject>(section(
-                field(JS(ledger), required, type<uint32_t>),
-                field(JS(seq), required, type<uint32_t>)
-            ))
-        ),
-        field("tx_type", type<std::string>, toLower, kTX_TYPE_VALIDATOR),
-    };
-
-    static constexpr auto kSPEC_V2 =
-        spec::extend(kSPEC_V1, field(JS(binary), type<bool>), field(JS(forward), type<bool>));
-
-    return apiVersion == 1 ? RpcSpecView{kSPEC_V1} : RpcSpecView{kSPEC_V2};
+    namespace atx = rpc::spec::handlers::account_tx;
+    return apiVersion == 1 ? rpc::spec::RpcSpecView{atx::kSpecV1}
+                           : rpc::spec::RpcSpecView{atx::kSpecV2};
 }
 
 // TODO: this is currently very similar to nft_history but its own copy for time
@@ -298,12 +244,14 @@ tag_invoke(
         jv.as_object()[JS(limit)] = *(output.limit);
 }
 
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace rpc::spec::handlers::account_tx {
+
 void
-tag_invoke(
-    boost::json::value_from_tag,
-    boost::json::value& jv,
-    AccountTxHandler::Marker const& marker
-)
+tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker)
 {
     jv = {
         {JS(ledger), marker.ledger},
@@ -311,10 +259,10 @@ tag_invoke(
     };
 }
 
-AccountTxHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountTxHandler::Input>, boost::json::value const& jv)
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountTxHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
@@ -350,7 +298,7 @@ tag_invoke(boost::json::value_to_tag<AccountTxHandler::Input>, boost::json::valu
         input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(marker))) {
-        input.marker = AccountTxHandler::Marker{
+        input.marker = Marker{
             .ledger = util::integralValueAs<uint32_t>(
                 jsonObject.at(JS(marker)).as_object().at(JS(ledger))
             ),
@@ -367,4 +315,5 @@ tag_invoke(boost::json::value_to_tag<AccountTxHandler::Input>, boost::json::valu
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::account_tx
+

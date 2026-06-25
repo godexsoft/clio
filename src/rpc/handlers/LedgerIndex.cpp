@@ -3,10 +3,9 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/ledger_index/Spec.hpp>
+#include <rpcspec/handlers/ledger_index/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/TimeUtils.hpp"
 
@@ -27,14 +26,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 LedgerIndexHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(date))      //
-        | type<std::string>  //
-        | timeFormat(kDateFormat)
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::ledger_index::kSpec;
 }
 
 LedgerIndexHandler::Result
@@ -92,16 +84,26 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context cons
     return fillOutputByIndex(maxIndex);
 }
 
-LedgerIndexHandler::Input
-tag_invoke(boost::json::value_to_tag<LedgerIndexHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::ledger_index {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = LedgerIndexHandler::Input{};
+    auto input = Input{};
 
     if (jv.as_object().contains(JS(date)))
         input.date = jv.at(JS(date)).as_string();
 
     return input;
 }
+
+}  // namespace rpc::spec::handlers::ledger_index
+
+namespace rpc {
 
 void
 tag_invoke(

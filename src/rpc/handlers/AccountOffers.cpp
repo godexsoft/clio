@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_offers/Spec.hpp>
+#include <rpcspec/handlers/account_offers/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -35,22 +34,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 AccountOffersHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(marker), accountMarker),
-        field(
-            JS(limit),
-            type<uint32_t>,
-            min(uint32_t{1}),
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax})
-        ),
-        field(JS(ledger), deprecated),
-        field(JS(strict), deprecated),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::account_offers::kSpec;
 }
 
 void
@@ -186,10 +170,16 @@ tag_invoke(
     convertAmount(JS(taker_gets), offer.takerGets);
 }
 
-AccountOffersHandler::Input
-tag_invoke(boost::json::value_to_tag<AccountOffersHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::account_offers {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = AccountOffersHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
@@ -212,4 +202,4 @@ tag_invoke(boost::json::value_to_tag<AccountOffersHandler::Input>, boost::json::
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::account_offers

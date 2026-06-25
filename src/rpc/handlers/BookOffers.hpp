@@ -4,6 +4,7 @@
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/book_offers/Types.hpp>
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>
@@ -31,9 +32,9 @@ class BookOffersHandler {
     std::shared_ptr<data::AmendmentCenterInterface const> amendmentCenter_;
 
 public:
-    static constexpr auto kLimitMin = 1;
-    static constexpr auto kLimitMax = 100;
-    static constexpr auto kLimitDefault = 60;
+    static constexpr auto kLimitMin = spec::handlers::book_offers::kLimitMin;
+    static constexpr auto kLimitMax = spec::handlers::book_offers::kLimitMax;
+    static constexpr auto kLimitDefault = spec::handlers::book_offers::kLimitDefault;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -51,18 +52,7 @@ public:
      * @note The taker is not really used in both Clio and `rippled`, both of them return all the
      * offers regardless of the funding status
      */
-    struct Input {
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        uint32_t limit = kLimitDefault;
-        std::optional<xrpl::AccountID> taker;
-        xrpl::Currency paysCurrency;
-        xrpl::Currency getsCurrency;
-        // accountID will be filled by input converter, if no issuer is given, will use XRP issuer
-        xrpl::AccountID paysID = xrpl::xrpAccount();
-        xrpl::AccountID getsID = xrpl::xrpAccount();
-        std::optional<std::string> domain;
-    };
+    using Input = spec::handlers::book_offers::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -108,14 +98,15 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::book_offers {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+}  // namespace spec::handlers::book_offers
+
 }  // namespace rpc

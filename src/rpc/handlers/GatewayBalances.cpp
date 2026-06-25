@@ -4,12 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
-#include <rpcspec/Validators.hpp>
-#include "util/AccountUtils.hpp"
+#include <rpcspec/handlers/gateway_balances/Spec.hpp>
+#include <rpcspec/handlers/gateway_balances/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -49,97 +46,9 @@ namespace rpc {
 rpc::spec::RpcSpecView
 GatewayBalancesHandler::spec(uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kHOT_WALLET_V1 =
-        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
-            if (!f.isString() && !f.isArray()) {
-                return std::unexpected{rpc::Status{
-                    rpc::RippledError::RpcInvalidHotwallet,
-                    std::string{f.key()} + "NotStringOrArray"
-                }};
-            }
-            auto const getAccountID = [](auto const& elem) -> bool {
-                if (!elem.isString())
-                    return false;
-                auto const str = std::string{elem.asString()};
-                auto const pk = util::parseBase58Wrapper<xrpl::PublicKey>(
-                    xrpl::TokenType::AccountPublic, str
-                );
-                if (pk)
-                    return true;
-                return util::parseBase58Wrapper<xrpl::AccountID>(str).has_value();
-            };
-            if (f.isArray()) {
-                for (std::size_t i = 0; i < f.arraySize(); ++i) {
-                    if (!getAccountID(f.element(i))) {
-                        return std::unexpected{rpc::Status{
-                            rpc::RippledError::RpcInvalidHotwallet,
-                            std::string{f.key()} + "Malformed"
-                        }};
-                    }
-                }
-            } else {
-                if (!getAccountID(f)) {
-                    return std::unexpected{rpc::Status{
-                        rpc::RippledError::RpcInvalidHotwallet, std::string{f.key()} + "Malformed"
-                    }};
-                }
-            }
-            return {};
-        }};
-
-    static constexpr auto kHOT_WALLET_V2 =
-        spec::CustomValidator{[](auto const& f) -> rpc::MaybeError {
-            if (!f.isString() && !f.isArray()) {
-                return std::unexpected{rpc::Status{
-                    rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "NotStringOrArray"
-                }};
-            }
-            auto const getAccountID = [](auto const& elem) -> bool {
-                if (!elem.isString())
-                    return false;
-                auto const str = std::string{elem.asString()};
-                auto const pk = util::parseBase58Wrapper<xrpl::PublicKey>(
-                    xrpl::TokenType::AccountPublic, str
-                );
-                if (pk)
-                    return true;
-                return util::parseBase58Wrapper<xrpl::AccountID>(str).has_value();
-            };
-            if (f.isArray()) {
-                for (std::size_t i = 0; i < f.arraySize(); ++i) {
-                    if (!getAccountID(f.element(i))) {
-                        return std::unexpected{rpc::Status{
-                            rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "Malformed"
-                        }};
-                    }
-                }
-            } else {
-                if (!getAccountID(f)) {
-                    return std::unexpected{rpc::Status{
-                        rpc::RippledError::RpcInvalidParams, std::string{f.key()} + "Malformed"
-                    }};
-                }
-            }
-            return {};
-        }};
-
-    static constexpr auto kSPEC_V1 = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(hotwallet), kHOT_WALLET_V1),
-    };
-
-    static constexpr auto kSPEC_V2 = spec::RpcSpec{
-        field(JS(account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(hotwallet), kHOT_WALLET_V2),
-    };
-
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSPEC_V1} : rpc::spec::RpcSpecView{kSPEC_V2};
+    return apiVersion == 1
+        ? rpc::spec::RpcSpecView{rpc::spec::handlers::gateway_balances::kSpecV1}
+        : rpc::spec::RpcSpecView{rpc::spec::handlers::gateway_balances::kSpecV2};
 }
 
 GatewayBalancesHandler::Result
@@ -346,10 +255,16 @@ tag_invoke(
     jv = std::move(obj);
 }
 
-GatewayBalancesHandler::Input
-tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::gateway_balances {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = GatewayBalancesHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
@@ -367,7 +282,7 @@ tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json
         if (jsonObject.at(JS(hotwallet)).is_string()) {
             input.hotWallets.insert(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                *accountFromStringStrict(boost::json::value_to<std::string>(jv.at(JS(hotwallet))))
+                *rpc::accountFromStringStrict(boost::json::value_to<std::string>(jv.at(JS(hotwallet))))
             );
         } else {
             auto const& hotWallets = jv.at(JS(hotwallet)).as_array();
@@ -376,7 +291,7 @@ tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json
 
                 std::inserter(input.hotWallets, input.hotWallets.begin()),
                 [](auto const& hotWallet) {
-                    return *accountFromStringStrict(boost::json::value_to<std::string>(hotWallet));
+                    return *rpc::accountFromStringStrict(boost::json::value_to<std::string>(hotWallet));
                 }
             );
         }
@@ -385,4 +300,4 @@ tag_invoke(boost::json::value_to_tag<GatewayBalancesHandler::Input>, boost::json
     return input;
 }
 
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::gateway_balances

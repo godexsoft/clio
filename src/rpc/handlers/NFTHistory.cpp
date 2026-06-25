@@ -5,12 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
-#include <rpcspec/Types.hpp>
-#include <rpcspec/Validators.hpp>
+#include <rpcspec/handlers/nft_history/Spec.hpp>
+#include <rpcspec/handlers/nft_history/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 #include "util/Profiler.hpp"
@@ -38,31 +35,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 NFTHistoryHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kSPEC = spec::RpcSpec{
-        field(JS(nft_id), required, uint256Hex),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(ledger_index_min), type<int64_t>),
-        field(JS(ledger_index_max), type<int64_t>),
-        field(JS(binary), type<bool>),
-        field(JS(forward), type<bool>),
-        field(JS(limit))                 //
-            | type<uint32_t>             //
-            | min(uint32_t{kLimitMin})  //
-            | clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax}),
-        field(JS(marker))  //
-            | withCustomError(
-                  type<spec::JsonObject>, rpc::RippledError::RpcInvalidParams, "invalidMarker"
-              )  //
-            | ifType<JsonObject>(section(
-                  field(JS(ledger), required, type<uint32_t>),
-                  field(JS(seq), required, type<uint32_t>)
-              )),
-    };
-
-    return RpcSpecView{kSPEC};
+    return rpc::spec::handlers::nft_history::kSpec;
 }
 
 // TODO: this is currently very similar to account_tx but its own copy for time
@@ -221,12 +194,12 @@ tag_invoke(
         jv.as_object()[JS(limit)] = *(output.limit);
 }
 
+// Defined in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::nft_history {
+
 void
-tag_invoke(
-    boost::json::value_from_tag,
-    boost::json::value& jv,
-    NFTHistoryHandler::Marker const& marker
-)
+tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker)
 {
     jv = {
         {JS(ledger), marker.ledger},
@@ -234,11 +207,11 @@ tag_invoke(
     };
 }
 
-NFTHistoryHandler::Input
-tag_invoke(boost::json::value_to_tag<NFTHistoryHandler::Input>, boost::json::value const& jv)
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
     auto const& jsonObject = jv.as_object();
-    auto input = NFTHistoryHandler::Input{};
+    auto input = Input{};
 
     input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
 
@@ -269,7 +242,7 @@ tag_invoke(boost::json::value_to_tag<NFTHistoryHandler::Input>, boost::json::val
         input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
 
     if (jsonObject.contains(JS(marker))) {
-        input.marker = NFTHistoryHandler::Marker{
+        input.marker = Marker{
             .ledger = util::integralValueAs<uint32_t>(
                 jsonObject.at(JS(marker)).as_object().at(JS(ledger))
             ),
@@ -280,5 +253,7 @@ tag_invoke(boost::json::value_to_tag<NFTHistoryHandler::Input>, boost::json::val
 
     return input;
 }
+
+}  // namespace spec::handlers::nft_history
 
 }  // namespace rpc

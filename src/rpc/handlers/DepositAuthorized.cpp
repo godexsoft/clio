@@ -5,10 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/deposit_authorized/Spec.hpp>
+#include <rpcspec/handlers/deposit_authorized/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -38,15 +37,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 DepositAuthorizedHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(source_account), required, account),
-        field(JS(destination_account), required, account),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(credentials), hex256Array),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::deposit_authorized::kSpec;
 }
 
 DepositAuthorizedHandler::Result
@@ -157,10 +148,14 @@ DepositAuthorizedHandler::process(
     return response;
 }
 
-DepositAuthorizedHandler::Input
-tag_invoke(boost::json::value_to_tag<DepositAuthorizedHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::deposit_authorized {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = DepositAuthorizedHandler::Input{};
+    auto input = Input{};
     auto const& jsonObject = jv.as_object();
 
     input.sourceAccount = boost::json::value_to<std::string>(jv.at(JS(source_account)));
@@ -180,6 +175,8 @@ tag_invoke(boost::json::value_to_tag<DepositAuthorizedHandler::Input>, boost::js
 
     return input;
 }
+
+}  // namespace spec::handlers::deposit_authorized
 
 void
 tag_invoke(

@@ -4,10 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/nfts_by_issuer/Spec.hpp>
+#include <rpcspec/handlers/nfts_by_issuer/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -34,17 +33,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 NFTsByIssuerHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(issuer)) | required | account,
-        field(JS(nft_taxon)) | type<uint32_t>,
-        field(JS(ledger_hash)) | uint256Hex,
-        field(JS(ledger_index)) | ledgerIndex,
-        field(JS(limit)) | type<uint32_t> | min(uint32_t{1}) |
-            clamp(uint32_t{kLimitMin}, uint32_t{kLimitMax}),
-        field(JS(marker)) | uint256Hex,
-    };
-    return rpc::spec::RpcSpecView{kRPC_SPEC};
+    return rpc::spec::handlers::nfts_by_issuer::kSpec;
 }
 
 NFTsByIssuerHandler::Result
@@ -65,7 +54,7 @@ NFTsByIssuerHandler::process(NFTsByIssuerHandler::Input const& input, Context co
 
     auto const& lgrInfo = *expectedLgrInfo;
 
-    auto const limit = input.limit.value_or(NFTsByIssuerHandler::kLimitDefault);
+    auto const limit = input.limit.value_or(spec::handlers::nfts_by_issuer::kLimitDefault);
 
     auto const issuer = accountFromStringStrict(input.issuer);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
@@ -145,11 +134,17 @@ tag_invoke(
         jv.as_object()[JS(nft_taxon)] = *(output.nftTaxon);
 }
 
-NFTsByIssuerHandler::Input
-tag_invoke(boost::json::value_to_tag<NFTsByIssuerHandler::Input>, boost::json::value const& jv)
+}  // namespace rpc
+
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace rpc::spec::handlers::nfts_by_issuer {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
     auto const& jsonObject = jv.as_object();
-    NFTsByIssuerHandler::Input input;
+    Input input;
 
     input.issuer = boost::json::value_to<std::string>(jsonObject.at(JS(issuer)));
 
@@ -173,4 +168,5 @@ tag_invoke(boost::json::value_to_tag<NFTsByIssuerHandler::Input>, boost::json::v
 
     return input;
 }
-}  // namespace rpc
+
+}  // namespace rpc::spec::handlers::nfts_by_issuer

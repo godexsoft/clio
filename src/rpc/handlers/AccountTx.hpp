@@ -5,6 +5,7 @@
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/account_tx/Types.hpp>
 #include "util/log/Logger.hpp"
 
 #include <boost/json/array.hpp>
@@ -32,17 +33,11 @@ class AccountTxHandler {
     std::shared_ptr<etl::ETLServiceInterface const> etl_;
 
 public:
-    static constexpr auto kLimitMin = 1;
-    static constexpr auto kLimitMax = 1000;
-    static constexpr auto kLimitDefault = 200;
+    static constexpr auto kLimitMin = spec::handlers::account_tx::kLimitMin;
+    static constexpr auto kLimitMax = spec::handlers::account_tx::kLimitMax;
+    static constexpr auto kLimitDefault = spec::handlers::account_tx::kLimitDefault;
 
-    /**
-     * @brief A struct to hold the marker data
-     */
-    struct Marker {
-        uint32_t ledger;
-        uint32_t seq;
-    };
+    using Marker = spec::handlers::account_tx::Marker;
 
     /**
      * @brief A struct to hold the output data of the command
@@ -62,21 +57,7 @@ public:
     /**
      * @brief A struct to hold the input data for the command
      */
-    struct Input {
-        std::string account;
-        // You must use at least one of the following fields in your request:
-        // ledger_index, ledger_hash, ledger_index_min, or ledger_index_max.
-        std::optional<std::string> ledgerHash;
-        std::optional<uint32_t> ledgerIndex;
-        std::optional<int32_t> ledgerIndexMin;
-        std::optional<int32_t> ledgerIndexMax;
-        bool usingValidatedLedger = false;
-        JsonBool binary{false};
-        JsonBool forward{false};
-        std::optional<uint32_t> limit;
-        std::optional<Marker> marker;
-        std::optional<std::string> transactionTypeInLowercase;
-    };
+    using Input = spec::handlers::account_tx::Input;
 
     using Result = HandlerReturnType<Output>;
 
@@ -122,23 +103,18 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
-    /**
-     * @brief Convert a JSON object to Input type
-     *
-     * @param jv The JSON object to convert
-     * @return Input parsed from the JSON object
-     */
-    friend Input
-    tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-    /**
-     * @brief Convert the Marker to a JSON object
-     *
-     * @param [out] jv The JSON object to convert to
-     * @param marker The marker to convert
-     */
-    friend void
-    tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker);
 };
+
+// Declared in the shared-spec namespace so ADL resolves these conversions to it
+// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+namespace spec::handlers::account_tx {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
+
+void
+tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker);
+
+}  // namespace spec::handlers::account_tx
+
 }  // namespace rpc

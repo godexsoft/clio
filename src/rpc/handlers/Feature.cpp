@@ -5,10 +5,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/handlers/feature/Spec.hpp>
+#include <rpcspec/handlers/feature/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -103,22 +102,7 @@ FeatureHandler::process(FeatureHandler::Input const& input, Context const& ctx) 
 rpc::spec::RpcSpecView
 FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(feature), type<std::string>),
-        field(
-            JS(vetoed),
-            withCustomError(
-                notSupported,
-                rpc::RippledError::RpcNoPermission,
-                "The admin portion of feature API is not available through Clio."
-            )
-        ),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::feature::kSpec;
 }
 
 void
@@ -160,10 +144,14 @@ tag_invoke(
     };
 }
 
-FeatureHandler::Input
-tag_invoke(boost::json::value_to_tag<FeatureHandler::Input>, boost::json::value const& jv)
+// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
+// (Input now lives in rpcspec); the parsing itself stays Clio-side.
+namespace spec::handlers::feature {
+
+Input
+tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
 {
-    auto input = FeatureHandler::Input{};
+    auto input = Input{};
     auto const jsonObject = jv.as_object();
 
     if (jsonObject.contains(JS(feature)))
@@ -180,5 +168,7 @@ tag_invoke(boost::json::value_to_tag<FeatureHandler::Input>, boost::json::value 
 
     return input;
 }
+
+}  // namespace spec::handlers::feature
 
 }  // namespace rpc
