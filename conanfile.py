@@ -61,6 +61,7 @@ class ClioConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
+        tc.preprocessor_definitions["RPCSPEC_IS_CLIO"] = "1"
         tc.generate()
 
     def build(self):

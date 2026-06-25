@@ -654,7 +654,7 @@ traverseOwnedNodes(
     auto const maybeCursor = parseAccountCursor(jsonCursor);
 
     if (!maybeCursor)
-        return std::unexpected{Status{RippledError::rpcINVALID_PARAMS, "Malformed cursor."}};
+        return std::unexpected{Status{RippledError::rpcINVALID_PARAMS, "Invalid field 'marker', not hex string."}};
 
     // the format is checked in RPC framework level
     auto [hexCursor, startHint] = *maybeCursor;

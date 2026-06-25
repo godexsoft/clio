@@ -89,7 +89,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidIndexNotHex)
         });
         EXPECT_FALSE(ret.has_value());
         EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
-        EXPECT_EQ(ret.error().message, "Malformed cursor.");
+        EXPECT_EQ(ret.error().message, "Invalid field 'marker', not hex string.");
     });
     ctx_.run();
 }
@@ -103,7 +103,7 @@ TEST_F(RPCHelpersTest, TraverseOwnedNodesMarkerInvalidPageNotInt)
         });
         EXPECT_FALSE(ret.has_value());
         EXPECT_EQ(ret.error(), ripple::rpcINVALID_PARAMS);
-        EXPECT_EQ(ret.error().message, "Malformed cursor.");
+        EXPECT_EQ(ret.error().message, "Invalid field 'marker', not hex string.");
     });
     ctx_.run();
 }

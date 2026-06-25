@@ -438,7 +438,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
         "result": {
             "error": "invalidParams",
             "error_code": 31,
-            "error_message": "ledgerIndexMalformed",
+            "error_message": "Invalid field 'ledger_index', not string or number.",
             "status": "error",
             "type": "response",
             "request": {
@@ -479,7 +479,7 @@ TEST_F(WebRPCServerHandlerTest, HTTPErrorPath)
         .WillOnce(
             testing::Return(
                 rpc::Result{
-                    rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "ledgerIndexMalformed"}
+                    rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Invalid field 'ledger_index', not string or number."}
                 }
             )
         );
@@ -497,7 +497,7 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
         "id": "123",
         "error": "invalidParams",
         "error_code": 31,
-        "error_message": "ledgerIndexMalformed",
+        "error_message": "Invalid field 'ledger_index', not string or number.",
         "status": "error",
         "type": "response",
         "api_version": 2,
@@ -534,7 +534,7 @@ TEST_F(WebRPCServerHandlerTest, WsErrorPath)
         .WillOnce(
             testing::Return(
                 rpc::Result{
-                    rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "ledgerIndexMalformed"}
+                    rpc::Status{rpc::RippledError::rpcINVALID_PARAMS, "Invalid field 'ledger_index', not string or number."}
                 }
             )
         );

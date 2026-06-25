@@ -367,7 +367,7 @@ TEST(RpcSpecDSL_HexString, Uint256RejectsMalformedHex)
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcINVALID_PARAMS);
-    EXPECT_EQ(r.error().message, "hashMalformed");
+    EXPECT_EQ(r.error().message, "Invalid field 'hash', not hex string.");
 }
 
 TEST(RpcSpecDSL_HexString, Uint256RejectsNonString)
@@ -379,7 +379,7 @@ TEST(RpcSpecDSL_HexString, Uint256RejectsNonString)
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcINVALID_PARAMS);
-    EXPECT_EQ(r.error().message, "hashNotString");
+    EXPECT_EQ(r.error().message, "Invalid field 'hash', not hex string.");
 }
 
 TEST(RpcSpecDSL_HexString, AbsentFieldSkipped)
@@ -465,14 +465,28 @@ TEST(RpcSpecDSL_LedgerIndex, AcceptsNumericString)
     EXPECT_TRUE(kSPEC.process(req).has_value());
 }
 
-TEST(RpcSpecDSL_LedgerIndex, RejectsArbitraryString)
+TEST(RpcSpecDSL_LedgerIndex, AcceptsClosedString)
 {
     static constexpr auto kSPEC = RpcSpec{field("ledger_index", ledgerIndex)};
     auto req = boost::json::parse(R"JSON({ "ledger_index": "closed" })JSON");
+    EXPECT_TRUE(kSPEC.process(req).has_value());
+}
+
+TEST(RpcSpecDSL_LedgerIndex, AcceptsCurrentString)
+{
+    static constexpr auto kSPEC = RpcSpec{field("ledger_index", ledgerIndex)};
+    auto req = boost::json::parse(R"JSON({ "ledger_index": "current" })JSON");
+    EXPECT_TRUE(kSPEC.process(req).has_value());
+}
+
+TEST(RpcSpecDSL_LedgerIndex, RejectsArbitraryString)
+{
+    static constexpr auto kSPEC = RpcSpec{field("ledger_index", ledgerIndex)};
+    auto req = boost::json::parse(R"JSON({ "ledger_index": "invalid" })JSON");
     auto const r = kSPEC.process(req);
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), rpc::RippledError::rpcINVALID_PARAMS);
-    EXPECT_EQ(r.error().message, "ledgerIndexMalformed");
+    EXPECT_EQ(r.error().message, "Invalid field 'ledger_index', not string or number.");
 }
 
 TEST(RpcSpecDSL_LedgerIndex, RejectsBool)
@@ -481,7 +495,7 @@ TEST(RpcSpecDSL_LedgerIndex, RejectsBool)
     auto req = boost::json::parse(R"JSON({ "ledger_index": true })JSON");
     auto const r = kSPEC.process(req);
     ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error().message, "ledgerIndexMalformed");
+    EXPECT_TRUE(r.error().message.empty());
 }
 
 TEST(RpcSpecDSL_LedgerIndex, AbsentFieldSkipped)
@@ -670,7 +684,7 @@ TEST(RpcSpecDSL_AccountMarker, NoCommaFails)
     auto bad = boost::json::parse(R"JSON({ "marker": "AABB" })JSON");
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error().message, "Malformed cursor.");
+    EXPECT_EQ(r.error().message, "Invalid field 'marker', not hex string.");
 }
 
 TEST(RpcSpecDSL_AccountMarker, BadHexPartFails)
@@ -679,7 +693,7 @@ TEST(RpcSpecDSL_AccountMarker, BadHexPartFails)
     auto bad = boost::json::parse(R"JSON({ "marker": "NOTVALIDHEX,0" })JSON");
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error().message, "Malformed cursor.");
+    EXPECT_EQ(r.error().message, "Invalid field 'marker', not hex string.");
 }
 
 TEST(RpcSpecDSL_AccountMarker, BadHintPartFails)
@@ -690,7 +704,7 @@ TEST(RpcSpecDSL_AccountMarker, BadHintPartFails)
     );
     auto const r = kSPEC.process(bad);
     ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error().message, "Malformed cursor.");
+    EXPECT_EQ(r.error().message, "Invalid field 'marker', not hex string.");
 }
 
 TEST(RpcSpecDSL_AccountType, ValidTypeStringPasses)

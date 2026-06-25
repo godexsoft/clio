@@ -73,7 +73,7 @@ TEST_F(RPCAccountLinesHandlerTest, NonHexLedgerHash)
 
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
-        EXPECT_EQ(err.at("error_message").as_string(), "ledger_hashMalformed");
+        EXPECT_EQ(err.at("error_message").as_string(), "Invalid field 'ledger_hash', not hex string.");
     });
 }
 
@@ -96,7 +96,7 @@ TEST_F(RPCAccountLinesHandlerTest, NonStringLedgerHash)
 
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
-        EXPECT_EQ(err.at("error_message").as_string(), "ledger_hashNotString");
+        EXPECT_EQ(err.at("error_message").as_string(), "Invalid field 'ledger_hash', not hex string.");
     });
 }
 
@@ -119,7 +119,7 @@ TEST_F(RPCAccountLinesHandlerTest, InvalidLedgerIndexString)
 
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
-        EXPECT_EQ(err.at("error_message").as_string(), "ledgerIndexMalformed");
+        EXPECT_EQ(err.at("error_message").as_string(), "Invalid field 'ledger_index', not string or number.");
     });
 }
 
@@ -166,7 +166,7 @@ TEST_F(RPCAccountLinesHandlerTest, InvalidMarker)
 
         auto const err = rpc::makeError(output.result.error());
         EXPECT_EQ(err.at("error").as_string(), "invalidParams");
-        EXPECT_EQ(err.at("error_message").as_string(), "Malformed cursor.");
+        EXPECT_EQ(err.at("error_message").as_string(), "Invalid field 'marker', not hex string.");
     });
     runSpawn([this](auto yield) {
         auto const handler = AnyHandler{AccountLinesHandler{backend_}};

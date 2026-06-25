@@ -4,9 +4,7 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
+#include <rpcspec/handlers/ledger/Spec.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
@@ -38,22 +36,7 @@ namespace rpc {
 rpc::spec::RpcSpecView
 LedgerHandler::spec([[maybe_unused]] uint32_t apiVersion)
 {
-    using namespace spec;
-    static constexpr auto kRPC_SPEC = spec::RpcSpec{
-        field(JS(full), type<bool>, notSupportedIf(true), deprecated),
-        field(JS(accounts), type<bool>, notSupportedIf(true), deprecated),
-        field(JS(queue), type<bool>, notSupportedIf(true)),
-        field(JS(owner_funds), type<bool>),
-        field(JS(ledger_hash), uint256Hex),
-        field(JS(ledger_index), ledgerIndex),
-        field(JS(transactions), type<bool>),
-        field(JS(expand), type<bool>),
-        field(JS(binary), type<bool>),
-        field("diff", type<bool>),
-        field(JS(ledger), deprecated),
-        field(JS(type), deprecated),
-    };
-    return kRPC_SPEC;
+    return rpc::spec::handlers::ledger::kSpec;
 }
 
 LedgerHandler::Result

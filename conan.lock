@@ -3,6 +3,7 @@
     "requires": [
         "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20%1774439233.809",
         "xxhash/0.8.3#681d36a0a6111fc56e5e45ea182c19cc%1765850149.987",
+        "xrpl-rpc-spec/0.1.0",
         "xrpl/3.1.3#eabc6838b4553671bdde4b3aa1f8e3e6%1778495466.414",
         "sqlite3/3.49.1#8631739a4c9b93bd3d6b753bac548a63%1765850149.926",
         "spdlog/1.17.0#bcbaaf7147bda6ad24ffbd1ac3d7142c%1768312128.781",

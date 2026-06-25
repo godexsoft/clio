@@ -97,21 +97,21 @@ generateTestValuesForParametersTest()
             .testJson =
                 R"JSON({"nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_index": "x"})JSON",
             .expectedError = "invalidParams",
-            .expectedErrorMessage = "ledgerIndexMalformed"
+            .expectedErrorMessage = "Invalid field 'ledger_index', not string or number."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_hashInvalid",
             .testJson =
                 R"JSON({"nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": "x"})JSON",
             .expectedError = "invalidParams",
-            .expectedErrorMessage = "ledger_hashMalformed"
+            .expectedErrorMessage = "Invalid field 'ledger_hash', not hex string."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "ledger_hashNotString",
             .testJson =
                 R"JSON({"nft_id": "00010000A7CAD27B688D14BA1A9FA5366554D6ADCF9CE0875B974D9F00000004", "ledger_hash": 123})JSON",
             .expectedError = "invalidParams",
-            .expectedErrorMessage = "ledger_hashNotString"
+            .expectedErrorMessage = "Invalid field 'ledger_hash', not hex string."
         },
         NFTHistoryParamTestCaseBundle{
             .testName = "limitNotInt",

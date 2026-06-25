@@ -117,21 +117,21 @@ struct AccountTxParameterTest : public RPCAccountTxHandlerTest,
                 .testJson =
                     R"JSON({"account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", "ledger_index": "x"})JSON",
                 .expectedError = "invalidParams",
-                .expectedErrorMessage = "ledgerIndexMalformed"
+                .expectedErrorMessage = "Invalid field 'ledger_index', not string or number."
             },
             AccountTxParamTestCaseBundle{
                 .testName = "ledger_hashInvalid",
                 .testJson =
                     R"JSON({"account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", "ledger_hash": "x"})JSON",
                 .expectedError = "invalidParams",
-                .expectedErrorMessage = "ledger_hashMalformed"
+                .expectedErrorMessage = "Invalid field 'ledger_hash', not hex string."
             },
             AccountTxParamTestCaseBundle{
                 .testName = "ledger_hashNotString",
                 .testJson =
                     R"JSON({"account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn", "ledger_hash": 123})JSON",
                 .expectedError = "invalidParams",
-                .expectedErrorMessage = "ledger_hashNotString"
+                .expectedErrorMessage = "Invalid field 'ledger_hash', not hex string."
             },
             AccountTxParamTestCaseBundle{
                 .testName = "limitNotInt",
