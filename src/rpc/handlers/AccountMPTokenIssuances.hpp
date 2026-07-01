@@ -1,8 +1,9 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/account_mptoken_issuances/Types.hpp>
 
 #include <boost/json/conversion.hpp>
@@ -11,6 +12,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -23,7 +25,7 @@ namespace rpc {
  * @brief The account_mptoken_issuances method returns information about all MPTokenIssuance objects
  * the account has created.
  */
-class AccountMPTokenIssuancesHandler {
+class AccountMPTokenIssuancesHandler : public spec::HandlerFor<spec::handlers::account_mptoken_issuances::Input> {
     // dependencies
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
@@ -98,15 +100,6 @@ public:
     }
 
     /**
-     * @brief Returns the API specification for the command.
-     *
-     * @param apiVersion The API version to return the spec for.
-     * @return The spec for the given API version.
-     */
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion);
-
-    /**
      * @brief Process the AccountMPTokenIssuances command.
      *
      * @param input The input data for the command.
@@ -147,14 +140,5 @@ private:
         MPTokenIssuanceResponse const& issuance
     );
 };
-
-// Declared in the shared-spec namespace so ADL resolves these conversions to it
-// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
-namespace spec::handlers::account_mptoken_issuances {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::account_mptoken_issuances
 
 }  // namespace rpc

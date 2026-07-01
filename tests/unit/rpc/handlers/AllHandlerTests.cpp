@@ -168,8 +168,8 @@ AccountInfoHandler::Input
 createInput<AccountInfoHandler>()
 {
     AccountInfoHandler::Input input{};
-    input.account = kAccount;
-    input.ident = "asdf";
+    input.account = getAccountIdWithString(kAccount);
+    input.ident = getAccountIdWithString(kAccount);
     return input;
 }
 
@@ -178,7 +178,7 @@ AccountTxHandler::Input
 createInput<AccountTxHandler>()
 {
     AccountTxHandler::Input input{};
-    input.account = kAccount;
+    input.account = getAccountIdWithString(kAccount);
     return input;
 }
 
@@ -196,10 +196,8 @@ BookOffersHandler::Input
 createInput<BookOffersHandler>()
 {
     BookOffersHandler::Input input{};
-    input.paysCurrency = xrpl::xrpCurrency();
-    input.getsCurrency = xrpl::Currency(kCurrency);
-    input.paysID = xrpl::xrpAccount();
-    input.getsID = getAccountIdWithString(kAccount);
+    input.takerPays = xrpl::xrpIssue();
+    input.takerGets = xrpl::Issue{xrpl::Currency(kCurrency), getAccountIdWithString(kAccount)};
 
     return input;
 }
@@ -209,7 +207,7 @@ LedgerEntryHandler::Input
 createInput<LedgerEntryHandler>()
 {
     LedgerEntryHandler::Input input{};
-    input.index = kIndex1;
+    input.index = xrpl::uint256{kIndex1};
     return input;
 }
 
@@ -218,7 +216,7 @@ NFTBuyOffersHandler::Input
 createInput<NFTBuyOffersHandler>()
 {
     NFTBuyOffersHandler::Input input{};
-    input.nftID = kNftId;
+    input.nftID = xrpl::uint256{kNftId};
     return input;
 }
 
@@ -227,7 +225,7 @@ NFTInfoHandler::Input
 createInput<NFTInfoHandler>()
 {
     NFTInfoHandler::Input input{};
-    input.nftID = kNftId;
+    input.nftID = xrpl::uint256{kNftId};
     return input;
 }
 
@@ -236,7 +234,7 @@ NFTSellOffersHandler::Input
 createInput<NFTSellOffersHandler>()
 {
     NFTSellOffersHandler::Input input{};
-    input.nftID = kNftId;
+    input.nftID = xrpl::uint256{kNftId};
     return input;
 }
 
@@ -257,7 +255,7 @@ VaultInfoHandler::Input
 createInput<VaultInfoHandler>()
 {
     VaultInfoHandler::Input input{};
-    input.vaultID = kVaultId;
+    input.vaultID = xrpl::uint256{kVaultId};
 
     return input;
 }

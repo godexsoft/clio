@@ -4,12 +4,11 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/handlers/get_aggregate_price/Spec.hpp>
 #include <rpcspec/handlers/get_aggregate_price/Types.hpp>
-#include "util/AccountUtils.hpp"
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/bimap/bimap.hpp>
@@ -17,7 +16,6 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
@@ -41,13 +39,9 @@
 #include <optional>
 #include <string>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::GetAggregatePriceHandler::Input>;
 
-rpc::spec::RpcSpecView
-GetAggregatePriceHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::get_aggregate_price::kSpec;
-}
+namespace rpc {
 
 GetAggregatePriceHandler::Result
 GetAggregatePriceHandler::process(
@@ -58,11 +52,10 @@ GetAggregatePriceHandler::process(
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "GetAggregatePrice's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -97,9 +90,9 @@ GetAggregatePriceHandler::process(
                     series.begin(),
                     series.end(),
                     [&](xrpl::STObject const& o) -> bool {
-                        return o.getFieldCurrency(xrpl::sfBaseAsset).getText() ==
+                        return o.getFieldCurrency(xrpl::sfBaseAsset) ==
                             input.baseAsset and
-                            o.getFieldCurrency(xrpl::sfQuoteAsset).getText() == input.quoteAsset and
+                            o.getFieldCurrency(xrpl::sfQuoteAsset) == input.quoteAsset and
                             o.isFieldPresent(xrpl::sfAssetPrice);
                     }
                 );
@@ -259,52 +252,6 @@ GetAggregatePriceHandler::tracebackOracleObject(
         }
     }
 }
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::get_aggregate_price {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    for (auto const& oracle : jsonObject.at(JS(oracles)).as_array()) {
-        input.oracles.push_back(
-            Oracle{
-                .documentId = boost::json::value_to<std::uint64_t>(
-                    oracle.as_object().at(JS(oracle_document_id))
-                ),
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                .account = *util::parseBase58Wrapper<xrpl::AccountID>(
-                    boost::json::value_to<std::string>(oracle.as_object().at(JS(account)))
-                )
-            }
-        );
-    }
-    input.baseAsset = boost::json::value_to<std::string>(jv.at(JS(base_asset)));
-    input.quoteAsset = boost::json::value_to<std::string>(jv.at(JS(quote_asset)));
-
-    if (jsonObject.contains(JS(trim)))
-        input.trim = util::integralValueAs<uint8_t>(jv.at(JS(trim)));
-
-    if (jsonObject.contains(JS(time_threshold)))
-        input.timeThreshold = util::integralValueAs<uint32_t>(jv.at(JS(time_threshold)));
-
-    return input;
-}
-
-}  // namespace spec::handlers::get_aggregate_price
 
 void
 tag_invoke(

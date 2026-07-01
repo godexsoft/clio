@@ -1,27 +1,12 @@
 #pragma once
 
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
 
 #include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
 
 #include <concepts>
-#include <cstdint>
 
 namespace rpc {
-
-/**
- * @brief A handler that exposes a consteval @ref rpc::spec::RpcSpecView via @c spec(version).
- *
- * Independent of whether the handler takes an @c Input. Handlers satisfying this
- * concept are validated through the consteval-spec path in
- * @ref rpc::impl::DefaultProcessor.
- */
-template <typename T>
-concept SomeHandlerWithSpec = requires(T a, uint32_t version) {
-    { a.spec(version) } -> std::same_as<rpc::spec::RpcSpecView>;
-};
 
 /**
  * @brief A process function that expects both some Input and a Context.
@@ -41,11 +26,25 @@ concept SomeContextProcessWithoutInput = requires(T a, typename T::Output out, C
 };
 
 /**
- * @brief A handler that consumes a typed @c Input deserialized from the request JSON.
+ * @brief A handler backed by a consteval spec, resolved from its @c Input type.
+ *
+ * A handler that exposes an @c Input has a versioned spec associated with that Input in the spec
+ * library (via `specFor(Input const*)`). The framework uses it for validation, warning collection
+ * and schema dumping through the spec associated with the Input (see @ref rpc::spec::HandlerFor) — the handler
+ * declares nothing spec-related beyond the @c Input typedef.
  */
 template <typename T>
-concept SomeHandlerWithInput =
-    SomeContextProcessWithInput<T> and boost::json::has_value_to<typename T::Input>::value;
+concept SomeHandlerWithSpec = requires { typename T::Input; };
+
+/**
+ * @brief A handler that validates and parses its request into a strong-typed @c Input in one pass.
+ *
+ * The only per-handler requirement is an @c Input typedef plus @c process(Input, Context). The
+ * framework resolves the request-to-Input parsing (and warnings/dump) generically from the spec
+ * associated with @c Input (see @ref rpc::spec::HandlerFor and @ref rpc::impl::DefaultProcessor).
+ */
+template <typename T>
+concept SomeHandlerWithTypedInput = SomeContextProcessWithInput<T>;
 
 /**
  * @brief A handler that takes no input (only the @ref Context).
@@ -56,14 +55,12 @@ concept SomeHandlerWithoutInput = SomeContextProcessWithoutInput<T>;
 /**
  * @brief Specifies what a Handler type must provide.
  *
- * Handlers are decomposed into two orthogonal axes:
- *   - input shape: @ref SomeHandlerWithInput vs @ref SomeHandlerWithoutInput
- *   - spec presence: @ref SomeHandlerWithSpec or neither
- *
- * Every combination is valid (e.g. no-input + new-spec, input + no-spec).
+ * A handler either consumes a typed @c Input (@ref SomeHandlerWithTypedInput) or takes only a
+ * @ref Context (@ref SomeHandlerWithoutInput), and must expose an @c Output serialisable via
+ * @c value_from.
  */
 template <typename T>
-concept SomeHandler = (SomeHandlerWithInput<T> or SomeHandlerWithoutInput<T>) and
+concept SomeHandler = (SomeHandlerWithTypedInput<T> or SomeHandlerWithoutInput<T>) and
     boost::json::has_value_from<typename T::Output>::value;
 
 }  // namespace rpc

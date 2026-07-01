@@ -15,6 +15,7 @@
 #include "util/Taggable.hpp"
 #include "util/log/Logger.hpp"
 #include "web/Context.hpp"
+#include <rpcspec/Ledger.hpp>
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/array.hpp>
@@ -295,6 +296,29 @@ getLedgerHeaderFromHashOrSeq(
     boost::asio::yield_context yield,
     std::optional<std::string> ledgerHash,
     std::optional<uint32_t> ledgerIndex,
+    uint32_t maxSeq
+);
+
+/**
+ * @brief Get ledger info from a unified LedgerSpecifier
+ *
+ * Resolves the spec framework's LedgerSpecifier (hash / sequence / shortcut /
+ * unspecified) against the backend. A concrete hash or sequence is looked up
+ * directly; a shortcut or unspecified value resolves to the latest validated
+ * ledger (@p maxSeq), mirroring the historical getLedgerHeaderFromHashOrSeq
+ * behaviour for a request that named no concrete ledger.
+ *
+ * @param backend The backend to use
+ * @param yield The coroutine context
+ * @param ledger The ledger specifier produced by the typed spec
+ * @param maxSeq The maximum sequence to search
+ * @return The ledger info or an error status
+ */
+std::expected<xrpl::LedgerHeader, Status>
+getLedgerHeaderFromLedgerSpecifier(
+    BackendInterface const& backend,
+    boost::asio::yield_context yield,
+    rpc::spec::LedgerSpecifier const& ledger,
     uint32_t maxSeq
 );
 

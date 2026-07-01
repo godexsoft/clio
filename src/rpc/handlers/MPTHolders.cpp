@@ -4,7 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
+#include <rpcspec/Converters.hpp>
+#include <rpcspec/Typed.hpp>
 #include <rpcspec/handlers/mpt_holders/Spec.hpp>
 #include <rpcspec/handlers/mpt_holders/Types.hpp>
 #include "util/Assert.hpp"
@@ -29,13 +31,9 @@
 
 using namespace xrpl;
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::MPTHoldersHandler::Input>;
 
-rpc::spec::RpcSpecView
-MPTHoldersHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::mpt_holders::kSpec;
-}
+namespace rpc {
 
 MPTHoldersHandler::Result
 MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const& ctx) const
@@ -43,41 +41,36 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "MPTHolder's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
     if (not expectedLgrInfo.has_value())
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const limit = input.limit.value_or(spec::handlers::mpt_holders::kLimitDefault);
-    auto const mptID = xrpl::uint192{input.mptID.c_str()};
+    auto const limit = input.limit;
 
     auto const issuanceLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        xrpl::keylet::mptIssuance(mptID).key, lgrInfo.seq, ctx.yield
+        xrpl::keylet::mptIssuance(input.mptID).key, lgrInfo.seq, ctx.yield
     );
     if (!issuanceLedgerObject)
         return Error{Status{RippledError::RpcObjectNotFound, "objectNotFound"}};
 
-    std::optional<xrpl::AccountID> cursor;
-    if (input.marker)
-        cursor = xrpl::AccountID{input.marker->c_str()};
-
+    // marker is already a validated optional<AccountID> — no re-parse needed.
     auto const dbResponse =
-        sharedPtrBackend_->fetchMPTHolders(mptID, limit, cursor, lgrInfo.seq, ctx.yield);
+        sharedPtrBackend_->fetchMPTHolders(input.mptID, limit, input.marker, lgrInfo.seq, ctx.yield);
     auto output = MPTHoldersHandler::Output{};
-    output.mptID = to_string(mptID);
+    output.mptID = to_string(input.mptID);
     output.limit = limit;
     output.ledgerIndex = lgrInfo.seq;
 
     boost::json::array const mpts;
     for (auto const& mpt : dbResponse.mptokens) {
         xrpl::STLedgerEntry const sle{
-            xrpl::SerialIter{mpt.data(), mpt.size()}, keylet::mptIssuance(mptID).key
+            xrpl::SerialIter{mpt.data(), mpt.size()}, keylet::mptIssuance(input.mptID).key
         };
         boost::json::object mptJson;
 
@@ -89,7 +82,7 @@ MPTHoldersHandler::process(MPTHoldersHandler::Input const& input, Context const&
             )
         );
         mptJson["mptoken_index"] =
-            xrpl::to_string(xrpl::keylet::mptoken(mptID, sle[xrpl::sfAccount]).key);
+            xrpl::to_string(xrpl::keylet::mptoken(input.mptID, sle[xrpl::sfAccount]).key);
 
         output.mpts.push_back(mptJson);
     }
@@ -120,35 +113,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::mpt_holders {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto const& jsonObject = jv.as_object();
-    auto input = Input{};
-
-    input.mptID = jsonObject.at(JS(mpt_issuance_id)).as_string().c_str();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = jsonObject.at(JS(ledger_hash)).as_string().c_str();
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker)))
-        input.marker = jsonObject.at(JS(marker)).as_string().c_str();
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::mpt_holders

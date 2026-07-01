@@ -546,6 +546,26 @@ getLedgerHeaderFromHashOrSeq(
     return *lgrInfo;
 }
 
+std::expected<xrpl::LedgerHeader, Status>
+getLedgerHeaderFromLedgerSpecifier(
+    BackendInterface const& backend,
+    boost::asio::yield_context yield,
+    rpc::spec::LedgerSpecifier const& ledger,
+    uint32_t maxSeq
+)
+{
+    std::optional<std::string> ledgerHash;
+    std::optional<uint32_t> ledgerIndex;
+    if (ledger.isHash()) {
+        ledgerHash = strHex(std::get<xrpl::uint256>(ledger.value));
+    } else if (ledger.isSequence()) {
+        ledgerIndex = std::get<uint32_t>(ledger.value);
+    }
+    // A shortcut (validated/current/closed) or an unspecified value leaves both
+    // empty, so the lookup falls back to maxSeq (the latest validated ledger).
+    return getLedgerHeaderFromHashOrSeq(backend, yield, std::move(ledgerHash), ledgerIndex, maxSeq);
+}
+
 std::vector<unsigned char>
 ledgerHeaderToBlob(xrpl::LedgerHeader const& info, bool includeHash)
 {

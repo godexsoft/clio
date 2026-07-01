@@ -22,25 +22,19 @@ struct DefaultProcessor final {
     ) const
     {
         using boost::json::value_from;
-        using boost::json::value_to;
 
-        // Phase 1 — run the spec (if the handler exposes one) and collect any warnings.
-        // The spec axis is independent of the input axis: a handler with no Input may still
-        // declare a spec, and a handler with an Input may opt out of having one.
+        // Phase 1 — collect any warnings from the handler's spec (inherited from HandlerFor<Input>).
         boost::json::array warnings;
-        auto input = value;  // mutable copy; spec.process may modify it before deserialization
-
         if constexpr (SomeHandlerWithSpec<HandlerType>) {
-            auto const spec = handler.spec(ctx.apiVersion);
-            warnings = rpc::spec::toJsonArray(spec.check(value));
-            if (auto const ret = spec.process(input); not ret)
-                return ReturnType{Error{ret.error()}, std::move(warnings)};
+            warnings = rpc::spec::toJsonArray(HandlerType::spec(ctx.apiVersion).check(value));
         }
 
-        // Phase 2 — dispatch to the handler.
-        if constexpr (SomeHandlerWithInput<HandlerType>) {
-            auto const inData = value_to<typename HandlerType::Input>(input);
-            auto ret = handler.process(inData, ctx);
+        // Phase 2 — validate + parse into the strong Input, then dispatch.
+        if constexpr (SomeHandlerWithTypedInput<HandlerType>) {
+            auto parsed = HandlerType::parseInput(value, ctx.apiVersion);
+            if (!parsed)
+                return ReturnType{Error{std::move(parsed).error()}, std::move(warnings)};
+            auto ret = handler.process(parsed.value(), ctx);
             if (!ret)
                 return ReturnType{Error{std::move(ret).error()}, std::move(warnings)};
             return ReturnType{value_from(std::move(ret).value()), std::move(warnings)};

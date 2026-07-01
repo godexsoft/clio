@@ -51,8 +51,10 @@ target_sources(
         handlers/NFTSellOffers.cpp
         handlers/NoRippleCheck.cpp
         handlers/Random.cpp
+        handlers/ServerInfo.cpp
         handlers/Subscribe.cpp
         handlers/TransactionEntry.cpp
+        handlers/Tx.cpp
         handlers/Unsubscribe.cpp
         handlers/VaultInfo.cpp
 )

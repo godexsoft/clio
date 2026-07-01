@@ -4,15 +4,13 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/account_currencies/Spec.hpp>
 #include <rpcspec/handlers/account_currencies/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -27,13 +25,9 @@
 #include <limits>
 #include <string>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountCurrenciesHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountCurrenciesHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::account_currencies::kSpec;
-}
+namespace rpc {
 
 AccountCurrenciesHandler::Result
 AccountCurrenciesHandler::process(
@@ -43,11 +37,10 @@ AccountCurrenciesHandler::process(
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountCurrencies' ledger range must be available");
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -55,11 +48,11 @@ AccountCurrenciesHandler::process(
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountID = accountFromStringStrict(input.account);
 
+    // `account` was validated and decoded into a strong xrpl::AccountID by the
+    // typed spec — no re-parse, no unchecked optional dereference.
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        xrpl::keylet::account(*accountID).key,
+        xrpl::keylet::account(input.account).key,
         lgrInfo.seq,
         ctx.yield
     );
@@ -72,7 +65,7 @@ AccountCurrenciesHandler::process(
             auto balance = sle.getFieldAmount(xrpl::sfBalance);
             auto const lowLimit = sle.getFieldAmount(xrpl::sfLowLimit);
             auto const highLimit = sle.getFieldAmount(xrpl::sfHighLimit);
-            bool const viewLowest = (lowLimit.getIssuer() == accountID);
+            bool const viewLowest = (lowLimit.getIssuer() == input.account);
             auto const lineLimit = viewLowest ? lowLimit : highLimit;
             auto const lineLimitPeer = !viewLowest ? lowLimit : highLimit;
 
@@ -98,7 +91,7 @@ AccountCurrenciesHandler::process(
     // traverse all owned nodes, limit->max, marker->empty
     traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
+        input.account,
         lgrInfo.seq,
         std::numeric_limits<std::uint32_t>::max(),
         {},
@@ -131,29 +124,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::account_currencies {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::account_currencies

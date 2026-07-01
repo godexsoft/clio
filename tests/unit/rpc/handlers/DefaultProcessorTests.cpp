@@ -1,18 +1,19 @@
 #include "rpc/Errors.hpp"
 #include "rpc/FakesAndMocks.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include "rpc/common/impl/Processors.hpp"
 #include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Converters.hpp>
+#include <rpcspec/Typed.hpp>
 #include <rpcspec/Validators.hpp>
+#include <rpcspec/VersionedSpec.hpp>
 #include "util/HandlerBaseTestFixture.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
+#include <boost/json/value_from.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -26,18 +27,7 @@ using namespace std;
 using namespace rpc;
 using namespace tests::common;
 
-
 namespace newspec_fakes {
-
-struct NewSpecInput {
-    std::string token;
-
-    friend NewSpecInput
-    tag_invoke(boost::json::value_to_tag<NewSpecInput>, boost::json::value const& jv)
-    {
-        return {boost::json::value_to<std::string>(jv.as_object().at("token"))};
-    }
-};
 
 struct NewSpecOutput {
     std::string token;
@@ -49,19 +39,43 @@ struct NewSpecOutput {
     }
 };
 
-struct NewSpecHandlerFake {
+// A handler Input with a single required `token` field.
+struct NewSpecInput {
+    std::string token;
+};
+
+inline constexpr auto kNewSpec = rpc::spec::spec<NewSpecInput>(
+    rpc::spec::field("token", &NewSpecInput::token, rpc::spec::required, rpc::spec::asString)
+);
+inline constexpr auto kNewSpecVersioned = rpc::spec::versioned<NewSpecInput>(kNewSpec);
+
+[[nodiscard]] constexpr auto const&
+specFor(NewSpecInput const*) noexcept
+{
+    return kNewSpecVersioned;
+}
+
+// A distinct Input that additionally declares a deprecated `ident` field (validate-only).
+struct DeprecatedSpecInput {
+    std::string token;
+};
+
+inline constexpr auto kDeprecatedSpec = rpc::spec::spec<DeprecatedSpecInput>(
+    rpc::spec::field("token", &DeprecatedSpecInput::token, rpc::spec::required, rpc::spec::asString),
+    rpc::spec::field("ident", rpc::spec::deprecated)
+);
+inline constexpr auto kDeprecatedSpecVersioned = rpc::spec::versioned<DeprecatedSpecInput>(kDeprecatedSpec);
+
+[[nodiscard]] constexpr auto const&
+specFor(DeprecatedSpecInput const*) noexcept
+{
+    return kDeprecatedSpecVersioned;
+}
+
+struct NewSpecHandlerFake : rpc::spec::HandlerFor<NewSpecInput> {
     using Input = NewSpecInput;
     using Output = NewSpecOutput;
     using Result = rpc::HandlerReturnType<Output>;
-
-    [[nodiscard]] static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kSPEC = rpc::spec::RpcSpec{
-            rpc::spec::field("token", rpc::spec::Required{}),
-        };
-        return kSPEC;
-    }
 
     [[nodiscard]] static Result
     process(Input input, [[maybe_unused]] rpc::Context const& ctx)
@@ -70,53 +84,26 @@ struct NewSpecHandlerFake {
     }
 };
 
-struct DeprecatedFieldHandlerFake {
-    using Input = NewSpecInput;
+struct DeprecatedFieldHandlerFake : rpc::spec::HandlerFor<DeprecatedSpecInput> {
+    using Input = DeprecatedSpecInput;
     using Output = NewSpecOutput;
     using Result = rpc::HandlerReturnType<Output>;
-
-    [[nodiscard]] static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kSPEC = rpc::spec::RpcSpec{
-            rpc::spec::field("token", rpc::spec::Required{}),
-            rpc::spec::field("ident", rpc::spec::Deprecated{}),
-        };
-        return kSPEC;
-    }
 
     [[nodiscard]] static Result
     process(Input input, [[maybe_unused]] rpc::Context const& ctx)
     {
         return Output{input.token};
-    }
-};
-
-struct NoInputNewSpecHandlerFake {
-    using Output = NewSpecOutput;
-    using Result = rpc::HandlerReturnType<Output>;
-
-    [[nodiscard]] static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kSPEC = rpc::spec::RpcSpec{
-            rpc::spec::field("token", rpc::spec::Required{}),
-        };
-        return kSPEC;
-    }
-
-    [[nodiscard]] static Result
-    process([[maybe_unused]] rpc::Context const& ctx)
-    {
-        return Output{"no-input"};
     }
 };
 
 }  // namespace newspec_fakes
 
+// Emit the generic spec entry points for the local fake Inputs.
+template struct rpc::spec::HandlerFor<newspec_fakes::NewSpecInput>;
+template struct rpc::spec::HandlerFor<newspec_fakes::DeprecatedSpecInput>;
+
 using newspec_fakes::DeprecatedFieldHandlerFake;
 using newspec_fakes::NewSpecHandlerFake;
-using newspec_fakes::NoInputNewSpecHandlerFake;
 
 class RPCDefaultProcessorTest : public HandlerBaseTest {};
 
@@ -127,10 +114,7 @@ TEST_F(RPCDefaultProcessorTest, ValidInput)
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
         auto const input = boost::json::parse(R"JSON({ "something": "works" })JSON");
-        static constexpr auto kSPEC =
-            rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
         auto const data = InOutFake{"works"};
-        EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
         EXPECT_CALL(handler, process(Eq(data), _)).WillOnce(Return(data));
 
         auto const ret = processor(handler, input, Context{yield});
@@ -161,10 +145,8 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
         HandlerMock const handler;
         rpc::impl::DefaultProcessor<HandlerMock> const processor;
 
+        // "something" is required by InOutFake's spec but absent
         auto const input = boost::json::parse(R"JSON({ "other": "nope" })JSON");
-        static constexpr auto kSPEC =
-            rpc::spec::RpcSpec{rpc::spec::field("something", rpc::spec::required)};
-        EXPECT_CALL(handler, spec(_)).WillOnce(Return(rpc::spec::RpcSpecView{kSPEC}));
 
         auto const ret = processor(handler, input, Context{yield});
         ASSERT_FALSE(ret);
@@ -238,26 +220,5 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedFieldAbsent_NoWarnings)
 
         ASSERT_TRUE(ret);
         EXPECT_TRUE(ret.warnings.empty());
-    });
-}
-
-TEST_F(RPCDefaultProcessorTest, NoInputNewSpecHandler_SpecRunsEvenWithoutInput)
-{
-    runSpawn([](auto yield) {
-        NoInputNewSpecHandlerFake const handler;
-        rpc::impl::DefaultProcessor<NoInputNewSpecHandlerFake> const processor;
-
-        // Missing required field → spec must reject before process() is called.
-        auto const bad = boost::json::parse(R"JSON({})JSON");
-        auto const failed = processor(handler, bad, Context{yield});
-        ASSERT_FALSE(failed);
-        EXPECT_EQ(failed.result.error(), rpc::RippledError::RpcInvalidParams);
-        EXPECT_EQ(failed.result.error().message, "Required field 'token' missing");
-
-        // Valid request → process() runs and returns success despite no Input.
-        auto const good = boost::json::parse(R"JSON({ "token": "abc" })JSON");
-        auto const ok = processor(handler, good, Context{yield});
-        ASSERT_TRUE(ok);
-        EXPECT_TRUE(ok.warnings.empty());
     });
 }

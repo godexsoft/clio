@@ -4,17 +4,14 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/nft_info/Spec.hpp>
 #include <rpcspec/handlers/nft_info/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -26,26 +23,21 @@
 
 using namespace xrpl;
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::NFTInfoHandler::Input>;
 
-rpc::spec::RpcSpecView
-NFTInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::nft_info::kSpec;
-}
+namespace rpc {
 
 NFTInfoHandler::Result
 NFTInfoHandler::process(NFTInfoHandler::Input const& input, Context const& ctx) const
 {
-    auto const tokenID = xrpl::uint256{input.nftID.c_str()};
+    auto const& tokenID = input.nftID;
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NFTInfo's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -104,29 +96,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::nft_info {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto const& jsonObject = jv.as_object();
-    auto input = Input{};
-
-    input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::nft_info

@@ -3,9 +3,8 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
-#include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/noripple_check/Spec.hpp>
 #include <rpcspec/handlers/noripple_check/Types.hpp>
 #include "util/Assert.hpp"
@@ -15,7 +14,6 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <fmt/format.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
@@ -33,19 +31,15 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <optional>
 #include <string>
 #include <utility>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::NoRippleCheckHandler::Input>;
 
-rpc::spec::RpcSpecView
-NoRippleCheckHandler::spec(uint32_t apiVersion)
-{
-    using namespace rpc::spec::handlers::noripple_check;
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSpecV1} : rpc::spec::RpcSpecView{kSpecV2};
-}
+namespace rpc {
 
 NoRippleCheckHandler::Result
 NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context const& ctx) const
@@ -53,11 +47,10 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NoRippleCheck's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -65,9 +58,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountID = accountFromStringStrict(input.account);
-    auto const keylet =
-        xrpl::keylet::account(*accountID).key;  // NOLINT(bugprone-unchecked-optional-access)
+    auto const keylet = xrpl::keylet::account(input.account).key;
     auto const accountObj = sharedPtrBackend_->fetchLedgerObject(keylet, lgrInfo.seq, ctx.yield);
 
     if (!accountObj)
@@ -104,8 +95,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
         output.problems.emplace_back("You should immediately set your default ripple flag");
 
         if (input.transactions) {
-            auto tx =
-                getBaseTx(*accountID, accountSeq++);  // NOLINT(bugprone-unchecked-optional-access)
+            auto tx = getBaseTx(input.account, accountSeq++);
             tx[JS(TransactionType)] = "AccountSet";
             tx[JS(SetFlag)] = xrpl::asfDefaultRipple;
             output.transactions->push_back(tx);
@@ -116,7 +106,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
 
     traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
+        input.account,
         lgrInfo.seq,
         std::numeric_limits<std::uint32_t>::max(),
         {},
@@ -125,7 +115,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
             // don't push to result if limit is reached
             if (limit != 0 && ownedItem.getType() == xrpl::ltRIPPLE_STATE) {
                 bool const bLow =
-                    accountID == ownedItem.getFieldAmount(xrpl::sfLowLimit).getIssuer();
+                    input.account == ownedItem.getFieldAmount(xrpl::sfLowLimit).getIssuer();
 
                 bool const bNoRipple =
                     (ownedItem.getFieldU32(xrpl::sfFlags) &
@@ -164,7 +154,7 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
                             xrpl::Issue{limitAmount.get<xrpl::Issue>().currency, peer}
                         );
 
-                        auto tx = getBaseTx(*accountID, accountSeq++);
+                        auto tx = getBaseTx(input.account, accountSeq++);
 
                         tx[JS(TransactionType)] = "TrustSet";
                         tx[JS(LimitAmount)] =
@@ -185,43 +175,6 @@ NoRippleCheckHandler::process(NoRippleCheckHandler::Input const& input, Context 
 
     return output;
 }
-
-}  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::noripple_check {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
-    input.roleGateway = jsonObject.at(JS(role)).as_string() == "gateway";
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
-
-    if (jsonObject.contains(JS(transactions)))
-        input.transactions = static_cast<bool>(boost::json::value_to<JsonBool>(jsonObject.at(JS(transactions))));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::noripple_check
-
-namespace rpc {
 
 void
 tag_invoke(

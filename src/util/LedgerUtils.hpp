@@ -24,7 +24,7 @@ namespace util {
  *
  */
 class LedgerTypes {
-    static constexpr auto const& kTABLE = rpc::spec::detail::kLEDGER_TYPES_TABLE;
+    static constexpr auto const& kTABLE = rpc::spec::detail::kLedgerTypesTable;
 
 public:
     /**

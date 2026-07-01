@@ -4,7 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
+#include <rpcspec/Converters.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Typed.hpp>
 #include <rpcspec/handlers/book_offers/Spec.hpp>
 #include <rpcspec/handlers/book_offers/Types.hpp>
 #include "util/Assert.hpp"
@@ -13,7 +16,6 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
@@ -26,19 +28,15 @@
 #include <cstdint>
 #include <string>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::BookOffersHandler::Input>;
 
-rpc::spec::RpcSpecView
-BookOffersHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::book_offers::kSpec;
-}
+namespace rpc {
 
 BookOffersHandler::Result
 BookOffersHandler::process(Input const& input, Context const& ctx) const
 {
     auto bookMaybe =
-        parseBook(input.paysCurrency, input.paysID, input.getsCurrency, input.getsID, input.domain);
+        parseBook(input.takerPays.currency, input.takerPays.account, input.takerGets.currency, input.takerGets.account, input.domain);
     if (!bookMaybe.has_value())
         return Error{bookMaybe.error()};
 
@@ -46,11 +44,10 @@ BookOffersHandler::process(Input const& input, Context const& ctx) const
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "BookOffer's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -96,59 +93,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::book_offers {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    xrpl::toCurrency(
-        input.getsCurrency,
-        boost::json::value_to<std::string>(jv.at(JS(taker_gets)).as_object().at(JS(currency)))
-    );
-    xrpl::toCurrency(
-        input.paysCurrency,
-        boost::json::value_to<std::string>(jv.at(JS(taker_pays)).as_object().at(JS(currency)))
-    );
-
-    if (jv.at(JS(taker_gets)).as_object().contains(JS(issuer))) {
-        xrpl::toIssuer(
-            input.getsID,
-            boost::json::value_to<std::string>(jv.at(JS(taker_gets)).as_object().at(JS(issuer)))
-        );
-    }
-
-    if (jv.at(JS(taker_pays)).as_object().contains(JS(issuer))) {
-        xrpl::toIssuer(
-            input.paysID,
-            boost::json::value_to<std::string>(jv.at(JS(taker_pays)).as_object().at(JS(issuer)))
-        );
-    }
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(taker)))
-        input.taker = accountFromStringStrict(boost::json::value_to<std::string>(jv.at(JS(taker))));
-
-    if (jsonObject.contains(JS(domain)))
-        input.domain = boost::json::value_to<std::string>(jv.at(JS(domain)));
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jv.at(JS(limit)));
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::book_offers

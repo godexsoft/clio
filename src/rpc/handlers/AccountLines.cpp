@@ -4,7 +4,7 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/account_lines/Spec.hpp>
 #include <rpcspec/handlers/account_lines/Types.hpp>
 #include "util/Assert.hpp"
@@ -13,7 +13,6 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -31,13 +30,9 @@
 #include <utility>
 #include <vector>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountLinesHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountLinesHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::account_lines::kSpec;
-}
+namespace rpc {
 
 void
 AccountLinesHandler::addLine(
@@ -131,11 +126,10 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountLines' ledger range must be available");
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -143,19 +137,15 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountID = accountFromStringStrict(input.account);
+    // input.account is an already-validated strong AccountID — no re-parse needed.
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        xrpl::keylet::account(*accountID).key,
+        xrpl::keylet::account(input.account).key,
         lgrInfo.seq,
         ctx.yield
     );
 
     if (not accountLedgerObject)
         return Error{Status{RippledError::RpcActNotFound}};
-
-    auto const peerAccountID =
-        input.peer ? accountFromStringStrict(*(input.peer)) : std::optional<xrpl::AccountID>{};
 
     Output response;
     response.lines.reserve(input.limit);
@@ -164,7 +154,7 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
         if (sle.getType() == xrpl::ltRIPPLE_STATE) {
             auto ignore = false;
             if (input.ignoreDefault) {
-                if (sle.getFieldAmount(xrpl::sfLowLimit).getIssuer() == accountID) {
+                if (sle.getFieldAmount(xrpl::sfLowLimit).getIssuer() == input.account) {
                     ignore = ((sle.getFieldU32(xrpl::sfFlags) & xrpl::lsfLowReserve) == 0u);
                 } else {
                     ignore = ((sle.getFieldU32(xrpl::sfFlags) & xrpl::lsfHighReserve) == 0u);
@@ -172,13 +162,13 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
             }
 
             if (not ignore)
-                addLine(response.lines, sle, *accountID, peerAccountID);
+                addLine(response.lines, sle, input.account, input.peer);
         }
     };
 
     auto const expectedNext = traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
+        input.account,
         lgrInfo.seq,
         input.limit,
         input.marker,
@@ -191,7 +181,7 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
 
     auto const nextMarker = *expectedNext;
 
-    response.account = input.account;
+    response.account = xrpl::to_string(input.account);
     response.limit = input.limit;  // not documented,
                                    // https://github.com/XRPLF/xrpl-dev-portal/issues/1838
     response.ledgerHash = xrpl::strHex(lgrInfo.hash);
@@ -202,43 +192,6 @@ AccountLinesHandler::process(AccountLinesHandler::Input const& input, Context co
 
     return response;
 }
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::account_lines {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jv.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker)))
-        input.marker = boost::json::value_to<std::string>(jv.at(JS(marker)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(peer)))
-        input.peer = boost::json::value_to<std::string>(jv.at(JS(peer)));
-
-    if (jsonObject.contains(JS(ignore_default)))
-        input.ignoreDefault = jv.at(JS(ignore_default)).as_bool();
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace spec::handlers::account_lines
 
 void
 tag_invoke(

@@ -5,19 +5,19 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/handlers/deposit_authorized/Spec.hpp>
 #include <rpcspec/handlers/deposit_authorized/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/json/array.hpp>
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -32,13 +32,9 @@
 #include <string>
 #include <utility>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::DepositAuthorizedHandler::Input>;
 
-rpc::spec::RpcSpecView
-DepositAuthorizedHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::deposit_authorized::kSpec;
-}
+namespace rpc {
 
 DepositAuthorizedHandler::Result
 DepositAuthorizedHandler::process(
@@ -49,11 +45,10 @@ DepositAuthorizedHandler::process(
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "DepositAuthorized ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -61,12 +56,11 @@ DepositAuthorizedHandler::process(
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const sourceAccountID = accountFromStringStrict(input.sourceAccount);
-    auto const destinationAccountID = accountFromStringStrict(input.destinationAccount);
+    auto const& sourceAccountID = input.sourceAccount;
+    auto const& destinationAccountID = input.destinationAccount;
 
     auto const srcAccountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        xrpl::keylet::account(*sourceAccountID).key,
+        xrpl::keylet::account(sourceAccountID).key,
         lgrInfo.seq,
         ctx.yield
     );
@@ -74,8 +68,7 @@ DepositAuthorizedHandler::process(
     if (!srcAccountLedgerObject)
         return Error{Status{RippledError::RpcSrcActNotFound, "source_accountNotFound"}};
 
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    auto const dstKeylet = xrpl::keylet::account(*destinationAccountID).key;
+    auto const dstKeylet = xrpl::keylet::account(destinationAccountID).key;
     auto const dstAccountLedgerObject =
         sharedPtrBackend_->fetchLedgerObject(dstKeylet, lgrInfo.seq, ctx.yield);
 
@@ -91,6 +84,15 @@ DepositAuthorizedHandler::process(
     auto const& creds = input.credentials;
     bool const credentialsPresent = creds.has_value();
 
+    // Convert vector<uint256> credentials to a json array of hex strings for downstream use
+    std::optional<boost::json::array> credsJsonArray;
+    if (credentialsPresent) {
+        boost::json::array arr;
+        for (auto const& h : *creds)
+            arr.push_back(boost::json::string{xrpl::strHex(h)});
+        credsJsonArray = std::move(arr);
+    }
+
     xrpl::STArray authCreds;
     if (credentialsPresent) {
         if (creds->empty()) {
@@ -102,8 +104,8 @@ DepositAuthorizedHandler::process(
             return Error{Status{RippledError::RpcInvalidParams, "credential array too long."}};
         }
         auto const credArray = credentials::fetchCredentialArray(
-            input.credentials,
-            *sourceAccountID,  // NOLINT(bugprone-unchecked-optional-access)
+            credsJsonArray,
+            sourceAccountID,
             *sharedPtrBackend_,
             lgrInfo,
             ctx.yield
@@ -126,57 +128,25 @@ DepositAuthorizedHandler::process(
                 "should already be checked above that there is no duplicate"
             );
 
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            hashKey = xrpl::keylet::depositPreauth(*destinationAccountID, sortedAuthCreds).key;
+            hashKey = xrpl::keylet::depositPreauth(destinationAccountID, sortedAuthCreds).key;
         } else {
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            hashKey = xrpl::keylet::depositPreauth(*destinationAccountID, *sourceAccountID).key;
+            hashKey = xrpl::keylet::depositPreauth(destinationAccountID, sourceAccountID).key;
         }
 
         depositAuthorized =
             sharedPtrBackend_->fetchLedgerObject(hashKey, lgrInfo.seq, ctx.yield).has_value();
     }
 
-    response.sourceAccount = input.sourceAccount;
-    response.destinationAccount = input.destinationAccount;
+    response.sourceAccount = xrpl::to_string(sourceAccountID);
+    response.destinationAccount = xrpl::to_string(destinationAccountID);
     response.ledgerHash = xrpl::strHex(lgrInfo.hash);
     response.ledgerIndex = lgrInfo.seq;
     response.depositAuthorized = depositAuthorized;
     if (credentialsPresent)
-        response.credentials = *input.credentials;
+        response.credentials = credsJsonArray;
 
     return response;
 }
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::deposit_authorized {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.sourceAccount = boost::json::value_to<std::string>(jv.at(JS(source_account)));
-    input.destinationAccount = boost::json::value_to<std::string>(jv.at(JS(destination_account)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(credentials)))
-        input.credentials = boost::json::value_to<boost::json::array>(jv.at(JS(credentials)));
-
-    return input;
-}
-
-}  // namespace spec::handlers::deposit_authorized
 
 void
 tag_invoke(

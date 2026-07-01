@@ -4,17 +4,15 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/nft_offers_common/Spec.hpp>
 #include <rpcspec/handlers/nft_offers_common/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -29,6 +27,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -64,13 +63,9 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, SLE const& offer
 
 }  // namespace xrpl
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::NFTOffersHandlerBase::Input>;
 
-rpc::spec::RpcSpecView
-NFTOffersHandlerBase::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::nft_offers_common::kSpec;
-}
+namespace rpc {
 
 NFTOffersHandlerBase::Result
 NFTOffersHandlerBase::iterateOfferDirectory(
@@ -83,11 +78,10 @@ NFTOffersHandlerBase::iterateOfferDirectory(
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "NFTOffersCommon's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -100,14 +94,16 @@ NFTOffersHandlerBase::iterateOfferDirectory(
     if (not sharedPtrBackend_->fetchLedgerObject(directory.key, lgrInfo.seq, yield))
         return Error{Status{RippledError::RpcObjectNotFound, "notFound"}};
 
-    auto output = Output{.nftID = input.nftID, .offers = {}, .limit = {}, .marker = {}};
+    // input.nftID is an already-validated strong xrpl::uint256 — convert to string for Output.
+    auto output = Output{.nftID = to_string(input.nftID), .offers = {}, .limit = {}, .marker = {}};
     auto offers = std::vector<xrpl::SLE>{};
     auto reserve = input.limit;
     auto cursor = uint256{};
     auto startHint = uint64_t{0ul};
 
     if (input.marker) {
-        cursor = uint256(input.marker->c_str());
+        // input.marker is an already-validated strong xrpl::uint256 — no re-parse.
+        cursor = *input.marker;
 
         // We have a start point. Use limit - 1 from the result and use the very last one for the
         // resume.
@@ -192,34 +188,3 @@ tag_invoke(
 
 }  // namespace rpc
 
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::nft_offers_common {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(marker)))
-        input.marker = boost::json::value_to<std::string>(jsonObject.at(JS(marker)));
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::nft_offers_common

@@ -5,11 +5,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/nft_history/Spec.hpp>
 #include <rpcspec/handlers/nft_history/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 #include "util/Profiler.hpp"
 #include "util/log/Logger.hpp"
 
@@ -17,8 +16,6 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -30,13 +27,9 @@
 #include <string>
 #include <utility>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::NFTHistoryHandler::Input>;
 
-rpc::spec::RpcSpecView
-NFTHistoryHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::nft_history::kSpec;
-}
+namespace rpc {
 
 // TODO: this is currently very similar to account_tx but its own copy for time
 // being. we should aim to reuse common logic in some way in the future.
@@ -54,7 +47,7 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
             return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMinOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
-        minIndex = *input.ledgerIndexMin;
+        minIndex = static_cast<uint32_t>(*input.ledgerIndexMin);
     }
 
     if (input.ledgerIndexMax) {
@@ -63,23 +56,22 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
             return Error{Status{RippledError::RpcLgrIdxMalformed, "ledgerSeqMaxOutOfRange"}};
         // NOLINTEND(bugprone-unchecked-optional-access)
 
-        maxIndex = *input.ledgerIndexMax;
+        maxIndex = static_cast<uint32_t>(*input.ledgerIndexMax);
     }
 
     if (minIndex > maxIndex)
         return Error{Status{RippledError::RpcLgrIdxsInvalid}};
 
-    if (input.ledgerHash || input.ledgerIndex) {
+    if (!input.ledger.isUnspecified()) {
         // rippled does not have this check
         if (input.ledgerIndexMax || input.ledgerIndexMin) {
             return Error{Status{RippledError::RpcInvalidParams, "containsLedgerSpecifierAndRange"}};
         }
 
-        auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+        auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
             *sharedPtrBackend_,
             ctx.yield,
-            input.ledgerHash,
-            input.ledgerIndex,
+            input.ledger,
             range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
         );
 
@@ -103,7 +95,8 @@ NFTHistoryHandler::process(NFTHistoryHandler::Input const& input, Context const&
     }
 
     auto const limit = input.limit.value_or(kLimitDefault);
-    auto const tokenID = xrpl::uint256{input.nftID.c_str()};
+    // input.nftID is an already-validated strong uint256 — no re-parse.
+    auto const& tokenID = input.nftID;
 
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {
         return sharedPtrBackend_->fetchNFTTransactions(
@@ -194,9 +187,11 @@ tag_invoke(
         jv.as_object()[JS(limit)] = *(output.limit);
 }
 
+}  // namespace rpc
+
 // Defined in the shared-spec namespace so ADL resolves these conversions to it
 // (the types now live in rpcspec); the conversion logic itself stays Clio-side.
-namespace spec::handlers::nft_history {
+namespace rpc::spec::handlers::nft_history {
 
 void
 tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker)
@@ -207,53 +202,4 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& ma
     };
 }
 
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto const& jsonObject = jv.as_object();
-    auto input = Input{};
-
-    input.nftID = boost::json::value_to<std::string>(jsonObject.at(JS(nft_id)));
-
-    if (jsonObject.contains(JS(ledger_index_min)) &&
-        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
-        input.ledgerIndexMin = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index_min)));
-
-    if (jsonObject.contains(JS(ledger_index_max)) &&
-        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
-        input.ledgerIndexMax = util::integralValueAs<uint32_t>(jsonObject.at(JS(ledger_index_max)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(binary)))
-        input.binary = jsonObject.at(JS(binary)).as_bool();
-
-    if (jsonObject.contains(JS(forward)))
-        input.forward = jsonObject.at(JS(forward)).as_bool();
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker))) {
-        input.marker = Marker{
-            .ledger = util::integralValueAs<uint32_t>(
-                jsonObject.at(JS(marker)).as_object().at(JS(ledger))
-            ),
-            .seq =
-                util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
-        };
-    }
-
-    return input;
-}
-
-}  // namespace spec::handlers::nft_history
-
-}  // namespace rpc
+}  // namespace rpc::spec::handlers::nft_history

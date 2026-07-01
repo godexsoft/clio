@@ -2,35 +2,32 @@
 
 #include "data/Types.hpp"
 #include "rpc/BookChangesHelper.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/handlers/book_changes/Spec.hpp>
 #include <rpcspec/handlers/book_changes/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <vector>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::BookChangesHandler::Input>;
 
-rpc::spec::RpcSpecView
-BookChangesHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::book_changes::kSpec;
-}
+namespace rpc {
 
 BookChangesHandler::Result
 BookChangesHandler::process(BookChangesHandler::Input const& input, Context const& ctx) const
@@ -38,11 +35,10 @@ BookChangesHandler::process(BookChangesHandler::Input const& input, Context cons
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "BookChanges' ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -80,30 +76,6 @@ tag_invoke(
         {JS(changes), value_from(output.bookChanges)},
     };
 }
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::book_changes {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace spec::handlers::book_changes
 
 [[nodiscard]] boost::json::object
 computeBookChanges(

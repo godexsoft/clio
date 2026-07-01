@@ -5,11 +5,11 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/handlers/feature/Spec.hpp>
 #include <rpcspec/handlers/feature/Types.hpp>
 #include "util/Assert.hpp"
-#include "util/JsonUtils.hpp"
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
@@ -22,12 +22,15 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <iterator>
 #include <map>
 #include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
+
+template struct rpc::spec::HandlerFor<rpc::FeatureHandler::Input>;
 
 namespace rpc {
 
@@ -40,11 +43,10 @@ FeatureHandler::process(FeatureHandler::Input const& input, Context const& ctx) 
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "Feature's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -99,12 +101,6 @@ FeatureHandler::process(FeatureHandler::Input const& input, Context const& ctx) 
     };
 }
 
-rpc::spec::RpcSpecView
-FeatureHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::feature::kSpec;
-}
-
 void
 tag_invoke(
     boost::json::value_from_tag,
@@ -143,32 +139,5 @@ tag_invoke(
         {JS(supported), feature.supported},
     };
 }
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::feature {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(feature)))
-        input.feature = jv.at(JS(feature)).as_string();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace spec::handlers::feature
 
 }  // namespace rpc

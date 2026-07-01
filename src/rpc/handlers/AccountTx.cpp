@@ -6,6 +6,7 @@
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 #include <rpcspec/Types.hpp>
 #include <rpcspec/handlers/account_tx/Spec.hpp>
@@ -32,15 +33,9 @@
 #include <string>
 #include <utility>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountTxHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountTxHandler::spec(uint32_t apiVersion)
-{
-    namespace atx = rpc::spec::handlers::account_tx;
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{atx::kSpecV1}
-                           : rpc::spec::RpcSpecView{atx::kSpecV2};
-}
+namespace rpc {
 
 // TODO: this is currently very similar to nft_history but its own copy for time
 // being. we should aim to reuse common logic in some way in the future.
@@ -85,7 +80,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
         return Error{Status{RippledError::RpcInvalidLgrRange}};
     }
 
-    if (input.ledgerHash || input.ledgerIndex || input.usingValidatedLedger) {
+    if (!input.ledger.isUnspecified()) {
         if (ctx.apiVersion > 1u && (input.ledgerIndexMax || input.ledgerIndexMin)) {
             return Error{Status{RippledError::RpcInvalidParams, "containsLedgerSpecifierAndRange"}};
         }
@@ -93,11 +88,10 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
         if (!input.ledgerIndexMax && !input.ledgerIndexMin) {
             // mimic rippled, when both range and index specified, respect the range.
             // take ledger from ledgerHash or ledgerIndex only when range is not specified
-            auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+            auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
                 *sharedPtrBackend_,
                 ctx.yield,
-                input.ledgerHash,
-                input.ledgerIndex,
+                input.ledger,
                 range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
             );
 
@@ -124,10 +118,10 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
     }
 
     auto const limit = input.limit.value_or(kLimitDefault);
-    auto const accountID = accountFromStringStrict(input.account);
+    // input.account is an already-validated strong AccountID — no re-parse, no deref.
     auto const [txnsAndCursor, timeDiff] = util::timed([&]() {
         return sharedPtrBackend_->fetchAccountTransactions(
-            *accountID, limit, input.forward, cursor, ctx.yield
+            input.account, limit, input.forward, cursor, ctx.yield
         );
     });
 
@@ -215,7 +209,7 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
     }
 
     response.limit = input.limit;
-    response.account = xrpl::to_string(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
+    response.account = xrpl::to_string(input.account);
     response.ledgerIndexMin = minIndex;
     response.ledgerIndexMax = maxIndex;
 
@@ -257,62 +251,6 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& ma
         {JS(ledger), marker.ledger},
         {JS(seq), marker.seq},
     };
-}
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
-
-    if (jsonObject.contains(JS(ledger_index_min)) &&
-        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min))) != -1)
-        input.ledgerIndexMin = util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_min)));
-
-    if (jsonObject.contains(JS(ledger_index_max)) &&
-        util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max))) != -1)
-        input.ledgerIndexMax = util::integralValueAs<int32_t>(jsonObject.at(JS(ledger_index_max)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value()) {
-            input.ledgerIndex = *expectedLedgerIndex;
-        } else {
-            // could not get the latest validated ledger seq here, using this flag to indicate that
-            input.usingValidatedLedger = true;
-        }
-    }
-
-    if (jsonObject.contains(JS(binary)))
-        input.binary = boost::json::value_to<JsonBool>(jsonObject.at(JS(binary)));
-
-    if (jsonObject.contains(JS(forward)))
-        input.forward = boost::json::value_to<JsonBool>(jsonObject.at(JS(forward)));
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jsonObject.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker))) {
-        input.marker = Marker{
-            .ledger = util::integralValueAs<uint32_t>(
-                jsonObject.at(JS(marker)).as_object().at(JS(ledger))
-            ),
-            .seq =
-                util::integralValueAs<uint32_t>(jsonObject.at(JS(marker)).as_object().at(JS(seq)))
-        };
-    }
-
-    if (jsonObject.contains("tx_type")) {
-        input.transactionTypeInLowercase =
-            boost::json::value_to<std::string>(jsonObject.at("tx_type"));
-    }
-
-    return input;
 }
 
 }  // namespace rpc::spec::handlers::account_tx

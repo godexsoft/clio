@@ -1,8 +1,9 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/nft_history/Types.hpp>
 #include "util/log/Logger.hpp"
 
@@ -12,6 +13,7 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -25,7 +27,7 @@ namespace rpc {
  *
  * For more details see: https://xrpl.org/nft_history.html#nft_history
  */
-class NFTHistoryHandler {
+class NFTHistoryHandler : public spec::HandlerFor<spec::handlers::nft_history::Input> {
     util::Logger log_{"RPC"};
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
@@ -72,15 +74,6 @@ public:
     }
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion);
-
-    /**
      * @brief Process the NFTHistory command
      *
      * @param input The input data for the command
@@ -101,12 +94,9 @@ private:
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 };
 
-// Declared in the shared-spec namespace so ADL resolves these conversions to it
-// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
+// Declared in the shared-spec namespace so ADL resolves the Marker output
+// conversion to it (the types live in rpcspec); the logic stays Clio-side.
 namespace spec::handlers::nft_history {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
 
 void
 tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Marker const& marker);

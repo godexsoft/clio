@@ -6,7 +6,7 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/amm_info/Spec.hpp>
 #include <rpcspec/handlers/amm_info/Types.hpp>
 #include "util/Assert.hpp"
@@ -16,7 +16,6 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
 #include <date/date.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -36,6 +35,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <expected>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -57,6 +57,8 @@ toIso8601(xrpl::NetClock::time_point tp)
 };
 
 }  // namespace
+
+template struct rpc::spec::HandlerFor<rpc::AMMInfoHandler::Input>;
 
 namespace rpc {
 
@@ -80,11 +82,10 @@ AMMInfoHandler::process(AMMInfoHandler::Input const& input, Context const& ctx) 
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AMMInfo's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -228,12 +229,6 @@ AMMInfoHandler::process(AMMInfoHandler::Input const& input, Context const& ctx) 
     return response;
 }
 
-rpc::spec::RpcSpecView
-AMMInfoHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::amm_info::kSpec;
-}
-
 void
 tag_invoke(
     boost::json::value_from_tag,
@@ -270,44 +265,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::amm_info {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(asset)))
-        input.issue1 = parseIssue(jsonObject.at(JS(asset)).as_object());
-
-    if (jsonObject.contains(JS(asset2)))
-        input.issue2 = parseIssue(jsonObject.at(JS(asset2)).as_object());
-
-    if (jsonObject.contains(JS(account))) {
-        input.accountID =
-            accountFromStringStrict(boost::json::value_to<std::string>(jsonObject.at(JS(account))));
-    }
-
-    if (jsonObject.contains(JS(amm_account))) {
-        input.ammAccount = accountFromStringStrict(
-            boost::json::value_to<std::string>(jsonObject.at(JS(amm_account)))
-        );
-    }
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::amm_info

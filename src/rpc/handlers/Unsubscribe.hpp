@@ -2,17 +2,16 @@
 
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "feed/Types.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/unsubscribe/Types.hpp>
 
-#include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
-#include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -28,7 +27,7 @@ namespace rpc {
  * For more details see: https://xrpl.org/unsubscribe.html
  */
 
-class UnsubscribeHandler {
+class UnsubscribeHandler : public spec::HandlerFor<spec::handlers::unsubscribe::Input> {
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
 
 public:
@@ -36,6 +35,11 @@ public:
      * @brief A struct to hold one order book
      */
     using OrderBook = spec::handlers::unsubscribe::OrderBook;
+
+    /**
+     * @brief A subscribable stream type.
+     */
+    using StreamType = spec::handlers::unsubscribe::StreamType;
 
     /**
      * @brief A struct to hold the input data for the command
@@ -53,15 +57,6 @@ public:
     UnsubscribeHandler(std::shared_ptr<feed::SubscriptionManagerInterface> const& subscriptions);
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion);
-
-    /**
      * @brief Process the Unsubscribe command
      *
      * @param input The input data for the command
@@ -74,19 +69,19 @@ public:
 private:
     void
     unsubscribeFromStreams(
-        std::vector<std::string> const& streams,
+        std::vector<StreamType> const& streams,
         feed::SubscriberSharedPtr const& session
     ) const;
 
     void
     unsubscribeFromAccounts(
-        std::vector<std::string> accounts,
+        std::vector<xrpl::AccountID> const& accounts,
         feed::SubscriberSharedPtr const& session
     ) const;
 
     void
     unsubscribeFromProposedAccounts(
-        std::vector<std::string> accountsProposed,
+        std::vector<xrpl::AccountID> const& accountsProposed,
         feed::SubscriberSharedPtr const& session
     ) const;
 
@@ -97,14 +92,5 @@ private:
     ) const;
 
 };
-
-// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::unsubscribe {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::unsubscribe
 
 }  // namespace rpc

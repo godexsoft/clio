@@ -3,14 +3,15 @@
 #include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
 #include <rpcspec/Aliases.hpp>
-#include <rpcspec/FieldSpec.hpp>
-#include <rpcspec/RpcSpec.hpp>
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Converters.hpp>
+#include <rpcspec/HandlerFor.hpp>
+#include <rpcspec/Typed.hpp>
+#include <rpcspec/Validators.hpp>
+#include <rpcspec/VersionedSpec.hpp>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
 #include <gmock/gmock.h>
 
 #include <cstdint>
@@ -30,17 +31,31 @@ struct TestOutput {
     std::string computed;
 };
 
-// must be implemented as per rpc/common/Concepts.h
-inline TestInput
-tag_invoke(boost::json::value_to_tag<TestInput>, boost::json::value const& jv)
-{
-    std::optional<uint32_t> optLimit;
-    if (jv.as_object().contains("limit"))
-        optLimit = jv.at("limit").as_int64();
+// Typed spec for TestInput: `hello` is required and must equal "world"; `limit` is an
+// optional 0..100 uint. Resolved by the framework via specFor(TestInput const*).
+inline constexpr auto kTestInputSpec = rpc::spec::spec<TestInput>(
+    rpc::spec::field(
+        "hello",
+        &TestInput::hello,
+        rpc::spec::required,
+        rpc::spec::type<std::string>,
+        rpc::spec::oneOf("world"),
+        rpc::spec::asString
+    ),
+    rpc::spec::field(
+        "limit",
+        &TestInput::limit,
+        rpc::spec::type<uint32_t>,
+        rpc::spec::between(uint32_t{0}, uint32_t{100}),
+        rpc::spec::asUint32
+    )
+);
+inline constexpr auto kTestInputVersioned = rpc::spec::versioned<TestInput>(kTestInputSpec);
 
-    return {
-        .hello = boost::json::value_to<std::string>(jv.as_object().at("hello")), .limit = optLimit
-    };
+[[nodiscard]] constexpr auto const&
+specFor(TestInput const*) noexcept
+{
+    return kTestInputVersioned;
 }
 
 // must be implemented as per rpc/common/Concepts.h
@@ -51,28 +66,11 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, TestOutput const
 }
 
 // example handler
-class HandlerFake {
+class HandlerFake : public rpc::spec::HandlerFor<TestInput> {
 public:
     using Input = TestInput;
     using Output = TestOutput;
     using Result = rpc::HandlerReturnType<Output>;
-
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
-            rpc::spec::field(
-                "hello",
-                rpc::spec::required,
-                rpc::spec::type<std::string>,
-                rpc::spec::oneOf("world")
-            ),
-            rpc::spec::field(
-                "limit", rpc::spec::type<uint32_t>, rpc::spec::between(uint32_t{0}, uint32_t{100})
-            ),
-        };
-        return kRPC_SPEC;
-    }
 
     static Result
     process(Input input, [[maybe_unused]] rpc::Context const& ctx)
@@ -94,28 +92,11 @@ public:
 };
 
 // example handler that returns custom error
-class FailingHandlerFake {
+class FailingHandlerFake : public rpc::spec::HandlerFor<TestInput> {
 public:
     using Input = TestInput;
     using Output = TestOutput;
     using Result = rpc::HandlerReturnType<Output>;
-
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        static constexpr auto kRPC_SPEC = rpc::spec::RpcSpec{
-            rpc::spec::field(
-                "hello",
-                rpc::spec::required,
-                rpc::spec::type<std::string>,
-                rpc::spec::oneOf("world")
-            ),
-            rpc::spec::field(
-                "limit", rpc::spec::type<uint32_t>, rpc::spec::between(uint32_t{0}, uint32_t{100})
-            ),
-        };
-        return kRPC_SPEC;
-    }
 
     static Result
     process([[maybe_unused]] Input input, [[maybe_unused]] rpc::Context const& ctx)
@@ -133,11 +114,18 @@ struct InOutFake {
     operator==(InOutFake const& lhs, InOutFake const& rhs) = default;
 };
 
-// must be implemented as per rpc/common/Concepts.h
-inline InOutFake
-tag_invoke(boost::json::value_to_tag<InOutFake>, boost::json::value const& jv)
+// Typed spec for InOutFake: `something` is a required string.
+inline constexpr auto kInOutFakeSpec = rpc::spec::spec<InOutFake>(
+    rpc::spec::field(
+        "something", &InOutFake::something, rpc::spec::required, rpc::spec::type<std::string>, rpc::spec::asString
+    )
+);
+inline constexpr auto kInOutFakeVersioned = rpc::spec::versioned<InOutFake>(kInOutFakeSpec);
+
+[[nodiscard]] constexpr auto const&
+specFor(InOutFake const*) noexcept
 {
-    return {boost::json::value_to<std::string>(jv.as_object().at("something"))};
+    return kInOutFakeVersioned;
 }
 
 // must be implemented as per rpc/common/Concepts.h
@@ -147,12 +135,11 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, InOutFake const&
     jv = {{"something", output.something}};
 }
 
-struct HandlerMock {
+struct HandlerMock : rpc::spec::HandlerFor<InOutFake> {
     using Input = InOutFake;
     using Output = InOutFake;
     using Result = rpc::HandlerReturnType<Output>;
 
-    MOCK_METHOD(rpc::spec::RpcSpecView, spec, (uint32_t), (const));
     MOCK_METHOD(Result, process, (Input, rpc::Context const&), (const));
 };
 

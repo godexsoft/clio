@@ -4,9 +4,9 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/ledger/Spec.hpp>
 #include <rpcspec/handlers/ledger/Types.hpp>
-#include <rpcspec/RpcSpecView.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
 
@@ -33,13 +33,9 @@
 #include <string>
 #include <utility>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::LedgerHandler::Input>;
 
-rpc::spec::RpcSpecView
-LedgerHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::ledger::kSpec;
-}
+namespace rpc {
 
 LedgerHandler::Result
 LedgerHandler::process(LedgerHandler::Input const& input, Context const& ctx) const
@@ -47,11 +43,10 @@ LedgerHandler::process(LedgerHandler::Input const& input, Context const& ctx) co
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "LedgerHandler's ledger range must be available");
 
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -201,42 +196,3 @@ tag_invoke(boost::json::value_from_tag, boost::json::value& jv, LedgerHandler::O
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::ledger {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(transactions)))
-        input.transactions = jv.at(JS(transactions)).as_bool();
-
-    if (jsonObject.contains(JS(binary)))
-        input.binary = jv.at(JS(binary)).as_bool();
-
-    if (jsonObject.contains(JS(expand)))
-        input.expand = jv.at(JS(expand)).as_bool();
-
-    if (jsonObject.contains(JS(owner_funds)))
-        input.ownerFunds = jv.at(JS(owner_funds)).as_bool();
-
-    if (jsonObject.contains("diff"))
-        input.diff = jv.at("diff").as_bool();
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::ledger

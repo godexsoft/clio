@@ -5,7 +5,7 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/account_info/Spec.hpp>
 #include <rpcspec/handlers/account_info/Types.hpp>
 #include "util/Assert.hpp"
@@ -35,14 +35,9 @@
 #include <utility>
 #include <vector>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountInfoHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountInfoHandler::spec(uint32_t apiVersion)
-{
-    using namespace rpc::spec::handlers::account_info;
-    return apiVersion == 1 ? rpc::spec::RpcSpecView{kSpecV1} : rpc::spec::RpcSpecView{kSpecV2};
-}
+namespace rpc {
 
 AccountInfoHandler::Result
 AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context const& ctx) const
@@ -57,11 +52,10 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
 
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountInfo's ledger range must be available");
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -69,10 +63,11 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountStr = input.account.value_or(input.ident.value_or(""));
-    auto const accountID = accountFromStringStrict(accountStr);
-    auto const accountKeylet =
-        xrpl::keylet::account(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
+    // account/ident were validated into strong AccountIDs by the spec, and the
+    // check above guarantees at least one is present — no re-parse, no unchecked
+    // optional dereference.
+    auto const accountID = input.account.value_or(input.ident.value_or(xrpl::AccountID{}));
+    auto const accountKeylet = xrpl::keylet::account(accountID);
     auto const accountLedgerObject =
         sharedPtrBackend_->fetchLedgerObject(accountKeylet.key, lgrInfo.seq, ctx.yield);
 
@@ -110,8 +105,7 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     if (input.signerLists) {
         // We put the SignerList in an array because of an anticipated
         // future when we support multiple signer lists on one account.
-        auto const signersKey =
-            xrpl::keylet::signers(*accountID);  // NOLINT(bugprone-unchecked-optional-access)
+        auto const signersKey = xrpl::keylet::signers(accountID);
 
         // This code will need to be revisited if in the future we
         // support multiple SignerLists on one account.
@@ -215,36 +209,3 @@ tag_invoke(
 }
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::account_info {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(ident)))
-        input.ident = boost::json::value_to<std::string>(jsonObject.at(JS(ident)));
-
-    if (jsonObject.contains(JS(account)))
-        input.account = boost::json::value_to<std::string>(jsonObject.at(JS(account)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jsonObject.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jsonObject.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    if (jsonObject.contains(JS(signer_lists)))
-        input.signerLists = boost::json::value_to<rpc::spec::JsonBool>(jsonObject.at(JS(signer_lists)));
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::account_info

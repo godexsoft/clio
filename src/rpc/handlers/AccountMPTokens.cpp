@@ -4,7 +4,10 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
+#include <rpcspec/HandlerForDefs.hpp>
+#include <rpcspec/Converters.hpp>
 #include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/Typed.hpp>
 #include <rpcspec/handlers/account_mptokens/Spec.hpp>
 #include <rpcspec/handlers/account_mptokens/Types.hpp>
 #include "util/Assert.hpp"
@@ -15,7 +18,6 @@
 #include <boost/json/string.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -31,13 +33,9 @@
 #include <utility>
 #include <vector>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountMPTokensHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountMPTokensHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::account_mptokens::kSpec;
-}
+namespace rpc {
 
 void
 AccountMPTokensHandler::addMPToken(std::vector<MPTokenResponse>& mpts, xrpl::SLE const& sle)
@@ -72,11 +70,10 @@ AccountMPTokensHandler::process(
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountMPTokens' ledger range must be available");
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -84,10 +81,8 @@ AccountMPTokensHandler::process(
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountID = accountFromStringStrict(input.account);
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        xrpl::keylet::account(*accountID).key,
+        xrpl::keylet::account(input.account).key,
         lgrInfo.seq,
         ctx.yield
     );
@@ -106,7 +101,7 @@ AccountMPTokensHandler::process(
 
     auto const expectedNext = traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
+        input.account,
         lgrInfo.seq,
         input.limit,
         input.marker,
@@ -119,7 +114,7 @@ AccountMPTokensHandler::process(
 
     auto const& nextMarker = *expectedNext;
 
-    response.account = input.account;
+    response.account = xrpl::to_string(input.account);
     response.limit = input.limit;
 
     response.ledgerHash = xrpl::strHex(lgrInfo.hash);
@@ -130,42 +125,6 @@ AccountMPTokensHandler::process(
 
     return response;
 }
-
-}  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::account_mptokens {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    Input input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jv.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker)))
-        input.marker = boost::json::value_to<std::string>(jv.at(JS(marker)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::account_mptokens
-
-namespace rpc {
 
 void
 tag_invoke(

@@ -2,8 +2,9 @@
 
 #include "data/AmendmentCenterInterface.hpp"
 #include "data/BackendInterface.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/ledger/Types.hpp>
 
 #include <boost/json/conversion.hpp>
@@ -11,6 +12,7 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -23,7 +25,7 @@ namespace rpc {
  *
  * For more details see: https://xrpl.org/ledger.html
  */
-class LedgerHandler {
+class LedgerHandler : public spec::HandlerFor<spec::handlers::ledger::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
     std::shared_ptr<data::AmendmentCenterInterface const> amendmentCenter_;
 
@@ -74,15 +76,6 @@ public:
     }
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion);
-
-    /**
      * @brief Process the Ledger command
      *
      * @param input The input data for the command
@@ -101,16 +94,6 @@ private:
      */
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
-
 };
-
-// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::ledger {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::ledger
 
 }  // namespace rpc

@@ -3,7 +3,7 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/ledger_index/Spec.hpp>
 #include <rpcspec/handlers/ledger_index/Types.hpp>
 #include "util/Assert.hpp"
@@ -21,13 +21,9 @@
 #include <ranges>
 #include <string>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::LedgerIndexHandler::Input>;
 
-rpc::spec::RpcSpecView
-LedgerIndexHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::ledger_index::kSpec;
-}
+namespace rpc {
 
 LedgerIndexHandler::Result
 LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context const& ctx) const
@@ -50,13 +46,9 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context cons
     if (!input.date)
         return fillOutputByIndex(maxIndex);
 
-    auto const convertISOTimeStrToTicks = [](std::string const& isoTimeStr) {
-        auto const systemTime = util::systemTpFromUtcStr(isoTimeStr, kDateFormat);
-        // systemTime must be valid after validation passed
-        return systemTime->time_since_epoch().count();
-    };
-
-    auto const ticks = convertISOTimeStrToTicks(*input.date);
+    // The spec parses the ISO date string into a system_clock::time_point, so we
+    // work directly in the same tick domain used for ledger close times below.
+    auto const ticks = input.date->time_since_epoch().count();
 
     auto const earlierThan = [&](std::uint32_t ledgerIndex) {
         auto const header = sharedPtrBackend_->fetchLedgerBySequence(ledgerIndex, ctx.yield);
@@ -83,27 +75,6 @@ LedgerIndexHandler::process(LedgerIndexHandler::Input const& input, Context cons
 
     return fillOutputByIndex(maxIndex);
 }
-
-}  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::ledger_index {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-
-    if (jv.as_object().contains(JS(date)))
-        input.date = jv.at(JS(date)).as_string();
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::ledger_index
-
-namespace rpc {
 
 void
 tag_invoke(

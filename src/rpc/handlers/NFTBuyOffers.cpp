@@ -12,7 +12,8 @@ namespace rpc {
 NFTBuyOffersHandler::Result
 NFTBuyOffersHandler::process(NFTBuyOffersHandler::Input const& input, Context const& ctx) const
 {
-    auto const tokenID = uint256{input.nftID.c_str()};
+    // input.nftID is an already-validated strong xrpl::uint256 — no re-parse.
+    auto const tokenID = input.nftID;
     auto const directory = keylet::nftBuys(tokenID);
 
     return iterateOfferDirectory(input, tokenID, directory, ctx.yield);

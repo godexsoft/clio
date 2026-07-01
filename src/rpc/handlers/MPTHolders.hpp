@@ -1,8 +1,9 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/mpt_holders/Types.hpp>
 
 #include <boost/json/array.hpp>
@@ -10,6 +11,7 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,7 +23,7 @@ namespace rpc {
  * @brief The mpt_holders command asks the Clio server for all holders of a particular
  * MPTokenIssuance.
  */
-class MPTHoldersHandler {
+class MPTHoldersHandler : public spec::HandlerFor<spec::handlers::mpt_holders::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
@@ -59,15 +61,6 @@ public:
     }
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion);
-
-    /**
      * @brief Process the MPTHolders command
      *
      * @param input The input data for the command
@@ -87,14 +80,5 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 };
-
-// Declared in the shared-spec namespace so ADL resolves these conversions to it
-// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
-namespace spec::handlers::mpt_holders {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::mpt_holders
 
 }  // namespace rpc

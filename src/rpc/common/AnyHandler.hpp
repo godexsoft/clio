@@ -115,7 +115,7 @@ private:
         dumpSpec(spec::SpecDumpWriter& writer, uint32_t apiVersion) const override
         {
             if constexpr (SomeHandlerWithSpec<HandlerType>) {
-                handler.spec(apiVersion).dump(writer);
+                HandlerType::spec(apiVersion).dump(writer);
             } else {
                 writer.line("(no spec)");
             }

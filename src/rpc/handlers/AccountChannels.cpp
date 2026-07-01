@@ -4,7 +4,7 @@
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/handlers/account_channels/Spec.hpp>
 #include <rpcspec/handlers/account_channels/Types.hpp>
 #include "util/Assert.hpp"
@@ -32,13 +32,9 @@
 #include <utility>
 #include <vector>
 
-namespace rpc {
+template struct rpc::spec::HandlerFor<rpc::AccountChannelsHandler::Input>;
 
-rpc::spec::RpcSpecView
-AccountChannelsHandler::spec([[maybe_unused]] uint32_t apiVersion)
-{
-    return rpc::spec::handlers::account_channels::kSpec;
-}
+namespace rpc {
 
 void
 AccountChannelsHandler::addChannel(
@@ -83,11 +79,10 @@ AccountChannelsHandler::process(
 {
     auto const range = sharedPtrBackend_->fetchLedgerRange();
     ASSERT(range.has_value(), "AccountChannel's ledger range must be available");
-    auto const expectedLgrInfo = getLedgerHeaderFromHashOrSeq(
+    auto const expectedLgrInfo = getLedgerHeaderFromLedgerSpecifier(
         *sharedPtrBackend_,
         ctx.yield,
-        input.ledgerHash,
-        input.ledgerIndex,
+        input.ledger,
         range->maxSequence  // NOLINT(bugprone-unchecked-optional-access)
     );
 
@@ -95,10 +90,9 @@ AccountChannelsHandler::process(
         return Error{expectedLgrInfo.error()};
 
     auto const& lgrInfo = *expectedLgrInfo;
-    auto const accountID = accountFromStringStrict(input.account);
+    // input.account is an already-validated strong AccountID — no re-parse/deref.
     auto const accountLedgerObject = sharedPtrBackend_->fetchLedgerObject(
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        xrpl::keylet::account(*accountID).key,
+        xrpl::keylet::account(input.account).key,
         lgrInfo.seq,
         ctx.yield
     );
@@ -106,13 +100,12 @@ AccountChannelsHandler::process(
     if (!accountLedgerObject)
         return Error{Status{RippledError::RpcActNotFound}};
 
-    auto const destAccountID = input.destinationAccount
-        ? accountFromStringStrict(*input.destinationAccount)
-        : std::optional<xrpl::AccountID>{};
+    // destinationAccount is already a validated optional<AccountID>.
+    auto const& destAccountID = input.destinationAccount;
 
     Output response;
     auto const addToResponse = [&](xrpl::SLE const sle) {
-        if (sle.getType() == xrpl::ltPAYCHAN && sle.getAccountID(xrpl::sfAccount) == accountID &&
+        if (sle.getType() == xrpl::ltPAYCHAN && sle.getAccountID(xrpl::sfAccount) == input.account &&
             (!destAccountID || *destAccountID == sle.getAccountID(xrpl::sfDestination))) {
             addChannel(response.channels, sle);
         }
@@ -122,7 +115,7 @@ AccountChannelsHandler::process(
 
     auto const expectedNext = traverseOwnedNodes(
         *sharedPtrBackend_,
-        *accountID,  // NOLINT(bugprone-unchecked-optional-access)
+        input.account,
         lgrInfo.seq,
         input.limit,
         input.marker,
@@ -133,7 +126,7 @@ AccountChannelsHandler::process(
     if (not expectedNext.has_value())
         return Error{expectedNext.error()};
 
-    response.account = input.account;
+    response.account = xrpl::to_string(input.account);
     response.limit = input.limit;
     response.ledgerHash = xrpl::strHex(lgrInfo.hash);
     response.ledgerIndex = lgrInfo.seq;
@@ -145,42 +138,6 @@ AccountChannelsHandler::process(
     return response;
 }
 
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::account_channels {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    input.account = boost::json::value_to<std::string>(jv.at(JS(account)));
-
-    if (jsonObject.contains(JS(limit)))
-        input.limit = util::integralValueAs<uint32_t>(jv.at(JS(limit)));
-
-    if (jsonObject.contains(JS(marker)))
-        input.marker = boost::json::value_to<std::string>(jv.at(JS(marker)));
-
-    if (jsonObject.contains(JS(ledger_hash)))
-        input.ledgerHash = boost::json::value_to<std::string>(jv.at(JS(ledger_hash)));
-
-    if (jsonObject.contains(JS(destination_account))) {
-        input.destinationAccount =
-            boost::json::value_to<std::string>(jv.at(JS(destination_account)));
-    }
-
-    if (jsonObject.contains(JS(ledger_index))) {
-        auto const expectedLedgerIndex = util::getLedgerIndex(jv.at(JS(ledger_index)));
-        if (expectedLedgerIndex.has_value())
-            input.ledgerIndex = *expectedLedgerIndex;
-    }
-
-    return input;
-}
-
-}  // namespace spec::handlers::account_channels
 
 void
 tag_invoke(

@@ -6,9 +6,8 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/RPCHelpers.hpp"
-#include "rpc/common/JsonBool.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/tx/Spec.hpp>
 #include <rpcspec/handlers/tx/Types.hpp>
 #include "util/Assert.hpp"
@@ -28,6 +27,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -40,7 +40,7 @@ namespace rpc {
  *
  * For more details see: https://xrpl.org/tx.html
  */
-class TxHandler {
+class TxHandler : public spec::HandlerFor<spec::handlers::tx::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
     std::shared_ptr<etl::ETLServiceInterface const> etl_;
 
@@ -90,19 +90,6 @@ public:
     {
     }
 
-    /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion)
-    {
-        return apiVersion == 1
-            ? rpc::spec::RpcSpecView{spec::handlers::tx::kSpecV1}
-            : rpc::spec::RpcSpecView{spec::handlers::tx::kSpecV2};
-    }
 
     /**
      * @brief Process the Tx command
@@ -157,9 +144,7 @@ public:
 
             dbResponse = fetchTxViaCtid(lgrSeq, txnIdx, ctx.yield);
         } else {
-            dbResponse = sharedPtrBackend_->fetchTransaction(
-                xrpl::uint256{input.transaction->c_str()}, ctx.yield
-            );
+            dbResponse = sharedPtrBackend_->fetchTransaction(*input.transaction, ctx.yield);
         }
 
         auto output = TxHandler::Output{.apiVersion = ctx.apiVersion};
@@ -303,35 +288,3 @@ private:
 };
 
 }  // namespace rpc
-
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::tx {
-
-inline Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const& jsonObject = jv.as_object();
-
-    if (jsonObject.contains(JS(transaction)))
-        input.transaction = boost::json::value_to<std::string>(jv.at(JS(transaction)));
-
-    if (jsonObject.contains(JS(ctid))) {
-        input.ctid = boost::json::value_to<std::string>(jv.at(JS(ctid)));
-        input.ctid = util::toUpper(*input.ctid);
-    }
-
-    if (jsonObject.contains(JS(binary)))
-        input.binary = boost::json::value_to<JsonBool>(jsonObject.at(JS(binary)));
-
-    if (jsonObject.contains(JS(min_ledger)))
-        input.minLedger = util::integralValueAs<uint32_t>(jv.at(JS(min_ledger)));
-
-    if (jsonObject.contains(JS(max_ledger)))
-        input.maxLedger = util::integralValueAs<uint32_t>(jv.at(JS(max_ledger)));
-
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::tx

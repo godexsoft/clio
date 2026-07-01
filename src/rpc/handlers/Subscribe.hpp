@@ -4,8 +4,9 @@
 #include "data/BackendInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
 #include "feed/Types.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/subscribe/Types.hpp>
 
 #include <boost/asio/spawn.hpp>
@@ -13,12 +14,10 @@
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
-#include <boost/json/value_to.hpp>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,7 +32,7 @@ namespace rpc {
  * For more details see: https://xrpl.org/subscribe.html
  */
 
-class SubscribeHandler {
+class SubscribeHandler : public spec::HandlerFor<spec::handlers::subscribe::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
     std::shared_ptr<data::AmendmentCenterInterface const> amendmentCenter_;
     std::shared_ptr<feed::SubscriptionManagerInterface> subscriptions_;
@@ -62,6 +61,11 @@ public:
     using OrderBook = spec::handlers::subscribe::OrderBook;
 
     /**
+     * @brief A subscribable stream type.
+     */
+    using StreamType = spec::handlers::subscribe::StreamType;
+
+    /**
      * @brief A struct to hold the input data for the command
      */
     using Input = spec::handlers::subscribe::Input;
@@ -82,15 +86,6 @@ public:
     );
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion);
-
-    /**
      * @brief Process the Subscribe command
      *
      * @param input The input data for the command
@@ -104,19 +99,19 @@ private:
     [[nodiscard]] boost::json::object
     subscribeToStreams(
         boost::asio::yield_context yield,
-        std::vector<std::string> const& streams,
+        std::vector<StreamType> const& streams,
         feed::SubscriberSharedPtr const& session
     ) const;
 
     void
     subscribeToAccounts(
-        std::vector<std::string> const& accounts,
+        std::vector<xrpl::AccountID> const& accounts,
         feed::SubscriberSharedPtr const& session
     ) const;
 
     void
     subscribeToAccountsProposed(
-        std::vector<std::string> const& accounts,
+        std::vector<xrpl::AccountID> const& accounts,
         feed::SubscriberSharedPtr const& session
     ) const;
 
@@ -137,14 +132,5 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 };
-
-// Declared in the shared-spec namespace so ADL resolves these conversions to it
-// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
-namespace spec::handlers::subscribe {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::subscribe
 
 }  // namespace rpc

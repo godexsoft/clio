@@ -1,8 +1,9 @@
 #pragma once
 
 #include "data/BackendInterface.hpp"
+#include "rpc/Errors.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/noripple_check/Types.hpp>
 
 #include <boost/json/array.hpp>
@@ -10,6 +11,7 @@
 #include <boost/json/value.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -26,7 +28,7 @@ namespace rpc {
  *
  * For more details see: https://xrpl.org/noripple_check.html
  */
-class NoRippleCheckHandler {
+class NoRippleCheckHandler : public spec::HandlerFor<spec::handlers::noripple_check::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
@@ -64,15 +66,6 @@ public:
     }
 
     /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion);
-
-    /**
      * @brief Process the NoRippleCheck command
      *
      * @param input The input data for the command
@@ -93,14 +86,5 @@ private:
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 
 };
-
-// Declared in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace spec::handlers::noripple_check {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::noripple_check
 
 }  // namespace rpc

@@ -8,11 +8,13 @@
 #include "rpc/Errors.hpp"
 #include "rpc/JS.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/server_info/Spec.hpp>
 #include <rpcspec/handlers/server_info/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/build/Build.hpp"
+
+#include <expected>
 
 #include <boost/json/conversion.hpp>
 #include <boost/json/object.hpp>
@@ -47,7 +49,7 @@ namespace rpc {
  * @tparam CountersType The type of the counters
  */
 template <typename CountersType>
-class BaseServerInfoHandler {
+class BaseServerInfoHandler : public spec::HandlerFor<spec::handlers::server_info::Input> {
     static constexpr auto kBackendCountersKey =
         spec::handlers::server_info::kBackendCountersKey;
 
@@ -147,18 +149,6 @@ public:
         , etl_(std::move(etl))
         , counters_(std::cref(counters))
     {
-    }
-
-    /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec([[maybe_unused]] uint32_t apiVersion)
-    {
-        return rpc::spec::handlers::server_info::kSpec;
     }
 
     /**
@@ -342,19 +332,3 @@ using ServerInfoHandler = BaseServerInfoHandler<Counters>;
 
 }  // namespace rpc
 
-// Defined in the shared-spec namespace so ADL resolves value_to<Input> to it
-// (Input now lives in rpcspec); the parsing itself stays Clio-side.
-namespace rpc::spec::handlers::server_info {
-
-inline Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv)
-{
-    auto input = Input{};
-    auto const jsonObject = jv.as_object();
-    if (jsonObject.contains(kBackendCountersKey) &&
-        jsonObject.at(kBackendCountersKey).is_bool())
-        input.backendCounters = jv.at(kBackendCountersKey).as_bool();
-    return input;
-}
-
-}  // namespace rpc::spec::handlers::server_info

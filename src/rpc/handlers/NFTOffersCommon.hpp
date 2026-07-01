@@ -2,7 +2,7 @@
 
 #include "data/BackendInterface.hpp"
 #include "rpc/common/Types.hpp"
-#include <rpcspec/RpcSpecView.hpp>
+#include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/handlers/nft_offers_common/Types.hpp>
 
 #include <boost/asio/spawn.hpp>
@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -24,7 +25,7 @@ namespace rpc {
 /**
  * @brief Contains common functionality for handling the `nft_offers` command
  */
-class NFTOffersHandlerBase {
+class NFTOffersHandlerBase : public spec::HandlerFor<spec::handlers::nft_offers_common::Input> {
     std::shared_ptr<BackendInterface> sharedPtrBackend_;
 
 public:
@@ -62,15 +63,6 @@ public:
     {
     }
 
-    /**
-     * @brief Returns the API specification for the command
-     *
-     * @param apiVersion The api version to return the spec for
-     * @return The spec for the given apiVersion
-     */
-    static rpc::spec::RpcSpecView
-    spec(uint32_t apiVersion);
-
 protected:
     /**
      * @brief Iterate the NFT offer directory
@@ -99,14 +91,5 @@ private:
     friend void
     tag_invoke(boost::json::value_from_tag, boost::json::value& jv, Output const& output);
 };
-
-// Declared in the shared-spec namespace so ADL resolves these conversions to it
-// (the types now live in rpcspec); the conversion logic itself stays Clio-side.
-namespace spec::handlers::nft_offers_common {
-
-Input
-tag_invoke(boost::json::value_to_tag<Input>, boost::json::value const& jv);
-
-}  // namespace spec::handlers::nft_offers_common
 
 }  // namespace rpc
