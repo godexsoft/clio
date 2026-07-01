@@ -48,14 +48,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     *
-     * `queue` is not available in Reporting mode
-     * `ident` is deprecated, keep it for now, in line with rippled
-     */
-    using Input = spec::handlers::account_info::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

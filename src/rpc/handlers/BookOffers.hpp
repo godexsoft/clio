@@ -48,14 +48,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     *
-     * @note The taker is not really used in both Clio and `rippled`, both of them return all the
-     * offers regardless of the funding status
-     */
-    using Input = spec::handlers::book_offers::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

@@ -40,13 +40,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     *
-     * @note Clio does not implement `deletion_blockers_only`
-     */
-    using Input = spec::handlers::book_changes::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

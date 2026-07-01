@@ -56,11 +56,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::nft_history::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

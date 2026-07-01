@@ -50,11 +50,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::deposit_authorized::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

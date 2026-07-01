@@ -61,11 +61,6 @@ public:
         uint32_t limit{};
     };
 
-    /**
-     * @brief A struct to hold the input data for the command.
-     */
-    using Input = spec::handlers::account_mptokens::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

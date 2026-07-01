@@ -65,11 +65,6 @@ public:
      */
     using StreamType = spec::handlers::subscribe::StreamType;
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::subscribe::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

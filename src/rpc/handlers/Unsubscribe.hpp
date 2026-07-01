@@ -41,11 +41,6 @@ public:
      */
     using StreamType = spec::handlers::unsubscribe::StreamType;
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::unsubscribe::Input;
-
     using Output = VoidOutput;
     using Result = HandlerReturnType<Output>;
 

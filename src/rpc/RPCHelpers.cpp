@@ -512,40 +512,6 @@ ledgerHeaderFromRequest(
     return *lgrInfo;
 }
 
-// extract ledgerHeaderFromRequest's parameter from context
-std::expected<xrpl::LedgerHeader, Status>
-getLedgerHeaderFromHashOrSeq(
-    BackendInterface const& backend,
-    boost::asio::yield_context yield,
-    std::optional<std::string> ledgerHash,
-    std::optional<uint32_t> ledgerIndex,
-    uint32_t maxSeq
-)
-{
-    std::optional<xrpl::LedgerHeader> lgrInfo;
-    auto const err = std::unexpected{Status{RippledError::RpcLgrNotFound, "ledgerNotFound"}};
-    if (ledgerHash) {
-        // invoke uint256's constructor to parse the hex string , instead of
-        // copying buffer
-        xrpl::uint256 const ledgerHash256{std::string_view(*ledgerHash)};
-        lgrInfo = backend.fetchLedgerByHash(ledgerHash256, yield);
-        if (!lgrInfo || lgrInfo->seq > maxSeq)
-            return err;
-
-        return *lgrInfo;
-    }
-    auto const ledgerSequence = ledgerIndex.value_or(maxSeq);
-    // return without check db
-    if (ledgerSequence > maxSeq)
-        return err;
-
-    lgrInfo = backend.fetchLedgerBySequence(ledgerSequence, yield);
-    if (!lgrInfo)
-        return err;
-
-    return *lgrInfo;
-}
-
 std::expected<xrpl::LedgerHeader, Status>
 getLedgerHeaderFromLedgerSpecifier(
     BackendInterface const& backend,
@@ -554,16 +520,27 @@ getLedgerHeaderFromLedgerSpecifier(
     uint32_t maxSeq
 )
 {
-    std::optional<std::string> ledgerHash;
-    std::optional<uint32_t> ledgerIndex;
+    auto const err = std::unexpected{Status{RippledError::RpcLgrNotFound, "ledgerNotFound"}};
+
+    // A concrete ledger hash is looked up directly.
     if (ledger.isHash()) {
-        ledgerHash = strHex(std::get<xrpl::uint256>(ledger.value));
-    } else if (ledger.isSequence()) {
-        ledgerIndex = std::get<uint32_t>(ledger.value);
+        auto const lgrInfo = backend.fetchLedgerByHash(std::get<xrpl::uint256>(ledger.value), yield);
+        if (!lgrInfo || lgrInfo->seq > maxSeq)
+            return err;
+        return *lgrInfo;
     }
-    // A shortcut (validated/current/closed) or an unspecified value leaves both
-    // empty, so the lookup falls back to maxSeq (the latest validated ledger).
-    return getLedgerHeaderFromHashOrSeq(backend, yield, std::move(ledgerHash), ledgerIndex, maxSeq);
+
+    // A concrete sequence, or — for a shortcut (validated/current/closed) or an
+    // unspecified value — the latest validated ledger (maxSeq).
+    auto const ledgerSequence = ledger.isSequence() ? std::get<uint32_t>(ledger.value) : maxSeq;
+    if (ledgerSequence > maxSeq)
+        return err;
+
+    auto const lgrInfo = backend.fetchLedgerBySequence(ledgerSequence, yield);
+    if (!lgrInfo)
+        return err;
+
+    return *lgrInfo;
 }
 
 std::vector<unsigned char>

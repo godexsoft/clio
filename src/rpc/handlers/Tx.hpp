@@ -69,11 +69,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::tx::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**
@@ -89,7 +84,6 @@ public:
         : sharedPtrBackend_(std::move(sharedPtrBackend)), etl_(etl)
     {
     }
-
 
     /**
      * @brief Process the Tx command

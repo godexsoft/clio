@@ -57,11 +57,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::get_aggregate_price::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

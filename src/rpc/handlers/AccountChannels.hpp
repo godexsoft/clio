@@ -70,11 +70,6 @@ public:
         std::optional<std::string> marker;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::account_channels::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

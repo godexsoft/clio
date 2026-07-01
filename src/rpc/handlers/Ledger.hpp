@@ -41,23 +41,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief Input data for the command — aliased from the shared xrpl-rpc-spec framework type.
-     *
-     * Clio does not support:
-     * - queue
-     *
-     * And the following are deprecated altogether:
-     * - full
-     * - accounts
-     * - ledger
-     * - type
-     *
-     * Clio will throw an error when `queue`, `full` or `accounts` is set to `true`.
-     * @see https://github.com/XRPLF/clio/issues/603 and https://github.com/XRPLF/clio/issues/1537
-     */
-    using Input = spec::handlers::ledger::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

@@ -281,32 +281,13 @@ ledgerHeaderFromRequest(
 );
 
 /**
- * @brief Get ledger info from hash or sequence
- *
- * @param backend The backend to use
- * @param yield The coroutine context
- * @param ledgerHash The optional ledger hash
- * @param ledgerIndex The optional ledger index
- * @param maxSeq The maximum sequence to search
- * @return The ledger info or an error status
- */
-std::expected<xrpl::LedgerHeader, Status>
-getLedgerHeaderFromHashOrSeq(
-    BackendInterface const& backend,
-    boost::asio::yield_context yield,
-    std::optional<std::string> ledgerHash,
-    std::optional<uint32_t> ledgerIndex,
-    uint32_t maxSeq
-);
-
-/**
  * @brief Get ledger info from a unified LedgerSpecifier
  *
  * Resolves the spec framework's LedgerSpecifier (hash / sequence / shortcut /
  * unspecified) against the backend. A concrete hash or sequence is looked up
  * directly; a shortcut or unspecified value resolves to the latest validated
- * ledger (@p maxSeq), mirroring the historical getLedgerHeaderFromHashOrSeq
- * behaviour for a request that named no concrete ledger.
+ * ledger (@p maxSeq), i.e. the ledger to use when a request named no concrete
+ * ledger.
  *
  * @param backend The backend to use
  * @param yield The coroutine context

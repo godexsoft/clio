@@ -43,11 +43,6 @@ public:
         uint32_t apiVersion;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::transaction_entry::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

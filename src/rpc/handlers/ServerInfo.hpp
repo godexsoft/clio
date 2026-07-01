@@ -60,10 +60,6 @@ class BaseServerInfoHandler : public spec::HandlerFor<spec::handlers::server_inf
     std::reference_wrapper<CountersType const> counters_;
 
 public:
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::server_info::Input;
 
     /**
      * @brief A struct to hold the admin section of the output

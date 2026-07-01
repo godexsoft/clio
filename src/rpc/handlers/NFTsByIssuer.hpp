@@ -43,11 +43,6 @@ public:
         std::optional<std::string> marker;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::nfts_by_issuer::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

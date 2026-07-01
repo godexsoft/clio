@@ -28,10 +28,6 @@ class FeatureHandler : public spec::HandlerFor<spec::handlers::feature::Input> {
     std::shared_ptr<data::AmendmentCenterInterface const> amendmentCenter_;
 
 public:
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::feature::Input;
 
     /**
      * @brief A struct to hold the output data of the command

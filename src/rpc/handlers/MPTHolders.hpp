@@ -43,11 +43,6 @@ public:
         std::optional<std::string> marker;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::mpt_holders::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

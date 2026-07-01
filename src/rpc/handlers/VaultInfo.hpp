@@ -34,11 +34,6 @@ public:
     VaultInfoHandler(std::shared_ptr<BackendInterface> sharedPtrBackend);
 
     /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::vault_info::Input;
-
-    /**
      * @brief A struct to hold the output data for the command
      */
     struct Output {

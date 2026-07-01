@@ -36,11 +36,6 @@ public:
         std::string closeTimeIso;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     */
-    using Input = spec::handlers::ledger_index::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**

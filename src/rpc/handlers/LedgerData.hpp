@@ -53,14 +53,6 @@ public:
         bool validated = true;
     };
 
-    /**
-     * @brief A struct to hold the input data for the command
-     *
-     * @note `outOfOrder` is only for Clio, there is no document, traverse via seq diff (outOfOrder
-     * implementation is copied from old rpc handler)
-     */
-    using Input = spec::handlers::ledger_data::Input;
-
     using Result = HandlerReturnType<Output>;
 
     /**
