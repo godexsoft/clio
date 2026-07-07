@@ -24,8 +24,7 @@ TEST(SslContext, IsCached)
 
 TEST(SslContext, InitSucceedsWithSystemCertificates)
 {
-    // The test host has a system root certificate bundle available.
-    EXPECT_FALSE(initClientSslContext().has_value());
+    EXPECT_TRUE(initClientSslContext().has_value());
 }
 
 TEST(SslContext, MakeWithoutRootCertificateReturnsError)

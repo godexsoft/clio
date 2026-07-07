@@ -27,9 +27,9 @@ makeClientSslContext(std::optional<std::string> const& rootCertificate);
  * created once and cached for the lifetime of the process. Intended to be called at startup so a
  * client-side SSL misconfiguration is reported immediately instead of failing every request later.
  *
- * @return An error message if the context could not be created; std::nullopt on success.
+ * @return An error message if the context could not be created
  */
-std::optional<std::string>
+std::expected<void, std::string>
 initClientSslContext();
 
 /**

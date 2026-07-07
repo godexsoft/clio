@@ -1,6 +1,6 @@
 #pragma once
 
-#include <optional>
+#include <expected>
 #include <string>
 
 namespace util::requests {
@@ -13,9 +13,9 @@ namespace util::requests {
  * of causing every outgoing request to fail later. The context (including the potentially expensive
  * parse of the root certificate bundle) is created once and reused for the lifetime of the process.
  *
- * @return An error message if the context could not be created; std::nullopt on success.
+ * @return An error message if the context could not be created
  */
-std::optional<std::string>
+std::expected<void, std::string>
 initClientSslContext();
 
 }  // namespace util::requests

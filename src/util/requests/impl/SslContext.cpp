@@ -104,14 +104,14 @@ makeClientSslContext(std::optional<std::string> const& rootCertificate)
     return context;
 }
 
-std::optional<std::string>
+std::expected<void, std::string>
 initClientSslContext()
 {
     auto const& context = cachedClientSslContext();
     if (not context.has_value())
-        return context.error().message();
+        return std::unexpected{context.error().message()};
 
-    return std::nullopt;
+    return {};
 }
 
 ssl::context&

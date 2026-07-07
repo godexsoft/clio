@@ -2,12 +2,12 @@
 
 #include "util/requests/impl/SslContext.hpp"
 
-#include <optional>
+#include <expected>
 #include <string>
 
 namespace util::requests {
 
-std::optional<std::string>
+std::expected<void, std::string>
 initClientSslContext()
 {
     return impl::initClientSslContext();

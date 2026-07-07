@@ -80,8 +80,10 @@ ClioApplication::ClioApplication(util::config::ClioConfigDefinition const& confi
 int
 ClioApplication::run(bool const useNgWebServer)
 {
-    if (auto const sslError = util::requests::initClientSslContext(); sslError.has_value()) {
-        LOG(util::LogService::fatal()) << "Failed to create client SSL context: " << *sslError;
+    if (auto const sslContext = util::requests::initClientSslContext();
+        not sslContext.has_value()) {
+        LOG(util::LogService::fatal())
+            << "Failed to create client SSL context: " << sslContext.error();
         return EXIT_FAILURE;
     }
 
