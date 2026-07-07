@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of clio: https://github.com/XRPLF/clio
-    Copyright (c) 2024, the clio developers.
+    Copyright (c) 2026, the clio developers.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -17,39 +17,24 @@
 */
 //==============================================================================
 
-#include "util/requests/impl/SslContext.hpp"
+#pragma once
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <expected>
+#include <string>
 
-#include <optional>
+namespace util::requests {
 
-using namespace util::requests::impl;
+/**
+ * @brief Create and cache the shared client SSL context.
+ *
+ * Intended to be called once during application startup so that an unrecoverable SSL
+ * misconfiguration (e.g. a missing system root certificate bundle) is reported immediately instead
+ * of causing every outgoing request to fail later. The context (including the potentially expensive
+ * parse of the root certificate bundle) is created once and reused for the lifetime of the process.
+ *
+ * @return An error message if the context could not be created
+ */
+std::expected<void, std::string>
+initClientSslContext();
 
-TEST(SslContext, Create)
-{
-    auto& ctx = getClientSslContext();
-    EXPECT_NE(ctx.native_handle(), nullptr);
-}
-
-TEST(SslContext, IsCached)
-{
-    auto& first = getClientSslContext();
-    auto& second = getClientSslContext();
-
-    // Same shared instance is returned on every call
-    EXPECT_EQ(&first, &second);
-}
-
-TEST(SslContext, InitSucceedsWithSystemCertificates)
-{
-    EXPECT_TRUE(initClientSslContext().has_value());
-}
-
-TEST(SslContext, MakeWithoutRootCertificateReturnsError)
-{
-    auto const ctx = makeClientSslContext(std::nullopt);
-
-    ASSERT_FALSE(ctx.has_value());
-    EXPECT_THAT(ctx.error().message(), testing::HasSubstr("could not find root certificate"));
-}
+}  // namespace util::requests
