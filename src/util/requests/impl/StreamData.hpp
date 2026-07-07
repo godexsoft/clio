@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "util/requests/Types.hpp"
 #include "util/requests/impl/SslContext.hpp"
 
 #include <boost/asio/associated_executor.hpp>
@@ -31,9 +30,6 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/stream.hpp>
-
-#include <expected>
-#include <utility>
 
 namespace util::requests::impl {
 
@@ -56,14 +52,10 @@ struct SslStreamData {
     static constexpr bool kSSL_ENABLED = true;
     StreamType stream;
 
-    static std::expected<SslStreamData, RequestError>
+    static SslStreamData
     create(boost::asio::yield_context yield)
     {
-        auto sslContext = getClientSslContext();
-        if (not sslContext.has_value())
-            return std::unexpected{std::move(sslContext.error())};
-
-        return SslStreamData{sslContext->get(), yield};
+        return SslStreamData{getClientSslContext(), yield};
     }
 
 private:

@@ -32,10 +32,10 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <expected>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <ios>
 #include <optional>
 #include <sstream>
@@ -63,47 +63,80 @@ constexpr std::array kCERT_FILE_PATHS{
     "/system/etc/security/cacerts",                       // Android
 };
 
-std::expected<std::string, RequestError>
-getRootCertificate()
+std::optional<std::string>
+readCertificateFile(std::filesystem::path const& path)
 {
-    for (auto const& path : kCERT_FILE_PATHS) {
-        if (std::filesystem::exists(path)) {
-            std::ifstream const fileStream{path, std::ios::in};
-            if (not fileStream.is_open()) {
-                continue;
-            }
-            std::stringstream buffer;
-            buffer << fileStream.rdbuf();
-            return std::move(buffer).str();
-        }
-    }
-    return std::unexpected{RequestError{"SSL setup failed: could not find root certificate"}};
+    if (not std::filesystem::exists(path))
+        return std::nullopt;
+
+    std::ifstream const fileStream{path, std::ios::in};
+    if (not fileStream.is_open())
+        return std::nullopt;
+
+    std::stringstream buffer;
+    buffer << fileStream.rdbuf();
+
+    return std::move(buffer).str();
 }
 
-std::expected<ssl::context, RequestError>
-makeClientSslContext()
+std::optional<std::string>
+getRootCertificate()
 {
-    auto const rootCertificate = getRootCertificate();
-    if (not rootCertificate.has_value()) {
-        return std::unexpected{rootCertificate.error()};
+    // Honor the OpenSSL-standard SSL_CERT_FILE environment variable first. Some
+    // environments (e.g. the Nix-based CI/runtime image) point it at their CA
+    // bundle instead of installing certificates at the well-known system paths.
+    if (char const* const certFile = std::getenv("SSL_CERT_FILE"); certFile != nullptr) {
+        if (auto contents = readCertificateFile(certFile); contents.has_value())
+            return contents;
     }
-    ssl::context context{ssl::context::tls_client};
-    context.set_verify_mode(ssl::verify_peer);
-    context.add_certificate_authority(asio::buffer(rootCertificate->data(), rootCertificate->size()));
-    return context;
+
+    for (auto const& path : kCERT_FILE_PATHS) {
+        if (auto contents = readCertificateFile(path); contents.has_value())
+            return contents;
+    }
+
+    return std::nullopt;
+}
+
+std::expected<ssl::context, RequestError>&
+cachedClientSslContext()
+{
+    static std::expected<ssl::context, RequestError> kCONTEXT = makeClientSslContext(getRootCertificate());
+    return kCONTEXT;
 }
 
 }  // namespace
 
-std::expected<std::reference_wrapper<ssl::context>, RequestError>
+std::expected<ssl::context, RequestError>
+makeClientSslContext(std::optional<std::string> const& rootCertificate)
+{
+    if (not rootCertificate.has_value())
+        return std::unexpected{RequestError{"SSL setup failed: could not find root certificate"}};
+
+    ssl::context context{ssl::context::tls_client};
+    context.set_verify_mode(ssl::verify_peer);
+    context.add_certificate_authority(  //
+        asio::buffer(rootCertificate->data(), rootCertificate->size())
+    );
+
+    return context;
+}
+
+std::expected<void, std::string>
+initClientSslContext()
+{
+    auto const& context = cachedClientSslContext();
+    if (not context.has_value())
+        return std::unexpected{context.error().message()};
+
+    return {};
+}
+
+ssl::context&
 getClientSslContext()
 {
-    static std::expected<ssl::context, RequestError> kCONTEXT = makeClientSslContext();
-
-    if (not kCONTEXT.has_value())
-        return std::unexpected{kCONTEXT.error()};
-
-    return std::ref(kCONTEXT.value());
+    // initClientSslContext() called during startup
+    return cachedClientSslContext().value();
 }
 
 std::optional<std::string>
