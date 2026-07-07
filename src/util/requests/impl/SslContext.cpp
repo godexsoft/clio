@@ -17,6 +17,7 @@
 #include <expected>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <ios>
 #include <optional>
 #include <sstream>
@@ -79,21 +80,32 @@ getRootCertificate()
     return std::unexpected{RequestError{"SSL setup failed: could not find root certificate"}};
 }
 
-}  // namespace
-
-std::expected<boost::asio::ssl::context, RequestError>
+std::expected<ssl::context, RequestError>
 makeClientSslContext()
 {
-    ssl::context context{ssl::context::tls_client};
-    context.set_verify_mode(ssl::verify_peer);
     auto const rootCertificate = getRootCertificate();
     if (not rootCertificate.has_value()) {
         return std::unexpected{rootCertificate.error()};
     }
+    ssl::context context{ssl::context::tls_client};
+    context.set_verify_mode(ssl::verify_peer);
     context.add_certificate_authority(
         asio::buffer(rootCertificate->data(), rootCertificate->size())
     );
     return context;
+}
+
+}  // namespace
+
+std::expected<std::reference_wrapper<ssl::context>, RequestError>
+getClientSslContext()
+{
+    static std::expected<ssl::context, RequestError> context = makeClientSslContext();
+
+    if (not context.has_value())
+        return std::unexpected{context.error()};
+
+    return std::ref(context.value());
 }
 
 std::optional<std::string>
