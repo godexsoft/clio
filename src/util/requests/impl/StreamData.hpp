@@ -52,28 +52,23 @@ using TcpStreamData = PlainStreamData<boost::beast::tcp_stream>;
 using WsStreamData = PlainStreamData<boost::beast::websocket::stream<boost::beast::tcp_stream>>;
 
 template <typename StreamType>
-class SslStreamData {
-    boost::asio::ssl::context sslContext_;
-
-public:
+struct SslStreamData {
     static constexpr bool kSSL_ENABLED = true;
+    StreamType stream;
 
     static std::expected<SslStreamData, RequestError>
     create(boost::asio::yield_context yield)
     {
-        auto sslContext = makeClientSslContext();
-        if (not sslContext.has_value()) {
+        auto sslContext = getClientSslContext();
+        if (not sslContext.has_value())
             return std::unexpected{std::move(sslContext.error())};
-        }
-        return SslStreamData{std::move(sslContext).value(), yield};
+
+        return SslStreamData{sslContext->get(), yield};
     }
 
-    StreamType stream;
-
 private:
-    SslStreamData(boost::asio::ssl::context sslContext, boost::asio::yield_context yield)
-        : sslContext_(std::move(sslContext)), stream(boost::asio::get_associated_executor(yield), sslContext_)
-
+    SslStreamData(boost::asio::ssl::context& sslContext, boost::asio::yield_context yield)
+        : stream(boost::asio::get_associated_executor(yield), sslContext)
     {
     }
 };
