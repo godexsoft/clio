@@ -2,8 +2,6 @@
 
 #include "data/DBHelpers.hpp"
 #include "data/Types.hpp"
-#include "etl/AmendmentBlockHandlerInterface.hpp"
-#include "etl/LedgerFetcherInterface.hpp"
 #include "etl/Models.hpp"
 #include "etl/impl/LedgerFetcher.hpp"
 #include "util/Assert.hpp"
