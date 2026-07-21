@@ -22,10 +22,10 @@ on:
 
       - .github/actions/conan/action.yml
       - ".github/scripts/conan/**"
-      - "!.github/scripts/conan/regenerate_lockfile.sh"
 
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
   push:
     branches: [develop]
     paths:
@@ -33,10 +33,10 @@ on:
 
       - .github/actions/conan/action.yml
       - ".github/scripts/conan/**"
-      - "!.github/scripts/conan/regenerate_lockfile.sh"
 
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@9355d190fd7d4de80fadfd161e6edddc9702cd9f
         with:
           enable_ccache: false
 
