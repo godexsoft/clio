@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <ranges>
@@ -98,46 +99,62 @@ private:
     spawnWorker(uint32_t const seq, size_t cachePageFetchSize)
     {
         return ctx_.execute([this, seq, cachePageFetchSize](auto token) {
-            while (not token.isStopRequested() and not cache_.get().isDisabled()) {
-                auto cursor = queue_.tryPop();
-                if (not cursor.has_value()) {
-                    return;  // queue is empty
-                }
-
-                auto [start, end] = *cursor;
-                LOG(log_.debug()) << "Starting a cursor: " << xrpl::strHex(start);
-
+            try {
                 while (not token.isStopRequested() and not cache_.get().isDisabled()) {
-                    auto res =
-                        data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
-                            return backend_->fetchLedgerPage(
-                                start, seq, cachePageFetchSize, false, token
-                            );
-                        });
-
-                    cache_.get().update(res.objects, seq, true);
-
-                    if (not res.cursor or res.cursor > end) {
-                        if (--remaining_ <= 0) {
-                            auto endTime = std::chrono::steady_clock::now();
-                            auto duration = std::chrono::duration_cast<std::chrono::seconds>(
-                                endTime - startTime_
-                            );
-
-                            LOG(log_.info())
-                                << "Finished loading cache. Cache size = " << cache_.get().size()
-                                << ". Took " << duration.count() << " seconds";
-
-                            cache_.get().setFull();
-                        } else {
-                            LOG(log_.debug()) << "Finished a cursor. Remaining = " << remaining_;
-                        }
-
-                        break;  // pick up the next cursor if available
+                    auto cursor = queue_.tryPop();
+                    if (not cursor.has_value()) {
+                        return;  // queue is empty
                     }
 
-                    start = *std::move(res.cursor);
+                    auto [start, end] = *cursor;
+                    LOG(log_.debug()) << "Starting a cursor: " << xrpl::strHex(start);
+
+                    while (not token.isStopRequested() and not cache_.get().isDisabled()) {
+                        auto res =
+                            data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
+                                return backend_->fetchLedgerPage(
+                                    start, seq, cachePageFetchSize, false, token
+                                );
+                            });
+
+                        cache_.get().update(res.objects, seq, true);
+
+                        if (not res.cursor or res.cursor > end) {
+                            if (--remaining_ <= 0) {
+                                auto endTime = std::chrono::steady_clock::now();
+                                auto duration = std::chrono::duration_cast<std::chrono::seconds>(
+                                    endTime - startTime_
+                                );
+
+                                LOG(log_.info()) << "Finished loading cache. Cache size = "
+                                                 << cache_.get().size() << ". Took "
+                                                 << duration.count() << " seconds";
+
+                                cache_.get().setFull();
+                            } else {
+                                LOG(log_.debug())
+                                    << "Finished a cursor. Remaining = " << remaining_;
+                            }
+
+                            break;  // pick up the next cursor if available
+                        }
+
+                        start = *std::move(res.cursor);
+                    }
                 }
+            } catch (std::exception const& e) {
+                LOG(
+                    log_.error()
+                ) << "Cache loading failed; disabling cache and continuing without it "
+                     "(reads will be served from the database). Error: "
+                  << e.what();
+                cache_.get().setDisabled();
+            } catch (...) {
+                LOG(
+                    log_.error()
+                ) << "Cache loading failed with an unknown error; disabling cache and "
+                     "continuing without it (reads will be served from the database).";
+                cache_.get().setDisabled();
             }
         });
     }

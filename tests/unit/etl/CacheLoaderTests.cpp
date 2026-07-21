@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -266,6 +267,38 @@ TEST_P(ParametrizedCacheLoaderTest, CacheDisabledLeadsToCancellation)
 
     EXPECT_CALL(cache, isDisabled).WillOnce(Return(false)).WillRepeatedly(Return(true));
     EXPECT_CALL(cache, updateImpl).Times(AtMost(1));
+    EXPECT_CALL(cache, setFull).Times(0);
+
+    async::CoroExecutionContext ctx{settings.numThreads};
+    etl::impl::CursorFromFixDiffNumProvider const provider{backend_, settings.numCacheDiffs};
+
+    etl::impl::CacheLoaderImpl<MockLedgerCache> loader{
+        ctx,
+        backend_,
+        cache,
+        kSeq,
+        settings.numCacheMarkers,
+        settings.cachePageFetchSize,
+        provider.getCursors(kSeq)
+    };
+
+    loader.wait();
+}
+
+TEST_P(ParametrizedCacheLoaderTest, NonTimeoutErrorDisablesCacheInsteadOfEscaping)
+{
+    auto const& settings = GetParam();
+    auto const diffs = diffProvider.getLatestDiff();
+
+    EXPECT_CALL(*backend_, fetchLedgerDiff(_, _)).WillRepeatedly(Return(diffs));
+
+    EXPECT_CALL(*backend_, doFetchSuccessorKey(_, kSeq, _))
+        .WillRepeatedly(Throw(std::runtime_error("simulated non-timeout backend failure")));
+    EXPECT_CALL(*backend_, doFetchLedgerObjects(_, kSeq, _))
+        .WillRepeatedly(Return(std::vector<Blob>{}));
+
+    EXPECT_CALL(cache, isDisabled).WillRepeatedly(Return(false));
+    EXPECT_CALL(cache, setDisabled).Times(AtLeast(1));
     EXPECT_CALL(cache, setFull).Times(0);
 
     async::CoroExecutionContext ctx{settings.numThreads};
