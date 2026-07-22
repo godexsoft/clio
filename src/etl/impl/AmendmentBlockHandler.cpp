@@ -47,9 +47,10 @@ AmendmentBlockHandler::notifyAmendmentBlocked()
 void
 AmendmentBlockHandler::stop()
 {
-    if (auto operation = operation_.lock(); operation->has_value()) {
-        operation->value().abort();
-        operation->reset();
+    auto lock = operation_.lock();
+    if (auto& operation = *lock; operation.has_value()) {
+        operation->abort();
+        operation.reset();
     }
 }
 
