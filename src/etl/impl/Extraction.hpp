@@ -69,7 +69,7 @@ private:
     unpack();
 
     [[nodiscard]] std::optional<model::LedgerData>
-    guardedUnpack(std::optional<PBLedgerResponseType> response, uint32_t seq);
+    guardedUnpack(std::optional<PBLedgerResponseType>&& response, uint32_t seq);
 
 public:
     Extractor(

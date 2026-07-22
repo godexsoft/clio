@@ -23,6 +23,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -381,10 +382,12 @@ makeResponseWithUndeserializableTx()
 {
     auto response = util::createData();
     auto& txs = *response.mutable_transactions_list();
-    std::string const badTxBlob{
-        static_cast<char>(0x12), static_cast<char>(0xff), static_cast<char>(0xff)
-    };
-    txs.mutable_transactions(0)->set_transaction_blob(badTxBlob);
+
+    auto blob = txs.transactions(0).transaction_blob();
+    blob.at(1) = static_cast<char>(0xff);
+    blob.at(2) = static_cast<char>(0xff);
+    txs.mutable_transactions(0)->set_transaction_blob(std::move(blob));
+
     return response;
 }
 

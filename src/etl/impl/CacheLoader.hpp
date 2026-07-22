@@ -9,6 +9,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/context/detail/config.hpp>
+#include <fmt/format.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -26,6 +27,20 @@
 #include <vector>
 
 namespace etl::impl {
+
+[[nodiscard]] inline std::string
+describeCacheLoadFailure(std::exception_ptr const& ep)
+{
+    try {
+        if (ep)
+            std::rethrow_exception(ep);
+    } catch (std::exception const& e) {
+        return fmt::format("Cache loading failed: {}", e.what());
+    } catch (...) {
+        return "Cache loading failed with an unknown (non-std) error";
+    }
+    return "Cache loading failed";
+}
 
 template <typename CacheType>
 class CacheLoaderImpl {
@@ -142,18 +157,10 @@ private:
                         start = *std::move(res.cursor);
                     }
                 }
-            } catch (std::exception const& e) {
-                LOG(
-                    log_.error()
-                ) << "Cache loading failed; disabling cache and continuing without it "
-                     "(reads will be served from the database). Error: "
-                  << e.what();
-                cache_.get().setDisabled();
             } catch (...) {
-                LOG(
-                    log_.error()
-                ) << "Cache loading failed with an unknown error; disabling cache and "
-                     "continuing without it (reads will be served from the database).";
+                LOG(log_.error()) << describeCacheLoadFailure(std::current_exception())
+                                  << "; disabling cache and continuing without it (reads will be "
+                                     "served from the database).";
                 cache_.get().setDisabled();
             }
         });

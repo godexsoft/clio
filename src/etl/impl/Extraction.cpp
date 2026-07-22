@@ -181,7 +181,7 @@ Extractor::unpack()
 }
 
 std::optional<model::LedgerData>
-Extractor::guardedUnpack(std::optional<PBLedgerResponseType> response, uint32_t seq)
+Extractor::guardedUnpack(std::optional<PBLedgerResponseType>&& response, uint32_t seq)
 {
     try {
         return std::move(response).and_then(unpack());

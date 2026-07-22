@@ -39,16 +39,17 @@ void
 AmendmentBlockHandler::notifyAmendmentBlocked()
 {
     state_.get().isAmendmentBlocked = true;
-    if (not operation_.has_value())
-        operation_.emplace(ctx_.executeRepeatedly(interval_, action_));
+
+    if (auto operation = operation_.lock(); not operation->has_value())
+        operation->emplace(ctx_.executeRepeatedly(interval_, action_));
 }
 
 void
 AmendmentBlockHandler::stop()
 {
-    if (operation_.has_value()) {
-        operation_->abort();
-        operation_.reset();
+    if (auto operation = operation_.lock(); operation->has_value()) {
+        operation->value().abort();
+        operation->reset();
     }
 }
 

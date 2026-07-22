@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -75,6 +76,27 @@ using Settings = etl::CacheLoaderSettings;
 struct ParametrizedCacheLoaderTest : CacheLoaderTest, WithParamInterface<Settings> {};
 
 };  // namespace
+
+//
+// Tests of the exception-description helper
+//
+TEST(DescribeCacheLoadFailureTest, StdExceptionIncludesWhat)
+{
+    auto const msg =
+        etl::impl::describeCacheLoadFailure(std::make_exception_ptr(std::runtime_error("boom")));
+    EXPECT_THAT(msg, HasSubstr("boom"));
+}
+
+TEST(DescribeCacheLoadFailureTest, NonStdExceptionReportedAsUnknown)
+{
+    auto const msg = etl::impl::describeCacheLoadFailure(std::make_exception_ptr(42));
+    EXPECT_THAT(msg, HasSubstr("unknown"));
+}
+
+TEST(DescribeCacheLoadFailureTest, NullExceptionPtr)
+{
+    EXPECT_EQ(etl::impl::describeCacheLoadFailure({}), "Cache loading failed");
+}
 
 //
 // Tests of implementation
