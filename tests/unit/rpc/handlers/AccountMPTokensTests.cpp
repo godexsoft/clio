@@ -20,6 +20,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -47,8 +48,8 @@ auto const kTokenOuT1 = fmt::format(
         "mpt_id": "{}",
         "account": "{}",
         "mpt_issuance_id": "{}",
-        "mpt_amount": {},
-        "locked_amount": {},
+        "mpt_amount": "{}",
+        "locked_amount": "{}",
         "mpt_locked": true
     }})JSON",
     kTokenIndeX1,
@@ -63,7 +64,7 @@ auto const kTokenOuT2 = fmt::format(
         "mpt_id": "{}",
         "account": "{}",
         "mpt_issuance_id": "{}",
-        "mpt_amount": {},
+        "mpt_amount": "{}",
         "mpt_authorized": true
     }})JSON",
     kTokenIndeX2,
@@ -337,14 +338,14 @@ TEST_F(RPCAccountMPTokensHandlerTest, DefaultParameters)
 
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = xrpl::keylet::account(account).key;
-    auto const owneDirKk = xrpl::keylet::ownerDir(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
     xrpl::STObject const ownerDir = createOwnerDirLedgerObject(
         {xrpl::uint256{kTokenIndeX1}, xrpl::uint256{kTokenIndeX2}}, kTokenIndeX1
     );
-    ON_CALL(*backend_, doFetchLedgerObject(owneDirKk, _, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
 
     auto const bbs = std::vector<Blob>{
@@ -407,7 +408,7 @@ TEST_F(RPCAccountMPTokensHandlerTest, UseLimit)
 
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = xrpl::keylet::account(account).key;
-    auto const owneDirKk = xrpl::keylet::ownerDir(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
     ON_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillByDefault(Return(Blob{'f', 'a', 'k', 'e'}));
 
@@ -427,7 +428,7 @@ TEST_F(RPCAccountMPTokensHandlerTest, UseLimit)
 
     xrpl::STObject ownerDir = createOwnerDirLedgerObject(indexes, kTokenIndeX1);
     ownerDir.setFieldU64(xrpl::sfIndexNext, 99);
-    ON_CALL(*backend_, doFetchLedgerObject(owneDirKk, _, _))
+    ON_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
         .WillByDefault(Return(ownerDir.getSerializer().peekData()));
     EXPECT_CALL(*backend_, doFetchLedgerObject).Times(7);
 
@@ -630,14 +631,14 @@ TEST_F(RPCAccountMPTokensHandlerTest, LimitLessThanMin)
 
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = xrpl::keylet::account(account).key;
-    auto const owneDirKk = xrpl::keylet::ownerDir(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
     EXPECT_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
     xrpl::STObject const ownerDir = createOwnerDirLedgerObject(
         {xrpl::uint256{kTokenIndeX1}, xrpl::uint256{kTokenIndeX2}}, kTokenIndeX1
     );
-    EXPECT_CALL(*backend_, doFetchLedgerObject(owneDirKk, _, _))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
         .WillOnce(Return(ownerDir.getSerializer().peekData()));
 
     auto const bbs = std::vector<Blob>{
@@ -709,14 +710,14 @@ TEST_F(RPCAccountMPTokensHandlerTest, LimitMoreThanMax)
 
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = xrpl::keylet::account(account).key;
-    auto const owneDirKk = xrpl::keylet::ownerDir(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
     EXPECT_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
     xrpl::STObject const ownerDir = createOwnerDirLedgerObject(
         {xrpl::uint256{kTokenIndeX1}, xrpl::uint256{kTokenIndeX2}}, kTokenIndeX1
     );
-    EXPECT_CALL(*backend_, doFetchLedgerObject(owneDirKk, _, _))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
         .WillOnce(Return(ownerDir.getSerializer().peekData()));
 
     auto const bbs = std::vector<Blob>{
@@ -788,12 +789,12 @@ TEST_F(RPCAccountMPTokensHandlerTest, EmptyResult)
 
     auto const account = getAccountIdWithString(kAccount);
     auto const accountKk = xrpl::keylet::account(account).key;
-    auto const owneDirKk = xrpl::keylet::ownerDir(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
     EXPECT_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
         .WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
 
     xrpl::STObject const ownerDir = createOwnerDirLedgerObject({}, kTokenIndeX1);
-    EXPECT_CALL(*backend_, doFetchLedgerObject(owneDirKk, _, _))
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
         .WillOnce(Return(ownerDir.getSerializer().peekData()));
 
     runSpawn([this](auto yield) {
@@ -809,5 +810,81 @@ TEST_F(RPCAccountMPTokensHandlerTest, EmptyResult)
         auto const output = handler.process(input, Context{yield});
         ASSERT_TRUE(output);
         EXPECT_EQ(output.result->as_object().at("mptokens").as_array().size(), 0);
+    });
+}
+
+// Regression test: UInt64 amount fields must be serialized as base-10 JSON strings (as xrpld
+// does) so that values greater than 2^53 are not silently rounded by JSON parsers backed by
+// IEEE-754 doubles. 2^53 itself is still exactly representable as a double, but it must be emitted
+// as a string like every other amount so the wire format stays consistent regardless of magnitude.
+struct AccountMPTokensAmountSerializationTestCaseBundle {
+    std::string testName;
+    uint64_t mptAmount;
+    uint64_t lockedAmount;
+};
+
+struct AccountMPTokensAmountSerializationTest
+    : RPCAccountMPTokensHandlerTest,
+      WithParamInterface<AccountMPTokensAmountSerializationTestCaseBundle> {};
+
+INSTANTIATE_TEST_SUITE_P(
+    RPCAccountMPTokensAmountSerializationGroup,
+    AccountMPTokensAmountSerializationTest,
+    ValuesIn(
+        std::vector<AccountMPTokensAmountSerializationTestCaseBundle>{
+            {.testName = "LargeAmounts",
+             .mptAmount = static_cast<uint64_t>(std::pow(2, 63)) - 1,  // max MPT amount
+             .lockedAmount = static_cast<uint64_t>(std::pow(2, 53)) + 1},
+            {.testName = "ExactDoubleBoundary",
+             .mptAmount = static_cast<uint64_t>(std::pow(2, 53)),
+             .lockedAmount = static_cast<uint64_t>(std::pow(2, 53))}
+        }
+    ),
+    tests::util::kNameGenerator
+);
+
+TEST_P(AccountMPTokensAmountSerializationTest, SerializedAsStrings)
+{
+    auto const testBundle = GetParam();
+
+    auto const ledgerHeader = createLedgerHeader(kLedgerHash, 30);
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).WillOnce(Return(ledgerHeader));
+
+    auto const account = getAccountIdWithString(kAccount);
+    auto const accountKk = xrpl::keylet::account(account).key;
+    auto const ownerDirKk = xrpl::keylet::ownerDir(account).key;
+    EXPECT_CALL(*backend_, doFetchLedgerObject(accountKk, _, _))
+        .WillOnce(Return(Blob{'f', 'a', 'k', 'e'}));
+
+    xrpl::STObject const ownerDir =
+        createOwnerDirLedgerObject({xrpl::uint256{kTokenIndeX1}}, kTokenIndeX1);
+    EXPECT_CALL(*backend_, doFetchLedgerObject(ownerDirKk, _, _))
+        .WillOnce(Return(ownerDir.getSerializer().peekData()));
+
+    xrpl::STObject const mptoken = createMpTokenObject(
+        kAccount,
+        xrpl::uint192(kIssuanceIdHex),
+        testBundle.mptAmount,
+        xrpl::lsfMPTLocked,
+        testBundle.lockedAmount
+    );
+    auto const bbs = std::vector<Blob>{mptoken.getSerializer().peekData()};
+    EXPECT_CALL(*backend_, doFetchLedgerObjects).WillOnce(Return(bbs));
+
+    runSpawn([&, this](auto yield) {
+        auto const input =
+            boost::json::parse(fmt::format(R"JSON({{"account": "{}"}})JSON", kAccount));
+        auto const handler = AnyHandler{AccountMPTokensHandler{this->backend_}};
+        auto const output = handler.process(input, Context{yield});
+        ASSERT_TRUE(output);
+
+        auto const& mptokens = output.result->as_object().at("mptokens").as_array();
+        ASSERT_EQ(mptokens.size(), 1);
+        auto const& token = mptokens[0].as_object();
+
+        ASSERT_TRUE(token.at("mpt_amount").is_string());
+        EXPECT_EQ(token.at("mpt_amount").as_string(), std::to_string(testBundle.mptAmount));
+        ASSERT_TRUE(token.at("locked_amount").is_string());
+        EXPECT_EQ(token.at("locked_amount").as_string(), std::to_string(testBundle.lockedAmount));
     });
 }
