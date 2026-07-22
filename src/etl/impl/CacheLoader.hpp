@@ -22,25 +22,15 @@
 #include <exception>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
-namespace etl::impl {
+struct CacheLoaderImplTests;
 
-[[nodiscard]] inline std::string
-describeCacheLoadFailure(std::exception_ptr const& ep)
-{
-    try {
-        if (ep)
-            std::rethrow_exception(ep);
-    } catch (std::exception const& e) {
-        return fmt::format("Cache loading failed: {}", e.what());
-    } catch (...) {
-        return "Cache loading failed with an unknown (non-std) error";
-    }
-    return "Cache loading failed";
-}
+namespace etl::impl {
 
 template <typename CacheType>
 class CacheLoaderImpl {
@@ -114,57 +104,78 @@ private:
     spawnWorker(uint32_t const seq, size_t cachePageFetchSize)
     {
         return ctx_.execute([this, seq, cachePageFetchSize](auto token) {
-            try {
-                while (not token.isStopRequested() and not cache_.get().isDisabled()) {
-                    auto cursor = queue_.tryPop();
-                    if (not cursor.has_value()) {
-                        return;  // queue is empty
-                    }
-
-                    auto [start, end] = *cursor;
-                    LOG(log_.debug()) << "Starting a cursor: " << xrpl::strHex(start);
-
-                    while (not token.isStopRequested() and not cache_.get().isDisabled()) {
-                        auto res =
-                            data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
-                                return backend_->fetchLedgerPage(
-                                    start, seq, cachePageFetchSize, false, token
-                                );
-                            });
-
-                        cache_.get().update(res.objects, seq, true);
-
-                        if (not res.cursor or res.cursor > end) {
-                            if (--remaining_ <= 0) {
-                                auto endTime = std::chrono::steady_clock::now();
-                                auto duration = std::chrono::duration_cast<std::chrono::seconds>(
-                                    endTime - startTime_
-                                );
-
-                                LOG(log_.info()) << "Finished loading cache. Cache size = "
-                                                 << cache_.get().size() << ". Took "
-                                                 << duration.count() << " seconds";
-
-                                cache_.get().setFull();
-                            } else {
-                                LOG(log_.debug())
-                                    << "Finished a cursor. Remaining = " << remaining_;
-                            }
-
-                            break;  // pick up the next cursor if available
-                        }
-
-                        start = *std::move(res.cursor);
-                    }
-                }
-            } catch (...) {
-                LOG(log_.error()) << describeCacheLoadFailure(std::current_exception())
-                                  << "; disabling cache and continuing without it (reads will be "
-                                     "served from the database).";
-                cache_.get().setDisabled();
-            }
+            runGuarded([this, seq, cachePageFetchSize, token] {
+                loadCacheFromCursors(token, seq, cachePageFetchSize);
+            });
         });
     }
+
+    template <typename Work>
+    void
+    runGuarded(Work&& work)
+    {
+        std::optional<std::string> failure;
+        try {
+            std::forward<Work>(work)();
+        } catch (std::exception const& e) {
+            failure = fmt::format("Cache loading failed: {}", e.what());
+        } catch (...) {
+            failure = "Cache loading failed with an unknown (non-std) error";
+        }
+
+        if (failure.has_value()) {
+            LOG(log_.error()) << *failure
+                              << "; disabling cache and continuing without it (reads will be "
+                                 "served from the database).";
+            cache_.get().setDisabled();
+        }
+    }
+
+    template <typename TokenType>
+    void
+    loadCacheFromCursors(TokenType token, uint32_t const seq, size_t cachePageFetchSize)
+    {
+        while (not token.isStopRequested() and not cache_.get().isDisabled()) {
+            auto cursor = queue_.tryPop();
+            if (not cursor.has_value()) {
+                return;  // queue is empty
+            }
+
+            auto [start, end] = *cursor;
+            LOG(log_.debug()) << "Starting a cursor: " << xrpl::strHex(start);
+
+            while (not token.isStopRequested() and not cache_.get().isDisabled()) {
+                auto res = data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
+                    return backend_->fetchLedgerPage(start, seq, cachePageFetchSize, false, token);
+                });
+
+                cache_.get().update(res.objects, seq, true);
+
+                if (not res.cursor or res.cursor > end) {
+                    if (--remaining_ <= 0) {
+                        auto endTime = std::chrono::steady_clock::now();
+                        auto duration =
+                            std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime_);
+
+                        LOG(log_.info())
+                            << "Finished loading cache. Cache size = " << cache_.get().size()
+                            << ". Took " << duration.count() << " seconds";
+
+                        cache_.get().setFull();
+                    } else {
+                        LOG(log_.debug()) << "Finished a cursor. Remaining = " << remaining_;
+                    }
+
+                    break;  // pick up the next cursor if available
+                }
+
+                start = *std::move(res.cursor);
+            }
+        }
+    }
+
+    // Grants tests access to the private guard/loading members above.
+    friend struct ::CacheLoaderImplTests;
 };
 
 }  // namespace etl::impl

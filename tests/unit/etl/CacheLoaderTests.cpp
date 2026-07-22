@@ -3,6 +3,7 @@
 #include "etl/CacheLoaderSettings.hpp"
 #include "etl/FakeDiffProvider.hpp"
 #include "etl/impl/CacheLoader.hpp"
+#include "util/LoggerFixtures.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockLedgerCache.hpp"
 #include "util/MockLedgerCacheLoadingState.hpp"
@@ -20,7 +21,6 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
-#include <exception>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -78,24 +78,56 @@ struct ParametrizedCacheLoaderTest : CacheLoaderTest, WithParamInterface<Setting
 };  // namespace
 
 //
-// Tests of the exception-description helper
+// Tests of the exception-guarding wrapper (friended so we can drive the private members directly)
 //
-TEST(DescribeCacheLoadFailureTest, StdExceptionIncludesWhat)
+struct CacheLoaderImplTests : util::prometheus::WithPrometheus, MockBackendTest, LoggerFixture {
+    testing::StrictMock<MockLedgerCache> cache;
+    async::CoroExecutionContext ctx{1};
+
+    etl::impl::CacheLoaderImpl<MockLedgerCache> loader{
+        ctx,
+        backend_,
+        cache,
+        kSeq,
+        /* numCacheMarkers */ 0,
+        /* cachePageFetchSize */ 512,
+        {}
+    };
+
+    template <typename Work>
+    void
+    runGuarded(Work&& work)
+    {
+        loader.runGuarded(std::forward<Work>(work));
+    }
+};
+
+TEST_F(CacheLoaderImplTests, GuardDisablesCacheAndLogsOnStdException)
 {
-    auto const msg =
-        etl::impl::describeCacheLoadFailure(std::make_exception_ptr(std::runtime_error("boom")));
-    EXPECT_THAT(msg, HasSubstr("boom"));
+    EXPECT_CALL(cache, setDisabled).Times(1);
+
+    runGuarded([] { throw std::runtime_error("boom"); });
+
+    EXPECT_THAT(getLoggerString(), HasSubstr("boom"));
 }
 
-TEST(DescribeCacheLoadFailureTest, NonStdExceptionReportedAsUnknown)
+TEST_F(CacheLoaderImplTests, GuardDisablesCacheAndLogsUnknownOnNonStdException)
 {
-    auto const msg = etl::impl::describeCacheLoadFailure(std::make_exception_ptr(42));
-    EXPECT_THAT(msg, HasSubstr("unknown"));
+    EXPECT_CALL(cache, setDisabled).Times(1);
+
+    runGuarded([] { throw 42; });
+
+    EXPECT_THAT(getLoggerString(), HasSubstr("unknown"));
 }
 
-TEST(DescribeCacheLoadFailureTest, NullExceptionPtr)
+TEST_F(CacheLoaderImplTests, GuardDoesNotDisableCacheOnSuccess)
 {
-    EXPECT_EQ(etl::impl::describeCacheLoadFailure({}), "Cache loading failed");
+    EXPECT_CALL(cache, setDisabled).Times(0);
+
+    bool called = false;
+    runGuarded([&] { called = true; });
+
+    EXPECT_TRUE(called);
 }
 
 //
