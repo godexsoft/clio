@@ -150,7 +150,7 @@ INSTANTIATE_TEST_SUITE_P(
             "Clio",
             WarningCode::WarnRpcClio,
             "This is a clio server. clio only serves validated data. If you want to talk to "
-            "rippled, include "
+            "xrpld, include "
             "'ledger_index':'current' in your request"
         },
         WarningCodeTestBundle{

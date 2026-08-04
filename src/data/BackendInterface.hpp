@@ -87,7 +87,7 @@ synchronous(FnType&& func)
 {
     boost::asio::io_context ctx;
 
-    using R = typename boost::result_of<FnType(boost::asio::yield_context)>::type;
+    using R = boost::result_of<FnType(boost::asio::yield_context)>::type;
     if constexpr (!std::is_same_v<R, void>) {
         R res;
         util::spawn(ctx, [_ = boost::asio::make_work_guard(ctx), &func, &res](auto yield) {
@@ -669,7 +669,9 @@ public:
         boost::asio::yield_context yield
     ) const = 0;
 
-    /** @brief Return type for fetchClioNodesData() method */
+    /**
+     * @brief Return type for fetchClioNodesData() method
+     */
     using ClioNodesDataFetchResult =
         std::expected<std::vector<std::pair<boost::uuids::uuid, std::string>>, std::string>;
 

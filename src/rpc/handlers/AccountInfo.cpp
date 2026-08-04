@@ -105,7 +105,7 @@ AccountInfoHandler::process(AccountInfoHandler::Input const& input, Context cons
     if (input.signerLists) {
         // We put the SignerList in an array because of an anticipated
         // future when we support multiple signer lists on one account.
-        auto const signersKey = xrpl::keylet::signers(accountID);
+        auto const signersKey = xrpl::keylet::signerList(accountID);
 
         // This code will need to be revisited if in the future we
         // support multiple SignerLists on one account.

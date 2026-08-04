@@ -22,7 +22,6 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value.hpp>
 #include <boost/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 #include <fmt/format.h>
 #include <xrpl/basics/Number.h>
@@ -66,7 +65,9 @@
 
 namespace rpc {
 
-/** @brief Enum for NFT json manipulation */
+/**
+ * @brief Enum for NFT json manipulation
+ */
 enum class NFTokenjson { ENABLE, DISABLE };
 
 /**
@@ -781,8 +782,9 @@ logDuration(
         LOG(log.error()) << tag << msg;
     } else if (seconds > 1) {
         LOG(log.warn()) << tag << msg;
-    } else
+    } else {
         LOG(log.info()) << tag << msg;
+    }
 }
 
 /**

@@ -909,7 +909,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothSnapshotSet)
 
     // fee
     auto feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    ON_CALL(*backend_, doFetchLedgerObject(xrpl::keylet::fees().key, kMaxSeq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(xrpl::keylet::feeSettings().key, kMaxSeq, _))
         .WillByDefault(Return(feeBlob));
 
     auto const gets10XRPPays20USDOffer = createOfferLedgerObject(
@@ -1103,7 +1103,7 @@ TEST_F(RPCSubscribeHandlerTest, BooksBothUnsetSnapshotSet)
 
     // fee
     auto feeBlob = createLegacyFeeSettingBlob(1, 2, 3, 4, 0);
-    ON_CALL(*backend_, doFetchLedgerObject(xrpl::keylet::fees().key, kMaxSeq, _))
+    ON_CALL(*backend_, doFetchLedgerObject(xrpl::keylet::feeSettings().key, kMaxSeq, _))
         .WillByDefault(Return(feeBlob));
 
     auto const gets10XRPPays20USDOffer = createOfferLedgerObject(

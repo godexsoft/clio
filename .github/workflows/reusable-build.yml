@@ -91,12 +91,12 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: ${{ inputs.download_ccache }}
 
@@ -123,7 +123,7 @@ jobs:
 
       - name: Restore ccache cache
         if: ${{ inputs.download_ccache && github.ref != 'refs/heads/develop' }}
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.build_identifier.outputs.cache_key }}
@@ -172,7 +172,7 @@ jobs:
 
       - name: Save ccache cache
         if: ${{ inputs.upload_ccache && github.ref == 'refs/heads/develop' }}
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.build_identifier.outputs.cache_key }}

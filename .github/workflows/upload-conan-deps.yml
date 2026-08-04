@@ -22,10 +22,10 @@ on:
 
       - .github/actions/conan/action.yml
       - ".github/scripts/conan/**"
-      - "!.github/scripts/conan/regenerate_lockfile.sh"
 
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
   push:
     branches: [develop]
     paths:
@@ -33,10 +33,10 @@ on:
 
       - .github/actions/conan/action.yml
       - ".github/scripts/conan/**"
-      - "!.github/scripts/conan/regenerate_lockfile.sh"
 
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,7 +52,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Calculate conan matrix
         id: set-matrix
@@ -72,10 +72,10 @@ jobs:
     container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: false
 
@@ -107,10 +107,12 @@ jobs:
 
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' }}
-        run: conan remote login -p ${{ secrets.CONAN_PASSWORD }} xrplf ${{ secrets.CONAN_USERNAME }}
+        run: conan remote login -p ${{ secrets.NEXUS_REMOTE_PASSWORD }} xrplf ${{ secrets.NEXUS_REMOTE_USERNAME }}
 
       - name: Upload Conan packages
         if: ${{ github.repository == 'XRPLF/clio' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+          CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+          CONAN_PASSWORD_XRPLF: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
         run: conan upload "*" -r=xrplf --confirm ${FORCE_OPTION}

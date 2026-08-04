@@ -56,7 +56,7 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -104,7 +104,7 @@ jobs:
 
     services:
       scylladb:
-        image: ${{ inputs.container != '' && 'scylladb/scylla' || '' }}
+        image: ${{ inputs.container != '' && 'scylladb/scylla:2026.1' || '' }}
         options: >-
           --health-cmd "cqlsh -e 'describe cluster'"
           --health-interval 10s
@@ -116,7 +116,7 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -156,7 +156,7 @@ jobs:
               --health-retries 5 \
               --publish 9042:9042 \
               --memory 16G \
-              scylladb/scylla
+              scylladb/scylla:2026.1
 
       - name: Wait for scylladb container to be healthy (macOS)
         if: ${{ runner.os == 'macOS' }}

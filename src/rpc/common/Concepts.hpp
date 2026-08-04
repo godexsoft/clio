@@ -13,7 +13,7 @@ namespace rpc {
  */
 template <typename T>
 concept SomeContextProcessWithInput =
-    requires(T a, typename T::Input const& in, typename T::Output out, Context const& ctx) {
+    requires(T a, T::Input const& in, T::Output out, Context const& ctx) {
         { a.process(in, ctx) } -> std::same_as<HandlerReturnType<decltype(out)>>;
     };
 
@@ -21,7 +21,7 @@ concept SomeContextProcessWithInput =
  * @brief A process function that expects no Input but does take a Context.
  */
 template <typename T>
-concept SomeContextProcessWithoutInput = requires(T a, typename T::Output out, Context const& ctx) {
+concept SomeContextProcessWithoutInput = requires(T a, T::Output out, Context const& ctx) {
     { a.process(ctx) } -> std::same_as<HandlerReturnType<decltype(out)>>;
 };
 

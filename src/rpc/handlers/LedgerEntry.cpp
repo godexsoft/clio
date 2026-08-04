@@ -88,7 +88,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
         key = *input.nunl;
         expectedType = xrpl::ltNEGATIVE_UNL;
     } else if (input.mptIssuance) {
-        key = xrpl::keylet::mptIssuance(*input.mptIssuance).key;
+        key = xrpl::keylet::mptokenIssuance(*input.mptIssuance).key;
     } else if (input.directory) {
         if (auto const* h = std::get_if<xrpl::uint256>(&*input.directory)) {
             key = *h;
@@ -120,7 +120,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
         }
     } else if (input.rippleStateAccount) {
         auto const& rs = *input.rippleStateAccount;
-        key = xrpl::keylet::line(rs.accounts[0], rs.accounts[1], rs.currency).key;
+        key = xrpl::keylet::trustLine(rs.accounts[0], rs.accounts[1], rs.currency).key;
     } else if (input.escrow) {
         if (auto const* h = std::get_if<xrpl::uint256>(&*input.escrow)) {
             key = *h;
@@ -265,7 +265,7 @@ LedgerEntryHandler::process(LedgerEntryHandler::Input const& input, Context cons
             expectedType = xrpl::ltLOAN_BROKER;
         } else {
             auto const& e = std::get<LoanBrokerEntry>(*input.loanBroker);
-            key = xrpl::keylet::loanbroker(e.owner, e.seq).key;
+            key = xrpl::keylet::loanBroker(e.owner, e.seq).key;
         }
     } else if (input.loan) {
         if (auto const* h = std::get_if<xrpl::uint256>(&*input.loan)) {

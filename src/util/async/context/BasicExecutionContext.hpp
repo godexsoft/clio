@@ -119,20 +119,22 @@ class BasicExecutionContext : public ExecutionContextTag {
     /** @endcond */
 
 public:
-    /** @brief Whether operations on this execution context are noexcept */
+    /**
+     * @brief Whether operations on this execution context are noexcept
+     */
     static constexpr bool kIsNoexcept = noexcept(ErrorHandlerType::wrap([](auto&) { throw 0; })) and
         noexcept(ErrorHandlerType::catchAndAssert([] { throw 0; }));
 
     using ContextHolderType = ContextType;
 
-    using ExecutorType = typename ContextHolderType::Executor;
+    using ExecutorType = ContextHolderType::Executor;
 
     template <typename T>
     using ValueType = std::expected<T, ExecutionError>;
 
     using StopSource = StopSourceType;
 
-    using StopToken = typename StopSourceType::Token;
+    using StopToken = StopSourceType::Token;
 
     template <typename T>
     using StoppableOperation = StoppableOperation<ValueType<T>, StopSourceType>;
@@ -147,7 +149,7 @@ public:
         TimerContextProvider,
         ErrorHandlerType>;
 
-    using Timer = typename ContextHolderType::Timer;
+    using Timer = ContextHolderType::Timer;
 
     // note: scheduled operations are always stoppable
     template <typename T>
@@ -425,7 +427,7 @@ public:
      *
      * @return Reference to the underlying executor
      */
-    typename ContextType::Executor&
+    ContextType::Executor&
     getExecutor()
     {
         return context_.getExecutor();
