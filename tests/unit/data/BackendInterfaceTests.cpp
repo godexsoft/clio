@@ -169,25 +169,25 @@ TEST_F(
 }
 
 // Loader and Extractor catch std::runtime_error to decide the server must amendment-block, so
-// DatabaseTimeout has to stay outside that hierarchy.
-TEST(BackendInterfaceRetryTest, DatabaseTimeoutIsNotARuntimeError)
+// DatabaseError has to stay outside that hierarchy.
+TEST(BackendInterfaceRetryTest, DatabaseErrorIsNotARuntimeError)
 {
-    static_assert(std::is_base_of_v<std::exception, DatabaseTimeout>);
-    static_assert(not std::is_base_of_v<std::runtime_error, DatabaseTimeout>);
+    static_assert(std::is_base_of_v<std::exception, DatabaseError>);
+    static_assert(not std::is_base_of_v<std::runtime_error, DatabaseError>);
 
     try {
-        throw DatabaseTimeout{"transient"};
+        throw DatabaseError{"transient"};
     } catch (std::runtime_error const&) {
-        FAIL() << "DatabaseTimeout must not be caught as std::runtime_error - doing so would "
+        FAIL() << "DatabaseError must not be caught as std::runtime_error - doing so would "
                   "amendment-block the server on a transient database error";
     } catch (std::exception const& e) {
         EXPECT_STREQ(e.what(), "transient");
     }
 }
 
-TEST(BackendInterfaceRetryTest, DatabaseTimeoutKeepsDefaultMessage)
+TEST(BackendInterfaceRetryTest, DatabaseErrorKeepsDefaultMessage)
 {
-    EXPECT_STREQ(DatabaseTimeout{}.what(), "Database read timed out. Please retry the request");
+    EXPECT_STREQ(DatabaseError{}.what(), "Transient database error. Please retry the request");
 }
 
 TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingRetriesUntilSuccess)
@@ -197,7 +197,7 @@ TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingRetriesUntilSuccess)
     auto const result = retryOnTimeout(
         [&calls]() -> int {
             if (++calls < 3)
-                throw DatabaseTimeout{};
+                throw DatabaseError{};
             return 42;
         },
         std::chrono::milliseconds{1},
@@ -228,7 +228,7 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroRetriesUntilSuccess)
         auto const result = retryOnTimeout(
             [&calls]() -> int {
                 if (++calls < 3)
-                    throw DatabaseTimeout{};
+                    throw DatabaseError{};
                 return 42;
             },
             yield,
@@ -267,7 +267,7 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotBlockItsThread)
         retryOnTimeout(
             [&calls]() -> int {
                 if (++calls < 2)
-                    throw DatabaseTimeout{};
+                    throw DatabaseError{};
                 return 0;
             },
             yield,

@@ -155,12 +155,12 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadOneInCoroutineThrowsOnTimeoutF
 
     runSpawn([&strat](boost::asio::yield_context yield) {
         auto statement = FakeStatement{};
-        EXPECT_THROW(strat.read(yield, statement), data::DatabaseTimeout);
+        EXPECT_THROW(strat.read(yield, statement), data::DatabaseError);
     });
 }
 
-// A CL=QUORUM read failure is CASS_ERROR_SERVER_READ_FAILURE, which isTimeout() does not cover. It
-// used to not throw at all, leaving read() spinning; Times(1) pins that down.
+// A CL=QUORUM read failure is CASS_ERROR_SERVER_READ_FAILURE, which used to not throw at all,
+// leaving read() spinning; Times(1) pins that down.
 TEST_F(BackendCassandraExecutionStrategyTest, ReadOneInCoroutineThrowsOnQuorumReadFailure)
 {
     auto strat = makeStrategy();
@@ -188,8 +188,8 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadOneInCoroutineThrowsOnQuorumRe
         auto statement = FakeStatement{};
         try {
             strat.read(yield, statement);
-            FAIL() << "expected DatabaseTimeout";
-        } catch (data::DatabaseTimeout const& e) {
+            FAIL() << "expected DatabaseError";
+        } catch (data::DatabaseError const& e) {
             EXPECT_THAT(
                 std::string{e.what()}, testing::HasSubstr("received 1 responses and 1 failures")
             );
@@ -285,7 +285,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadBatchInCoroutineThrowsOnTimeou
 
     runSpawn([&strat](boost::asio::yield_context yield) {
         auto statements = std::vector<FakeStatement>(kNumStatements);
-        EXPECT_THROW(strat.read(yield, statements), data::DatabaseTimeout);
+        EXPECT_THROW(strat.read(yield, statements), data::DatabaseError);
     });
 }
 
@@ -423,7 +423,7 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadEachInCoroutineThrowsOnFailure
 
     runSpawn([&strat](boost::asio::yield_context yield) {
         auto statements = std::vector<FakeStatement>(kNumStatements);
-        EXPECT_THROW(strat.readEach(yield, statements), data::DatabaseTimeout);
+        EXPECT_THROW(strat.readEach(yield, statements), data::DatabaseError);
     });
 }
 

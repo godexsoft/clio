@@ -170,7 +170,7 @@ public:
      *
      * @param preparedStatement Statement to prepare and execute
      * @param args Args to bind to the prepared statement
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      */
     template <typename... Args>
     void
@@ -186,7 +186,7 @@ public:
      * Retries forever with retry policy specified by @ref AsyncExecutor
      *
      * @param statement Statement to execute
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      */
     void
     write(StatementType&& statement)
@@ -216,7 +216,7 @@ public:
      * Retries forever with retry policy specified by @ref AsyncExecutor.
      *
      * @param statements Vector of statements to execute as a batch
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      */
     void
     write(std::vector<StatementType>&& statements)
@@ -255,7 +255,7 @@ public:
      * Retries forever with retry policy specified by @ref AsyncExecutor.
      *
      * @param statements Vector of statements to execute
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      */
     void
     writeEach(std::vector<StatementType>&& statements)
@@ -273,7 +273,7 @@ public:
      * @param token Completion token (yield_context)
      * @param preparedStatement Statement to prepare and execute
      * @param args Args to bind to the prepared statement
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      * @return ResultType or error wrapped in Expected
      */
     template <typename... Args>
@@ -290,7 +290,7 @@ public:
      *
      * @param token Completion token (yield_context)
      * @param statements Statements to execute in a batch
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      * @return ResultType or error wrapped in Expected
      */
     [[maybe_unused]] ResultOrErrorType
@@ -347,7 +347,7 @@ public:
      *
      * @param token Completion token (yield_context)
      * @param statement Statement to execute
-     * @throws DatabaseTimeout on timeout
+     * @throws DatabaseError on a database error
      * @return ResultType or error wrapped in Expected
      */
     [[maybe_unused]] ResultOrErrorType
@@ -403,7 +403,7 @@ public:
      *
      * @param token Completion token (yield_context)
      * @param statements Statements to execute
-     * @throws DatabaseTimeout on db error
+     * @throws DatabaseError on a database error
      * @return Vector of results
      */
     std::vector<ResultType>
@@ -458,7 +458,7 @@ public:
             );
             counters_->registerReadError(errorsCount);
             counters_->registerReadFinished(startTime, statements.size() - errorsCount);
-            throw DatabaseTimeout{};
+            throw DatabaseError{};
         }
         counters_->registerReadFinished(startTime, statements.size());
 
@@ -558,7 +558,7 @@ private:
             throw std::runtime_error("Invalid query");
 
         // anything else, including unclassified codes, is transient and gets retried
-        throw DatabaseTimeout{"Database error: " + err.message()};
+        throw DatabaseError{"Database error: " + err.message()};
     }
 };
 

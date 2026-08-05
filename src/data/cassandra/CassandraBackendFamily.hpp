@@ -139,14 +139,18 @@ public:
      */
     CassandraBackendFamily(CassandraBackendFamily&&) = delete;
 
-    /** @return The configured delay before the first retry */
+    /**
+     * @return The configured delay before the first retry
+     */
     [[nodiscard]] std::chrono::milliseconds
     retryInitialDelay() const override
     {
         return settingsProvider_.getInitialRetryDelay();
     }
 
-    /** @return The configured upper bound for the retry backoff */
+    /**
+     * @return The configured upper bound for the retry backoff
+     */
     [[nodiscard]] std::chrono::milliseconds
     retryMaxDelay() const override
     {

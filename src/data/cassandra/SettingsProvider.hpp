@@ -65,14 +65,18 @@ public:
         return replicationFactor_;
     }
 
-    /** @return Delay before the first retry of a failed request */
+    /**
+     * @return Delay before the first retry of a failed request
+     */
     [[nodiscard]] std::chrono::milliseconds
     getInitialRetryDelay() const
     {
         return initialRetryDelay_;
     }
 
-    /** @return Upper bound for the retry backoff */
+    /**
+     * @return Upper bound for the retry backoff
+     */
     [[nodiscard]] std::chrono::milliseconds
     getMaxRetryDelay() const
     {

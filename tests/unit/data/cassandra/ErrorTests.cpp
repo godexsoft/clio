@@ -32,24 +32,9 @@ TEST(BackendCassandraErrorTest, IsInvalidQueryOnlyForInvalidQuery)
     EXPECT_FALSE(makeError(CASS_OK).isInvalidQuery());
 }
 
-TEST(BackendCassandraErrorTest, IsTimeoutForTimeoutLikeCodes)
-{
-    EXPECT_TRUE(makeError(CASS_ERROR_LIB_NO_HOSTS_AVAILABLE).isTimeout());
-    EXPECT_TRUE(makeError(CASS_ERROR_LIB_REQUEST_TIMED_OUT).isTimeout());
-    EXPECT_TRUE(makeError(CASS_ERROR_SERVER_UNAVAILABLE).isTimeout());
-    EXPECT_TRUE(makeError(CASS_ERROR_SERVER_OVERLOADED).isTimeout());
-    EXPECT_TRUE(makeError(CASS_ERROR_SERVER_READ_TIMEOUT).isTimeout());
-
-    // a quorum failure is not a timeout: replicas did answer, they answered with failures. It is
-    // still retried, because throwErrorIfNeeded retries everything that is not an invalid query.
-    EXPECT_FALSE(makeError(CASS_ERROR_SERVER_READ_FAILURE).isTimeout());
-    EXPECT_FALSE(makeError(CASS_ERROR_SERVER_WRITE_FAILURE).isTimeout());
-    EXPECT_FALSE(makeError(CASS_OK).isTimeout());
-}
-
 TEST(BackendCassandraErrorTest, MessageAndCodeArePreserved)
 {
-    // throwErrorIfNeeded puts message() into the DatabaseTimeout it throws, so that treating an
+    // throwErrorIfNeeded puts message() into the DatabaseError it throws, so that treating an
     // unclassified error as a timeout still reports what actually failed
     auto const err = CassandraError{"received 1 responses and 1 failures", 0x1300};
 

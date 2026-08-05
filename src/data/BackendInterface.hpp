@@ -38,18 +38,18 @@ namespace data {
 /**
  * @brief Represents a transient database error that the caller should retry.
  */
-class DatabaseTimeout : public std::exception {
-    std::string message_{"Database read timed out. Please retry the request"};
+class DatabaseError : public std::exception {
+    std::string message_{"Transient database error. Please retry the request"};
 
 public:
-    DatabaseTimeout() = default;
+    DatabaseError() = default;
 
     /**
      * @brief Construct with a description of the underlying failure.
      *
      * @param message What actually went wrong.
      */
-    explicit DatabaseTimeout(std::string message) : message_{std::move(message)}
+    explicit DatabaseError(std::string message) : message_{std::move(message)}
     {
     }
 
@@ -68,11 +68,13 @@ public:
  */
 static constexpr std::chrono::milliseconds kDefaultWaitBetweenRetry{500};
 
-/** @brief Default upper bound for the exponential backoff in @ref retryOnTimeout(). */
+/**
+ * @brief Default upper bound for the exponential backoff in @ref retryOnTimeout().
+ */
 static constexpr std::chrono::milliseconds kMaxWaitBetweenRetry{5'000};
 
 /**
- * @brief Retry `func` while it throws DatabaseTimeout, suspending the calling coroutine in between.
+ * @brief Retry `func` while it throws DatabaseError, suspending the calling coroutine in between.
  *
  * @tparam FnType The type of function object to execute
  * @param func The function object to execute
@@ -97,7 +99,7 @@ retryOnTimeout(
     while (true) {
         try {
             return func();
-        } catch (DatabaseTimeout const& e) {
+        } catch (DatabaseError const& e) {
             auto const delayMs =
                 std::chrono::duration_cast<std::chrono::milliseconds>(retry.delayValue()).count();
             LOG(log.error()) << e.what() << " (attempt " << retry.attemptNumber() + 1
@@ -109,7 +111,7 @@ retryOnTimeout(
 }
 
 /**
- * @brief Retry `func` while it throws DatabaseTimeout, blocking the calling thread in between.
+ * @brief Retry `func` while it throws DatabaseError, blocking the calling thread in between.
  *
  * @warning Blocks the calling thread; from a coroutine use the `yield_context` overload instead.
  *
@@ -135,7 +137,7 @@ retryOnTimeout(
     while (true) {
         try {
             return func();
-        } catch (DatabaseTimeout const& e) {
+        } catch (DatabaseError const& e) {
             auto const delay = backoff.getDelay();
             LOG(log.error()) << e.what() << " (attempt " << attempt << "). Retrying in "
                              << std::chrono::duration_cast<std::chrono::milliseconds>(delay).count()
@@ -180,7 +182,7 @@ synchronous(FnType&& func)
 }
 
 /**
- * @brief Synchronously execute the given function object and retry until no DatabaseTimeout is
+ * @brief Synchronously execute the given function object and retry until no DatabaseError is
  * thrown.
  *
  * @warning Blocks the calling thread. Pass equal delays to keep the delay flat.
@@ -225,14 +227,18 @@ public:
 
     virtual ~BackendInterface() = default;
 
-    /** @return Delay before the first retry of a request against this backend */
+    /**
+     * @return Delay before the first retry of a request against this backend
+     */
     [[nodiscard]] virtual std::chrono::milliseconds
     retryInitialDelay() const
     {
         return kDefaultWaitBetweenRetry;
     }
 
-    /** @return Upper bound for the retry backoff; equal to @ref retryInitialDelay() means flat */
+    /**
+     * @return Upper bound for the retry backoff; equal to @ref retryInitialDelay() means flat
+     */
     [[nodiscard]] virtual std::chrono::milliseconds
     retryMaxDelay() const
     {
@@ -803,7 +809,7 @@ public:
     hardFetchLedgerRange(boost::asio::yield_context yield) const = 0;
 
     /**
-     * @brief Fetches the ledger range from DB retrying until no DatabaseTimeout is thrown.
+     * @brief Fetches the ledger range from DB retrying until no DatabaseError is thrown.
      *
      * @return The ledger range if available; nullopt otherwise
      */

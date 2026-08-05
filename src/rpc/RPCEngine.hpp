@@ -178,7 +178,7 @@ public:
             }
 
             return Result{std::move(v)};
-        } catch (data::DatabaseTimeout const& t) {
+        } catch (data::DatabaseError const& t) {
             LOG(log_.error()) << "Database timeout";
             notifyTooBusy();
 
@@ -361,7 +361,7 @@ private:
             }
 
             return Result{std::move(v)};
-        } catch (data::DatabaseTimeout const& t) {
+        } catch (data::DatabaseError const& t) {
             LOG(log_.error()) << "Database timeout";
             notifyTooBusy();
 
