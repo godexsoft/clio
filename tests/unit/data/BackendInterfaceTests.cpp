@@ -1,3 +1,4 @@
+#include "data/BackendInterface.hpp"
 #include "etl/CorruptionDetector.hpp"
 #include "etl/SystemState.hpp"
 #include "util/AsioContextTestFixture.hpp"
@@ -5,6 +6,7 @@
 #include "util/MockPrometheus.hpp"
 #include "util/TestObject.hpp"
 
+#include <boost/asio/post.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <xrpl/basics/Blob.h>
@@ -12,7 +14,12 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <chrono>
+#include <cstddef>
+#include <exception>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 using namespace data;
@@ -159,4 +166,115 @@ TEST_F(
         backend_->fetchLedgerPage(std::nullopt, kMaxSeq, 10, false, yield);
     });
     EXPECT_FALSE(backend_->cache().isDisabled());
+}
+
+// Loader and Extractor catch std::runtime_error to decide the server must amendment-block, so
+// DatabaseTimeout has to stay outside that hierarchy.
+TEST(BackendInterfaceRetryTest, DatabaseTimeoutIsNotARuntimeError)
+{
+    static_assert(std::is_base_of_v<std::exception, DatabaseTimeout>);
+    static_assert(not std::is_base_of_v<std::runtime_error, DatabaseTimeout>);
+
+    try {
+        throw DatabaseTimeout{"transient"};
+    } catch (std::runtime_error const&) {
+        FAIL() << "DatabaseTimeout must not be caught as std::runtime_error - doing so would "
+                  "amendment-block the server on a transient database error";
+    } catch (std::exception const& e) {
+        EXPECT_STREQ(e.what(), "transient");
+    }
+}
+
+TEST(BackendInterfaceRetryTest, DatabaseTimeoutKeepsDefaultMessage)
+{
+    EXPECT_STREQ(DatabaseTimeout{}.what(), "Database read timed out. Please retry the request");
+}
+
+TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingRetriesUntilSuccess)
+{
+    std::size_t calls = 0;
+
+    auto const result = retryOnTimeout(
+        [&calls]() -> int {
+            if (++calls < 3)
+                throw DatabaseTimeout{};
+            return 42;
+        },
+        std::chrono::milliseconds{1},
+        std::chrono::milliseconds{2}
+    );
+
+    EXPECT_EQ(result, 42);
+    EXPECT_EQ(calls, 3);
+}
+
+TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingDoesNotSwallowOtherExceptions)
+{
+    EXPECT_THROW(
+        retryOnTimeout(
+            []() -> int { throw std::runtime_error{"permanent"}; }, std::chrono::milliseconds{1}
+        ),
+        std::runtime_error
+    );
+}
+
+struct BackendInterfaceRetryCoroTest : SyncAsioContextTest {};
+
+TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroRetriesUntilSuccess)
+{
+    std::size_t calls = 0;
+
+    runSpawn([&calls](auto yield) {
+        auto const result = retryOnTimeout(
+            [&calls]() -> int {
+                if (++calls < 3)
+                    throw DatabaseTimeout{};
+                return 42;
+            },
+            yield,
+            std::chrono::milliseconds{1},
+            std::chrono::milliseconds{2}
+        );
+
+        EXPECT_EQ(result, 42);
+    });
+
+    EXPECT_EQ(calls, 3);
+}
+
+TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotSwallowOtherExceptions)
+{
+    runSpawn([](auto yield) {
+        EXPECT_THROW(
+            retryOnTimeout(
+                []() -> int { throw std::runtime_error{"permanent"}; },
+                yield,
+                std::chrono::milliseconds{1}
+            ),
+            std::runtime_error
+        );
+    });
+}
+
+TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotBlockItsThread)
+{
+    bool ran = false;
+
+    runSpawn([&ran, this](auto yield) {
+        boost::asio::post(ctx_, [&ran]() { ran = true; });
+
+        std::size_t calls = 0;
+        retryOnTimeout(
+            [&calls]() -> int {
+                if (++calls < 2)
+                    throw DatabaseTimeout{};
+                return 0;
+            },
+            yield,
+            std::chrono::milliseconds{20},
+            std::chrono::milliseconds{20}
+        );
+
+        EXPECT_TRUE(ran);
+    });
 }

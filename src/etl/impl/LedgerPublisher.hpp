@@ -130,9 +130,12 @@ public:
                 continue;
             }
 
-            auto lgr = data::synchronousAndRetryOnTimeout([&](auto yield) {
-                return backend_->fetchLedgerBySequence(ledgerSequence, yield);
-            });
+            // flat delay: this blocks a thread of the shared pool
+            auto lgr = data::synchronousAndRetryOnTimeout(
+                [&](auto yield) { return backend_->fetchLedgerBySequence(ledgerSequence, yield); },
+                data::kDefaultWaitBetweenRetry,
+                data::kDefaultWaitBetweenRetry
+            );
 
             ASSERT(
                 lgr.has_value(),
@@ -169,15 +172,21 @@ public:
             // and don't publish
             static constexpr std::uint32_t kMaxLedgerAgeSeconds = 600;
             if (age < kMaxLedgerAgeSeconds) {
-                std::optional<xrpl::Fees> fees =
-                    data::synchronousAndRetryOnTimeout([&](auto yield) {
-                        return backend_->fetchFees(lgrInfo.seq, yield);
-                    });
+                // flat delay: publishing is serialized and blocks a thread of the shared pool
+                std::optional<xrpl::Fees> fees = data::synchronousAndRetryOnTimeout(
+                    [&](auto yield) { return backend_->fetchFees(lgrInfo.seq, yield); },
+                    data::kDefaultWaitBetweenRetry,
+                    data::kDefaultWaitBetweenRetry
+                );
                 ASSERT(fees.has_value(), "Fees must exist for ledger {}", lgrInfo.seq);
 
-                auto transactions = data::synchronousAndRetryOnTimeout([&](auto yield) {
-                    return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
-                });
+                auto transactions = data::synchronousAndRetryOnTimeout(
+                    [&](auto yield) {
+                        return backend_->fetchAllTransactionsInLedger(lgrInfo.seq, yield);
+                    },
+                    data::kDefaultWaitBetweenRetry,
+                    data::kDefaultWaitBetweenRetry
+                );
 
                 auto const ledgerRange = backend_->fetchLedgerRange();
                 ASSERT(ledgerRange.has_value(), "Ledger range must exist");

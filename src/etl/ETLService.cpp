@@ -349,9 +349,12 @@ ETLService::updateCache(uint32_t seq)
     auto const backendNeedsUpdate = backendRange.has_value() and backendRange->maxSequence < seq;
 
     if (cacheNeedsUpdate) {
-        auto const diff = data::synchronousAndRetryOnTimeout([this, seq](auto yield) {
-            return backend_->fetchLedgerDiff(seq, yield);
-        });
+        // flat delay: this blocks a thread of the shared ETL context
+        auto const diff = data::synchronousAndRetryOnTimeout(
+            [this, seq](auto yield) { return backend_->fetchLedgerDiff(seq, yield); },
+            data::kDefaultWaitBetweenRetry,
+            data::kDefaultWaitBetweenRetry
+        );
         cacheUpdater_->update(seq, diff);
     }
 

@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -155,6 +156,44 @@ TEST_F(BackendCassandraExecutionStrategyTest, ReadOneInCoroutineThrowsOnTimeoutF
     runSpawn([&strat](boost::asio::yield_context yield) {
         auto statement = FakeStatement{};
         EXPECT_THROW(strat.read(yield, statement), data::DatabaseTimeout);
+    });
+}
+
+// A CL=QUORUM read failure is CASS_ERROR_SERVER_READ_FAILURE, which isTimeout() does not cover. It
+// used to not throw at all, leaving read() spinning; Times(1) pins that down.
+TEST_F(BackendCassandraExecutionStrategyTest, ReadOneInCoroutineThrowsOnQuorumReadFailure)
+{
+    auto strat = makeStrategy();
+
+    ON_CALL(
+        handle_,
+        asyncExecute(A<FakeStatement const&>(), A<std::function<void(FakeResultOrError)>&&>())
+    )
+        .WillByDefault([](auto const&, auto&& cb) {
+            auto res = FakeResultOrError{CassandraError{
+                "received 1 responses and 1 failures", CASS_ERROR_SERVER_READ_FAILURE
+            }};
+            cb(res);  // notify that item is ready
+            return FakeFutureWithCallback{res};
+        });
+    EXPECT_CALL(
+        handle_,
+        asyncExecute(A<FakeStatement const&>(), A<std::function<void(FakeResultOrError)>&&>())
+    )
+        .Times(1);
+    EXPECT_CALL(*counters_, registerReadStartedImpl(1));
+    EXPECT_CALL(*counters_, registerReadErrorImpl(1));
+
+    runSpawn([&strat](boost::asio::yield_context yield) {
+        auto statement = FakeStatement{};
+        try {
+            strat.read(yield, statement);
+            FAIL() << "expected DatabaseTimeout";
+        } catch (data::DatabaseTimeout const& e) {
+            EXPECT_THAT(
+                std::string{e.what()}, testing::HasSubstr("received 1 responses and 1 failures")
+            );
+        }
     });
 }
 

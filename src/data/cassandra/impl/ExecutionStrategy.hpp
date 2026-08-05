@@ -27,6 +27,7 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -551,11 +552,13 @@ private:
     void
     throwErrorIfNeeded(CassandraError err) const
     {
-        if (err.isTimeout())
-            throw DatabaseTimeout();
-
+        // NOTE: etl::impl::Loader and etl::impl::Extractor treat std::runtime_error as
+        // "amendment blocked", so only genuinely permanent failures may be thrown as one.
         if (err.isInvalidQuery())
             throw std::runtime_error("Invalid query");
+
+        // anything else, including unclassified codes, is transient and gets retried
+        throw DatabaseTimeout{"Database error: " + err.message()};
     }
 };
 

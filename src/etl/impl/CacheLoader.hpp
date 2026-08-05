@@ -145,9 +145,16 @@ private:
             LOG(log_.debug()) << "Starting a cursor: " << xrpl::strHex(start);
 
             while (not token.isStopRequested() and not cache_.get().isDisabled()) {
-                auto res = data::retryOnTimeout([this, seq, cachePageFetchSize, &start, token]() {
-                    return backend_->fetchLedgerPage(start, seq, cachePageFetchSize, false, token);
-                });
+                auto res = data::retryOnTimeout(
+                    [this, seq, cachePageFetchSize, &start, token]() {
+                        return backend_->fetchLedgerPage(
+                            start, seq, cachePageFetchSize, false, token
+                        );
+                    },
+                    token,
+                    backend_->retryInitialDelay(),
+                    backend_->retryMaxDelay()
+                );
 
                 cache_.get().update(res.objects, seq, true);
 
