@@ -1,6 +1,8 @@
 #include "util/Retry.hpp"
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <algorithm>
@@ -43,7 +45,7 @@ Retry::Retry(
 }
 
 Retry::Retry(RetryStrategyPtr strategy, boost::asio::any_io_executor executor)
-    : strategy_(std::move(strategy)), timer_(std::move(executor))
+    : strategy_(std::move(strategy)), timer_(executor)
 {
 }
 
