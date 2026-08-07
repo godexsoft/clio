@@ -101,7 +101,7 @@ protected:
         {"database.cassandra.max_request_retry_delay",
          ConfigValue{ConfigType::Double}.defaultValue(5.0)},
         {"database.cassandra.request_timeout",
-         ConfigValue{ConfigType::Integer}.defaultValue(10).optional()},
+         ConfigValue{ConfigType::Double}.defaultValue(10.0).optional()},
         {"database.cassandra.username", ConfigValue{ConfigType::String}.optional()},
         {"database.cassandra.password", ConfigValue{ConfigType::String}.optional()},
         {"database.cassandra.certfile", ConfigValue{ConfigType::String}.optional()},

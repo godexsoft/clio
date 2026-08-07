@@ -362,7 +362,7 @@ private:
 
             return Result{std::move(v)};
         } catch (data::DatabaseError const& t) {
-            LOG(log_.error()) << "Database timeout";
+            LOG(log_.error()) << "Database error: " << t.what();
             notifyTooBusy();
 
             return Result{Status{RippledError::RpcTooBusy}};

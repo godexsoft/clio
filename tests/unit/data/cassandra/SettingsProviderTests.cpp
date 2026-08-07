@@ -51,7 +51,7 @@ getParseSettingsConfig(boost::json::value val)
          ConfigValue{ConfigType::Double}.defaultValue(0.5)},
         {"database.cassandra.max_request_retry_delay",
          ConfigValue{ConfigType::Double}.defaultValue(5.0)},
-        {"database.cassandra.request_timeout", ConfigValue{ConfigType::Double}.defaultValue(0.0)},
+        {"database.cassandra.request_timeout", ConfigValue{ConfigType::Double}.optional()},
         {"database.cassandra.secure_connect_bundle", ConfigValue{ConfigType::String}.optional()},
         {"database.cassandra.username", ConfigValue{ConfigType::String}.optional()},
         {"database.cassandra.password", ConfigValue{ConfigType::String}.optional()},
