@@ -15,6 +15,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <atomic>
@@ -558,7 +559,7 @@ private:
             throw std::runtime_error("Invalid query");
 
         // anything else, including unclassified codes, is transient and gets retried
-        throw DatabaseError{"Database error: " + err.message()};
+        throw DatabaseError{fmt::format("Database error [{}]: {}", err.code(), err.message())};
     }
 };
 

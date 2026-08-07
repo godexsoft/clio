@@ -197,12 +197,7 @@ TransactionFeed::pub(
                     );
                 });
             };
-            // flat delay: reached from the publish strand, blocks a thread of the shared pool
-            data::retryOnTimeout(
-                fetchFundsSynchronous,
-                data::kDefaultWaitBetweenRetry,
-                data::kDefaultWaitBetweenRetry
-            );
+            data::retryOnTimeout(fetchFundsSynchronous);
         }
     }
 

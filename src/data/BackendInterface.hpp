@@ -74,27 +74,34 @@ static constexpr std::chrono::milliseconds kDefaultWaitBetweenRetry{500};
 static constexpr std::chrono::milliseconds kMaxWaitBetweenRetry{5'000};
 
 /**
+ * @brief Delays used by @ref retryOnTimeout().
+ *
+ * Both members default to @ref kDefaultWaitBetweenRetry, which means a flat delay with no backoff.
+ * Override with designated initialisation, e.g. `{.maxDelay = backend->maxRetryDelay()}`.
+ */
+struct RetryDelays {
+    std::chrono::steady_clock::duration initialDelay{kDefaultWaitBetweenRetry};
+    std::chrono::steady_clock::duration maxDelay{kDefaultWaitBetweenRetry};
+};
+
+/**
  * @brief Retry `func` while it throws DatabaseError, suspending the calling coroutine in between.
  *
  * @tparam FnType The type of function object to execute
  * @param func The function object to execute
  * @param yield The coroutine to suspend between attempts
- * @param initialDelay Delay before the first retry
- * @param maxDelay Upper bound the delay grows to
+ * @param delays The delays to use between attempts
  * @return The same as the return type of func
  */
 template <typename FnType>
 auto
-retryOnTimeout(
-    FnType func,
-    boost::asio::yield_context yield,
-    std::chrono::steady_clock::duration initialDelay = kDefaultWaitBetweenRetry,
-    std::chrono::steady_clock::duration maxDelay = kMaxWaitBetweenRetry
-)
+retryOnTimeout(FnType func, boost::asio::yield_context yield, RetryDelays delays = {})
 {
     static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 
-    auto retry = util::makeRetryExponentialBackoff(initialDelay, maxDelay, yield.get_executor());
+    auto retry = util::makeRetryExponentialBackoff(
+        delays.initialDelay, delays.maxDelay, yield.get_executor()
+    );
 
     while (true) {
         try {
@@ -117,21 +124,16 @@ retryOnTimeout(
  *
  * @tparam FnType The type of function object to execute
  * @param func The function object to execute
- * @param initialDelay Delay before the first retry
- * @param maxDelay Upper bound the delay grows to
+ * @param delays The delays to use between attempts
  * @return The same as the return type of func
  */
 template <typename FnType>
 auto
-retryOnTimeout(
-    FnType func,
-    std::chrono::steady_clock::duration initialDelay = kDefaultWaitBetweenRetry,
-    std::chrono::steady_clock::duration maxDelay = kMaxWaitBetweenRetry
-)
+retryOnTimeout(FnType func, RetryDelays delays = {})
 {
     static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 
-    util::ExponentialBackoffStrategy backoff{initialDelay, maxDelay};
+    util::ExponentialBackoffStrategy backoff{delays.initialDelay, delays.maxDelay};
     std::size_t attempt = 1;
 
     while (true) {
@@ -185,23 +187,18 @@ synchronous(FnType&& func)
  * @brief Synchronously execute the given function object and retry until no DatabaseError is
  * thrown.
  *
- * @warning Blocks the calling thread. Pass equal delays to keep the delay flat.
+ * @warning Blocks the calling thread while backing off.
  *
  * @tparam FnType The type of function object to execute
  * @param func The function object to execute
- * @param initialDelay Delay before the first retry
- * @param maxDelay Upper bound the delay grows to
+ * @param delays The delays to use between attempts
  * @return The same as the return type of func
  */
 template <typename FnType>
 auto
-synchronousAndRetryOnTimeout(
-    FnType&& func,
-    std::chrono::steady_clock::duration initialDelay = kDefaultWaitBetweenRetry,
-    std::chrono::steady_clock::duration maxDelay = kMaxWaitBetweenRetry
-)
+synchronousAndRetryOnTimeout(FnType&& func, RetryDelays delays = {})
 {
-    return retryOnTimeout([&]() { return synchronous(func); }, initialDelay, maxDelay);
+    return retryOnTimeout([&]() { return synchronous(func); }, delays);
 }
 
 /**
@@ -231,16 +228,16 @@ public:
      * @return Delay before the first retry of a request against this backend
      */
     [[nodiscard]] virtual std::chrono::milliseconds
-    retryInitialDelay() const
+    initialRetryDelay() const
     {
         return kDefaultWaitBetweenRetry;
     }
 
     /**
-     * @return Upper bound for the retry backoff; equal to @ref retryInitialDelay() means flat
+     * @return Upper bound for the retry backoff; equal to @ref initialRetryDelay() means flat
      */
     [[nodiscard]] virtual std::chrono::milliseconds
-    retryMaxDelay() const
+    maxRetryDelay() const
     {
         return kMaxWaitBetweenRetry;
     }

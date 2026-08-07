@@ -200,8 +200,9 @@ TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingRetriesUntilSuccess)
                 throw DatabaseError{};
             return 42;
         },
-        std::chrono::milliseconds{1},
-        std::chrono::milliseconds{2}
+        RetryDelays{
+            .initialDelay = std::chrono::milliseconds{1}, .maxDelay = std::chrono::milliseconds{2}
+        }
     );
 
     EXPECT_EQ(result, 42);
@@ -212,7 +213,8 @@ TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingDoesNotSwallowOtherExcepti
 {
     EXPECT_THROW(
         retryOnTimeout(
-            []() -> int { throw std::runtime_error{"permanent"}; }, std::chrono::milliseconds{1}
+            []() -> int { throw std::runtime_error{"permanent"}; },
+            RetryDelays{.initialDelay = std::chrono::milliseconds{1}}
         ),
         std::runtime_error
     );
@@ -232,8 +234,10 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroRetriesUntilSuccess)
                 return 42;
             },
             yield,
-            std::chrono::milliseconds{1},
-            std::chrono::milliseconds{2}
+            RetryDelays{
+                .initialDelay = std::chrono::milliseconds{1},
+                .maxDelay = std::chrono::milliseconds{2}
+            }
         );
 
         EXPECT_EQ(result, 42);
@@ -249,7 +253,7 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotSwallowOtherExcep
             retryOnTimeout(
                 []() -> int { throw std::runtime_error{"permanent"}; },
                 yield,
-                std::chrono::milliseconds{1}
+                RetryDelays{.initialDelay = std::chrono::milliseconds{1}}
             ),
             std::runtime_error
         );
@@ -271,8 +275,10 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotBlockItsThread)
                 return 0;
             },
             yield,
-            std::chrono::milliseconds{20},
-            std::chrono::milliseconds{20}
+            RetryDelays{
+                .initialDelay = std::chrono::milliseconds{20},
+                .maxDelay = std::chrono::milliseconds{20}
+            }
         );
 
         EXPECT_TRUE(ran);

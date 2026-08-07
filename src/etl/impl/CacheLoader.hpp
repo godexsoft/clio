@@ -152,8 +152,10 @@ private:
                         );
                     },
                     token,
-                    backend_->retryInitialDelay(),
-                    backend_->retryMaxDelay()
+                    data::RetryDelays{
+                        .initialDelay = backend_->initialRetryDelay(),
+                        .maxDelay = backend_->maxRetryDelay()
+                    }
                 );
 
                 cache_.get().update(res.objects, seq, true);
