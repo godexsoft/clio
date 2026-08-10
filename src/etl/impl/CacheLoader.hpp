@@ -152,9 +152,8 @@ private:
                         );
                     },
                     token,
-                    data::RetryDelays{
-                        .initialDelay = backend_->initialRetryDelay(),
-                        .maxDelay = backend_->maxRetryDelay()
+                    util::Retry::Delays{
+                        .initial = backend_->initialRetryDelay(), .max = backend_->maxRetryDelay()
                     }
                 );
 

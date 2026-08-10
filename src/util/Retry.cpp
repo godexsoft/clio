@@ -80,11 +80,8 @@ Retry::reset()
     (*strategy_).reset();
 }
 
-ExponentialBackoffStrategy::ExponentialBackoffStrategy(
-    std::chrono::steady_clock::duration delay,
-    std::chrono::steady_clock::duration maxDelay
-)
-    : RetryStrategy(delay), maxDelay_(maxDelay)
+ExponentialBackoffStrategy::ExponentialBackoffStrategy(Retry::Delays delays)
+    : RetryStrategy(delays.initial), maxDelay_(delays.max)
 {
 }
 
@@ -110,24 +107,17 @@ Retry::wait(boost::asio::yield_context yield)
 
 Retry
 makeRetryExponentialBackoff(
-    std::chrono::steady_clock::duration delay,
-    std::chrono::steady_clock::duration maxDelay,
+    Retry::Delays delays,
     boost::asio::strand<boost::asio::io_context::executor_type> strand
 )
 {
-    return Retry(std::make_unique<ExponentialBackoffStrategy>(delay, maxDelay), std::move(strand));
+    return Retry(std::make_unique<ExponentialBackoffStrategy>(delays), std::move(strand));
 }
 
 Retry
-makeRetryExponentialBackoff(
-    std::chrono::steady_clock::duration delay,
-    std::chrono::steady_clock::duration maxDelay,
-    boost::asio::any_io_executor executor
-)
+makeRetryExponentialBackoff(Retry::Delays delays, boost::asio::any_io_executor executor)
 {
-    return Retry(
-        std::make_unique<ExponentialBackoffStrategy>(delay, maxDelay), std::move(executor)
-    );
+    return Retry(std::make_unique<ExponentialBackoffStrategy>(delays), std::move(executor));
 }
 
 }  // namespace util

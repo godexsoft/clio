@@ -68,6 +68,16 @@ class Retry {
 
 public:
     /**
+     * @brief The delays to use between retry attempts
+     *
+     * Equal @ref initial and @ref max mean a flat delay with no backoff.
+     */
+    struct Delays {
+        std::chrono::steady_clock::duration initial;
+        std::chrono::steady_clock::duration max;
+    };
+
+    /**
      * @brief Construct a new Retry object
      *
      * @param strategy The retry strategy to use
@@ -163,13 +173,9 @@ public:
     /**
      * @brief Construct a new Exponential Backoff Strategy object
      *
-     * @param delay The initial delay value
-     * @param maxDelay The maximum delay value
+     * @param delays The delays to use between attempts
      */
-    ExponentialBackoffStrategy(
-        std::chrono::steady_clock::duration delay,
-        std::chrono::steady_clock::duration maxDelay
-    );
+    explicit ExponentialBackoffStrategy(Retry::Delays delays);
 
 private:
     [[nodiscard]] std::chrono::steady_clock::duration
@@ -179,31 +185,24 @@ private:
 /**
  * @brief Create a retry mechanism with exponential backoff strategy
  *
- * @param delay The initial delay value
- * @param maxDelay The maximum delay value
+ * @param delays The delays to use between attempts
  * @param strand The strand to use for async operations
  * @return The retry object
  */
 Retry
 makeRetryExponentialBackoff(
-    std::chrono::steady_clock::duration delay,
-    std::chrono::steady_clock::duration maxDelay,
+    Retry::Delays delays,
     boost::asio::strand<boost::asio::io_context::executor_type> strand
 );
 
 /**
  * @brief Create a retry mechanism with exponential backoff strategy on any I/O executor
  *
- * @param delay The initial delay value
- * @param maxDelay The maximum delay value
+ * @param delays The delays to use between attempts
  * @param executor The executor to run the retry timer on
  * @return The retry object
  */
 Retry
-makeRetryExponentialBackoff(
-    std::chrono::steady_clock::duration delay,
-    std::chrono::steady_clock::duration maxDelay,
-    boost::asio::any_io_executor executor
-);
+makeRetryExponentialBackoff(Retry::Delays delays, boost::asio::any_io_executor executor);
 
 }  // namespace util

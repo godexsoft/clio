@@ -4,6 +4,7 @@
 #include "util/AsioContextTestFixture.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
+#include "util/Retry.hpp"
 #include "util/TestObject.hpp"
 
 #include <boost/asio/post.hpp>
@@ -200,8 +201,8 @@ TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingRetriesUntilSuccess)
                 throw DatabaseError{};
             return 42;
         },
-        RetryDelays{
-            .initialDelay = std::chrono::milliseconds{1}, .maxDelay = std::chrono::milliseconds{2}
+        util::Retry::Delays{
+            .initial = std::chrono::milliseconds{1}, .max = std::chrono::milliseconds{2}
         }
     );
 
@@ -214,7 +215,9 @@ TEST(BackendInterfaceRetryTest, RetryOnTimeoutBlockingDoesNotSwallowOtherExcepti
     EXPECT_THROW(
         retryOnTimeout(
             []() -> int { throw std::runtime_error{"permanent"}; },
-            RetryDelays{.initialDelay = std::chrono::milliseconds{1}}
+            util::Retry::Delays{
+                .initial = std::chrono::milliseconds{1}, .max = std::chrono::milliseconds{1}
+            }
         ),
         std::runtime_error
     );
@@ -234,9 +237,8 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroRetriesUntilSuccess)
                 return 42;
             },
             yield,
-            RetryDelays{
-                .initialDelay = std::chrono::milliseconds{1},
-                .maxDelay = std::chrono::milliseconds{2}
+            util::Retry::Delays{
+                .initial = std::chrono::milliseconds{1}, .max = std::chrono::milliseconds{2}
             }
         );
 
@@ -253,7 +255,9 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotSwallowOtherExcep
             retryOnTimeout(
                 []() -> int { throw std::runtime_error{"permanent"}; },
                 yield,
-                RetryDelays{.initialDelay = std::chrono::milliseconds{1}}
+                util::Retry::Delays{
+                    .initial = std::chrono::milliseconds{1}, .max = std::chrono::milliseconds{1}
+                }
             ),
             std::runtime_error
         );
@@ -275,9 +279,8 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotBlockItsThread)
                 return 0;
             },
             yield,
-            RetryDelays{
-                .initialDelay = std::chrono::milliseconds{20},
-                .maxDelay = std::chrono::milliseconds{20}
+            util::Retry::Delays{
+                .initial = std::chrono::milliseconds{20}, .max = std::chrono::milliseconds{20}
             }
         );
 

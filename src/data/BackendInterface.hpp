@@ -74,14 +74,11 @@ static constexpr std::chrono::milliseconds kDefaultWaitBetweenRetry{500};
 static constexpr std::chrono::milliseconds kMaxWaitBetweenRetry{5'000};
 
 /**
- * @brief Delays used by @ref retryOnTimeout().
- *
- * Both members default to @ref kDefaultWaitBetweenRetry, which means a flat delay with no backoff.
- * Override with designated initialisation, e.g. `{.maxDelay = backend->maxRetryDelay()}`.
+ * @brief Default delays for @ref retryOnTimeout().
  */
-struct RetryDelays {
-    std::chrono::steady_clock::duration initialDelay{kDefaultWaitBetweenRetry};
-    std::chrono::steady_clock::duration maxDelay{kDefaultWaitBetweenRetry};
+static constexpr util::Retry::Delays kDefaultRetryDelays{
+    .initial = kDefaultWaitBetweenRetry,
+    .max = kDefaultWaitBetweenRetry
 };
 
 /**
@@ -95,13 +92,15 @@ struct RetryDelays {
  */
 template <typename FnType>
 auto
-retryOnTimeout(FnType func, boost::asio::yield_context yield, RetryDelays delays = {})
+retryOnTimeout(
+    FnType func,
+    boost::asio::yield_context yield,
+    util::Retry::Delays delays = kDefaultRetryDelays
+)
 {
     static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 
-    auto retry = util::makeRetryExponentialBackoff(
-        delays.initialDelay, delays.maxDelay, yield.get_executor()
-    );
+    auto retry = util::makeRetryExponentialBackoff(delays, yield.get_executor());
 
     while (true) {
         try {
@@ -129,11 +128,11 @@ retryOnTimeout(FnType func, boost::asio::yield_context yield, RetryDelays delays
  */
 template <typename FnType>
 auto
-retryOnTimeout(FnType func, RetryDelays delays = {})
+retryOnTimeout(FnType func, util::Retry::Delays delays = kDefaultRetryDelays)
 {
     static util::Logger const log{"Backend"};  // NOLINT(readability-identifier-naming)
 
-    util::ExponentialBackoffStrategy backoff{delays.initialDelay, delays.maxDelay};
+    util::ExponentialBackoffStrategy backoff{delays};
     std::size_t attempt = 1;
 
     while (true) {
@@ -196,7 +195,7 @@ synchronous(FnType&& func)
  */
 template <typename FnType>
 auto
-synchronousAndRetryOnTimeout(FnType&& func, RetryDelays delays = {})
+synchronousAndRetryOnTimeout(FnType&& func, util::Retry::Delays delays = kDefaultRetryDelays)
 {
     return retryOnTimeout([&]() { return synchronous(func); }, delays);
 }
