@@ -70,7 +70,7 @@ public:
     /**
      * @brief The delays to use between retry attempts
      *
-     * Equal @ref initial and @ref max mean a flat delay with no backoff.
+     * Equal `initial` and `max` mean a flat delay with no backoff.
      */
     struct Delays {
         std::chrono::steady_clock::duration initial;
