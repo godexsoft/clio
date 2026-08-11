@@ -21,6 +21,7 @@ target_sources(
         common/MetaProcessors.cpp
         common/impl/APIVersionParser.cpp
         common/impl/HandlerProvider.cpp
+        common/impl/HandlerRegistry.cpp
         handlers/AccountChannels.cpp
         handlers/AccountCurrencies.cpp
         handlers/AccountInfo.cpp
