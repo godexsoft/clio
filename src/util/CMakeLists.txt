@@ -34,6 +34,7 @@ target_sources(
         TerminationHandler.cpp
         TimeUtils.cpp
         LedgerUtils.cpp
+        MPTIssuanceUtils.cpp
         config/Array.cpp
         config/ArrayView.cpp
         config/ConfigConstraints.cpp

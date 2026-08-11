@@ -13,6 +13,7 @@
 #include <rpcspec/handlers/account_tx/Types.hpp>
 #include "util/Assert.hpp"
 #include "util/JsonUtils.hpp"
+#include "util/MPTIssuanceUtils.hpp"
 #include "util/Profiler.hpp"
 #include "util/log/Logger.hpp"
 
@@ -21,6 +22,7 @@
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
@@ -147,6 +149,14 @@ AccountTxHandler::process(AccountTxHandler::Input const& input, Context const& c
         }
 
         boost::json::object obj;
+
+        // Skip all Txns where the specified filter mpt_id doesn't match the query
+        if (input.mptIssuanceId) {
+            auto const [sttx, txMeta] =
+                deserializeTxPlusMeta(txnPlusMeta, txnPlusMeta.ledgerSequence);
+            if (!util::referencesMptIssuance(*txMeta, *sttx, *input.mptIssuanceId))
+                continue;
+        }
 
         // if binary is false or transactionType is specified, we need to expand the transaction
         if (!input.binary || input.transactionTypeInLowercase.has_value()) {
