@@ -48,12 +48,20 @@ struct HandlerDeps {
 };
 
 /**
+ * @brief Constructs one type-erased handler from the available dependencies.
+ *
+ * A plain function pointer rather than @c std::function so that the registry stays a
+ * literal type and is constant-initialised.
+ */
+using HandlerFactory = AnyHandler (*)(HandlerDeps const&);
+
+/**
  * @brief One row of the handler registry: the method name, how to construct the
  * handler, and its static metadata.
  */
 struct HandlerEntry {
     std::string_view name;
-    AnyHandler (*factory)(HandlerDeps const&);
+    HandlerFactory factory;
     bool isClioOnly = false;
 };
 
