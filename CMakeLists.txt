@@ -84,6 +84,9 @@ include(deps/cassandra)
 include(deps/libbacktrace)
 include(deps/spdlog)
 
+include(deps/rpcspec)
+target_link_libraries(clio_options INTERFACE rpcspec::rpcspec)
+
 add_subdirectory(src)
 add_subdirectory(tests)
 
