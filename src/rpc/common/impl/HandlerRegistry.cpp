@@ -40,9 +40,11 @@
 #include "rpc/handlers/Unsubscribe.hpp"
 #include "rpc/handlers/VaultInfo.hpp"
 #include "rpc/handlers/VersionHandler.hpp"
+#include "util/Concepts.hpp"
 
 #include <array>
 #include <span>
+#include <tuple>
 
 namespace rpc::impl {
 
@@ -296,6 +298,15 @@ constexpr auto kHandlers = std::to_array<HandlerEntry>({
         .factory = [](HandlerDeps const& d) -> AnyHandler { return VersionHandler{d.config}; },
     },
 });
+
+// A duplicate name would silently shadow a handler so we check at compile time.
+static_assert(
+    std::apply(
+        [](auto const&... entry) { return util::hasNoDuplicates(entry.name...); },
+        kHandlers
+    ),
+    "RPC handler names must be unique"
+);
 
 }  // namespace
 
