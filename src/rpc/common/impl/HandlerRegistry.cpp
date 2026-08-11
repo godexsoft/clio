@@ -1,6 +1,6 @@
 #include "rpc/common/impl/HandlerRegistry.hpp"
 
-#include "rpc/Counters.hpp"  // NOLINT(misc-include-cleaner)
+#include "rpc/Counters.hpp"  // IWYU pragma: keep
 #include "rpc/common/AnyHandler.hpp"
 #include "rpc/handlers/AMMInfo.hpp"
 #include "rpc/handlers/AccountChannels.hpp"
