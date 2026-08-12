@@ -1,5 +1,4 @@
 #include "data/Types.hpp"
-#include "rpc/Errors.hpp"
 #include "rpc/common/impl/ForwardingProxy.hpp"
 #include "util/HandlerBaseTestFixture.hpp"
 #include "util/MockCounters.hpp"
@@ -16,6 +15,7 @@
 #include <boost/json/parse.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <rpcspec/Errors.hpp>
 
 #include <cstdint>
 #include <memory>

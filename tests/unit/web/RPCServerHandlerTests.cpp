@@ -1,4 +1,3 @@
-#include "rpc/Errors.hpp"
 #include "rpc/common/APIVersion.hpp"
 #include "rpc/common/Types.hpp"
 #include "util/AsioContextTestFixture.hpp"
@@ -21,6 +20,7 @@
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <rpcspec/Errors.hpp>
 
 #include <cstddef>
 #include <cstdint>

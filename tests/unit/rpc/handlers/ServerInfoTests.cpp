@@ -17,6 +17,7 @@
 #include <boost/json/value_to.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <optional>

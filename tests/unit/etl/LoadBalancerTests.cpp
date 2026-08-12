@@ -4,7 +4,6 @@
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Models.hpp"
 #include "etl/Source.hpp"
-#include "rpc/Errors.hpp"
 #include "util/AsioContextTestFixture.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockNetworkValidatedLedgers.hpp"
@@ -31,6 +30,7 @@
 #include <grpcpp/support/status.h>
 #include <gtest/gtest.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <cstdint>

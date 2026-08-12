@@ -5,6 +5,7 @@
 #include <boost/json/object.hpp>
 #include <boost/json/value_to.hpp>
 #include <gtest/gtest.h>
+#include <rpcspec/Errors.hpp>
 
 #include <cstdint>
 #include <sstream>

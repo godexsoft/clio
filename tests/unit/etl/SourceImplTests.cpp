@@ -3,7 +3,6 @@
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Models.hpp"
 #include "etl/impl/SourceImpl.hpp"
-#include "rpc/Errors.hpp"
 #include "util/Spawn.hpp"
 
 #include <boost/asio/io_context.hpp>

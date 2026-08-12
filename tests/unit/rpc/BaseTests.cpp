@@ -1,4 +1,3 @@
-#include "rpc/Errors.hpp"
 #include "rpc/common/MetaProcessors.hpp"
 #include "rpc/common/Modifiers.hpp"
 #include "rpc/common/Specs.hpp"
