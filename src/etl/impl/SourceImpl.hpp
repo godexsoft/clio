@@ -6,7 +6,7 @@
 #include "etl/impl/ForwardingSource.hpp"
 #include "etl/impl/GrpcSource.hpp"
 #include "etl/impl/SubscriptionSource.hpp"
-#include "rpc/Errors.hpp"
+#include "etl/Errors.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
@@ -208,9 +208,9 @@ public:
      * @param forwardToRippledClientIp IP of the client forwarding this request if known
      * @param xUserValue Optional value of the X-User header
      * @param yield The coroutine context
-     * @return Response or ClioError
+     * @return Response or EtlError
      */
-    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
+    [[nodiscard]] std::expected<boost::json::object, etl::EtlError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

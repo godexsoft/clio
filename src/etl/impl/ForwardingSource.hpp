@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rpc/Errors.hpp"
+#include "etl/Errors.hpp"
 #include "util/log/Logger.hpp"
 #include "util/requests/WsConnection.hpp"
 
@@ -39,7 +39,7 @@ public:
      * @param yield The coroutine context
      * @return Response on success or error on failure
      */
-    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
+    [[nodiscard]] std::expected<boost::json::object, EtlError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,
