@@ -10,7 +10,7 @@
 namespace rpc {
 
 /**
- * @brief Holds info about a particular @ref ClioError.
+ * @brief Holds info about a particular ClioError.
  */
 struct ClioErrorInfo {
     ClioError const code;
@@ -19,7 +19,7 @@ struct ClioErrorInfo {
 };
 
 /**
- * @brief Holds info about a particular @ref rpc::EtlError.
+ * @brief Holds info about a particular rpc::EtlError.
  */
 struct EtlErrorInfo {
     EtlError const code;
@@ -28,7 +28,7 @@ struct EtlErrorInfo {
 };
 
 /**
- * @brief A globally available @ref rpc::Status that represents a successful state.
+ * @brief A globally available rpc::Status that represents a successful state.
  */
 static Status gOk;
 
@@ -51,7 +51,7 @@ EtlErrorInfo const&
 getEtlErrorInfo(EtlError code);
 
 /**
- * @brief Generate JSON from a @ref rpc::Status.
+ * @brief Generate JSON from a rpc::Status.
  *
  * @param status The status object
  * @return The JSON output
@@ -60,7 +60,7 @@ boost::json::object
 makeError(Status const& status);
 
 /**
- * @brief Generate JSON from a @ref rpc::RippledError.
+ * @brief Generate JSON from a rpc::RippledError.
  *
  * @param err The rippled error
  * @param customError A custom error
@@ -75,7 +75,7 @@ makeError(
 );
 
 /**
- * @brief Generate JSON from a @ref rpc::ClioError.
+ * @brief Generate JSON from a rpc::ClioError.
  *
  * @param err The clio's custom error
  * @param customError A custom error

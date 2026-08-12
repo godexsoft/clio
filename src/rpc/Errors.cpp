@@ -24,6 +24,16 @@ using namespace std;
 
 namespace rpc {
 
+/**
+ * @brief Stream a Status in human readable form.
+ *
+ * Declared in rpcspec but implemented here: rendering a code needs Clio's
+ * getErrorInfo/getEtlErrorInfo tables and xrpl::RPC::getErrorInfo.
+ *
+ * @param stream The stream to write to
+ * @param status The status to write
+ * @return The same stream
+ */
 std::ostream&
 operator<<(std::ostream& stream, Status const& status)
 {
