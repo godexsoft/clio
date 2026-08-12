@@ -8,7 +8,6 @@
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
-#include "rpc/Errors.hpp"
 #include "util/Assert.hpp"
 #include "util/CoroutineGroup.hpp"
 #include "util/Profiler.hpp"
@@ -28,6 +27,7 @@
 #include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
 #include <fmt/format.h>
+#include <rpcspec/Errors.hpp>
 
 #include <algorithm>
 #include <chrono>

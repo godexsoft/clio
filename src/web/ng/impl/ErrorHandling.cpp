@@ -9,6 +9,7 @@
 #include <boost/beast/http/status.hpp>
 #include <boost/json/object.hpp>
 #include <fmt/format.h>
+#include <rpcspec/Errors.hpp>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
