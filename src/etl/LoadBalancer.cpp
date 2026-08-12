@@ -1,8 +1,8 @@
 #include "etl/LoadBalancer.hpp"
 
 #include "data/BackendInterface.hpp"
-#include "etl/Errors.hpp"
 #include "etl/ETLState.hpp"
+#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"

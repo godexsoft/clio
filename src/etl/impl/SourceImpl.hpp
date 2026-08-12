@@ -1,12 +1,12 @@
 #pragma once
 
+#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Source.hpp"
 #include "etl/impl/ForwardingSource.hpp"
 #include "etl/impl/GrpcSource.hpp"
 #include "etl/impl/SubscriptionSource.hpp"
-#include "etl/Errors.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>

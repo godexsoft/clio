@@ -86,7 +86,9 @@ public:
                         break;
                 }
             } else if (std::get_if<rpc::EtlError>(&err.code) != nullptr) {
-                ASSERT(false, "ETL error should not reach HTTP error handler");  // this should never happen
+                ASSERT(
+                    false, "ETL error should not reach HTTP error handler"
+                );  // this should never happen
             } else {
                 connection_->send(
                     boost::json::serialize(composeError(err)),

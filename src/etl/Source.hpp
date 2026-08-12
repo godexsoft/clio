@@ -1,10 +1,10 @@
 #pragma once
 
+#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
-#include "etl/Errors.hpp"
 #include "util/config/ObjectView.hpp"
 
 #include <boost/asio/io_context.hpp>
