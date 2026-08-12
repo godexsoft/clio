@@ -4,11 +4,8 @@
 #include <boost/json/object.hpp>
 #include <rpcspec/Errors.hpp>
 
-#include <exception>
 #include <optional>
-#include <string>
 #include <string_view>
-#include <utility>
 
 namespace rpc {
 
@@ -28,62 +25,6 @@ struct EtlErrorInfo {
     EtlError const code;
     std::string_view const error;
     std::string_view const message;
-};
-
-/**
- * @brief Invalid parameters error.
- */
-class InvalidParamsError : public std::exception {
-    std::string msg_;
-
-public:
-    /**
-     * @brief Construct a new Invalid Params Error object
-     *
-     * @param msg The error message
-     */
-    explicit InvalidParamsError(std::string msg) : msg_(std::move(msg))
-    {
-    }
-
-    /**
-     * @brief Get the error message as a C string
-     *
-     * @return The error message
-     */
-    [[nodiscard]] char const*
-    what() const noexcept override
-    {
-        return msg_.c_str();
-    }
-};
-
-/**
- * @brief Account not found error.
- */
-class AccountNotFoundError : public std::exception {
-    std::string account_;
-
-public:
-    /**
-     * @brief Construct a new Account Not Found Error object
-     *
-     * @param acct The account
-     */
-    explicit AccountNotFoundError(std::string acct) : account_(std::move(acct))
-    {
-    }
-
-    /**
-     * @brief Get the error message as a C string
-     *
-     * @return The error message
-     */
-    [[nodiscard]] char const*
-    what() const noexcept override
-    {
-        return account_.c_str();
-    }
 };
 
 /**
