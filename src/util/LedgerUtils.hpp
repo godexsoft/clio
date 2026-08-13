@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <rpcspec/detail/XrplParse.hpp>
+#include <rpcspec/LedgerTypes.hpp>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
@@ -22,9 +22,7 @@ namespace util {
  * @brief A helper class that provides lists of different ledger type category.
  */
 class LedgerTypes {
-    // TODO: reaches into rpcspec's detail namespace; switches to the public rpcspec
-    // ledger-types API in the next PR.
-    static constexpr auto const& kLedgerTypes = rpc::spec::detail::kLedgerTypesTable;
+    static constexpr auto const& kLedgerTypes = rpc::spec::kLedgerTypesTable;
 
 public:
     /**
@@ -49,10 +47,8 @@ public:
     static constexpr auto
     getDeletionBlockerLedgerTypes()
     {
-        // TODO: LedgerCategory comes from rpcspec's detail namespace; switches to the
-        // public rpcspec ledger-types API in the next PR.
         constexpr auto kFilter = [](auto const& item) {
-            return item.category == rpc::spec::detail::LedgerCategory::DeletionBlocker;
+            return item.category == rpc::spec::LedgerCategory::DeletionBlocker;
         };
 
         constexpr auto kDeletionBlockersCount =
