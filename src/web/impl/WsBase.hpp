@@ -4,6 +4,7 @@
 #include "rpc/common/Types.hpp"
 #include "util/Taggable.hpp"
 #include "util/log/Logger.hpp"
+#include "web/LoadWarning.hpp"
 #include "web/SubscriptionContext.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 #include "web/dosguard/DOSGuardInterface.hpp"
@@ -205,20 +206,10 @@ public:
     send(std::string&& msg, http::status) override
     {
         if (!dosGuard_.get().add(clientIp_, msg.size())) {
-            auto jsonResponse = boost::json::parse(msg).as_object();
-            jsonResponse["warning"] = "load";
-
-            if (jsonResponse.contains("warnings") && jsonResponse["warnings"].is_array()) {
-                jsonResponse["warnings"].as_array().push_back(
-                    rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)
-                );
-            } else {
-                jsonResponse["warnings"] =
-                    boost::json::array{rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)};
+            if (auto const warned = withLoadWarning(msg); warned.has_value()) {
+                // Reserialize when we need to include this warning
+                msg = boost::json::serialize(*warned);
             }
-
-            // Reserialize when we need to include this warning
-            msg = boost::json::serialize(jsonResponse);
         }
         auto sharedMsg = std::make_shared<std::string>(std::move(msg));
         send(std::move(sharedMsg));

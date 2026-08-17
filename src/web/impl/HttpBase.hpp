@@ -8,6 +8,7 @@
 #include "util/log/Logger.hpp"
 #include "util/prometheus/Http.hpp"
 #include "web/AdminVerificationStrategy.hpp"
+#include "web/LoadWarning.hpp"
 #include "web/ProxyIpResolver.hpp"
 #include "web/SubscriptionContextInterface.hpp"
 #include "web/dosguard/DOSGuardInterface.hpp"
@@ -317,19 +318,10 @@ public:
     send(std::string&& msg, http::status status = http::status::ok) override
     {
         if (!dosGuard_.get().add(clientIp_, msg.size())) {
-            auto jsonResponse = boost::json::parse(msg).as_object();
-            jsonResponse["warning"] = "load";
-            if (jsonResponse.contains("warnings") && jsonResponse["warnings"].is_array()) {
-                jsonResponse["warnings"].as_array().push_back(
-                    rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)
-                );
-            } else {
-                jsonResponse["warnings"] =
-                    boost::json::array{rpc::makeWarning(rpc::WarningCode::WarnRpcRateLimit)};
+            if (auto const warned = withLoadWarning(msg); warned.has_value()) {
+                // Reserialize when we need to include this warning
+                msg = boost::json::serialize(*warned);
             }
-
-            // Reserialize when we need to include this warning
-            msg = boost::json::serialize(jsonResponse);
         }
         sender_(httpResponse(status, "application/json", std::move(msg)));
     }
