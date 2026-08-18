@@ -43,6 +43,7 @@ TEST(LoadWarningTest, AddsWarningToJsonObjectWithoutExistingWarnings)
     auto const result = withLoadWarning(R"({"result": {"status": "success"}})");
 
     ASSERT_TRUE(result.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
     EXPECT_EQ(result->at("warning").as_string(), "load");
     ASSERT_EQ(result->at("warnings").as_array().size(), 1);
     EXPECT_EQ(
@@ -50,6 +51,7 @@ TEST(LoadWarningTest, AddsWarningToJsonObjectWithoutExistingWarnings)
         static_cast<int64_t>(rpc::WarningCode::WarnRpcRateLimit)
     );
     EXPECT_EQ(result->at("result").as_object().at("status").as_string(), "success");
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST(LoadWarningTest, AppendsToExistingWarningsArray)
@@ -58,6 +60,7 @@ TEST(LoadWarningTest, AppendsToExistingWarningsArray)
         withLoadWarning(R"({"warnings": [{"id": 2001, "message": "already here"}]})");
 
     ASSERT_TRUE(result.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
     EXPECT_EQ(result->at("warning").as_string(), "load");
     ASSERT_EQ(result->at("warnings").as_array().size(), 2);
     EXPECT_EQ(result->at("warnings").as_array().at(0).as_object().at("id").as_int64(), 2001);
@@ -65,6 +68,7 @@ TEST(LoadWarningTest, AppendsToExistingWarningsArray)
         result->at("warnings").as_array().at(1).as_object().at("id").as_int64(),
         static_cast<int64_t>(rpc::WarningCode::WarnRpcRateLimit)
     );
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST(LoadWarningTest, ReplacesNonArrayWarningsField)
@@ -72,10 +76,12 @@ TEST(LoadWarningTest, ReplacesNonArrayWarningsField)
     auto const result = withLoadWarning(R"({"warnings": "not an array"})");
 
     ASSERT_TRUE(result.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
     ASSERT_TRUE(result->at("warnings").is_array());
     ASSERT_EQ(result->at("warnings").as_array().size(), 1);
     EXPECT_EQ(
         result->at("warnings").as_array().at(0).as_object().at("id").as_int64(),
         static_cast<int64_t>(rpc::WarningCode::WarnRpcRateLimit)
     );
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
