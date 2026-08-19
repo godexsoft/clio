@@ -24,6 +24,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -135,12 +136,9 @@ ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::y
     if (connectionRef.wasUpgraded()) {
         auto* ptr = dynamic_cast<impl::WsConnectionBase*>(connectionPtr.get());
         ASSERT(ptr != nullptr, "Casted not websocket connection");
+        ptr->setMaxSendingQueueSize(maxSubscriptionSendQueueSize_);
         subscriptionContext = std::make_shared<SubscriptionContext>(
-            tagFactory_,
-            *ptr,
-            maxSubscriptionSendQueueSize_,
-            yield,
-            [this](Error const& e, Connection const& c) { return handleError(e, c); }
+            tagFactory_, *ptr, yield, std::bind_front(&ConnectionHandler::handleError, this)
         );
         LOG(log_.trace()) << connectionRef.tag()
                           << "Created SubscriptionContext for the connection";

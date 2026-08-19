@@ -3,12 +3,16 @@
 #include "web/ng/Error.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/system/detail/error_code.hpp>
 
+#include <cstddef>
+#include <expected>
 #include <functional>
 #include <optional>
 #include <queue>
+#include <utility>
 
 namespace web::ng::impl {
 
@@ -23,10 +27,18 @@ private:
     Sender sender_;
     Error error_;
     bool isSending_{false};
+    std::optional<size_t> maxSize_;
 
 public:
-    SendingQueue(Sender sender) : sender_{std::move(sender)}
+    SendingQueue(Sender sender, std::optional<size_t> maxSize = std::nullopt)
+        : sender_{std::move(sender)}, maxSize_{maxSize}
     {
+    }
+
+    void
+    setMaxSize(std::optional<size_t> maxSize)
+    {
+        maxSize_ = maxSize;
     }
 
     std::expected<void, Error>
@@ -34,6 +46,12 @@ public:
     {
         if (error_)
             return std::unexpected{error_};
+
+        if (maxSize_.has_value() and queue_.size() >= *maxSize_) {
+            error_ = boost::asio::error::timed_out;
+            queue_ = {};
+            return std::unexpected{error_};
+        }
 
         queue_.push(std::move(message));
         if (isSending_)

@@ -47,7 +47,11 @@ namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
 
 struct ConnectionHandlerTest : prometheus::WithPrometheus, SyncAsioContextTest {
-    ConnectionHandlerTest(ProcessingPolicy policy, std::optional<size_t> maxParallelConnections)
+    ConnectionHandlerTest(
+        ProcessingPolicy policy,
+        std::optional<size_t> maxParallelConnections,
+        std::optional<size_t> maxSubscriptionSendQueueSize = std::nullopt
+    )
         : tagFactory{util::config::ClioConfigDefinition{
               {"log.tag_style",
                config::ConfigValue{config::ConfigType::String}.defaultValue("uint")}
@@ -56,12 +60,13 @@ struct ConnectionHandlerTest : prometheus::WithPrometheus, SyncAsioContextTest {
               policy,
               maxParallelConnections,
               tagFactory,
-              std::nullopt,
+              maxSubscriptionSendQueueSize,
               proxyIpResolver,
               onDisconnectMock.AsStdFunction(),
               onIpChangeMock.AsStdFunction()
           }
     {
+        EXPECT_CALL(*mockWsConnection, setMaxSendingQueueSize).Times(testing::AnyNumber());
     }
 
     template <typename BoostErrorType>
@@ -804,6 +809,38 @@ TEST_F(ConnectionHandlerSequentialProcessingTest, ProcessCalledAfterStop)
     });
 }
 
+struct ConnectionHandlerSendQueueLimitTest : ConnectionHandlerTest {
+    static constexpr size_t kMaxSendQueueSize = 42;
+
+    ConnectionHandlerSendQueueLimitTest()
+        : ConnectionHandlerTest(ProcessingPolicy::Sequential, std::nullopt, kMaxSendQueueSize)
+    {
+    }
+};
+
+TEST_F(ConnectionHandlerSendQueueLimitTest, ConfiguredLimitIsAppliedToUpgradedConnection)
+{
+    testing::StrictMock<testing::MockFunction<Response(
+        Request const&,
+        ConnectionMetadata const&,
+        web::SubscriptionContextPtr,
+        boost::asio::yield_context
+    )>>
+        wsHandlerMock;
+    connectionHandler.onWs(wsHandlerMock.AsStdFunction());
+
+    EXPECT_CALL(*mockWsConnection, wasUpgraded).WillOnce(Return(true));
+    EXPECT_CALL(
+        *mockWsConnection, setMaxSendingQueueSize(std::optional<size_t>{kMaxSendQueueSize})
+    );
+    EXPECT_CALL(*mockWsConnection, receive).WillOnce(Return(makeError(websocket::error::closed)));
+    EXPECT_CALL(onDisconnectMock, Call);
+
+    runSpawn([this](boost::asio::yield_context yield) {
+        connectionHandler.processConnection(std::move(mockWsConnection), yield);
+    });
+}
+
 struct ConnectionHandlerParallelProcessingTest : ConnectionHandlerTest {
     static constexpr size_t kMaxParallelRequests = 3;
 
@@ -902,6 +939,7 @@ TEST_F(ConnectionHandlerParallelProcessingTest, OnIpChangeHookCalledWhenSentFrom
     std::string const responseMessage = "some response";
 
     EXPECT_CALL(*mockWsConnectionFromProxy, wasUpgraded).WillOnce(Return(true));
+    EXPECT_CALL(*mockWsConnectionFromProxy, setMaxSendingQueueSize).Times(testing::AnyNumber());
     EXPECT_CALL(*mockWsConnectionFromProxy, receive)
         .WillOnce(Return(makeRequest(requestMessage, headers)))
         .WillOnce(Return(makeError(websocket::error::closed)));
@@ -946,6 +984,7 @@ TEST_F(ConnectionHandlerParallelProcessingTest, ProxyConnection_SameClientReuses
     headers.set(http::field::forwarded, fmt::format("for={}", clientIp));
 
     EXPECT_CALL(*mockProxyConnection, wasUpgraded).WillOnce(Return(true));
+    EXPECT_CALL(*mockProxyConnection, setMaxSendingQueueSize).Times(testing::AnyNumber());
     EXPECT_CALL(*mockProxyConnection, receive)
         .WillOnce(Return(makeRequest("msg", headers)))
         .WillOnce(Return(makeRequest("msg", headers)))
@@ -989,6 +1028,7 @@ TEST_F(
     headers2.set(http::field::forwarded, fmt::format("for={}", anotherClientIp));
 
     EXPECT_CALL(*mockProxyConnection, wasUpgraded).WillOnce(Return(true));
+    EXPECT_CALL(*mockProxyConnection, setMaxSendingQueueSize).Times(testing::AnyNumber());
     EXPECT_CALL(*mockProxyConnection, receive)
         .WillOnce(Return(makeRequest("msg", headers1)))
         .WillOnce(Return(makeRequest("msg", headers2)))

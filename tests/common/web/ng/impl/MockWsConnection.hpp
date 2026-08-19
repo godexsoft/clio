@@ -12,6 +12,7 @@
 #include <gmock/gmock.h>
 
 #include <chrono>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
@@ -37,6 +38,8 @@ struct MockWsConnectionImpl : web::ng::impl::WsConnectionBase {
         (std::shared_ptr<std::string>, boost::asio::yield_context),
         (override)
     );
+
+    MOCK_METHOD(void, setMaxSendingQueueSize, (std::optional<size_t>), (override));
 };
 
 using MockWsConnection = testing::NiceMock<MockWsConnectionImpl>;

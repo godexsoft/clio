@@ -28,6 +28,7 @@
 #include <boost/beast/websocket/stream_base.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
@@ -42,6 +43,9 @@ public:
 
     virtual std::expected<void, Error>
     sendShared(std::shared_ptr<std::string> message, boost::asio::yield_context yield) = 0;
+
+    virtual void
+    setMaxSendingQueueSize(std::optional<size_t> maxSize) = 0;
 };
 
 template <typename StreamType>
@@ -109,6 +113,12 @@ public:
     sendShared(std::shared_ptr<std::string> message, boost::asio::yield_context yield) override
     {
         return sendingQueue_.send(std::move(message), yield);
+    }
+
+    void
+    setMaxSendingQueueSize(std::optional<size_t> maxSize) override
+    {
+        sendingQueue_.setMaxSize(maxSize);
     }
 
     void
