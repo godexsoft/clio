@@ -11,16 +11,13 @@
 #include "web/ng/impl/MockWsConnection.hpp"
 
 #include <boost/asio/error.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/errc.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstddef>
 #include <memory>
-#include <optional>
 #include <string>
 
 using namespace web::ng;
