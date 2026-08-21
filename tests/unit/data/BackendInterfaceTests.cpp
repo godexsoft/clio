@@ -293,6 +293,7 @@ TEST_F(BackendInterfaceRetryCoroTest, RetryOnTimeoutCoroDoesNotWaitInsideCatchHa
 
     ASSERT_TRUE(exceptionInFlightDuringWait.has_value())
         << "the posted handler was expected to run while the retry was waiting";
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_FALSE(*exceptionInFlightDuringWait)
         << "retry.wait() must not be reached from inside a catch handler";
 }
