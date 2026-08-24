@@ -57,11 +57,13 @@ public:
     )
     {
         auto map = signalsMap_.template lock<std::scoped_lock>();
-        auto& signal = map->operator[](key);
-        if (signal == nullptr)
-            signal = std::make_shared<SignalType>();
+        auto it = map->find(key);
+        if (it == map->end()) {
+            auto signal = std::make_shared<SignalType>();
+            it = map->emplace(key, std::move(signal)).first;
+        }
 
-        return signal->connectTrackableSlot(trackable, slot);
+        return it->second->connectTrackableSlot(trackable, slot);
     }
 
     /**
