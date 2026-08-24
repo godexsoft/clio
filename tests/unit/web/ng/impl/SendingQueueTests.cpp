@@ -5,8 +5,10 @@
 #include <boost/asio/error.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -116,6 +118,35 @@ TEST_F(SendingQueueTests, StaysFailedAfterRejection)
 
         auto const result = queue.send("after", yield);
         ASSERT_FALSE(result.has_value());
+        EXPECT_EQ(result.error(), boost::asio::error::timed_out);
+    });
+}
+
+// Regression: the overflow state must survive the completion of a write that was already in
+// flight. Real senders complete with void(error_code), so asio writes success into whatever error
+// slot the drain loop bound for that write - which must not be the slot holding the overflow.
+TEST_F(SendingQueueTests, OverflowSurvivesSuccessfulInFlightWrite)
+{
+    boost::asio::steady_timer timer{ctx_};
+    SendingQueue<std::string> queue{
+        [&timer](std::string const&, auto&& yield) {
+            timer.expires_after(std::chrono::milliseconds{1});
+            timer.async_wait(yield);  // void(error_code), and it succeeds
+        },
+        1
+    };
+
+    runSpawn([&queue](boost::asio::yield_context yield) {
+        util::CoroutineGroup group{yield};
+        for (size_t i = 0; i < 4; ++i) {
+            group.spawn(yield, [&queue](boost::asio::yield_context innerYield) {
+                queue.send("message", innerYield);
+            });
+        }
+        group.asyncWait(yield);
+
+        auto const result = queue.send("after", yield);
+        ASSERT_FALSE(result.has_value()) << "queue must stay failed once it has overflowed";
         EXPECT_EQ(result.error(), boost::asio::error::timed_out);
     });
 }

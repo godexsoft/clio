@@ -52,7 +52,11 @@ public:
         while (not queue_.empty() and not error_) {
             auto const responseToSend = std::move(queue_.front());
             queue_.pop();
-            sender_(responseToSend, yield[error_]);
+
+            Error writeError;
+            sender_(responseToSend, yield[writeError]);
+            if (writeError)
+                error_ = writeError;
         }
         isSending_ = false;
         if (error_)
