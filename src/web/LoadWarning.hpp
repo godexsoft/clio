@@ -13,7 +13,11 @@
 namespace web {
 
 /**
- * @brief Attach the DOSGuard "load" warning to a serialized response body.
+ * @brief Parse a serialized response body and attach the DOSGuard "load" warning to it.
+ *
+ * Sets `warning` to "load" and appends a rpc::WarningCode::WarnRpcRateLimit entry to the `warnings`
+ * array, creating that array if the body has none - or replacing it if `warnings` is present but is
+ * not an array.
  *
  * @note Not every response body is JSON. Over plain HTTP the error paths return text/html bodies
  * (e.g. "Null method" or "Unable to parse JSON from the request"), which cannot carry the warning.
@@ -21,7 +25,8 @@ namespace web {
  * JSON would throw.
  *
  * @param message The serialized response body
- * @return The body with the warning attached, or std::nullopt if it is not a JSON object
+ * @return The response as a JSON object with the warning attached; callers that need a string body
+ * must serialize it again. std::nullopt if @p message does not parse as a JSON object.
  */
 inline std::optional<boost::json::object>
 withLoadWarning(std::string_view message)
