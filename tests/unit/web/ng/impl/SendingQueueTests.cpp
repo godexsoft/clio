@@ -11,6 +11,10 @@
 #include <string>
 #include <vector>
 
+namespace {
+constexpr size_t kLargeLimit = 10000;
+}  // namespace
+
 using namespace web::ng::impl;
 
 struct SendingQueueTests : SyncAsioContextTest {};
@@ -18,9 +22,9 @@ struct SendingQueueTests : SyncAsioContextTest {};
 TEST_F(SendingQueueTests, SendsInOrder)
 {
     std::vector<std::string> sent;
-    SendingQueue<std::string> queue{[&sent](std::string const& message, auto&&) {
-        sent.push_back(message);
-    }};
+    SendingQueue<std::string> queue{
+        [&sent](std::string const& message, auto&&) { sent.push_back(message); }, kLargeLimit
+    };
 
     runSpawn([&queue](boost::asio::yield_context yield) {
         EXPECT_TRUE(queue.send("one", yield).has_value());
@@ -30,17 +34,20 @@ TEST_F(SendingQueueTests, SendsInOrder)
     EXPECT_EQ(sent, (std::vector<std::string>{"one", "two"}));
 }
 
-// While one coroutine is draining the queue, other senders only push and return. Without a limit on
-// queue_ itself nothing bounds how many of them may pile up.
-TEST_F(SendingQueueTests, UnboundedByDefault)
+// While one coroutine drains the queue, every other sender only pushes and returns - so the number
+// of live coroutines says nothing about how many messages are pending.
+TEST_F(SendingQueueTests, NonDrainingSendersOnlyPushAndReturn)
 {
     constexpr size_t kSendersWhileBlocked = 100;
     size_t sentCount = 0;
 
-    SendingQueue<std::string> queue{[&sentCount](std::string const&, auto&& yield) {
-        boost::asio::post(yield);  // the peer is slow: suspend inside the drain loop
-        ++sentCount;
-    }};
+    SendingQueue<std::string> queue{
+        [&sentCount](std::string const&, auto&& yield) {
+            boost::asio::post(yield);  // the peer is slow: suspend inside the drain loop
+            ++sentCount;
+        },
+        kLargeLimit
+    };
 
     runSpawn([&queue](boost::asio::yield_context yield) {
         util::CoroutineGroup group{yield};
@@ -110,26 +117,5 @@ TEST_F(SendingQueueTests, StaysFailedAfterRejection)
         auto const result = queue.send("after", yield);
         ASSERT_FALSE(result.has_value());
         EXPECT_EQ(result.error(), boost::asio::error::timed_out);
-    });
-}
-
-TEST_F(SendingQueueTests, SetMaxSizeAppliesLater)
-{
-    SendingQueue<std::string> queue{[](std::string const&, auto&& yield) {
-        boost::asio::post(yield);
-    }};
-    queue.setMaxSize(1);
-
-    runSpawn([&queue](boost::asio::yield_context yield) {
-        util::CoroutineGroup group{yield};
-        bool rejected = false;
-        for (size_t i = 0; i < 4; ++i) {
-            group.spawn(yield, [&queue, &rejected](boost::asio::yield_context innerYield) {
-                if (not queue.send("message", innerYield).has_value())
-                    rejected = true;
-            });
-        }
-        group.asyncWait(yield);
-        EXPECT_TRUE(rejected);
     });
 }

@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <expected>
 #include <functional>
-#include <optional>
 #include <queue>
 #include <utility>
 
@@ -27,18 +26,11 @@ private:
     Sender sender_;
     Error error_;
     bool isSending_{false};
-    std::optional<size_t> maxSize_;
+    size_t maxSize_;
 
 public:
-    SendingQueue(Sender sender, std::optional<size_t> maxSize = std::nullopt)
-        : sender_{std::move(sender)}, maxSize_{maxSize}
+    SendingQueue(Sender sender, size_t maxSize) : sender_{std::move(sender)}, maxSize_{maxSize}
     {
-    }
-
-    void
-    setMaxSize(std::optional<size_t> maxSize)
-    {
-        maxSize_ = maxSize;
     }
 
     std::expected<void, Error>
@@ -47,9 +39,8 @@ public:
         if (error_)
             return std::unexpected{error_};
 
-        if (maxSize_.has_value() and queue_.size() >= *maxSize_) {
+        if (queue_.size() >= maxSize_) {
             error_ = boost::asio::error::timed_out;
-            queue_ = {};
             return std::unexpected{error_};
         }
 

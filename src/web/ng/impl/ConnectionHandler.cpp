@@ -76,7 +76,6 @@ ConnectionHandler::ConnectionHandler(
     ProcessingPolicy processingPolicy,
     std::optional<size_t> maxParallelRequests,
     util::TagDecoratorFactory& tagFactory,
-    std::optional<size_t> maxSubscriptionSendQueueSize,
     ProxyIpResolver proxyIpResolver,
     OnDisconnectHook onDisconnectHook,
     OnIpChangeHook onIpChangeHook
@@ -84,7 +83,6 @@ ConnectionHandler::ConnectionHandler(
     : processingPolicy_{processingPolicy}
     , maxParallelRequests_{maxParallelRequests}
     , tagFactory_{tagFactory}
-    , maxSubscriptionSendQueueSize_{maxSubscriptionSendQueueSize}
     , proxyIpResolver_(std::move(proxyIpResolver))
     , onDisconnectHook_{std::move(onDisconnectHook)}
     , onIpChangeHook_(std::move(onIpChangeHook))
@@ -136,7 +134,6 @@ ConnectionHandler::processConnection(ConnectionPtr connectionPtr, boost::asio::y
     if (connectionRef.wasUpgraded()) {
         auto* ptr = dynamic_cast<impl::WsConnectionBase*>(connectionPtr.get());
         ASSERT(ptr != nullptr, "Casted not websocket connection");
-        ptr->setMaxSendingQueueSize(maxSubscriptionSendQueueSize_);
         subscriptionContext = std::make_shared<SubscriptionContext>(
             tagFactory_, *ptr, yield, std::bind_front(&ConnectionHandler::handleError, this)
         );
