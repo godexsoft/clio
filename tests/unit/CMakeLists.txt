@@ -102,6 +102,7 @@ target_sources(
         rpc/common/SpecsTests.cpp
         rpc/common/TypesTests.cpp
         rpc/common/impl/HandlerProviderTests.cpp
+        rpc/filters/impl/DelegateTransactionsFilterTests.cpp
         rpc/handlers/AccountChannelsTests.cpp
         rpc/handlers/AccountCurrenciesTests.cpp
         rpc/handlers/AccountInfoTests.cpp
@@ -214,6 +215,7 @@ target_sources(
         web/ng/impl/ConnectionHandlerTests.cpp
         web/ng/impl/ErrorHandlingTests.cpp
         web/ng/impl/HttpConnectionTests.cpp
+        web/ng/impl/SendingQueueTests.cpp
         web/ng/impl/ServerSslContextTests.cpp
         web/ng/impl/WsConnectionTests.cpp
         web/ProxyIpResolverTests.cpp
