@@ -310,14 +310,11 @@ public:
     }
 
     /**
-     * @brief Send a response to the client
+     * @copydoc ConnectionBase::send
      *
-     * The message length is added to the DOSGuard. If that puts the client over its limit and the
-     * body parses as a JSON object, a "load" warning is attached to it; bodies that are not JSON
-     * objects - the text/html error paths - are sent unchanged.
-     *
-     * @param msg The serialized response body
-     * @param status The HTTP status to respond with
+     * @note The message length is added to the DOSGuard. If that puts the client over its limit
+     * and the body parses as a JSON object, a "load" warning is attached to it; bodies that are
+     * not JSON objects - the text/html error paths - are sent unchanged.
      */
     void
     send(std::string&& msg, http::status status = http::status::ok) override

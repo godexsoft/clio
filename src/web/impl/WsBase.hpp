@@ -197,13 +197,11 @@ public:
     }
 
     /**
-     * @brief Send a message to the client
+     * @copydoc ConnectionBase::send
      *
-     * The message length is added to the DOSGuard. If that puts the client over its limit and the
-     * message parses as a JSON object, a "load" warning is attached to it; messages that are not
-     * JSON objects are sent unchanged.
-     *
-     * @param msg The message to send
+     * @note The message length is added to the DOSGuard. If that puts the client over its limit
+     * and the message parses as a JSON object, a "load" warning is attached to it; messages that
+     * are not JSON objects are sent unchanged.
      */
     void
     send(std::string&& msg, http::status) override
