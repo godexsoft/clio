@@ -22,6 +22,7 @@ target_sources(
         common/impl/APIVersionParser.cpp
         common/impl/HandlerProvider.cpp
         common/impl/HandlerRegistry.cpp
+        filters/impl/DelegateTransactionsFilter.cpp
         handlers/AccountChannels.cpp
         handlers/AccountCurrencies.cpp
         handlers/AccountInfo.cpp
@@ -45,6 +46,7 @@ target_sources(
         handlers/LedgerIndex.cpp
         handlers/LedgerRange.cpp
         handlers/MPTHolders.cpp
+        handlers/MPTokenIssuanceHistory.cpp
         handlers/NFTsByIssuer.cpp
         handlers/NFTBuyOffers.cpp
         handlers/NFTHistory.cpp

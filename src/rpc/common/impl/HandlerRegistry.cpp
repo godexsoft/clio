@@ -25,6 +25,7 @@
 #include "rpc/handlers/LedgerIndex.hpp"
 #include "rpc/handlers/LedgerRange.hpp"
 #include "rpc/handlers/MPTHolders.hpp"
+#include "rpc/handlers/MPTokenIssuanceHistory.hpp"
 #include "rpc/handlers/NFTBuyOffers.hpp"
 #include "rpc/handlers/NFTHistory.hpp"
 #include "rpc/handlers/NFTInfo.hpp"
@@ -199,6 +200,14 @@ constexpr auto kHandlers = std::to_array<HandlerEntry>({
     {
         .name = "mpt_holders",
         .factory = [](HandlerDeps const& d) -> AnyHandler { return MPTHoldersHandler{d.backend}; },
+        .isClioOnly = true,
+    },
+
+    {
+        .name = "mptoken_issuance_history",
+        .factory = [](HandlerDeps const& d) -> AnyHandler {
+            return MPTokenIssuanceHistoryHandler{d.backend};
+        },
         .isClioOnly = true,
     },
 
