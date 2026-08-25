@@ -206,6 +206,7 @@ target_sources(
         web/dosguard/WeightsTests.cpp
         web/dosguard/WhitelistHandlerTests.cpp
         web/impl/ErrorHandlingTests.cpp
+        web/LoadWarningTests.cpp
         web/ng/ResponseTests.cpp
         web/ng/RequestTests.cpp
         web/ng/RPCServerHandlerTests.cpp
