@@ -9,6 +9,7 @@
 #include <boost/beast/http/status.hpp>
 #include <boost/json/object.hpp>
 #include <fmt/format.h>
+#include <rpcspec/Errors.hpp>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
@@ -92,15 +93,13 @@ ErrorHelper::makeError(rpc::Status const& err) const
             case rpc::ClioError::RpcFieldNotFoundTransaction:
             case rpc::ClioError::RpcMalformedOracleDocumentId:
             case rpc::ClioError::RpcMalformedAuthorizedCredentials:
-            case rpc::ClioError::EtlConnectionError:
-            case rpc::ClioError::EtlRequestError:
-            case rpc::ClioError::EtlRequestTimeout:
-            case rpc::ClioError::EtlInvalidResponse:
                 ASSERT(
                     false, "Unknown rpc error code {}", static_cast<int>(*clioCode)
                 );  // this should never happen
                 break;
         }
+    } else if (std::get_if<rpc::EtlError>(&err.code) != nullptr) {
+        ASSERT(false, "ETL error should not reach HTTP error handler");  // this should never happen
     }
 
     return Response{http::status::bad_request, composeError(err), rawRequest_};

@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <rpcspec/Errors.hpp>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -335,6 +336,27 @@ generateTestValuesForParametersTest()
                         "authorized_credentials": [
                         {{
                             "issuer": 123,
+                            "credential_type": "{}"
+                        }}
+                        ]
+                    }}
+                }})JSON",
+                kAccount,
+                kCredentialType
+            ),
+            .expectedError = "malformedAuthorizedCredentials",
+            .expectedErrorMessage = "issuer NotString"
+        },
+
+        ParamTestCaseBundle{
+            .testName = "DepositPreauthAuthorizeCredentialsHexIssuer",
+            .testJson = fmt::format(
+                R"JSON({{
+                    "deposit_preauth": {{
+                        "owner": "{}",
+                        "authorized_credentials": [
+                        {{
+                            "issuer": "0000000000000000000000000000000000000002",
                             "credential_type": "{}"
                         }}
                         ]

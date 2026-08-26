@@ -4,10 +4,12 @@
 #include "util/OverloadSet.hpp"
 
 #include <boost/json/object.hpp>
+#include <rpcspec/Errors.hpp>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <iterator>
 #include <optional>
@@ -22,6 +24,16 @@ using namespace std;
 
 namespace rpc {
 
+/**
+ * @brief Stream a Status in human readable form.
+ *
+ * Declared in rpcspec but implemented here: rendering a code needs Clio's
+ * getErrorInfo/getEtlErrorInfo tables and xrpl::RPC::getErrorInfo.
+ *
+ * @param stream The stream to write to
+ * @param status The status to write
+ * @return The same stream
+ */
 std::ostream&
 operator<<(std::ostream& stream, Status const& status)
 {
@@ -46,6 +58,16 @@ operator<<(std::ostream& stream, Status const& status)
                 } else {
                     stream << ", Message: " << getErrorInfo(err).message;
                 }
+            },
+            [&stream, &status](EtlError err) {
+                stream << "Code: " << static_cast<std::underlying_type_t<EtlError>>(err);
+                if (!status.error.empty())
+                    stream << ", Error: " << status.error;
+                if (!status.message.empty()) {
+                    stream << ", Message: " << status.message;
+                } else {
+                    stream << ", Message: " << getEtlErrorInfo(err).message;
+                }
             }
         },
         status.code
@@ -57,100 +79,111 @@ operator<<(std::ostream& stream, Status const& status)
     return stream;
 }
 
-WarningInfo const&
-getWarningInfo(WarningCode code)
+EtlErrorInfo const&
+getEtlErrorInfo(EtlError code)
 {
-    static constexpr WarningInfo kInfos[]{
-        {WarningCode::WarnUnknown, "Unknown warning"},
-        {WarningCode::WarnRpcClio,
-         "This is a clio server. clio only serves validated data. If you want to talk to rippled, "
-         "include "
-         "'ledger_index':'current' in your request"},
-        {WarningCode::WarnRpcOutdated, "This server may be out of date"},
-        {WarningCode::WarnRpcRateLimit, "You are about to be rate limited"},
-        {WarningCode::WarnRpcDeprecated,
-         "Some fields from your request are deprecated. Please check the documentation at "
-         "https://xrpl.org/docs/references/http-websocket-apis/ and update your request."}
-    };
+    static constexpr auto kInfos = std::to_array<EtlErrorInfo>({
+        {
+            .code = EtlError::ConnectionError,
+            .error = "connectionError",
+            .message = "Couldn't connect to rippled.",
+        },
+        {
+            .code = EtlError::RequestError,
+            .error = "requestError",
+            .message = "Error sending request to rippled.",
+        },
+        {
+            .code = EtlError::RequestTimeout,
+            .error = "timeout",
+            .message = "Request to rippled timed out.",
+        },
+        {
+            .code = EtlError::InvalidResponse,
+            .error = "invalidResponse",
+            .message = "Rippled returned an invalid response.",
+        },
+    });
 
-    auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = ranges::find_if(kInfos, matchByCode); it != end(kInfos))
+    if (auto it = ranges::find(kInfos, code, &EtlErrorInfo::code); it != end(kInfos))
         return *it;
 
-    throw(out_of_range("Invalid WarningCode"));
-}
-
-boost::json::object
-makeWarning(WarningCode code)
-{
-    auto json = boost::json::object{};
-    auto const& info = getWarningInfo(code);
-    json["id"] = static_cast<int>(code);
-    json["message"] = info.message;
-    return json;
+    throw(out_of_range("Invalid EtlError code"));
 }
 
 ClioErrorInfo const&
 getErrorInfo(ClioError code)
 {
-    static constexpr ClioErrorInfo kInfos[]{
-        {.code = ClioError::RpcMalformedCurrency,
-         .error = "malformedCurrency",
-         .message = "Malformed currency."},
-        {.code = ClioError::RpcMalformedRequest,
-         .error = "malformedRequest",
-         .message = "Malformed request."},
-        {.code = ClioError::RpcMalformedOwner,
-         .error = "malformedOwner",
-         .message = "Malformed owner."},
-        {.code = ClioError::RpcMalformedAddress,
-         .error = "malformedAddress",
-         .message = "Malformed address."},
-        {.code = ClioError::RpcUnknownOption,
-         .error = "unknownOption",
-         .message = "Unknown option."},
-        {.code = ClioError::RpcFieldNotFoundTransaction,
-         .error = "fieldNotFoundTransaction",
-         .message = "Missing field."},
-        {.code = ClioError::RpcMalformedOracleDocumentId,
-         .error = "malformedDocumentID",
-         .message = "Malformed oracle_document_id."},
-        {.code = ClioError::RpcMalformedAuthorizedCredentials,
-         .error = "malformedAuthorizedCredentials",
-         .message = "Malformed authorized credentials."},
+    static constexpr auto kInfos = std::to_array<ClioErrorInfo>({
+        {
+            .code = ClioError::RpcMalformedCurrency,
+            .error = "malformedCurrency",
+            .message = "Malformed currency.",
+        },
+        {
+            .code = ClioError::RpcMalformedRequest,
+            .error = "malformedRequest",
+            .message = "Malformed request.",
+        },
+        {
+            .code = ClioError::RpcMalformedOwner,
+            .error = "malformedOwner",
+            .message = "Malformed owner.",
+        },
+        {
+            .code = ClioError::RpcMalformedAddress,
+            .error = "malformedAddress",
+            .message = "Malformed address.",
+        },
+        {
+            .code = ClioError::RpcUnknownOption,
+            .error = "unknownOption",
+            .message = "Unknown option.",
+        },
+        {
+            .code = ClioError::RpcFieldNotFoundTransaction,
+            .error = "fieldNotFoundTransaction",
+            .message = "Missing field.",
+        },
+        {
+            .code = ClioError::RpcMalformedOracleDocumentId,
+            .error = "malformedDocumentID",
+            .message = "Malformed oracle_document_id.",
+        },
+        {
+            .code = ClioError::RpcMalformedAuthorizedCredentials,
+            .error = "malformedAuthorizedCredentials",
+            .message = "Malformed authorized credentials.",
+        },
         // special system errors
-        {.code = ClioError::RpcInvalidApiVersion,
-         .error = JS(invalid_API_version),
-         .message = "Invalid API version."},
-        {.code = ClioError::RpcCommandIsMissing,
-         .error = JS(missingCommand),
-         .message = "Method is not specified or is not a string."},
-        {.code = ClioError::RpcCommandNotString,
-         .error = "commandNotString",
-         .message = "Method is not a string."},
-        {.code = ClioError::RpcCommandIsEmpty,
-         .error = "emptyCommand",
-         .message = "Method is an empty string."},
-        {.code = ClioError::RpcParamsUnparsable,
-         .error = "paramsUnparsable",
-         .message = "Params must be an array holding exactly one object."},
-        // etl related errors
-        {.code = ClioError::EtlConnectionError,
-         .error = "connectionError",
-         .message = "Couldn't connect to rippled."},
-        {.code = ClioError::EtlRequestError,
-         .error = "requestError",
-         .message = "Error sending request to rippled."},
-        {.code = ClioError::EtlRequestTimeout,
-         .error = "timeout",
-         .message = "Request to rippled timed out."},
-        {.code = ClioError::EtlInvalidResponse,
-         .error = "invalidResponse",
-         .message = "Rippled returned an invalid response."}
-    };
+        {
+            .code = ClioError::RpcInvalidApiVersion,
+            .error = JS(invalid_API_version),
+            .message = "Invalid API version.",
+        },
+        {
+            .code = ClioError::RpcCommandIsMissing,
+            .error = JS(missingCommand),
+            .message = "Method is not specified or is not a string.",
+        },
+        {
+            .code = ClioError::RpcCommandNotString,
+            .error = "commandNotString",
+            .message = "Method is not a string.",
+        },
+        {
+            .code = ClioError::RpcCommandIsEmpty,
+            .error = "emptyCommand",
+            .message = "Method is an empty string.",
+        },
+        {
+            .code = ClioError::RpcParamsUnparsable,
+            .error = "paramsUnparsable",
+            .message = "Params must be an array holding exactly one object.",
+        },
+    });
 
-    auto matchByCode = [code](auto const& info) { return info.code == code; };
-    if (auto it = ranges::find_if(kInfos, matchByCode); it != end(kInfos))
+    if (auto it = ranges::find(kInfos, code, &ClioErrorInfo::code); it != end(kInfos))
         return *it;
 
     throw(out_of_range("Invalid error code"));
@@ -214,6 +247,16 @@ makeError(Status const& status)
             },
             [&status, &wrapOptional](ClioError err) {
                 return makeError(err, wrapOptional(status.error), wrapOptional(status.message));
+            },
+            [](EtlError err) {
+                auto const& info = getEtlErrorInfo(err);
+                return boost::json::object{
+                    {"error", info.error},
+                    {"error_code", static_cast<uint32_t>(err)},
+                    {"error_message", info.message},
+                    {"status", "error"},
+                    {"type", "response"}
+                };
             },
         },
         status.code

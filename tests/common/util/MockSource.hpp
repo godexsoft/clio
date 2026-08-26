@@ -1,11 +1,11 @@
 #pragma once
 
+#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
 #include "etl/Source.hpp"
 #include "feed/SubscriptionManagerInterface.hpp"
-#include "rpc/Errors.hpp"
 #include "util/config/ObjectView.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -50,7 +50,7 @@ struct MockSource : etl::SourceBase {
         (override)
     );
 
-    using ForwardToRippledReturnType = std::expected<boost::json::object, rpc::ClioError>;
+    using ForwardToRippledReturnType = std::expected<boost::json::object, etl::EtlError>;
     MOCK_METHOD(
         ForwardToRippledReturnType,
         forwardToRippled,
@@ -132,7 +132,7 @@ public:
         return mock_->loadInitialLedger(sequence, maxLedger, observer);
     }
 
-    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
+    [[nodiscard]] std::expected<boost::json::object, etl::EtlError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

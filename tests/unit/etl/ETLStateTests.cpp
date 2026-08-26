@@ -1,5 +1,5 @@
 #include "etl/ETLState.hpp"
-#include "rpc/Errors.hpp"
+#include "etl/Errors.hpp"
 #include "util/MockSource.hpp"
 
 #include <boost/json/parse.hpp>
@@ -18,7 +18,7 @@ struct ETLStateTest : public virtual ::testing::Test {
 TEST_F(ETLStateTest, Error)
 {
     EXPECT_CALL(source, forwardToRippled)
-        .WillOnce(Return(std::unexpected{rpc::ClioError::EtlInvalidResponse}));
+        .WillOnce(Return(std::unexpected{etl::EtlError::InvalidResponse}));
     auto const state = etl::ETLState::fetchETLStateFromSource(source);
     EXPECT_FALSE(state);
 }
