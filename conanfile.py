@@ -1,3 +1,4 @@
+from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
 from conan import ConanFile
@@ -33,6 +34,7 @@ class ClioConan(ConanFile):
         "protobuf/*:shared": False,
         "protobuf/*:with_zlib": True,
         "snappy/*:shared": False,
+        "xrpl-rpc-spec/*:server": "clio",
         "xrpl/*:rocksdb": True,  # TODO: revert to false when includes are fixed in libxrpl
         "xrpl/*:tests": False,
     }
