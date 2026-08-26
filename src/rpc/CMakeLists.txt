@@ -61,4 +61,4 @@ target_sources(
         handlers/VaultInfo.cpp
 )
 
-target_link_libraries(clio_rpc PUBLIC clio_util clio_data)
+target_link_libraries(clio_rpc PUBLIC clio_util clio_data rpcspec::rpcspec)
