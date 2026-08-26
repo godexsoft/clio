@@ -59,6 +59,7 @@ target_link_libraries(
         fmt::fmt
         openssl::openssl
         xrpl::libxrpl
+        rpcspec::rpcspec
         Threads::Threads
         clio_options
         clio_rpc_center
