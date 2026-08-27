@@ -182,7 +182,7 @@ tag_invoke(
                 ASSERT(!name.empty(), "Field name is empty after stripping 'ID'");
             }
             // ValidPseudoAccounts invariant guarantees that only one field can be set
-            jv.as_object()[JS(pseudo_account)].as_object()[JS(type)] = name;
+            jv.as_object()[JS(pseudo_account)] = boost::json::object{{JS(type), name}};
             break;
         }
     }
