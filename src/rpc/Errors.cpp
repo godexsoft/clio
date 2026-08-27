@@ -28,7 +28,7 @@ namespace rpc {
  * @brief Stream a Status in human readable form.
  *
  * Declared in rpcspec but implemented here: rendering a code needs Clio's
- * getErrorInfo/getEtlErrorInfo tables and xrpl::RPC::getErrorInfo.
+ * getErrorInfo table and xrpl::RPC::getErrorInfo.
  *
  * @param stream The stream to write to
  * @param status The status to write
@@ -58,16 +58,6 @@ operator<<(std::ostream& stream, Status const& status)
                 } else {
                     stream << ", Message: " << getErrorInfo(err).message;
                 }
-            },
-            [&stream, &status](EtlError err) {
-                stream << "Code: " << static_cast<std::underlying_type_t<EtlError>>(err);
-                if (!status.error.empty())
-                    stream << ", Error: " << status.error;
-                if (!status.message.empty()) {
-                    stream << ", Message: " << status.message;
-                } else {
-                    stream << ", Message: " << getEtlErrorInfo(err).message;
-                }
             }
         },
         status.code
@@ -77,38 +67,6 @@ operator<<(std::ostream& stream, Status const& status)
         stream << ", Extra Info: " << *status.extraInfo;
 
     return stream;
-}
-
-EtlErrorInfo const&
-getEtlErrorInfo(EtlError code)
-{
-    static constexpr auto kInfos = std::to_array<EtlErrorInfo>({
-        {
-            .code = EtlError::ConnectionError,
-            .error = "connectionError",
-            .message = "Couldn't connect to rippled.",
-        },
-        {
-            .code = EtlError::RequestError,
-            .error = "requestError",
-            .message = "Error sending request to rippled.",
-        },
-        {
-            .code = EtlError::RequestTimeout,
-            .error = "timeout",
-            .message = "Request to rippled timed out.",
-        },
-        {
-            .code = EtlError::InvalidResponse,
-            .error = "invalidResponse",
-            .message = "Rippled returned an invalid response.",
-        },
-    });
-
-    if (auto it = ranges::find(kInfos, code, &EtlErrorInfo::code); it != end(kInfos))
-        return *it;
-
-    throw(out_of_range("Invalid EtlError code"));
 }
 
 ClioErrorInfo const&
@@ -181,6 +139,27 @@ getErrorInfo(ClioError code)
             .error = "paramsUnparsable",
             .message = "Params must be an array holding exactly one object.",
         },
+        // errors from forwarding to an upstream rippled source
+        {
+            .code = ClioError::RpcForwardingConnectionError,
+            .error = "connectionError",
+            .message = "Couldn't connect to rippled.",
+        },
+        {
+            .code = ClioError::RpcForwardingRequestError,
+            .error = "requestError",
+            .message = "Error sending request to rippled.",
+        },
+        {
+            .code = ClioError::RpcForwardingTimeout,
+            .error = "timeout",
+            .message = "Request to rippled timed out.",
+        },
+        {
+            .code = ClioError::RpcForwardingInvalidResponse,
+            .error = "invalidResponse",
+            .message = "Rippled returned an invalid response.",
+        },
     });
 
     if (auto it = ranges::find(kInfos, code, &ClioErrorInfo::code); it != end(kInfos))
@@ -247,16 +226,6 @@ makeError(Status const& status)
             },
             [&status, &wrapOptional](ClioError err) {
                 return makeError(err, wrapOptional(status.error), wrapOptional(status.message));
-            },
-            [](EtlError err) {
-                auto const& info = getEtlErrorInfo(err);
-                return boost::json::object{
-                    {"error", info.error},
-                    {"error_code", static_cast<uint32_t>(err)},
-                    {"error_message", info.message},
-                    {"status", "error"},
-                    {"type", "response"}
-                };
             },
         },
         status.code

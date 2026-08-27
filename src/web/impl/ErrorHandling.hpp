@@ -80,15 +80,15 @@ public:
                     case rpc::ClioError::RpcFieldNotFoundTransaction:
                     case rpc::ClioError::RpcMalformedOracleDocumentId:
                     case rpc::ClioError::RpcMalformedAuthorizedCredentials:
+                    case rpc::ClioError::RpcForwardingConnectionError:
+                    case rpc::ClioError::RpcForwardingRequestError:
+                    case rpc::ClioError::RpcForwardingTimeout:
+                    case rpc::ClioError::RpcForwardingInvalidResponse:
                         ASSERT(
                             false, "Unknown rpc error code {}", static_cast<int>(*clioCode)
                         );  // this should never happen
                         break;
                 }
-            } else if (std::get_if<rpc::EtlError>(&err.code) != nullptr) {
-                ASSERT(
-                    false, "ETL error should not reach HTTP error handler"
-                );  // this should never happen
             } else {
                 connection_->send(
                     boost::json::serialize(composeError(err)),

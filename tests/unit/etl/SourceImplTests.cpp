@@ -1,4 +1,3 @@
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Models.hpp"
@@ -13,6 +12,7 @@
 #include <grpcpp/support/status.h>
 #include <gtest/gtest.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -62,7 +62,7 @@ struct ForwardingSourceMock {
         (std::string const&, std::string const&, std::chrono::steady_clock::duration)
     );
 
-    using ForwardToRippledReturnType = std::expected<boost::json::object, etl::EtlError>;
+    using ForwardToRippledReturnType = std::expected<boost::json::object, rpc::ClioError>;
     using ClientIpOpt = std::optional<std::string>;
     MOCK_METHOD(
         ForwardToRippledReturnType,

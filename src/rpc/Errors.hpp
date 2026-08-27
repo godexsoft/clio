@@ -19,15 +19,6 @@ struct ClioErrorInfo {
 };
 
 /**
- * @brief Holds info about a particular rpc::EtlError.
- */
-struct EtlErrorInfo {
-    EtlError const code;
-    std::string_view const error;
-    std::string_view const message;
-};
-
-/**
  * @brief A globally available rpc::Status that represents a successful state.
  */
 static Status gOk;
@@ -40,15 +31,6 @@ static Status gOk;
  */
 ClioErrorInfo const&
 getErrorInfo(ClioError code);
-
-/**
- * @brief Get the ETL error info object from an ETL error code.
- *
- * @param code The error code
- * @return A reference to the static error info
- */
-EtlErrorInfo const&
-getEtlErrorInfo(EtlError code);
 
 /**
  * @brief Generate JSON from a rpc::Status.

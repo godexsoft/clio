@@ -1,11 +1,11 @@
 #pragma once
 
-#include "etl/Errors.hpp"
 #include "util/log/Logger.hpp"
 #include "util/requests/WsConnection.hpp"
 
 #include <boost/asio/spawn.hpp>
 #include <boost/json/object.hpp>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <expected>
@@ -39,7 +39,7 @@ public:
      * @param yield The coroutine context
      * @return Response on success or error on failure
      */
-    [[nodiscard]] std::expected<boost::json::object, EtlError>
+    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

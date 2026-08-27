@@ -1,6 +1,5 @@
 #pragma once
 
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
@@ -13,6 +12,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -131,7 +131,7 @@ public:
      * @param yield The coroutine context
      * @return Response on success or error on failure
      */
-    [[nodiscard]] virtual std::expected<boost::json::object, etl::EtlError>
+    [[nodiscard]] virtual std::expected<boost::json::object, rpc::ClioError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,
