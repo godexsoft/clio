@@ -1,6 +1,5 @@
 #pragma once
 
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/Source.hpp"
@@ -12,6 +11,7 @@
 #include <boost/json/object.hpp>
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -208,9 +208,9 @@ public:
      * @param forwardToRippledClientIp IP of the client forwarding this request if known
      * @param xUserValue Optional value of the X-User header
      * @param yield The coroutine context
-     * @return Response or EtlError
+     * @return Response or ClioError
      */
-    [[nodiscard]] std::expected<boost::json::object, etl::EtlError>
+    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

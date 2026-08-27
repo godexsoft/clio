@@ -1,6 +1,5 @@
 #pragma once
 
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
@@ -16,6 +15,7 @@
 #include <grpcpp/support/status.h>
 #include <gtest/gtest.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <rpcspec/Errors.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -50,7 +50,7 @@ struct MockSource : etl::SourceBase {
         (override)
     );
 
-    using ForwardToRippledReturnType = std::expected<boost::json::object, etl::EtlError>;
+    using ForwardToRippledReturnType = std::expected<boost::json::object, rpc::ClioError>;
     MOCK_METHOD(
         ForwardToRippledReturnType,
         forwardToRippled,
@@ -132,7 +132,7 @@ public:
         return mock_->loadInitialLedger(sequence, maxLedger, observer);
     }
 
-    [[nodiscard]] std::expected<boost::json::object, etl::EtlError>
+    [[nodiscard]] std::expected<boost::json::object, rpc::ClioError>
     forwardToRippled(
         boost::json::object const& request,
         std::optional<std::string> const& forwardToRippledClientIp,

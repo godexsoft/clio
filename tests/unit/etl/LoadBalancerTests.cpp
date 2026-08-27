@@ -1,4 +1,3 @@
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancer.hpp"
 #include "etl/LoadBalancerInterface.hpp"
@@ -204,9 +203,9 @@ TEST_F(LoadBalancerConstructorTests, fetchETLState_AllSourcesFail)
 {
     EXPECT_CALL(sourceFactory_, makeSource).Times(2);
     EXPECT_CALL(sourceFactory_.sourceAt(0), forwardToRippled)
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(sourceFactory_.sourceAt(1), forwardToRippled)
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_THROW({ makeLoadBalancer(); }, std::logic_error);
 }
 
@@ -226,7 +225,7 @@ TEST_F(LoadBalancerConstructorTests, fetchETLState_Source1Fails0OK)
     EXPECT_CALL(sourceFactory_.sourceAt(0), forwardToRippled)
         .WillOnce(Return(boost::json::object{}));
     EXPECT_CALL(sourceFactory_.sourceAt(1), forwardToRippled)
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(sourceFactory_.sourceAt(0), run);
     EXPECT_CALL(sourceFactory_.sourceAt(1), run);
     makeLoadBalancer();
@@ -236,7 +235,7 @@ TEST_F(LoadBalancerConstructorTests, fetchETLState_Source0Fails1OK)
 {
     EXPECT_CALL(sourceFactory_, makeSource).Times(2);
     EXPECT_CALL(sourceFactory_.sourceAt(0), forwardToRippled)
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(sourceFactory_.sourceAt(1), forwardToRippled)
         .WillOnce(Return(boost::json::object{}));
     EXPECT_CALL(sourceFactory_.sourceAt(0), run);
@@ -266,7 +265,7 @@ TEST_F(LoadBalancerConstructorTests, fetchETLState_AllSourcesFailButAllowNoEtlIs
         .WillOnce(Return(boost::json::object{}));
     EXPECT_CALL(sourceFactory_.sourceAt(0), run);
     EXPECT_CALL(sourceFactory_.sourceAt(1), forwardToRippled)
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(sourceFactory_.sourceAt(1), run);
 
     configJson_.as_object()["allow_no_etl"] = true;
@@ -717,7 +716,7 @@ TEST_F(LoadBalancerForwardToRippledTests, source0Fails)
         sourceFactory_.sourceAt(0),
         forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
         forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
@@ -820,7 +819,7 @@ TEST_F(LoadBalancerForwardToRippledPrometheusTests, source0Fails)
         sourceFactory_.sourceAt(0),
         forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
     )
-        .WillOnce(Return(std::unexpected{etl::EtlError::ConnectionError}));
+        .WillOnce(Return(std::unexpected{rpc::ClioError::RpcForwardingConnectionError}));
     EXPECT_CALL(
         sourceFactory_.sourceAt(1),
         forwardToRippled(request_, clientIP_, LoadBalancer::kUserForwardingXUserValue, testing::_)
@@ -862,8 +861,8 @@ TEST_F(LoadBalancerForwardToRippledPrometheusTests, adminRequestAlwaysCacheMiss)
 
 struct LoadBalancerForwardToRippledErrorTestBundle {
     std::string testName;
-    etl::EtlError firstSourceError;
-    etl::EtlError secondSourceError;
+    rpc::ClioError firstSourceError;
+    rpc::ClioError secondSourceError;
     rpc::CombinedError responseExpectedError;
 };
 
@@ -877,33 +876,33 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         LoadBalancerForwardToRippledErrorTestBundle{
             "ConnectionError_RequestError",
-            etl::EtlError::ConnectionError,
-            etl::EtlError::RequestError,
-            etl::EtlError::RequestError
+            rpc::ClioError::RpcForwardingConnectionError,
+            rpc::ClioError::RpcForwardingRequestError,
+            rpc::ClioError::RpcForwardingRequestError
         },
         LoadBalancerForwardToRippledErrorTestBundle{
             "RequestError_RequestTimeout",
-            etl::EtlError::RequestError,
-            etl::EtlError::RequestTimeout,
-            etl::EtlError::RequestTimeout
+            rpc::ClioError::RpcForwardingRequestError,
+            rpc::ClioError::RpcForwardingTimeout,
+            rpc::ClioError::RpcForwardingTimeout
         },
         LoadBalancerForwardToRippledErrorTestBundle{
             "RequestTimeout_InvalidResponse",
-            etl::EtlError::RequestTimeout,
-            etl::EtlError::InvalidResponse,
-            etl::EtlError::InvalidResponse
+            rpc::ClioError::RpcForwardingTimeout,
+            rpc::ClioError::RpcForwardingInvalidResponse,
+            rpc::ClioError::RpcForwardingInvalidResponse
         },
         LoadBalancerForwardToRippledErrorTestBundle{
             "BothRequestTimeout",
-            etl::EtlError::RequestTimeout,
-            etl::EtlError::RequestTimeout,
-            etl::EtlError::RequestTimeout
+            rpc::ClioError::RpcForwardingTimeout,
+            rpc::ClioError::RpcForwardingTimeout,
+            rpc::ClioError::RpcForwardingTimeout
         },
         LoadBalancerForwardToRippledErrorTestBundle{
             "InvalidResponse_RequestError",
-            etl::EtlError::InvalidResponse,
-            etl::EtlError::RequestError,
-            etl::EtlError::InvalidResponse
+            rpc::ClioError::RpcForwardingInvalidResponse,
+            rpc::ClioError::RpcForwardingRequestError,
+            rpc::ClioError::RpcForwardingInvalidResponse
         }
     ),
     tests::util::kNameGenerator

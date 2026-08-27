@@ -2,7 +2,6 @@
 
 #include "data/BackendInterface.hpp"
 #include "etl/ETLState.hpp"
-#include "etl/Errors.hpp"
 #include "etl/InitialLoadObserverInterface.hpp"
 #include "etl/LoadBalancerInterface.hpp"
 #include "etl/NetworkValidatedLedgersInterface.hpp"
@@ -293,7 +292,7 @@ LoadBalancer::forwardToRippled(
     auto xUserValue = isAdmin ? kAdminForwardingXUserValue : kUserForwardingXUserValue;
 
     std::optional<boost::json::object> response;
-    etl::EtlError error = etl::EtlError::ConnectionError;
+    rpc::ClioError error = rpc::ClioError::RpcForwardingConnectionError;
     while (numAttempts < sources_.size()) {
         auto [res, duration] = util::timed([&]() {
             return sources_[sourceIdx]->forwardToRippled(request, clientIp, xUserValue, yield);
