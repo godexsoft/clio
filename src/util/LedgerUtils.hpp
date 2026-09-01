@@ -63,26 +63,6 @@ public:
         });
         return res;
     }
-
-    /**
-     * @brief Returns the xrpl::LedgerEntryType from the given string.
-     *
-     * @param entryName The name or canonical name (case-insensitive) of the ledger entry type for
-     * all categories
-     * @return The xrpl::LedgerEntryType of the given string, returns ltANY if not found.
-     */
-    static xrpl::LedgerEntryType
-    getLedgerEntryTypeFromStr(std::string const& entryName);
-
-    /**
-     * @brief Returns the xrpl::LedgerEntryType from the given string.
-     *
-     * @param entryName The name or canonical name (case-insensitive) of the ledger entry type for
-     * account owned category
-     * @return The xrpl::LedgerEntryType of the given string, returns ltANY if not found.
-     */
-    static xrpl::LedgerEntryType
-    getAccountOwnedLedgerTypeFromStr(std::string const& entryName);
 };
 
 /**
