@@ -10,8 +10,6 @@
 
 TEST(TxUtilTests, txTypesInLowercase)
 {
-    // TODO: reaches into rpcspec's detail namespace; switches to the public rpcspec
-    // tx-types API in the next PR.
     auto const& types = rpc::spec::txTypesInLowercase();
     ASSERT_TRUE(
         std::size_t(
