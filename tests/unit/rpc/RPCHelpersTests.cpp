@@ -7,6 +7,7 @@
 #include "util/AsioContextTestFixture.hpp"
 #include "util/LoggerFixtures.hpp"
 #include "util/MockAmendmentCenter.hpp"
+#include "util/MockAssert.hpp"
 #include "util/MockBackendTestFixture.hpp"
 #include "util/MockPrometheus.hpp"
 #include "util/NameGenerator.hpp"
@@ -2140,7 +2141,7 @@ TEST_F(RPCHelpersTest, LedgerHeaderFromSpecifierBySequenceBeyondMaxSeqSkipsBacke
     });
 }
 
-TEST_F(RPCHelpersTest, LedgerHeaderFromSpecifierShortcutUsesMaxSeq)
+TEST_F(RPCHelpersTest, LedgerHeaderFromSpecifierValidatedUsesMaxSeq)
 {
     EXPECT_CALL(*backend_, fetchLedgerBySequence(kSpecifierRangeMax, _))
         .WillOnce(Return(createLedgerHeader(kIndex1, kSpecifierRangeMax)));
@@ -2154,6 +2155,46 @@ TEST_F(RPCHelpersTest, LedgerHeaderFromSpecifierShortcutUsesMaxSeq)
         );
         ASSERT_TRUE(res.has_value());
         EXPECT_EQ(res->seq, kSpecifierRangeMax);
+    });
+}
+
+struct RPCHelpersAssertTest : RPCHelpersTest, common::util::WithMockAssert {};
+
+TEST_F(RPCHelpersAssertTest, LedgerHeaderFromSpecifierCurrentAsserts)
+{
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(0);
+
+    runSpawn([&, this](auto yield) {
+        EXPECT_CLIO_ASSERT_FAIL_WITH_MESSAGE(
+            {
+                [[maybe_unused]] auto const res = getLedgerHeaderFromLedgerSpecifier(
+                    *backend_,
+                    yield,
+                    spec::LedgerSpecifier{spec::LedgerShortcut::Current},
+                    kSpecifierRangeMax
+                );
+            },
+            "must be forwarded before dispatch"
+        );
+    });
+}
+
+TEST_F(RPCHelpersAssertTest, LedgerHeaderFromSpecifierClosedAsserts)
+{
+    EXPECT_CALL(*backend_, fetchLedgerBySequence).Times(0);
+
+    runSpawn([&, this](auto yield) {
+        EXPECT_CLIO_ASSERT_FAIL_WITH_MESSAGE(
+            {
+                [[maybe_unused]] auto const res = getLedgerHeaderFromLedgerSpecifier(
+                    *backend_,
+                    yield,
+                    spec::LedgerSpecifier{spec::LedgerShortcut::Closed},
+                    kSpecifierRangeMax
+                );
+            },
+            "must be forwarded before dispatch"
+        );
     });
 }
 

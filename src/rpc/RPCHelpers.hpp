@@ -59,6 +59,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -308,11 +309,12 @@ getLedgerHeaderFromHashOrSeq(
  * Behaviour matches that overload: a hash or sequence beyond @p maxSeq, or one absent from
  * the backend, yields @c ledgerNotFound.
  *
- * All three shortcuts resolve to @p maxSeq. Clio only serves validated data, so
- * @c validated is the latest validated sequence by definition, and @c current / @c closed
- * never arrive here — @ref specifiesCurrentOrClosedLedger forwards those upstream before
- * dispatch. An unspecified ledger resolves via @c LedgerSpecifier::resolved(), which the
- * spec library fixes to @c validated for Clio.
+ * A @c validated shortcut resolves to @p maxSeq, which is what it means for a server that
+ * only serves validated data. An unspecified ledger resolves via
+ * @c LedgerSpecifier::resolved(), which the spec library fixes to @c validated for Clio.
+ *
+ * @c current and @c closed cannot reach here: @ref specifiesCurrentOrClosedLedger forwards
+ * those upstream before dispatch.
  *
  * @param backend The backend to use
  * @param yield The coroutine context

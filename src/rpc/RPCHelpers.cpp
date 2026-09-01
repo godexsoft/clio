@@ -569,8 +569,14 @@ getLedgerHeaderFromLedgerSpecifier(
         return *lgrInfo;
     }
 
-    // A shortcut means the latest validated ledger; see the declaration for why that holds
-    // for all three of them.
+    if (resolved.isShortcut()) {
+        auto const shortcut = std::get<spec::LedgerShortcut>(resolved.value);
+        ASSERT(
+            shortcut == spec::LedgerShortcut::Validated,
+            "current/closed ledgers must be forwarded before dispatch"
+        );
+    }
+
     auto const ledgerSequence = resolved.isSequence() ? std::get<uint32_t>(resolved.value) : maxSeq;
 
     // return without hitting the db
