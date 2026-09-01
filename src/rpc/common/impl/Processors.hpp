@@ -5,6 +5,9 @@
 #include "util/UnsupportedType.hpp"
 
 #include <boost/json/value.hpp>
+#include <rpcspec/WarningsToJson.hpp>
+
+#include <utility>
 
 namespace rpc::impl {
 
@@ -19,7 +22,30 @@ struct DefaultProcessor final {
     {
         using boost::json::value_from;
         using boost::json::value_to;
-        if constexpr (SomeHandlerWithInput<HandlerType>) {
+
+        static_assert(
+            kIsSingleInputPath<HandlerType>,
+            "handler satisfies both the legacy and the typed input path; dispatch would be "
+            "decided by the order of the branches below rather than by the handler"
+        );
+
+        if constexpr (SomeHandlerWithTypedInput<HandlerType>) {
+            // The shared consteval spec validates and deserializes in a single pass, so there
+            // is no separate process() step here: RpcSpecView::process() is a no-op for a
+            // TypedSpec. check() still runs separately because warnings are collected against
+            // the request as sent, and must be forwarded even when parsing then fails.
+            auto warnings = spec::toJsonArray(HandlerType::spec(ctx.apiVersion).check(value));
+
+            auto input = HandlerType::parseInput(value, ctx.apiVersion);
+            if (not input)
+                return ReturnType{Error{std::move(input).error()}, std::move(warnings)};
+
+            auto ret = handler.process(*input, ctx);
+            if (not ret)
+                return ReturnType{Error{std::move(ret).error()}, std::move(warnings)};
+
+            return ReturnType{value_from(std::move(ret).value()), std::move(warnings)};
+        } else if constexpr (SomeHandlerWithInput<HandlerType>) {
             // first we run validation against specified API version
 
             auto const spec = handler.spec(ctx.apiVersion);

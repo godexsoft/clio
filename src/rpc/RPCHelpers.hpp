@@ -22,6 +22,7 @@
 #include <boost/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 #include <fmt/format.h>
+#include <rpcspec/Ledger.hpp>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
@@ -296,6 +297,34 @@ getLedgerHeaderFromHashOrSeq(
     boost::asio::yield_context yield,
     std::optional<std::string> ledgerHash,
     std::optional<uint32_t> ledgerIndex,
+    uint32_t maxSeq
+);
+
+/**
+ * @brief Get ledger header from a spec-library ledger specifier.
+ *
+ * The strong-typed counterpart of @ref getLedgerHeaderFromHashOrSeq, for handlers whose
+ * spec produces a @c LedgerSpecifier instead of a ledger_hash / ledger_index pair.
+ * Behaviour matches that overload: a hash or sequence beyond @p maxSeq, or one absent from
+ * the backend, yields @c ledgerNotFound.
+ *
+ * All three shortcuts resolve to @p maxSeq. Clio only serves validated data, so
+ * @c validated is the latest validated sequence by definition, and @c current / @c closed
+ * never arrive here — @ref specifiesCurrentOrClosedLedger forwards those upstream before
+ * dispatch. An unspecified ledger resolves via @c LedgerSpecifier::resolved(), which the
+ * spec library fixes to @c validated for Clio.
+ *
+ * @param backend The backend to use
+ * @param yield The coroutine context
+ * @param ledger The ledger the request selected
+ * @param maxSeq The maximum sequence to search
+ * @return The ledger header or an error status
+ */
+std::expected<xrpl::LedgerHeader, Status>
+getLedgerHeaderFromLedgerSpecifier(
+    BackendInterface const& backend,
+    boost::asio::yield_context yield,
+    spec::LedgerSpecifier const& ledger,
     uint32_t maxSeq
 );
 

@@ -27,6 +27,7 @@
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 #include <fmt/format.h>
 #include <rpcspec/Errors.hpp>
+#include <rpcspec/Ledger.hpp>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -82,6 +83,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace rpc {
@@ -541,6 +543,41 @@ getLedgerHeaderFromHashOrSeq(
         return err;
 
     lgrInfo = backend.fetchLedgerBySequence(ledgerSequence, yield);
+    if (!lgrInfo)
+        return err;
+
+    return *lgrInfo;
+}
+
+std::expected<xrpl::LedgerHeader, Status>
+getLedgerHeaderFromLedgerSpecifier(
+    BackendInterface const& backend,
+    boost::asio::yield_context yield,
+    spec::LedgerSpecifier const& ledger,
+    uint32_t maxSeq
+)
+{
+    auto const err = std::unexpected{Status{RippledError::RpcLgrNotFound, "ledgerNotFound"}};
+    auto const resolved = ledger.resolved();
+
+    if (resolved.isHash()) {
+        auto const lgrInfo =
+            backend.fetchLedgerByHash(std::get<xrpl::uint256>(resolved.value), yield);
+        if (!lgrInfo || lgrInfo->seq > maxSeq)
+            return err;
+
+        return *lgrInfo;
+    }
+
+    // A shortcut means the latest validated ledger; see the declaration for why that holds
+    // for all three of them.
+    auto const ledgerSequence = resolved.isSequence() ? std::get<uint32_t>(resolved.value) : maxSeq;
+
+    // return without hitting the db
+    if (ledgerSequence > maxSeq)
+        return err;
+
+    auto const lgrInfo = backend.fetchLedgerBySequence(ledgerSequence, yield);
     if (!lgrInfo)
         return err;
 

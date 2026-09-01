@@ -67,3 +67,73 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
         EXPECT_TRUE(ret.warnings.empty());
     });
 }
+
+// Pin which path each fake takes. Without this, a change that made a typed handler also
+// satisfy SomeHandlerWithInput would silently reroute it through the legacy validators and
+// every test below would still pass.
+static_assert(SomeHandlerWithTypedInput<TypedHandlerFake>);
+static_assert(not SomeHandlerWithInput<TypedHandlerFake>);
+static_assert(SomeHandlerWithInput<HandlerMock>);
+static_assert(not SomeHandlerWithTypedInput<HandlerMock>);
+
+// The four tests below exercise the typed path — a handler whose spec, validation and
+// deserialization all come from the shared consteval spec via HandlerFor<Input>. They run
+// against the same DefaultProcessor as the legacy tests above, which is the point: the
+// dual path is a dispatch detail, not a second processor.
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HappyPath)
+{
+    runSpawn([](auto yield) {
+        TypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<TypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "hello": "world", "limit": 42 })JSON");
+
+        auto const ret = processor(handler, input, Context{yield});
+        ASSERT_TRUE(ret);
+        EXPECT_TRUE(ret.warnings.empty());
+        EXPECT_EQ(ret.result.value().at("computed").as_string(), "world_42");
+    });
+}
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_MissingRequiredField_ReturnsError)
+{
+    runSpawn([](auto yield) {
+        TypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<TypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "limit": 42 })JSON");
+
+        auto const ret = processor(handler, input, Context{yield});
+        ASSERT_FALSE(ret);
+        EXPECT_TRUE(ret.warnings.empty());
+    });
+}
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded)
+{
+    runSpawn([](auto yield) {
+        TypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<TypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "hello": "world", "old_field": true })JSON");
+
+        auto const ret = processor(handler, input, Context{yield});
+        ASSERT_TRUE(ret);
+        EXPECT_EQ(ret.warnings.size(), 1);
+    });
+}
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedFieldAbsent_NoWarnings)
+{
+    runSpawn([](auto yield) {
+        TypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<TypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "hello": "world" })JSON");
+
+        auto const ret = processor(handler, input, Context{yield});
+        ASSERT_TRUE(ret);
+        EXPECT_TRUE(ret.warnings.empty());
+    });
+}

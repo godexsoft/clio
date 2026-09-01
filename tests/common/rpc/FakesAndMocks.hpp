@@ -10,6 +10,12 @@
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
 #include <gmock/gmock.h>
+#include <rpcspec/Aliases.hpp>
+#include <rpcspec/Converters.hpp>
+#include <rpcspec/HandlerFor.hpp>
+#include <rpcspec/HandlerForDefs.hpp>
+#include <rpcspec/Typed.hpp>
+#include <rpcspec/VersionedSpec.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -151,6 +157,48 @@ struct HandlerWithoutInputMock {
     using Result = rpc::HandlerReturnType<Output>;
 
     MOCK_METHOD(Result, process, (rpc::Context const&), (const));
+};
+
+// The shared consteval spec resolves a handler's spec from its Input type via an ADL
+// `specFor` hook, so the fake Input below needs its own namespace to host that hook.
+namespace typed_fake {
+
+// input data for TypedHandlerFake; mirrors TestInput so the two paths stay comparable
+struct TypedInput {
+    std::string hello;
+    std::optional<uint32_t> limit;
+};
+
+inline constexpr auto kInputSpec = rpc::spec::spec<TypedInput>(
+    rpc::spec::field("hello", &TypedInput::hello, rpc::spec::required, rpc::spec::asString),
+    rpc::spec::field("limit", &TypedInput::limit, rpc::spec::asUint32),
+    rpc::spec::field("old_field", rpc::spec::deprecated)
+);
+
+inline constexpr auto kSpec = rpc::spec::versioned<TypedInput>(kInputSpec);
+
+/** @brief ADL hook: resolve the versioned spec from the Input type. */
+[[nodiscard]] constexpr auto const&
+specFor(TypedInput const*) noexcept
+{
+    return kSpec;
+}
+
+}  // namespace typed_fake
+
+// example handler validated by the shared consteval spec rather than by rpc::RpcSpec.
+// Note it declares no spec() and no Input of its own: both come from HandlerFor, and there
+// is no tag_invoke for TypedInput, which is what keeps it off the legacy path.
+class TypedHandlerFake : public rpc::spec::HandlerFor<typed_fake::TypedInput> {
+public:
+    using Output = TestOutput;
+    using Result = rpc::HandlerReturnType<Output>;
+
+    static Result
+    process(Input const& input, [[maybe_unused]] rpc::Context const& ctx)
+    {
+        return Output{input.hello + '_' + std::to_string(input.limit.value_or(0))};
+    }
 };
 
 }  // namespace tests::common
