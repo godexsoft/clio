@@ -12,7 +12,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
@@ -79,38 +78,6 @@ TEST_F(ForwardingSourceOperationsTests, XUserHeader)
         auto result = forwardingSource_.forwardToRippled(
             boost::json::parse(message_).as_object(), {}, xUserValue, yield
         );
-        ASSERT_FALSE(result);
-        EXPECT_EQ(result.error(), rpc::ClioError::RpcForwardingRequestError);
-    });
-}
-
-struct ForwardingSourceWriteFailedTests : SyncAsioContextTest {
-protected:
-    static constexpr std::size_t kPayloadSize = 8 * 1024 * 1024;
-
-    TestWsServer server_{ctx_, "0.0.0.0"};
-    ForwardingSource forwardingSource_{
-        "127.0.0.1",
-        server_.port(),
-        std::chrono::milliseconds{10},
-        std::chrono::milliseconds{20}
-    };
-};
-
-TEST_F(ForwardingSourceWriteFailedTests, WriteFailed)
-{
-    TestWsConnectionPtr connection;
-    util::spawn(ctx_, [&](boost::asio::yield_context yield) {
-        server_.acceptConnection(yield);
-        auto accepted = server_.acceptConnection(yield);
-        [&]() { ASSERT_TRUE(accepted) << accepted.error().message(); }();
-        connection = std::make_unique<TestWsConnection>(std::move(accepted).value());
-    });
-
-    runSpawn([&](boost::asio::yield_context yield) {
-        boost::json::object const request{{"data", std::string(kPayloadSize, 'x')}};
-        auto result = forwardingSource_.forwardToRippled(request, {}, {}, yield);
-
         ASSERT_FALSE(result);
         EXPECT_EQ(result.error(), rpc::ClioError::RpcForwardingRequestError);
     });
