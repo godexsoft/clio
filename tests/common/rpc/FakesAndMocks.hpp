@@ -12,6 +12,7 @@
 #include <gmock/gmock.h>
 #include <rpcspec/Aliases.hpp>
 #include <rpcspec/Converters.hpp>
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/FieldSpec.hpp>
 #include <rpcspec/HandlerFor.hpp>
 #include <rpcspec/Typed.hpp>
@@ -198,6 +199,18 @@ public:
     process(Input const& input, [[maybe_unused]] rpc::Context const& ctx)
     {
         return Output{input.hello + '_' + std::to_string(input.limit.value_or(0))};
+    }
+};
+
+class FailingTypedHandlerFake : public rpc::spec::HandlerFor<typed_fake::TypedInput> {
+public:
+    using Output = TestOutput;
+    using Result = rpc::HandlerReturnType<Output>;
+
+    static Result
+    process([[maybe_unused]] Input const& input, [[maybe_unused]] rpc::Context const& ctx)
+    {
+        return rpc::Error{rpc::Status{"Very custom error"}};
     }
 };
 

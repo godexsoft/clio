@@ -1,3 +1,4 @@
+#include "rpc/Errors.hpp"
 #include "rpc/FakesAndMocks.hpp"
 #include "rpc/common/Concepts.hpp"
 #include "rpc/common/Specs.hpp"
@@ -74,6 +75,7 @@ TEST_F(RPCDefaultProcessorTest, InvalidInput)
 // every test below would still pass.
 static_assert(SomeHandlerWithTypedInput<TypedHandlerFake>);
 static_assert(not SomeHandlerWithInput<TypedHandlerFake>);
+static_assert(SomeHandlerWithTypedInput<FailingTypedHandlerFake>);
 static_assert(SomeHandlerWithInput<HandlerMock>);
 static_assert(not SomeHandlerWithTypedInput<HandlerMock>);
 
@@ -121,6 +123,36 @@ TEST_F(RPCDefaultProcessorTest, NewSpecHandler_DeprecatedField_WarningsForwarded
 
         auto const ret = processor(handler, input, Context{yield});
         ASSERT_TRUE(ret);
+        EXPECT_EQ(ret.warnings.size(), 1);
+    });
+}
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HandlerReturnsError_ForwardsError)
+{
+    runSpawn([](auto yield) {
+        FailingTypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<FailingTypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "hello": "world", "limit": 42 })JSON");
+        auto const ret = processor(handler, input, Context{yield});
+
+        ASSERT_FALSE(ret);
+        EXPECT_EQ(rpc::makeError(ret.result.error()).at("error").as_string(), "Very custom error");
+        EXPECT_TRUE(ret.warnings.empty());
+    });
+}
+
+TEST_F(RPCDefaultProcessorTest, NewSpecHandler_HandlerReturnsError_StillForwardsWarnings)
+{
+    runSpawn([](auto yield) {
+        FailingTypedHandlerFake const handler;
+        rpc::impl::DefaultProcessor<FailingTypedHandlerFake> const processor;
+
+        auto const input = boost::json::parse(R"JSON({ "hello": "world", "old_field": true })JSON");
+        auto const ret = processor(handler, input, Context{yield});
+
+        ASSERT_FALSE(ret);
+        EXPECT_EQ(rpc::makeError(ret.result.error()).at("error").as_string(), "Very custom error");
         EXPECT_EQ(ret.warnings.size(), 1);
     });
 }
