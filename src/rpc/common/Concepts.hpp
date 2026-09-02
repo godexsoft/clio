@@ -7,8 +7,10 @@
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
+#include <rpcspec/Errors.hpp>
 #include <rpcspec/RpcSpecView.hpp>
 
+#include <concepts>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -78,12 +80,12 @@ concept SomeHandlerWithInput = requires(T a, uint32_t version) {
  *
  * Such a handler inherits @c rpc::spec::HandlerFor<Input> from the spec library, which
  * supplies a static @c parseInput (validate and deserialise in one pass) and a static
- * @c spec returning a type-erased @ref rpc::spec::RpcSpecView. Presence of @c parseInput
- * is what selects this path over @ref SomeHandlerWithInput.
+ * @c spec returning a type-erased @c RpcSpecView. Presence of @c parseInput is what
+ * selects this path over @c SomeHandlerWithInput.
  *
  * The two input paths are mutually exclusive by construction: a legacy handler returns
  * @c RpcSpec @c const& from a non-static @c spec and needs a @c value_to for its Input,
- * neither of which holds here. @ref kIsSingleInputPath asserts that below.
+ * neither of which holds here. @c kIsSingleInputPath asserts that below.
  */
 template <typename T>
 concept SomeHandlerWithTypedInput = requires(uint32_t version, boost::json::value jv) {
@@ -101,8 +103,8 @@ concept SomeHandlerWithoutInput = SomeContextProcessWithoutInput<T>;
 /**
  * @brief True when @p T does not straddle the legacy and typed input paths.
  *
- * Guards the @c if @c constexpr chain in @ref rpc::impl::DefaultProcessor: were a handler
- * to satisfy both, the dispatch order alone would silently decide which spec ran.
+ * Guards the @c if @c constexpr chain in @c DefaultProcessor - were a handler to satisfy
+ * both, the dispatch order alone would silently decide which spec ran.
  */
 template <typename T>
 constexpr bool kIsSingleInputPath = not(SomeHandlerWithInput<T> and SomeHandlerWithTypedInput<T>);

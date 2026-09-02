@@ -12,8 +12,8 @@
 #include <gmock/gmock.h>
 #include <rpcspec/Aliases.hpp>
 #include <rpcspec/Converters.hpp>
+#include <rpcspec/FieldSpec.hpp>
 #include <rpcspec/HandlerFor.hpp>
-#include <rpcspec/HandlerForDefs.hpp>
 #include <rpcspec/Typed.hpp>
 #include <rpcspec/VersionedSpec.hpp>
 
